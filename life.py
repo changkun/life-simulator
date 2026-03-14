@@ -293,6 +293,7 @@ class App:
         self.message = ""
         self.message_time = 0.0
         self.pattern_menu = False
+        self.stamp_menu = False  # stamp mode: overlay pattern at cursor
         self.pattern_list = sorted(PATTERNS.keys())
         self.pattern_sel = 0
         self.pop_history: list[int] = []
@@ -322,6 +323,19 @@ class App:
         self.cursor_c = off_c + max_c // 2
         self.message = f"Loaded: {name}"
         self.message_time = time.monotonic()
+
+    def _stamp_pattern(self, name: str):
+        """Overlay a pattern centered on the current cursor without clearing the grid."""
+        pat = PATTERNS.get(name)
+        if not pat:
+            self._flash(f"Unknown pattern: {name}")
+            return
+        max_r = max(r for r, c in pat["cells"])
+        max_c = max(c for r, c in pat["cells"])
+        off_r = self.cursor_r - max_r // 2
+        off_c = self.cursor_c - max_c // 2
+        self.grid.load_pattern(name, off_r, off_c)
+        self._flash(f"Stamped: {name}")
 
     def _flash(self, msg: str):
         self.message = msg
@@ -381,7 +395,7 @@ class App:
             self._draw()
             key = self.stdscr.getch()
 
-            if self.pattern_menu:
+            if self.pattern_menu or self.stamp_menu:
                 if self._handle_menu_key(key):
                     continue
             elif self.show_help:
@@ -461,6 +475,9 @@ class App:
         if key == ord("p"):
             self.pattern_menu = True
             return True
+        if key == ord("t"):
+            self.stamp_menu = True
+            return True
         if key == ord("s"):
             self._save_state()
             return True
@@ -529,6 +546,7 @@ class App:
             return True
         if key == 27 or key == ord("q"):  # ESC or q
             self.pattern_menu = False
+            self.stamp_menu = False
             return True
         if key in (curses.KEY_UP, ord("k")):
             self.pattern_sel = (self.pattern_sel - 1) % len(self.pattern_list)
@@ -538,13 +556,19 @@ class App:
             return True
         if key in (10, 13, curses.KEY_ENTER):  # Enter
             name = self.pattern_list[self.pattern_sel]
-            self.grid.clear()
-            self._place_pattern(name)
-            self.pattern_menu = False
-            self.running = False
-            self.pop_history.clear()
-            self._record_pop()
-            self._reset_cycle_detection()
+            if self.stamp_menu:
+                self._stamp_pattern(name)
+                self.stamp_menu = False
+                self.running = False
+                self._reset_cycle_detection()
+            else:
+                self.grid.clear()
+                self._place_pattern(name)
+                self.pattern_menu = False
+                self.running = False
+                self.pop_history.clear()
+                self._record_pop()
+                self._reset_cycle_detection()
             return True
         return True
 
@@ -671,7 +695,7 @@ class App:
             self.stdscr.refresh()
             return
 
-        if self.pattern_menu:
+        if self.pattern_menu or self.stamp_menu:
             self._draw_pattern_menu(max_y, max_x)
             self.stdscr.refresh()
             return
@@ -752,7 +776,7 @@ class App:
             if self.message and now - self.message_time < 3.0:
                 hint = f" {self.message}"
             else:
-                hint = " [Space]=play/pause [n]=step [u]=rewind [p]=patterns [e]=edit [d]=draw [x]=erase [s]=save [o]=load [+/-]=speed [r]=random [c]=clear [?]=help [q]=quit"
+                hint = " [Space]=play/pause [n]=step [u]=rewind [p]=patterns [t]=stamp [e]=edit [d]=draw [x]=erase [s]=save [o]=load [+/-]=speed [r]=random [c]=clear [?]=help [q]=quit"
             hint = hint[:max_x - 1]
             try:
                 self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -777,6 +801,7 @@ class App:
             "║  x         Erase mode (erase while moving)║",
             "║  Esc       Exit draw/erase mode           ║",
             "║  p         Open pattern selector          ║",
+            "║  t         Stamp pattern at cursor        ║",
             "║  r         Fill grid randomly              ║",
             "║  s         Save grid state to file            ║",
             "║  o         Open/load a saved state           ║",
@@ -799,7 +824,10 @@ class App:
                 pass
 
     def _draw_pattern_menu(self, max_y: int, max_x: int):
-        title = "── Select Pattern (Enter=load, q/Esc=cancel) ──"
+        if self.stamp_menu:
+            title = "── Stamp Pattern at Cursor (Enter=stamp, q/Esc=cancel) ──"
+        else:
+            title = "── Select Pattern (Enter=load, q/Esc=cancel) ──"
         try:
             self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
                                curses.color_pair(7) | curses.A_BOLD)
