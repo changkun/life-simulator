@@ -12,6 +12,39 @@ import sys
 import time
 
 SAVE_DIR = os.path.expanduser("~/.life_saves")
+BLUEPRINT_FILE = os.path.join(SAVE_DIR, "blueprints.json")
+
+
+def _load_blueprints() -> dict:
+    """Load user-saved blueprint patterns from disk."""
+    if not os.path.isfile(BLUEPRINT_FILE):
+        return {}
+    try:
+        with open(BLUEPRINT_FILE, "r") as f:
+            data = json.load(f)
+        blueprints = {}
+        for name, entry in data.items():
+            blueprints[name] = {
+                "description": entry.get("description", "Custom blueprint"),
+                "cells": [tuple(c) for c in entry["cells"]],
+            }
+        return blueprints
+    except (json.JSONDecodeError, KeyError, TypeError, OSError):
+        return {}
+
+
+def _save_blueprints(blueprints: dict):
+    """Save user blueprint patterns to disk."""
+    os.makedirs(SAVE_DIR, exist_ok=True)
+    data = {}
+    for name, entry in blueprints.items():
+        data[name] = {
+            "description": entry["description"],
+            "cells": list(entry["cells"]),
+        }
+    with open(BLUEPRINT_FILE, "w") as f:
+        json.dump(data, f)
+
 
 # ── Pattern recognition library ─────────────────────────────────────────────
 
@@ -492,6 +525,8 @@ def _init_colors():
     curses.init_pair(31, curses.COLOR_YELLOW, -1)    # Oscillator
     curses.init_pair(32, curses.COLOR_MAGENTA, -1)   # Spaceship
     curses.init_pair(33, curses.COLOR_WHITE, -1)     # Other / label text
+    # Blueprint selection highlight (pair 40)
+    curses.init_pair(40, curses.COLOR_GREEN, -1)     # Blueprint selection border/cells
 
 
 def color_for_age(age: int) -> int:
@@ -682,7 +717,7 @@ class App:
         self.message_time = 0.0
         self.pattern_menu = False
         self.stamp_menu = False  # stamp mode: overlay pattern at cursor
-        self.pattern_list = sorted(PATTERNS.keys())
+        self.pattern_list: list[str] = []
         self.pattern_sel = 0
         self.pop_history: list[int] = []
         # Cycle detection: map state_hash -> generation when first seen
@@ -717,12 +752,19 @@ class App:
         self.pattern_search_mode = False
         self.detected_patterns: list[dict] = []
         self._pattern_scan_gen = -1  # generation of last scan
+        # Blueprint mode: interactive region selection → save as reusable pattern
+        self.blueprint_mode = False
+        self.blueprint_anchor: tuple[int, int] | None = None  # (r, c) of selection start
+        self.blueprints: dict = _load_blueprints()  # name -> {description, cells}
+        self.blueprint_menu = False
+        self.blueprint_sel = 0
+        self._rebuild_pattern_list()
 
         if pattern:
             self._place_pattern(pattern)
 
     def _place_pattern(self, name: str):
-        pat = PATTERNS.get(name)
+        pat = self._get_pattern(name)
         if not pat:
             self.message = f"Unknown pattern: {name}"
             self.message_time = time.monotonic()
@@ -731,7 +773,8 @@ class App:
         max_c = max(c for r, c in pat["cells"])
         off_r = (self.grid.rows - max_r) // 2
         off_c = (self.grid.cols - max_c) // 2
-        self.grid.load_pattern(name, off_r, off_c)
+        for r, c in pat["cells"]:
+            self.grid.set_alive((r + off_r) % self.grid.rows, (c + off_c) % self.grid.cols)
         self.cursor_r = off_r + max_r // 2
         self.cursor_c = off_c + max_c // 2
         self.message = f"Loaded: {name}"
@@ -739,7 +782,7 @@ class App:
 
     def _stamp_pattern(self, name: str):
         """Overlay a pattern centered on the current cursor without clearing the grid."""
-        pat = PATTERNS.get(name)
+        pat = self._get_pattern(name)
         if not pat:
             self._flash(f"Unknown pattern: {name}")
             return
@@ -747,7 +790,8 @@ class App:
         max_c = max(c for r, c in pat["cells"])
         off_r = self.cursor_r - max_r // 2
         off_c = self.cursor_c - max_c // 2
-        self.grid.load_pattern(name, off_r, off_c)
+        for r, c in pat["cells"]:
+            self.grid.set_alive((r + off_r) % self.grid.rows, (c + off_c) % self.grid.cols)
         self._flash(f"Stamped: {name}")
 
     def _flash(self, msg: str):
@@ -787,6 +831,188 @@ class App:
                     if row_hm[c] > peak:
                         peak = row_hm[c]
         self.heatmap_max = peak
+
+    def _rebuild_pattern_list(self):
+        """Rebuild the combined pattern list from built-ins + blueprints."""
+        self.pattern_list = sorted(set(PATTERNS.keys()) | set(self.blueprints.keys()))
+
+    def _get_pattern(self, name: str) -> dict | None:
+        """Get a pattern by name from built-ins or blueprints."""
+        if name in PATTERNS:
+            return PATTERNS[name]
+        return self.blueprints.get(name)
+
+    # ── Blueprint mode ──
+
+    def _enter_blueprint_mode(self):
+        """Start blueprint region selection at current cursor position."""
+        self.blueprint_mode = True
+        self.blueprint_anchor = (self.cursor_r, self.cursor_c)
+        self._flash("Blueprint: move cursor to select region, Enter=capture, Esc=cancel")
+
+    def _blueprint_region(self) -> tuple[int, int, int, int]:
+        """Return (min_r, min_c, max_r, max_c) of the current blueprint selection."""
+        ar, ac = self.blueprint_anchor
+        cr, cc = self.cursor_r, self.cursor_c
+        return (min(ar, cr), min(ac, cc), max(ar, cr), max(ac, cc))
+
+    def _capture_blueprint(self):
+        """Capture the selected region as a named blueprint pattern."""
+        min_r, min_c, max_r, max_c = self._blueprint_region()
+        # Collect alive cells in the region, normalised to (0,0) origin
+        cells = []
+        for r in range(min_r, max_r + 1):
+            for c in range(min_c, max_c + 1):
+                gr = r % self.grid.rows
+                gc = c % self.grid.cols
+                if self.grid.cells[gr][gc] > 0:
+                    cells.append((r - min_r, c - min_c))
+        if not cells:
+            self._flash("No alive cells in selection — blueprint not saved")
+            self.blueprint_mode = False
+            self.blueprint_anchor = None
+            return
+        width = max_c - min_c + 1
+        height = max_r - min_r + 1
+        self.blueprint_mode = False
+        self.blueprint_anchor = None
+        # Prompt for a name
+        name = self._prompt_text(f"Blueprint name ({len(cells)} cells, {width}x{height})")
+        if not name:
+            self._flash("Blueprint cancelled")
+            return
+        # Sanitize name (lowercase, replace spaces with underscores)
+        safe_name = name.strip().lower().replace(" ", "_")
+        safe_name = "".join(c for c in safe_name if c.isalnum() or c == "_")
+        if not safe_name:
+            self._flash("Invalid name")
+            return
+        # Don't overwrite built-in patterns
+        if safe_name in PATTERNS:
+            self._flash(f"Cannot overwrite built-in pattern '{safe_name}'")
+            return
+        desc = f"Custom blueprint ({len(cells)} cells, {width}x{height})"
+        self.blueprints[safe_name] = {"description": desc, "cells": cells}
+        _save_blueprints(self.blueprints)
+        self._rebuild_pattern_list()
+        self._flash(f"Saved blueprint: {safe_name}")
+
+    def _stamp_blueprint(self, name: str):
+        """Overlay a blueprint pattern centered on the current cursor."""
+        pat = self._get_pattern(name)
+        if not pat:
+            self._flash(f"Unknown pattern: {name}")
+            return
+        max_r = max(r for r, c in pat["cells"]) if pat["cells"] else 0
+        max_c = max(c for r, c in pat["cells"]) if pat["cells"] else 0
+        off_r = self.cursor_r - max_r // 2
+        off_c = self.cursor_c - max_c // 2
+        for r, c in pat["cells"]:
+            gr = (r + off_r) % self.grid.rows
+            gc = (c + off_c) % self.grid.cols
+            self.grid.set_alive(gr, gc)
+        self._flash(f"Stamped: {name}")
+
+    def _delete_blueprint(self, name: str):
+        """Delete a user-saved blueprint."""
+        if name in self.blueprints:
+            del self.blueprints[name]
+            _save_blueprints(self.blueprints)
+            self._rebuild_pattern_list()
+            self._flash(f"Deleted blueprint: {name}")
+
+    def _handle_blueprint_mode_key(self, key: int) -> bool:
+        """Handle keys while in blueprint selection mode."""
+        if key == -1:
+            return True
+        if key == 27:  # ESC
+            self.blueprint_mode = False
+            self.blueprint_anchor = None
+            self._flash("Blueprint selection cancelled")
+            return True
+        if key in (10, 13, curses.KEY_ENTER):  # Enter — capture
+            self._capture_blueprint()
+            return True
+        # Cursor movement (same as normal mode)
+        if key in (curses.KEY_UP, ord("k")):
+            self.cursor_r = (self.cursor_r - 1) % self.grid.rows
+            return True
+        if key in (curses.KEY_DOWN, ord("j")):
+            self.cursor_r = (self.cursor_r + 1) % self.grid.rows
+            return True
+        if key in (curses.KEY_LEFT, ord("l") - 4):  # 'h' already used
+            self.cursor_c = (self.cursor_c - 1) % self.grid.cols
+            return True
+        if key in (curses.KEY_RIGHT, ord("l")):
+            self.cursor_c = (self.cursor_c + 1) % self.grid.cols
+            return True
+        return True
+
+    def _handle_blueprint_menu_key(self, key: int) -> bool:
+        """Handle keys in the blueprint library menu."""
+        if key == -1:
+            return True
+        bp_names = sorted(self.blueprints.keys())
+        if not bp_names:
+            self.blueprint_menu = False
+            return True
+        if key == 27 or key == ord("q"):
+            self.blueprint_menu = False
+            return True
+        if key in (curses.KEY_UP, ord("k")):
+            self.blueprint_sel = (self.blueprint_sel - 1) % len(bp_names)
+            return True
+        if key in (curses.KEY_DOWN, ord("j")):
+            self.blueprint_sel = (self.blueprint_sel + 1) % len(bp_names)
+            return True
+        if key in (10, 13, curses.KEY_ENTER):  # Enter — stamp at cursor
+            name = bp_names[self.blueprint_sel]
+            self._stamp_blueprint(name)
+            self.blueprint_menu = False
+            self._reset_cycle_detection()
+            return True
+        if key == ord("D") or key == curses.KEY_DC:  # D or Delete — remove
+            name = bp_names[self.blueprint_sel]
+            self._delete_blueprint(name)
+            bp_names = sorted(self.blueprints.keys())
+            if not bp_names:
+                self.blueprint_menu = False
+            else:
+                self.blueprint_sel = min(self.blueprint_sel, len(bp_names) - 1)
+            return True
+        return True
+
+    def _draw_blueprint_menu(self, max_y: int, max_x: int):
+        """Draw the blueprint library menu."""
+        bp_names = sorted(self.blueprints.keys())
+        title = "── Blueprint Library (Enter=stamp, D=delete, q/Esc=close) ──"
+        try:
+            self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
+                               curses.color_pair(7) | curses.A_BOLD)
+        except curses.error:
+            pass
+        if not bp_names:
+            msg = "No blueprints saved yet. Press W to create one."
+            try:
+                self.stdscr.addstr(3, max(0, (max_x - len(msg)) // 2), msg,
+                                   curses.color_pair(6))
+            except curses.error:
+                pass
+            return
+        for i, name in enumerate(bp_names):
+            y = 3 + i
+            if y >= max_y - 1:
+                break
+            desc = self.blueprints[name]["description"]
+            line = f"  {name:<20s} {desc}"
+            line = line[:max_x - 2]
+            attr = curses.color_pair(6)
+            if i == self.blueprint_sel:
+                attr = curses.color_pair(7) | curses.A_REVERSE
+            try:
+                self.stdscr.addstr(y, 2, line, attr)
+            except curses.error:
+                pass
 
     def _push_history(self):
         """Save the current grid state to the history buffer before advancing."""
@@ -908,7 +1134,13 @@ class App:
             self._draw()
             key = self.stdscr.getch()
 
-            if self.bookmark_menu:
+            if self.blueprint_menu:
+                if self._handle_blueprint_menu_key(key):
+                    continue
+            elif self.blueprint_mode:
+                if self._handle_blueprint_mode_key(key):
+                    continue
+            elif self.bookmark_menu:
                 if self._handle_bookmark_menu_key(key):
                     continue
             elif self.compare_rule_menu:
@@ -1069,6 +1301,16 @@ class App:
                 self._exit_compare_mode()
             else:
                 self._enter_compare_mode()
+            return True
+        if key == ord("W"):
+            self._enter_blueprint_mode()
+            return True
+        if key == ord("T"):
+            if self.blueprints:
+                self.blueprint_menu = True
+                self.blueprint_sel = 0
+            else:
+                self._flash("No blueprints saved yet (press W to create one)")
             return True
         if key == ord("e"):
             self.grid.toggle(self.cursor_r, self.cursor_c)
@@ -1421,7 +1663,7 @@ class App:
         if not os.path.isdir(SAVE_DIR):
             self._flash("No saves found")
             return
-        saves = sorted(f for f in os.listdir(SAVE_DIR) if f.endswith(".json"))
+        saves = sorted(f for f in os.listdir(SAVE_DIR) if f.endswith(".json") and f != "blueprints.json")
         if not saves:
             self._flash("No saves found")
             return
@@ -1531,6 +1773,11 @@ class App:
         self.stdscr.erase()
         max_y, max_x = self.stdscr.getmaxyx()
 
+        if self.blueprint_menu:
+            self._draw_blueprint_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
         if self.bookmark_menu:
             self._draw_bookmark_menu(max_y, max_x)
             self.stdscr.refresh()
@@ -1577,12 +1824,19 @@ class App:
                 for cell in pat["cells"]:
                     pat_highlight[cell] = pat["category"]
 
+        # Blueprint selection region bounds
+        bp_min_r = bp_min_c = bp_max_r = bp_max_c = -1
+        if self.blueprint_mode and self.blueprint_anchor:
+            bp_min_r, bp_min_c, bp_max_r, bp_max_c = self._blueprint_region()
+
         for sy in range(min(vis_rows, self.grid.rows)):
             gr = (self.view_r + sy) % self.grid.rows
             for sx in range(min(vis_cols, self.grid.cols)):
                 gc = (self.view_c + sx) % self.grid.cols
                 age = self.grid.cells[gr][gc]
                 is_cursor = (gr == self.cursor_r and gc == self.cursor_c)
+                in_blueprint = (self.blueprint_mode and self.blueprint_anchor and
+                                bp_min_r <= gr <= bp_max_r and bp_min_c <= gc <= bp_max_c)
                 px = sx * 2
                 py = sy
                 if py >= max_y - 2 or px + 1 >= max_x:
@@ -1606,6 +1860,11 @@ class App:
                                 self.stdscr.addstr(py, px, "▒▒", curses.color_pair(6) | curses.A_DIM)
                             except curses.error:
                                 pass
+                        elif in_blueprint:
+                            try:
+                                self.stdscr.addstr(py, px, "░░", curses.color_pair(40) | curses.A_DIM)
+                            except curses.error:
+                                pass
                 elif age > 0:
                     # Pattern search highlighting
                     pcat = pat_highlight.get((gr, gc))
@@ -1613,6 +1872,8 @@ class App:
                         attr = self._pattern_color(pcat) | curses.A_BOLD
                     else:
                         attr = color_for_age(age)
+                    if in_blueprint:
+                        attr = curses.color_pair(40) | curses.A_BOLD
                     if is_cursor:
                         attr |= curses.A_REVERSE
                     try:
@@ -1623,6 +1884,11 @@ class App:
                     if is_cursor:
                         try:
                             self.stdscr.addstr(py, px, "▒▒", curses.color_pair(6) | curses.A_DIM)
+                        except curses.error:
+                            pass
+                    elif in_blueprint:
+                        try:
+                            self.stdscr.addstr(py, px, "░░", curses.color_pair(40) | curses.A_DIM)
                         except curses.error:
                             pass
 
@@ -1719,6 +1985,8 @@ class App:
             if self.pattern_search_mode:
                 n = len(self.detected_patterns)
                 mode += f"  │  🔍 SEARCH({n})"
+            if self.blueprint_mode:
+                mode += "  │  📐 BLUEPRINT"
             if self.draw_mode == "draw":
                 mode += "  │  ✏ DRAW"
             elif self.draw_mode == "erase":
@@ -1744,7 +2012,7 @@ class App:
             if self.message and now - self.message_time < 3.0:
                 hint = f" {self.message}"
             else:
-                hint = " [Space]=play [n]=step [u]=rewind [/]=scrub10 [b]=bookmark [B]=bookmarks [p]=patterns [t]=stamp [e]=edit [d]=draw [F]=search [H]=heatmap [R]=rules [V]=compare [s]=save [o]=load [+/-]=speed [?]=help [q]=quit"
+                hint = " [Space]=play [n]=step [u]=rewind [/]=scrub10 [b]=bookmark [B]=bookmarks [p]=patterns [t]=stamp [W]=blueprint [T]=blueprints [e]=edit [d]=draw [F]=search [H]=heatmap [R]=rules [V]=compare [s]=save [o]=load [+/-]=speed [?]=help [q]=quit"
             hint = hint[:max_x - 1]
             try:
                 self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -1915,6 +2183,8 @@ class App:
             "║  p         Open pattern selector              ║",
             "║  t         Stamp pattern at cursor            ║",
             "║  R         Rule editor (B../S.. presets)      ║",
+            "║  W         Blueprint: select region & save      ║",
+            "║  T         Stamp from blueprint library        ║",
             "║  F         Pattern search (find known shapes) ║",
             "║  H         Toggle heatmap (cell activity)      ║",
             "║  V         Compare two rules side-by-side     ║",
@@ -1955,8 +2225,11 @@ class App:
             y = 3 + i
             if y >= max_y - 1:
                 break
-            desc = PATTERNS[name]["description"]
-            line = f"  {name:<20s} {desc}"
+            pat = self._get_pattern(name)
+            desc = pat["description"] if pat else ""
+            is_bp = name in self.blueprints
+            prefix = "[BP] " if is_bp else ""
+            line = f"  {prefix}{name:<20s} {desc}"
             line = line[:max_x - 2]
             attr = curses.color_pair(6)
             if i == self.pattern_sel:
