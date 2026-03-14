@@ -57,6 +57,117 @@ def parse_rule_string(rs: str) -> tuple[set, set] | None:
     return birth, survival
 
 
+# ── RLE parser ──────────────────────────────────────────────────────────────
+
+
+def parse_rle(text: str) -> dict:
+    """Parse an RLE (Run Length Encoded) pattern string.
+
+    Returns a dict with keys: 'name', 'comments', 'cells' (list of (r,c) tuples),
+    'rule' (str or None), 'width', 'height'.
+    """
+    name = ""
+    comments = []
+    rule = None
+    header_found = False
+    pattern_data = ""
+
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith("#"):
+            # Metadata comments
+            if line.startswith("#N"):
+                name = line[2:].strip()
+            elif line.startswith("#C") or line.startswith("#c"):
+                comments.append(line[2:].strip())
+            elif line.startswith("#O"):
+                comments.append(f"Author: {line[2:].strip()}")
+            # #r, #P, etc. are ignored
+            continue
+        if not header_found:
+            # Parse header line: x = M, y = N [, rule = ...]
+            if line.startswith("x"):
+                header_found = True
+                # Extract x, y, and optional rule
+                parts = {}
+                for segment in line.split(","):
+                    segment = segment.strip()
+                    if "=" in segment:
+                        k, v = segment.split("=", 1)
+                        parts[k.strip().lower()] = v.strip()
+                # Rule can appear in various forms
+                if "rule" in parts:
+                    rule_val = parts["rule"].strip()
+                    # Convert common rule formats: e.g. "B3/S23", "23/3" (S/B), "b3/s23"
+                    rule_val_upper = rule_val.upper()
+                    if rule_val_upper.startswith("B"):
+                        rule = rule_val_upper
+                    elif "/" in rule_val:
+                        # Legacy format: S/B (survival/birth)
+                        s_part, b_part = rule_val.split("/", 1)
+                        if s_part.isdigit() or s_part == "":
+                            rule = f"B{b_part}/S{s_part}"
+                continue
+        # Pattern data lines (accumulate until '!')
+        pattern_data += line
+        if "!" in line:
+            break
+
+    # Strip everything after '!'
+    if "!" in pattern_data:
+        pattern_data = pattern_data[: pattern_data.index("!")]
+
+    # Decode RLE pattern data
+    cells = []
+    row = 0
+    col = 0
+    i = 0
+    while i < len(pattern_data):
+        ch = pattern_data[i]
+        if ch.isdigit():
+            # Read full run count
+            j = i
+            while j < len(pattern_data) and pattern_data[j].isdigit():
+                j += 1
+            count = int(pattern_data[i:j])
+            i = j
+            if i >= len(pattern_data):
+                break
+            ch = pattern_data[i]
+            i += 1
+        else:
+            count = 1
+            i += 1
+
+        if ch == "b" or ch == ".":
+            col += count
+        elif ch == "o" or ch == "A":
+            for _ in range(count):
+                cells.append((row, col))
+                col += 1
+        elif ch == "$":
+            row += count
+            col = 0
+
+    # Compute bounding box
+    if cells:
+        max_r = max(r for r, c in cells)
+        max_c = max(c for r, c in cells)
+    else:
+        max_r = max_c = 0
+
+    return {
+        "name": name,
+        "comments": comments,
+        "cells": cells,
+        "rule": rule,
+        "width": max_c + 1,
+        "height": max_r + 1,
+    }
+
+
 # ── Preset patterns ──────────────────────────────────────────────────────────
 
 PATTERNS = {
@@ -547,6 +658,9 @@ class App:
         if key == ord("o"):
             self._load_state()
             return True
+        if key == ord("i"):
+            self._import_rle()
+            return True
         if key == ord("e"):
             self.grid.toggle(self.cursor_r, self.cursor_c)
             self._reset_cycle_detection()
@@ -822,6 +936,51 @@ class App:
                 break
         self.stdscr.nodelay(True)
 
+    # ── RLE Import ──
+
+    def _import_rle(self):
+        """Prompt for an RLE file path and load the pattern."""
+        path = self._prompt_text("RLE file path")
+        if not path:
+            self._flash("Import cancelled")
+            return
+        path = os.path.expanduser(path)
+        if not os.path.isfile(path):
+            self._flash(f"File not found: {path}")
+            return
+        try:
+            with open(path, "r", errors="replace") as f:
+                text = f.read()
+        except OSError as e:
+            self._flash(f"Error reading file: {e}")
+            return
+        rle = parse_rle(text)
+        if not rle["cells"]:
+            self._flash("No cells found in RLE file")
+            return
+        # Apply rule from RLE if present
+        if rle["rule"]:
+            parsed = parse_rule_string(rle["rule"])
+            if parsed:
+                self.grid.birth, self.grid.survival = parsed
+        # Clear grid and place pattern centered
+        self.grid.clear()
+        off_r = (self.grid.rows - rle["height"]) // 2
+        off_c = (self.grid.cols - rle["width"]) // 2
+        for r, c in rle["cells"]:
+            gr = (r + off_r) % self.grid.rows
+            gc = (c + off_c) % self.grid.cols
+            self.grid.set_alive(gr, gc)
+        # Center cursor on the pattern
+        self.cursor_r = (off_r + rle["height"] // 2) % self.grid.rows
+        self.cursor_c = (off_c + rle["width"] // 2) % self.grid.cols
+        self.running = False
+        self.pop_history.clear()
+        self._record_pop()
+        self._reset_cycle_detection()
+        label = rle["name"] or os.path.basename(path)
+        self._flash(f"Imported: {label} ({rle['width']}×{rle['height']}, {len(rle['cells'])} cells)")
+
     # ── Drawing ──
 
     def _draw(self):
@@ -921,7 +1080,7 @@ class App:
             if self.message and now - self.message_time < 3.0:
                 hint = f" {self.message}"
             else:
-                hint = " [Space]=play/pause [n]=step [u]=rewind [p]=patterns [t]=stamp [e]=edit [d]=draw [x]=erase [R]=rules [s]=save [o]=load [+/-]=speed [r]=random [c]=clear [?]=help [q]=quit"
+                hint = " [Space]=play/pause [n]=step [u]=rewind [p]=patterns [t]=stamp [i]=import [e]=edit [d]=draw [x]=erase [R]=rules [s]=save [o]=load [+/-]=speed [r]=random [c]=clear [?]=help [q]=quit"
             hint = hint[:max_x - 1]
             try:
                 self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -948,6 +1107,7 @@ class App:
             "║  p         Open pattern selector          ║",
             "║  t         Stamp pattern at cursor        ║",
             "║  R         Rule editor (B../S.. presets)  ║",
+            "║  i         Import RLE pattern file         ║",
             "║  r         Fill grid randomly             ║",
             "║  s         Save grid state to file        ║",
             "║  o         Open/load a saved state        ║",
