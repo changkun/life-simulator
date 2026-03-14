@@ -8,6 +8,7 @@ import curses
 import hashlib
 import json
 import os
+import struct
 import sys
 import time
 
@@ -558,6 +559,186 @@ def color_for_heat(fraction: float) -> int:
     return curses.color_pair(pairs[idx])
 
 
+# ── GIF encoder (pure Python, no external dependencies) ─────────────────────
+
+# Color palette for GIF: index 0 = background, 1–5 = age tiers
+_GIF_PALETTE = [
+    (18, 18, 24),     # 0: background (dark)
+    (0, 200, 0),      # 1: newborn (green)
+    (0, 200, 200),    # 2: young (cyan)
+    (200, 200, 0),    # 3: mature (yellow)
+    (200, 0, 200),    # 4: old (magenta)
+    (200, 0, 0),      # 5: ancient (red)
+    (100, 100, 100),  # 6: grid lines (subtle)
+    (255, 255, 255),  # 7: spare (white)
+]
+
+
+def _gif_age_index(age: int) -> int:
+    """Map cell age to palette index (mirrors color_for_age tiers)."""
+    if age <= 0:
+        return 0
+    if age <= 1:
+        return 1
+    if age <= 3:
+        return 2
+    if age <= 8:
+        return 3
+    if age <= 20:
+        return 4
+    return 5
+
+
+def _lzw_compress(pixels: list[int], min_code_size: int) -> bytes:
+    """LZW compression for GIF image data."""
+    clear_code = 1 << min_code_size
+    eoi_code = clear_code + 1
+
+    code_table: dict[tuple, int] = {}
+    for i in range(clear_code):
+        code_table[(i,)] = i
+
+    next_code = eoi_code + 1
+    code_size = min_code_size + 1
+    max_code = (1 << code_size)
+
+    # Bit packing
+    bit_buffer = 0
+    bits_in_buffer = 0
+    output = bytearray()
+
+    def emit(code: int):
+        nonlocal bit_buffer, bits_in_buffer
+        bit_buffer |= code << bits_in_buffer
+        bits_in_buffer += code_size
+        while bits_in_buffer >= 8:
+            output.append(bit_buffer & 0xFF)
+            bit_buffer >>= 8
+            bits_in_buffer -= 8
+
+    emit(clear_code)
+    buffer = (pixels[0],)
+
+    for px in pixels[1:]:
+        buffer_plus = buffer + (px,)
+        if buffer_plus in code_table:
+            buffer = buffer_plus
+        else:
+            emit(code_table[buffer])
+            if next_code < 4096:
+                code_table[buffer_plus] = next_code
+                next_code += 1
+                if next_code > max_code and code_size < 12:
+                    code_size += 1
+                    max_code = 1 << code_size
+            else:
+                # Table full, reset
+                emit(clear_code)
+                code_table = {}
+                for i in range(clear_code):
+                    code_table[(i,)] = i
+                next_code = eoi_code + 1
+                code_size = min_code_size + 1
+                max_code = 1 << code_size
+            buffer = (px,)
+
+    emit(code_table[buffer])
+    emit(eoi_code)
+
+    # Flush remaining bits
+    if bits_in_buffer > 0:
+        output.append(bit_buffer & 0xFF)
+
+    return bytes(output)
+
+
+def _gif_sub_blocks(data: bytes) -> bytes:
+    """Split data into GIF sub-blocks (max 255 bytes each)."""
+    result = bytearray()
+    i = 0
+    while i < len(data):
+        chunk = data[i:i + 255]
+        result.append(len(chunk))
+        result.extend(chunk)
+        i += 255
+    result.append(0)  # block terminator
+    return bytes(result)
+
+
+def write_gif(filepath: str, frames: list[list[list[int]]],
+              cell_size: int = 4, delay_cs: int = 10):
+    """Write an animated GIF from a list of grid frames.
+
+    Each frame is a 2D list of cell ages (0 = dead, >0 = alive with age).
+    cell_size: pixels per cell side.
+    delay_cs: delay between frames in centiseconds (1/100 s).
+    """
+    if not frames:
+        return
+    rows = len(frames[0])
+    cols = len(frames[0][0]) if rows else 0
+    width = cols * cell_size
+    height = rows * cell_size
+
+    # Use 3-bit palette (8 colours)
+    min_code_size = 3
+    palette_size = 8
+
+    # Build flat palette bytes
+    palette_bytes = bytearray()
+    for r, g, b in _GIF_PALETTE[:palette_size]:
+        palette_bytes.extend([r, g, b])
+
+    out = bytearray()
+    # Header
+    out.extend(b"GIF89a")
+    # Logical screen descriptor
+    out.extend(struct.pack("<HH", width, height))
+    # GCT flag=1, color res=2 (3 bits), sort=0, GCT size=2 (8 colors)
+    out.append(0b10000010)
+    out.append(0)  # bg color index
+    out.append(0)  # pixel aspect ratio
+
+    # Global color table
+    out.extend(palette_bytes)
+
+    # Netscape looping extension (loop forever)
+    out.extend(b"\x21\xFF\x0BNETSCAPE2.0\x03\x01\x00\x00\x00")
+
+    for frame in frames:
+        # Graphic control extension (delay + disposal)
+        out.extend(b"\x21\xF9\x04")
+        out.append(0x00)  # disposal=0, no transparency
+        out.extend(struct.pack("<H", delay_cs))
+        out.append(0)  # transparent color index (unused)
+        out.append(0)  # block terminator
+
+        # Image descriptor
+        out.extend(b"\x2C")
+        out.extend(struct.pack("<HHHH", 0, 0, width, height))
+        out.append(0)  # no local color table
+
+        # Build pixel data
+        pixels = []
+        for r in range(rows):
+            row = frame[r]
+            for _ in range(cell_size):
+                for c in range(cols):
+                    idx = _gif_age_index(row[c])
+                    pixels.extend([idx] * cell_size)
+
+        # LZW compress
+        out.append(min_code_size)
+        compressed = _lzw_compress(pixels, min_code_size)
+        out.extend(_gif_sub_blocks(compressed))
+
+    # Trailer
+    out.append(0x3B)
+
+    with open(filepath, "wb") as f:
+        f.write(out)
+
+
 # ── Grid logic ───────────────────────────────────────────────────────────────
 
 class Grid:
@@ -758,6 +939,10 @@ class App:
         self.blueprints: dict = _load_blueprints()  # name -> {description, cells}
         self.blueprint_menu = False
         self.blueprint_sel = 0
+        # GIF recording mode
+        self.recording = False
+        self.recorded_frames: list[list[list[int]]] = []
+        self.recording_start_gen = 0
         self._rebuild_pattern_list()
 
         if pattern:
@@ -1174,6 +1359,9 @@ class App:
                 if self.compare_mode and self.grid2:
                     self.grid2.step()
                     self.pop_history2.append(self.grid2.population)
+                # Capture frame for GIF recording
+                if self.recording:
+                    self._capture_recording_frame()
 
     # ── Key handling ──
 
@@ -1203,6 +1391,8 @@ class App:
             if self.compare_mode and self.grid2:
                 self.grid2.step()
                 self.pop_history2.append(self.grid2.population)
+            if self.recording:
+                self._capture_recording_frame()
             return True
         if key == ord("u"):
             self.running = False
@@ -1312,6 +1502,9 @@ class App:
             else:
                 self._flash("No blueprints saved yet (press W to create one)")
             return True
+        if key == ord("G"):
+            self._toggle_recording()
+            return True
         if key == ord("e"):
             self.grid.toggle(self.cursor_r, self.cursor_c)
             self._reset_cycle_detection()
@@ -1374,6 +1567,46 @@ class App:
             self._reset_cycle_detection()
             if self.pattern_search_mode:
                 self._scan_patterns()
+
+    def _toggle_recording(self):
+        """Toggle GIF recording on/off."""
+        if self.recording:
+            self.recording = False
+            if self.recorded_frames:
+                self._export_gif()
+            else:
+                self._flash("Recording cancelled (no frames captured)")
+        else:
+            self.recording = True
+            self.recorded_frames = []
+            self.recording_start_gen = self.grid.generation
+            self._capture_recording_frame()
+            self._flash("Recording started (press G to stop & save GIF)")
+
+    def _capture_recording_frame(self):
+        """Capture the current grid state as a recording frame."""
+        self.recorded_frames.append([row[:] for row in self.grid.cells])
+
+    def _export_gif(self):
+        """Export recorded frames as an animated GIF."""
+        os.makedirs(SAVE_DIR, exist_ok=True)
+        gen_start = self.recording_start_gen
+        gen_end = self.grid.generation
+        timestamp = int(time.time())
+        filename = f"recording_gen{gen_start}-{gen_end}_{timestamp}.gif"
+        filepath = os.path.join(SAVE_DIR, filename)
+        n = len(self.recorded_frames)
+        # Choose cell size: aim for reasonable image dimensions
+        cell_size = 4
+        # Speed-aware delay: map simulation speed to GIF frame delay
+        delay_cs = max(2, int(SPEEDS[self.speed_idx] * 100))
+        try:
+            write_gif(filepath, self.recorded_frames,
+                      cell_size=cell_size, delay_cs=delay_cs)
+            self._flash(f"GIF saved: {filename} ({n} frames)")
+        except OSError as e:
+            self._flash(f"GIF export failed: {e}")
+        self.recorded_frames = []
 
     def _handle_bookmark_menu_key(self, key: int) -> bool:
         if key == -1:
@@ -1987,6 +2220,8 @@ class App:
                 mode += f"  │  🔍 SEARCH({n})"
             if self.blueprint_mode:
                 mode += "  │  📐 BLUEPRINT"
+            if self.recording:
+                mode += f"  │  ⏺ REC({len(self.recorded_frames)})"
             if self.draw_mode == "draw":
                 mode += "  │  ✏ DRAW"
             elif self.draw_mode == "erase":
@@ -2012,7 +2247,7 @@ class App:
             if self.message and now - self.message_time < 3.0:
                 hint = f" {self.message}"
             else:
-                hint = " [Space]=play [n]=step [u]=rewind [/]=scrub10 [b]=bookmark [B]=bookmarks [p]=patterns [t]=stamp [W]=blueprint [T]=blueprints [e]=edit [d]=draw [F]=search [H]=heatmap [R]=rules [V]=compare [s]=save [o]=load [+/-]=speed [?]=help [q]=quit"
+                hint = " [Space]=play [n]=step [u]=rewind [/]=scrub10 [b]=bookmark [B]=bookmarks [p]=patterns [t]=stamp [W]=blueprint [T]=blueprints [e]=edit [d]=draw [F]=search [H]=heatmap [R]=rules [V]=compare [G]=record GIF [s]=save [o]=load [+/-]=speed [?]=help [q]=quit"
             hint = hint[:max_x - 1]
             try:
                 self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -2188,6 +2423,7 @@ class App:
             "║  F         Pattern search (find known shapes) ║",
             "║  H         Toggle heatmap (cell activity)      ║",
             "║  V         Compare two rules side-by-side     ║",
+            "║  G         Record/stop GIF (export frames)   ║",
             "║  i         Import RLE pattern file            ║",
             "║  r         Fill grid randomly                 ║",
             "║  s         Save grid state to file            ║",
