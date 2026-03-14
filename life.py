@@ -284,6 +284,21 @@ def _init_colors():
     curses.init_pair(6, curses.COLOR_WHITE, -1)
     # Pair 7: highlight / title
     curses.init_pair(7, curses.COLOR_CYAN, -1)
+    # Heatmap colour tiers (pairs 10–16): cool to hot
+    curses.init_pair(10, 17, -1)   # very dim blue (near-zero activity)
+    curses.init_pair(11, 19, -1)   # blue
+    curses.init_pair(12, 27, -1)   # bright blue
+    curses.init_pair(13, 51, -1)   # cyan
+    curses.init_pair(14, 226, -1)  # yellow
+    curses.init_pair(15, 208, -1)  # orange
+    curses.init_pair(16, 196, -1)  # red
+    curses.init_pair(17, 231, -1)  # white (maximum heat)
+    # Fallback heatmap pairs for terminals with < 256 colors
+    curses.init_pair(18, curses.COLOR_BLUE, -1)
+    curses.init_pair(19, curses.COLOR_CYAN, -1)
+    curses.init_pair(20, curses.COLOR_YELLOW, -1)
+    curses.init_pair(21, curses.COLOR_RED, -1)
+    curses.init_pair(22, curses.COLOR_WHITE, -1)
 
 
 def color_for_age(age: int) -> int:
@@ -297,6 +312,22 @@ def color_for_age(age: int) -> int:
     if age <= 20:
         return curses.color_pair(4)
     return curses.color_pair(5)
+
+
+# Heatmap 256-color tiers (pair indices 10–17) and 8-color fallback (18–22)
+HEAT_PAIRS_256 = [10, 11, 12, 13, 14, 15, 16, 17]
+HEAT_PAIRS_8 = [18, 18, 19, 19, 20, 20, 21, 22]
+
+
+def color_for_heat(fraction: float) -> int:
+    """Return a curses colour pair attribute for a heatmap fraction 0.0–1.0.
+    0 = coolest (dim blue), 1 = hottest (white)."""
+    if curses.COLORS >= 256:
+        pairs = HEAT_PAIRS_256
+    else:
+        pairs = HEAT_PAIRS_8
+    idx = min(int(fraction * len(pairs)), len(pairs) - 1)
+    return curses.color_pair(pairs[idx])
 
 
 # ── Grid logic ───────────────────────────────────────────────────────────────
@@ -485,6 +516,10 @@ class App:
         self.pop_history2: list[int] = []
         self.compare_rule_menu = False  # picking rule for grid2
         self.compare_rule_sel = 0
+        # Heatmap mode: cumulative cell activity overlay
+        self.heatmap_mode = False
+        self.heatmap = [[0] * grid_cols for _ in range(grid_rows)]
+        self.heatmap_max = 0  # track peak for normalisation
 
         if pattern:
             self._place_pattern(pattern)
@@ -524,6 +559,21 @@ class App:
 
     def _record_pop(self):
         self.pop_history.append(self.grid.population)
+
+    def _update_heatmap(self):
+        """Increment heatmap counters for every currently alive cell."""
+        cells = self.grid.cells
+        hm = self.heatmap
+        peak = self.heatmap_max
+        for r in range(self.grid.rows):
+            row_cells = cells[r]
+            row_hm = hm[r]
+            for c in range(self.grid.cols):
+                if row_cells[c] > 0:
+                    row_hm[c] += 1
+                    if row_hm[c] > peak:
+                        peak = row_hm[c]
+        self.heatmap_max = peak
 
     def _push_history(self):
         """Save the current grid state to the history buffer before advancing."""
@@ -670,6 +720,7 @@ class App:
                 time.sleep(delay)
                 self._push_history()
                 self.grid.step()
+                self._update_heatmap()
                 self._record_pop()
                 self._check_cycle()
                 # Step the second grid in comparison mode
@@ -697,6 +748,7 @@ class App:
             self.running = False
             self._push_history()
             self.grid.step()
+            self._update_heatmap()
             self._record_pop()
             self._check_cycle()
             if self.compare_mode and self.grid2:
@@ -741,6 +793,8 @@ class App:
             self.pop_history.clear()
             self._record_pop()
             self._reset_cycle_detection()
+            self.heatmap = [[0] * self.grid.cols for _ in range(self.grid.rows)]
+            self.heatmap_max = 0
             self._flash("Cleared")
             return True
         if key == ord("r"):
@@ -754,6 +808,8 @@ class App:
             self.pop_history.clear()
             self._record_pop()
             self._reset_cycle_detection()
+            self.heatmap = [[0] * self.grid.cols for _ in range(self.grid.rows)]
+            self.heatmap_max = 0
             self._flash("Randomised")
             return True
         if key == ord("R"):
@@ -773,6 +829,13 @@ class App:
             return True
         if key == ord("i"):
             self._import_rle()
+            return True
+        if key == ord("H"):
+            self.heatmap_mode = not self.heatmap_mode
+            if self.heatmap_mode:
+                self._flash("Heatmap ON (shows cumulative cell activity)")
+            else:
+                self._flash("Heatmap OFF")
             return True
         if key == ord("V"):
             if self.compare_mode:
@@ -1284,7 +1347,26 @@ class App:
                 py = sy
                 if py >= max_y - 2 or px + 1 >= max_x:
                     continue
-                if age > 0:
+                if self.heatmap_mode and self.heatmap_max > 0:
+                    heat = self.heatmap[gr][gc]
+                    if heat > 0:
+                        frac = heat / self.heatmap_max
+                        attr = color_for_heat(frac)
+                        if age > 0:
+                            attr |= curses.A_BOLD
+                        if is_cursor:
+                            attr |= curses.A_REVERSE
+                        try:
+                            self.stdscr.addstr(py, px, CELL_CHAR, attr)
+                        except curses.error:
+                            pass
+                    else:
+                        if is_cursor:
+                            try:
+                                self.stdscr.addstr(py, px, "▒▒", curses.color_pair(6) | curses.A_DIM)
+                            except curses.error:
+                                pass
+                elif age > 0:
                     attr = color_for_age(age)
                     if is_cursor:
                         attr |= curses.A_REVERSE
@@ -1366,10 +1448,12 @@ class App:
             state = "▶ PLAY" if self.running else "⏸ PAUSE"
             speed = SPEED_LABELS[self.speed_idx]
             mode = ""
+            if self.heatmap_mode:
+                mode = "  │  🔥 HEATMAP"
             if self.draw_mode == "draw":
-                mode = "  │  ✏ DRAW"
+                mode += "  │  ✏ DRAW"
             elif self.draw_mode == "erase":
-                mode = "  │  ✘ ERASE"
+                mode += "  │  ✘ ERASE"
             rs = rule_string(self.grid.birth, self.grid.survival)
             status = (
                 f" Gen: {self.grid.generation}  │  "
@@ -1391,7 +1475,7 @@ class App:
             if self.message and now - self.message_time < 3.0:
                 hint = f" {self.message}"
             else:
-                hint = " [Space]=play [n]=step [u]=rewind [/]=scrub10 [b]=bookmark [B]=bookmarks [p]=patterns [t]=stamp [e]=edit [d]=draw [R]=rules [V]=compare [s]=save [o]=load [+/-]=speed [?]=help [q]=quit"
+                hint = " [Space]=play [n]=step [u]=rewind [/]=scrub10 [b]=bookmark [B]=bookmarks [p]=patterns [t]=stamp [e]=edit [d]=draw [H]=heatmap [R]=rules [V]=compare [s]=save [o]=load [+/-]=speed [?]=help [q]=quit"
             hint = hint[:max_x - 1]
             try:
                 self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -1562,6 +1646,7 @@ class App:
             "║  p         Open pattern selector              ║",
             "║  t         Stamp pattern at cursor            ║",
             "║  R         Rule editor (B../S.. presets)      ║",
+            "║  H         Toggle heatmap (cell activity)      ║",
             "║  V         Compare two rules side-by-side     ║",
             "║  i         Import RLE pattern file            ║",
             "║  r         Fill grid randomly                 ║",
