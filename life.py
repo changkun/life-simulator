@@ -4,8 +4,12 @@
 import argparse
 import copy
 import curses
+import json
+import os
 import sys
 import time
+
+SAVE_DIR = os.path.expanduser("~/.life_saves")
 
 # ── Preset patterns ──────────────────────────────────────────────────────────
 
@@ -193,6 +197,32 @@ class Grid:
                     count += 1
         return count
 
+    def to_dict(self) -> dict:
+        """Serialize grid state to a dictionary."""
+        alive_cells = []
+        for r in range(self.rows):
+            for c in range(self.cols):
+                if self.cells[r][c] > 0:
+                    alive_cells.append((r, c, self.cells[r][c]))
+        return {
+            "rows": self.rows,
+            "cols": self.cols,
+            "generation": self.generation,
+            "cells": alive_cells,
+        }
+
+    def load_dict(self, data: dict):
+        """Restore grid state from a dictionary."""
+        self.rows = data["rows"]
+        self.cols = data["cols"]
+        self.generation = data["generation"]
+        self.cells = [[0] * self.cols for _ in range(self.rows)]
+        self.population = 0
+        for r, c, age in data["cells"]:
+            if 0 <= r < self.rows and 0 <= c < self.cols:
+                self.cells[r][c] = age
+                self.population += 1
+
     def step(self):
         """Advance one generation."""
         new = [[0] * self.cols for _ in range(self.rows)]
@@ -330,6 +360,12 @@ class App:
         if key == ord("p"):
             self.pattern_menu = True
             return True
+        if key == ord("s"):
+            self._save_state()
+            return True
+        if key == ord("o"):
+            self._load_state()
+            return True
         if key == ord("e"):
             self.grid.toggle(self.cursor_r, self.cursor_c)
             return True
@@ -368,6 +404,115 @@ class App:
             self.running = False
             return True
         return True
+
+    # ── Save / Load ──
+
+    def _prompt_text(self, prompt: str) -> str | None:
+        """Show a text prompt on the bottom line and return user input, or None on ESC."""
+        self.stdscr.nodelay(False)
+        max_y, max_x = self.stdscr.getmaxyx()
+        y = max_y - 1
+        buf = ""
+        while True:
+            try:
+                self.stdscr.move(y, 0)
+                self.stdscr.clrtoeol()
+                display = f" {prompt}: {buf}"
+                self.stdscr.addstr(y, 0, display[:max_x - 1], curses.color_pair(7) | curses.A_BOLD)
+            except curses.error:
+                pass
+            self.stdscr.refresh()
+            ch = self.stdscr.getch()
+            if ch == 27:  # ESC
+                self.stdscr.nodelay(True)
+                return None
+            if ch in (10, 13, curses.KEY_ENTER):
+                self.stdscr.nodelay(True)
+                return buf.strip()
+            if ch in (curses.KEY_BACKSPACE, 127, 8):
+                buf = buf[:-1]
+            elif 32 <= ch < 127:
+                buf += chr(ch)
+        self.stdscr.nodelay(True)
+        return None
+
+    def _save_state(self):
+        name = self._prompt_text("Save name (enter to cancel)")
+        if not name:
+            self._flash("Save cancelled")
+            return
+        # Sanitize filename
+        safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in name)
+        if not safe_name:
+            self._flash("Invalid name")
+            return
+        os.makedirs(SAVE_DIR, exist_ok=True)
+        path = os.path.join(SAVE_DIR, safe_name + ".json")
+        data = self.grid.to_dict()
+        data["name"] = name
+        with open(path, "w") as f:
+            json.dump(data, f)
+        self._flash(f"Saved: {safe_name}.json")
+
+    def _load_state(self):
+        if not os.path.isdir(SAVE_DIR):
+            self._flash("No saves found")
+            return
+        saves = sorted(f for f in os.listdir(SAVE_DIR) if f.endswith(".json"))
+        if not saves:
+            self._flash("No saves found")
+            return
+        # Show a selection menu
+        self._save_menu = True
+        self._save_list = saves
+        self._save_sel = 0
+        self._show_save_menu()
+
+    def _show_save_menu(self):
+        """Run a blocking menu to select a save file."""
+        self.stdscr.nodelay(False)
+        while True:
+            self.stdscr.erase()
+            max_y, max_x = self.stdscr.getmaxyx()
+            title = "── Load Save (Enter=load, q/Esc=cancel) ──"
+            try:
+                self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
+                                   curses.color_pair(7) | curses.A_BOLD)
+            except curses.error:
+                pass
+            for i, fname in enumerate(self._save_list):
+                y = 3 + i
+                if y >= max_y - 1:
+                    break
+                label = fname.removesuffix(".json")
+                line = f"  {label}"[:max_x - 2]
+                attr = curses.color_pair(6)
+                if i == self._save_sel:
+                    attr = curses.color_pair(7) | curses.A_REVERSE
+                try:
+                    self.stdscr.addstr(y, 2, line, attr)
+                except curses.error:
+                    pass
+            self.stdscr.refresh()
+            key = self.stdscr.getch()
+            if key == 27 or key == ord("q"):
+                break
+            if key in (curses.KEY_UP, ord("k")):
+                self._save_sel = (self._save_sel - 1) % len(self._save_list)
+            elif key in (curses.KEY_DOWN, ord("j")):
+                self._save_sel = (self._save_sel + 1) % len(self._save_list)
+            elif key in (10, 13, curses.KEY_ENTER):
+                path = os.path.join(SAVE_DIR, self._save_list[self._save_sel])
+                try:
+                    with open(path) as f:
+                        data = json.load(f)
+                    self.grid.load_dict(data)
+                    self.running = False
+                    self._flash(f"Loaded: {self._save_list[self._save_sel].removesuffix('.json')}")
+                except (json.JSONDecodeError, KeyError, TypeError) as e:
+                    self._flash(f"Error loading save: {e}")
+                break
+        self.stdscr.nodelay(True)
 
     # ── Drawing ──
 
@@ -443,7 +588,7 @@ class App:
             if self.message and now - self.message_time < 3.0:
                 hint = f" {self.message}"
             else:
-                hint = " [Space]=play/pause [n]=step [p]=patterns [e]=edit [+/-]=speed [r]=random [c]=clear [?]=help [q]=quit"
+                hint = " [Space]=play/pause [n]=step [p]=patterns [e]=edit [s]=save [o]=load [+/-]=speed [r]=random [c]=clear [?]=help [q]=quit"
             hint = hint[:max_x - 1]
             try:
                 self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -465,6 +610,8 @@ class App:
             "║  e         Toggle cell under cursor       ║",
             "║  p         Open pattern selector          ║",
             "║  r         Fill grid randomly              ║",
+            "║  s         Save grid state to file            ║",
+            "║  o         Open/load a saved state           ║",
             "║  c         Clear grid                      ║",
             "║  q         Quit                            ║",
             "║  ? / h     Show this help                  ║",
