@@ -466,8 +466,15 @@ class App:
         self.cycle_detected = False
         # Draw mode: None, "draw" (paint alive), or "erase" (paint dead)
         self.draw_mode: str | None = None
-        # History buffer for rewind (stores (grid_dict, population) tuples)
-        self.history: collections.deque[tuple[dict, int]] = collections.deque(maxlen=500)
+        # History buffer for rewind (stores (grid_dict, pop_len) tuples)
+        self.history: list[tuple[dict, int]] = []
+        self.history_max = 500
+        # Timeline scrubbing position: None = "live" (at current grid), int = index into history
+        self.timeline_pos: int | None = None
+        # Bookmarks: list of (generation, grid_dict, pop_len) for notable moments
+        self.bookmarks: list[tuple[int, dict, int]] = []
+        self.bookmark_menu = False
+        self.bookmark_sel = 0
         # Rule editor state
         self.rule_menu = False
         self.rule_preset_list = sorted(RULE_PRESETS.keys())
@@ -520,19 +527,88 @@ class App:
 
     def _push_history(self):
         """Save the current grid state to the history buffer before advancing."""
+        # If scrubbed back, truncate future history before pushing
+        if self.timeline_pos is not None:
+            self.history = self.history[:self.timeline_pos + 1]
+            self.timeline_pos = None
         self.history.append((self.grid.to_dict(), len(self.pop_history)))
+        # Enforce max size by trimming oldest entries
+        if len(self.history) > self.history_max:
+            self.history = self.history[-self.history_max:]
 
     def _rewind(self):
         """Restore the most recent state from the history buffer."""
         if not self.history:
             self._flash("No history to rewind")
             return
-        grid_dict, pop_len = self.history.pop()
+        # If live, start scrubbing from the end; if already scrubbed, go back one more
+        if self.timeline_pos is None:
+            self.timeline_pos = len(self.history) - 1
+        else:
+            if self.timeline_pos <= 0:
+                self._flash("At oldest recorded state")
+                return
+            self.timeline_pos -= 1
+        self._restore_timeline_pos()
+
+    def _restore_timeline_pos(self):
+        """Restore the grid state at the current timeline position."""
+        grid_dict, pop_len = self.history[self.timeline_pos]
         self.grid.load_dict(grid_dict)
-        # Trim population history back to match the restored state
         self.pop_history = self.pop_history[:pop_len]
         self._reset_cycle_detection()
-        self._flash(f"Rewind → Gen {self.grid.generation}")
+        self._flash(f"Gen {self.grid.generation}  ({self.timeline_pos + 1}/{len(self.history)})")
+
+    def _scrub_back(self, steps: int = 10):
+        """Scrub backward through the timeline by the given number of steps."""
+        if not self.history:
+            self._flash("No history to scrub")
+            return
+        if self.timeline_pos is None:
+            self.timeline_pos = max(0, len(self.history) - steps)
+        else:
+            self.timeline_pos = max(0, self.timeline_pos - steps)
+        self._restore_timeline_pos()
+
+    def _scrub_forward(self, steps: int = 10):
+        """Scrub forward through the timeline by the given number of steps."""
+        if self.timeline_pos is None:
+            self._flash("Already at latest state")
+            return
+        self.timeline_pos += steps
+        if self.timeline_pos >= len(self.history):
+            # Return to the latest recorded state
+            self.timeline_pos = None
+            grid_dict, pop_len = self.history[-1]
+            self.grid.load_dict(grid_dict)
+            self.pop_history = self.pop_history[:pop_len]
+            self._reset_cycle_detection()
+            self._flash(f"Latest → Gen {self.grid.generation} (press n/Space to continue)")
+        else:
+            self._restore_timeline_pos()
+
+    def _add_bookmark(self):
+        """Bookmark the current generation."""
+        gen = self.grid.generation
+        # Don't duplicate
+        for bg, _, _ in self.bookmarks:
+            if bg == gen:
+                self._flash(f"Gen {gen} already bookmarked")
+                return
+        self.bookmarks.append((gen, self.grid.to_dict(), len(self.pop_history)))
+        self.bookmarks.sort(key=lambda x: x[0])
+        self._flash(f"★ Bookmarked Gen {gen}  ({len(self.bookmarks)} total)")
+
+    def _jump_to_bookmark(self, idx: int):
+        """Jump to a bookmarked state."""
+        if idx < 0 or idx >= len(self.bookmarks):
+            return
+        gen, grid_dict, pop_len = self.bookmarks[idx]
+        self.grid.load_dict(grid_dict)
+        self.pop_history = self.pop_history[:pop_len]
+        self.timeline_pos = None  # bookmarks jump to an independent snapshot
+        self._reset_cycle_detection()
+        self._flash(f"★ Jumped to bookmark Gen {gen}")
 
     def _reset_cycle_detection(self):
         """Reset cycle detection state (call when grid is modified externally)."""
@@ -569,7 +645,10 @@ class App:
             self._draw()
             key = self.stdscr.getch()
 
-            if self.compare_rule_menu:
+            if self.bookmark_menu:
+                if self._handle_bookmark_menu_key(key):
+                    continue
+            elif self.compare_rule_menu:
                 if self._handle_compare_rule_menu_key(key):
                     continue
             elif self.rule_menu:
@@ -627,6 +706,24 @@ class App:
         if key == ord("u"):
             self.running = False
             self._rewind()
+            return True
+        if key == ord("["):
+            self.running = False
+            self._scrub_back(10)
+            return True
+        if key == ord("]"):
+            self.running = False
+            self._scrub_forward(10)
+            return True
+        if key == ord("b"):
+            self._add_bookmark()
+            return True
+        if key == ord("B"):
+            if self.bookmarks:
+                self.bookmark_menu = True
+                self.bookmark_sel = 0
+            else:
+                self._flash("No bookmarks yet (press b to bookmark)")
             return True
         if key == ord("+") or key == ord("="):
             if self.speed_idx < len(SPEEDS) - 1:
@@ -739,6 +836,34 @@ class App:
         elif self.draw_mode == "erase":
             self.grid.set_dead(self.cursor_r, self.cursor_c)
             self._reset_cycle_detection()
+
+    def _handle_bookmark_menu_key(self, key: int) -> bool:
+        if key == -1:
+            return True
+        if key == 27 or key == ord("q"):  # ESC or q
+            self.bookmark_menu = False
+            return True
+        if key in (curses.KEY_UP, ord("k")):
+            self.bookmark_sel = (self.bookmark_sel - 1) % len(self.bookmarks)
+            return True
+        if key in (curses.KEY_DOWN, ord("j")):
+            self.bookmark_sel = (self.bookmark_sel + 1) % len(self.bookmarks)
+            return True
+        if key in (10, 13, curses.KEY_ENTER):  # Enter — jump to bookmark
+            self.running = False
+            self._jump_to_bookmark(self.bookmark_sel)
+            self.bookmark_menu = False
+            return True
+        if key == ord("D") or key == curses.KEY_DC:  # D or Delete — remove bookmark
+            if self.bookmarks:
+                removed = self.bookmarks.pop(self.bookmark_sel)
+                self._flash(f"Removed bookmark Gen {removed[0]}")
+                if not self.bookmarks:
+                    self.bookmark_menu = False
+                else:
+                    self.bookmark_sel = min(self.bookmark_sel, len(self.bookmarks) - 1)
+            return True
+        return True
 
     def _handle_menu_key(self, key: int) -> bool:
         if key == -1:
@@ -1110,6 +1235,11 @@ class App:
         self.stdscr.erase()
         max_y, max_x = self.stdscr.getmaxyx()
 
+        if self.bookmark_menu:
+            self._draw_bookmark_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
         if self.show_help:
             self._draw_help(max_y, max_x)
             self.stdscr.refresh()
@@ -1137,7 +1267,7 @@ class App:
 
         # Compute viewport
         # Each cell takes 2 columns on screen
-        vis_rows = max_y - 4  # leave room for status bar + sparkline
+        vis_rows = max_y - 5  # leave room for timeline + sparkline + status + hint
         vis_cols = (max_x - 1) // 2
 
         # Centre viewport on cursor
@@ -1168,6 +1298,54 @@ class App:
                             self.stdscr.addstr(py, px, "▒▒", curses.color_pair(6) | curses.A_DIM)
                         except curses.error:
                             pass
+
+        # Timeline bar
+        timeline_y = max_y - 4
+        if timeline_y > 0 and len(self.history) > 0:
+            bar_label = " Timeline: "
+            bookmark_info = f"  ★{len(self.bookmarks)}" if self.bookmarks else ""
+            hist_len = len(self.history)
+            # Determine current position in history
+            if self.timeline_pos is not None:
+                cur_pos = self.timeline_pos + 1  # 1-based
+                pos_label = f" Gen {self.grid.generation} ({cur_pos}/{hist_len}){bookmark_info} "
+            else:
+                pos_label = f" LIVE Gen {self.grid.generation} ({hist_len} saved){bookmark_info} "
+            bar_width = max_x - len(bar_label) - len(pos_label) - 1
+            if bar_width > 2:
+                if self.timeline_pos is not None:
+                    # Show position within the history buffer
+                    filled = max(1, int((self.timeline_pos + 1) / hist_len * bar_width))
+                    empty = bar_width - filled
+                    # Mark bookmark positions on the bar
+                    bar_chars = list("█" * filled + "░" * empty)
+                    for bg, _, _ in self.bookmarks:
+                        # Find the approximate bar position for this bookmark
+                        for hi, (hd, _) in enumerate(self.history):
+                            if hd.get("generation") == bg:
+                                bi = int(hi / hist_len * bar_width)
+                                bi = min(bi, len(bar_chars) - 1)
+                                bar_chars[bi] = "★"
+                                break
+                    bar_str = "".join(bar_chars)
+                else:
+                    # At live position — full bar
+                    bar_chars = list("█" * bar_width)
+                    for bg, _, _ in self.bookmarks:
+                        for hi, (hd, _) in enumerate(self.history):
+                            if hd.get("generation") == bg:
+                                bi = int(hi / hist_len * bar_width)
+                                bi = min(bi, len(bar_chars) - 1)
+                                bar_chars[bi] = "★"
+                                break
+                    bar_str = "".join(bar_chars)
+                try:
+                    self.stdscr.addstr(timeline_y, 0, bar_label, curses.color_pair(6) | curses.A_DIM)
+                    self.stdscr.addstr(timeline_y, len(bar_label), bar_str, curses.color_pair(7))
+                    self.stdscr.addstr(timeline_y, len(bar_label) + len(bar_str), pos_label,
+                                       curses.color_pair(6) | curses.A_DIM)
+                except curses.error:
+                    pass
 
         # Population sparkline
         spark_y = max_y - 3
@@ -1213,7 +1391,7 @@ class App:
             if self.message and now - self.message_time < 3.0:
                 hint = f" {self.message}"
             else:
-                hint = " [Space]=play/pause [n]=step [u]=rewind [p]=patterns [t]=stamp [i]=import [e]=edit [d]=draw [x]=erase [R]=rules [V]=compare [s]=save [o]=load [+/-]=speed [r]=random [c]=clear [?]=help [q]=quit"
+                hint = " [Space]=play [n]=step [u]=rewind [/]=scrub10 [b]=bookmark [B]=bookmarks [p]=patterns [t]=stamp [e]=edit [d]=draw [R]=rules [V]=compare [s]=save [o]=load [+/-]=speed [?]=help [q]=quit"
             hint = hint[:max_x - 1]
             try:
                 self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -1340,35 +1518,61 @@ class App:
             except curses.error:
                 pass
 
+    def _draw_bookmark_menu(self, max_y: int, max_x: int):
+        title = "── Bookmarks (Enter=jump, D=delete, q/Esc=close) ──"
+        try:
+            self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
+                               curses.color_pair(7) | curses.A_BOLD)
+        except curses.error:
+            pass
+
+        for i, (gen, grid_dict, pop_len) in enumerate(self.bookmarks):
+            y = 3 + i
+            if y >= max_y - 1:
+                break
+            pop = len(grid_dict.get("cells", []))
+            line = f"  ★ Gen {gen:<8d}  Pop: {pop}"
+            line = line[:max_x - 2]
+            attr = curses.color_pair(6)
+            if i == self.bookmark_sel:
+                attr = curses.color_pair(7) | curses.A_REVERSE
+            try:
+                self.stdscr.addstr(y, 2, line, attr)
+            except curses.error:
+                pass
+
     def _draw_help(self, max_y: int, max_x: int):
         help_lines = [
-            "╔══════════════════════════════════════════╗",
-            "║       Game of Life — Help                ║",
-            "╠══════════════════════════════════════════╣",
-            "║                                          ║",
-            "║  Space     Play / Pause auto-advance     ║",
-            "║  n / .     Step one generation            ║",
-            "║  u         Rewind one generation          ║",
-            "║  + / -     Increase / decrease speed      ║",
-            "║  Arrows    Move cursor (also vim hjkl)    ║",
-            "║  e         Toggle cell under cursor       ║",
-            "║  d         Draw mode (paint while moving) ║",
-            "║  x         Erase mode (erase while moving)║",
-            "║  Esc       Exit draw/erase mode           ║",
-            "║  p         Open pattern selector          ║",
-            "║  t         Stamp pattern at cursor        ║",
-            "║  R         Rule editor (B../S.. presets)  ║",
-            "║  V         Compare two rules side-by-side  ║",
-            "║  i         Import RLE pattern file         ║",
-            "║  r         Fill grid randomly             ║",
-            "║  s         Save grid state to file        ║",
-            "║  o         Open/load a saved state        ║",
-            "║  c         Clear grid                     ║",
-            "║  q         Quit                           ║",
-            "║  ? / h     Show this help                 ║",
-            "║                                          ║",
-            "║  Press any key to close help              ║",
-            "╚══════════════════════════════════════════╝",
+            "╔══════════════════════════════════════════════╗",
+            "║         Game of Life — Help                  ║",
+            "╠══════════════════════════════════════════════╣",
+            "║                                              ║",
+            "║  Space     Play / Pause auto-advance         ║",
+            "║  n / .     Step one generation                ║",
+            "║  u         Rewind one generation              ║",
+            "║  [ / ]     Scrub timeline back/forward 10     ║",
+            "║  b         Bookmark current generation        ║",
+            "║  B         List/jump to bookmarks             ║",
+            "║  + / -     Increase / decrease speed          ║",
+            "║  Arrows    Move cursor (also vim hjkl)        ║",
+            "║  e         Toggle cell under cursor           ║",
+            "║  d         Draw mode (paint while moving)     ║",
+            "║  x         Erase mode (erase while moving)    ║",
+            "║  Esc       Exit draw/erase mode               ║",
+            "║  p         Open pattern selector              ║",
+            "║  t         Stamp pattern at cursor            ║",
+            "║  R         Rule editor (B../S.. presets)      ║",
+            "║  V         Compare two rules side-by-side     ║",
+            "║  i         Import RLE pattern file            ║",
+            "║  r         Fill grid randomly                 ║",
+            "║  s         Save grid state to file            ║",
+            "║  o         Open/load a saved state            ║",
+            "║  c         Clear grid                         ║",
+            "║  q         Quit                               ║",
+            "║  ? / h     Show this help                     ║",
+            "║                                              ║",
+            "║  Press any key to close help                  ║",
+            "╚══════════════════════════════════════════════╝",
         ]
         start_y = max(0, (max_y - len(help_lines)) // 2)
         for i, line in enumerate(help_lines):
