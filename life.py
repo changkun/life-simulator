@@ -13,6 +13,50 @@ import time
 
 SAVE_DIR = os.path.expanduser("~/.life_saves")
 
+# ── Rule presets (Life-like cellular automata) ───────────────────────────────
+
+RULE_PRESETS = {
+    "Conway's Life": {"birth": {3}, "survival": {2, 3}},
+    "HighLife":      {"birth": {3, 6}, "survival": {2, 3}},
+    "Day & Night":   {"birth": {3, 6, 7, 8}, "survival": {3, 4, 6, 7, 8}},
+    "Seeds":         {"birth": {2}, "survival": set()},
+    "Life w/o Death":{"birth": {3}, "survival": {0, 1, 2, 3, 4, 5, 6, 7, 8}},
+    "Diamoeba":      {"birth": {3, 5, 6, 7, 8}, "survival": {5, 6, 7, 8}},
+    "2x2":           {"birth": {3, 6}, "survival": {1, 2, 5}},
+    "Morley":        {"birth": {3, 6, 8}, "survival": {2, 4, 5}},
+    "Anneal":        {"birth": {4, 6, 7, 8}, "survival": {3, 5, 6, 7, 8}},
+}
+
+
+def rule_string(birth: set, survival: set) -> str:
+    """Format birth/survival sets as a rule string like 'B3/S23'."""
+    b = "".join(str(n) for n in sorted(birth))
+    s = "".join(str(n) for n in sorted(survival))
+    return f"B{b}/S{s}"
+
+
+def parse_rule_string(rs: str) -> tuple[set, set] | None:
+    """Parse a rule string like 'B3/S23' into (birth, survival) sets.
+    Returns None on invalid input."""
+    rs = rs.strip().upper()
+    if "/" not in rs:
+        return None
+    parts = rs.split("/", 1)
+    if len(parts) != 2:
+        return None
+    b_part, s_part = parts
+    if not b_part.startswith("B") or not s_part.startswith("S"):
+        return None
+    try:
+        birth = {int(ch) for ch in b_part[1:]} if len(b_part) > 1 else set()
+        survival = {int(ch) for ch in s_part[1:]} if len(s_part) > 1 else set()
+    except ValueError:
+        return None
+    if not all(0 <= n <= 8 for n in birth | survival):
+        return None
+    return birth, survival
+
+
 # ── Preset patterns ──────────────────────────────────────────────────────────
 
 PATTERNS = {
@@ -156,6 +200,9 @@ class Grid:
         self.cells = [[0] * cols for _ in range(rows)]
         self.generation = 0
         self.population = 0
+        # Birth/survival rules (default: Conway's B3/S23)
+        self.birth = {3}
+        self.survival = {2, 3}
 
     def set_alive(self, r: int, c: int):
         if 0 <= r < self.rows and 0 <= c < self.cols:
@@ -211,6 +258,7 @@ class Grid:
             "cols": self.cols,
             "generation": self.generation,
             "cells": alive_cells,
+            "rule": rule_string(self.birth, self.survival),
         }
 
     def load_dict(self, data: dict):
@@ -224,6 +272,11 @@ class Grid:
             if 0 <= r < self.rows and 0 <= c < self.cols:
                 self.cells[r][c] = age
                 self.population += 1
+        # Restore rule if present in save data
+        if "rule" in data:
+            parsed = parse_rule_string(data["rule"])
+            if parsed:
+                self.birth, self.survival = parsed
 
     def state_hash(self) -> str:
         """Return a hash of the current alive-cell positions for cycle detection."""
@@ -244,10 +297,10 @@ class Grid:
             for c in range(self.cols):
                 n = self._count_neighbours(r, c)
                 alive = self.cells[r][c] > 0
-                if alive and n in (2, 3):
+                if alive and n in self.survival:
                     new[r][c] = self.cells[r][c] + 1
                     pop += 1
-                elif not alive and n == 3:
+                elif not alive and n in self.birth:
                     new[r][c] = 1
                     pop += 1
         self.cells = new
@@ -304,6 +357,10 @@ class App:
         self.draw_mode: str | None = None
         # History buffer for rewind (stores (grid_dict, population) tuples)
         self.history: collections.deque[tuple[dict, int]] = collections.deque(maxlen=500)
+        # Rule editor state
+        self.rule_menu = False
+        self.rule_preset_list = sorted(RULE_PRESETS.keys())
+        self.rule_sel = 0
 
         if pattern:
             self._place_pattern(pattern)
@@ -395,7 +452,10 @@ class App:
             self._draw()
             key = self.stdscr.getch()
 
-            if self.pattern_menu or self.stamp_menu:
+            if self.rule_menu:
+                if self._handle_rule_menu_key(key):
+                    continue
+            elif self.pattern_menu or self.stamp_menu:
                 if self._handle_menu_key(key):
                     continue
             elif self.show_help:
@@ -471,6 +531,9 @@ class App:
             self._record_pop()
             self._reset_cycle_detection()
             self._flash("Randomised")
+            return True
+        if key == ord("R"):
+            self.rule_menu = True
             return True
         if key == ord("p"):
             self.pattern_menu = True
@@ -571,6 +634,81 @@ class App:
                 self._reset_cycle_detection()
             return True
         return True
+
+    # ── Rule editor ──
+
+    def _handle_rule_menu_key(self, key: int) -> bool:
+        if key == -1:
+            return True
+        if key == 27 or key == ord("q"):  # ESC or q
+            self.rule_menu = False
+            return True
+        if key in (curses.KEY_UP, ord("k")):
+            self.rule_sel = (self.rule_sel - 1) % len(self.rule_preset_list)
+            return True
+        if key in (curses.KEY_DOWN, ord("j")):
+            self.rule_sel = (self.rule_sel + 1) % len(self.rule_preset_list)
+            return True
+        if key in (10, 13, curses.KEY_ENTER):  # Enter — apply preset
+            name = self.rule_preset_list[self.rule_sel]
+            preset = RULE_PRESETS[name]
+            self.grid.birth = set(preset["birth"])
+            self.grid.survival = set(preset["survival"])
+            self.rule_menu = False
+            self._reset_cycle_detection()
+            self._flash(f"Rule: {name} ({rule_string(self.grid.birth, self.grid.survival)})")
+            return True
+        if key == ord("/"):  # Custom rule entry
+            self.rule_menu = False
+            rs = self._prompt_text("Rule (e.g. B3/S23)")
+            if rs:
+                parsed = parse_rule_string(rs)
+                if parsed:
+                    self.grid.birth, self.grid.survival = parsed
+                    self._reset_cycle_detection()
+                    self._flash(f"Rule set: {rule_string(self.grid.birth, self.grid.survival)}")
+                else:
+                    self._flash("Invalid rule string (use format B.../S...)")
+            return True
+        return True
+
+    def _draw_rule_menu(self, max_y: int, max_x: int):
+        title = "── Rule Editor (Enter=apply, /=custom, q/Esc=cancel) ──"
+        try:
+            self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
+                               curses.color_pair(7) | curses.A_BOLD)
+        except curses.error:
+            pass
+        current = rule_string(self.grid.birth, self.grid.survival)
+        current_line = f"Current rule: {current}"
+        try:
+            self.stdscr.addstr(3, max(0, (max_x - len(current_line)) // 2), current_line,
+                               curses.color_pair(6))
+        except curses.error:
+            pass
+        for i, name in enumerate(self.rule_preset_list):
+            y = 5 + i
+            if y >= max_y - 1:
+                break
+            preset = RULE_PRESETS[name]
+            rs = rule_string(preset["birth"], preset["survival"])
+            line = f"  {name:<20s} {rs}"
+            line = line[:max_x - 2]
+            attr = curses.color_pair(6)
+            if i == self.rule_sel:
+                attr = curses.color_pair(7) | curses.A_REVERSE
+            try:
+                self.stdscr.addstr(y, 2, line, attr)
+            except curses.error:
+                pass
+        tip_y = 5 + len(self.rule_preset_list) + 1
+        if tip_y < max_y - 1:
+            tip = "Press / to type a custom rule string (e.g. B36/S23)"
+            try:
+                self.stdscr.addstr(tip_y, max(0, (max_x - len(tip)) // 2), tip,
+                                   curses.color_pair(6) | curses.A_DIM)
+            except curses.error:
+                pass
 
     # ── Save / Load ──
 
@@ -695,6 +833,11 @@ class App:
             self.stdscr.refresh()
             return
 
+        if self.rule_menu:
+            self._draw_rule_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
         if self.pattern_menu or self.stamp_menu:
             self._draw_pattern_menu(max_y, max_x)
             self.stdscr.refresh()
@@ -757,10 +900,12 @@ class App:
                 mode = "  │  ✏ DRAW"
             elif self.draw_mode == "erase":
                 mode = "  │  ✘ ERASE"
+            rs = rule_string(self.grid.birth, self.grid.survival)
             status = (
                 f" Gen: {self.grid.generation}  │  "
                 f"Pop: {self.grid.population}  │  "
                 f"{state}  │  Speed: {speed}  │  "
+                f"Rule: {rs}  │  "
                 f"Cursor: ({self.cursor_r},{self.cursor_c}){mode}"
             )
             status = status[:max_x - 1]
@@ -776,7 +921,7 @@ class App:
             if self.message and now - self.message_time < 3.0:
                 hint = f" {self.message}"
             else:
-                hint = " [Space]=play/pause [n]=step [u]=rewind [p]=patterns [t]=stamp [e]=edit [d]=draw [x]=erase [s]=save [o]=load [+/-]=speed [r]=random [c]=clear [?]=help [q]=quit"
+                hint = " [Space]=play/pause [n]=step [u]=rewind [p]=patterns [t]=stamp [e]=edit [d]=draw [x]=erase [R]=rules [s]=save [o]=load [+/-]=speed [r]=random [c]=clear [?]=help [q]=quit"
             hint = hint[:max_x - 1]
             try:
                 self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -788,7 +933,7 @@ class App:
     def _draw_help(self, max_y: int, max_x: int):
         help_lines = [
             "╔══════════════════════════════════════════╗",
-            "║     Conway's Game of Life — Help         ║",
+            "║       Game of Life — Help                ║",
             "╠══════════════════════════════════════════╣",
             "║                                          ║",
             "║  Space     Play / Pause auto-advance     ║",
@@ -802,12 +947,13 @@ class App:
             "║  Esc       Exit draw/erase mode           ║",
             "║  p         Open pattern selector          ║",
             "║  t         Stamp pattern at cursor        ║",
-            "║  r         Fill grid randomly              ║",
-            "║  s         Save grid state to file            ║",
-            "║  o         Open/load a saved state           ║",
-            "║  c         Clear grid                      ║",
-            "║  q         Quit                            ║",
-            "║  ? / h     Show this help                  ║",
+            "║  R         Rule editor (B../S.. presets)  ║",
+            "║  r         Fill grid randomly             ║",
+            "║  s         Save grid state to file        ║",
+            "║  o         Open/load a saved state        ║",
+            "║  c         Clear grid                     ║",
+            "║  q         Quit                           ║",
+            "║  ? / h     Show this help                 ║",
             "║                                          ║",
             "║  Press any key to close help              ║",
             "╚══════════════════════════════════════════╝",
