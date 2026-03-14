@@ -2,6 +2,7 @@
 """Terminal-based Conway's Game of Life simulator."""
 
 import argparse
+import collections
 import copy
 import curses
 import hashlib
@@ -300,6 +301,8 @@ class App:
         self.cycle_detected = False
         # Draw mode: None, "draw" (paint alive), or "erase" (paint dead)
         self.draw_mode: str | None = None
+        # History buffer for rewind (stores (grid_dict, population) tuples)
+        self.history: collections.deque[tuple[dict, int]] = collections.deque(maxlen=500)
 
         if pattern:
             self._place_pattern(pattern)
@@ -326,6 +329,22 @@ class App:
 
     def _record_pop(self):
         self.pop_history.append(self.grid.population)
+
+    def _push_history(self):
+        """Save the current grid state to the history buffer before advancing."""
+        self.history.append((self.grid.to_dict(), len(self.pop_history)))
+
+    def _rewind(self):
+        """Restore the most recent state from the history buffer."""
+        if not self.history:
+            self._flash("No history to rewind")
+            return
+        grid_dict, pop_len = self.history.pop()
+        self.grid.load_dict(grid_dict)
+        # Trim population history back to match the restored state
+        self.pop_history = self.pop_history[:pop_len]
+        self._reset_cycle_detection()
+        self._flash(f"Rewind → Gen {self.grid.generation}")
 
     def _reset_cycle_detection(self):
         """Reset cycle detection state (call when grid is modified externally)."""
@@ -376,6 +395,7 @@ class App:
             if self.running:
                 delay = SPEEDS[self.speed_idx]
                 time.sleep(delay)
+                self._push_history()
                 self.grid.step()
                 self._record_pop()
                 self._check_cycle()
@@ -398,9 +418,14 @@ class App:
             return True
         if key == ord("n") or key == ord("."):
             self.running = False
+            self._push_history()
             self.grid.step()
             self._record_pop()
             self._check_cycle()
+            return True
+        if key == ord("u"):
+            self.running = False
+            self._rewind()
             return True
         if key == ord("+") or key == ord("="):
             if self.speed_idx < len(SPEEDS) - 1:
@@ -727,7 +752,7 @@ class App:
             if self.message and now - self.message_time < 3.0:
                 hint = f" {self.message}"
             else:
-                hint = " [Space]=play/pause [n]=step [p]=patterns [e]=edit [d]=draw [x]=erase [s]=save [o]=load [+/-]=speed [r]=random [c]=clear [?]=help [q]=quit"
+                hint = " [Space]=play/pause [n]=step [u]=rewind [p]=patterns [e]=edit [d]=draw [x]=erase [s]=save [o]=load [+/-]=speed [r]=random [c]=clear [?]=help [q]=quit"
             hint = hint[:max_x - 1]
             try:
                 self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -744,6 +769,7 @@ class App:
             "║                                          ║",
             "║  Space     Play / Pause auto-advance     ║",
             "║  n / .     Step one generation            ║",
+            "║  u         Rewind one generation          ║",
             "║  + / -     Increase / decrease speed      ║",
             "║  Arrows    Move cursor (also vim hjkl)    ║",
             "║  e         Toggle cell under cursor       ║",
