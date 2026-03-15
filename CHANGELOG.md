@@ -4,6 +4,56 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Layer Compositing System — stack 2-4 independent simulations as transparent layers with blend modes
+
+A horizontal meta-feature that adds **depth** to the simulation ecosystem. Where Portal connects
+two sims spatially at a seam and Mashup couples two sims on one grid globally, Compositing lets
+simulations run independently on separate layers and merges them visually via blend operations —
+like Photoshop layers, but live. A Reaction-Diffusion texture masked by Game of Life creates
+organic breathing shapes; a Wave Equation added to Boids produces shimmering flocks.
+
+**New file:** `life/modes/layer_compositing.py` (~757 lines)
+
+**Blend modes:**
+
+| Mode | Function | Description |
+|------|----------|-------------|
+| Add | `min(1, a + b)` | Sum intensities — bright overlaps |
+| XOR | `abs(a - b)` | High where exactly one layer is active |
+| Mask | `a if b > 0.15 else 0` | Lower layers visible only where top layer is active |
+| Multiply | `a * b` | Darken — both layers must be active |
+| Screen | `1 - (1-a)(1-b)` | Lighten — inverse multiply |
+
+**7 presets** (2-, 3-, and 4-layer configurations):
+- *Breathing Shapes* — Reaction-Diffusion masked by GoL
+- *Shimmering Flock* — Wave + Boids
+- *Crystal Lightning* — R-D XOR Fire
+- *Spin Waves* — Ising × Wave
+- *Slime Circuit* — RPS screened with Physarum
+- *Triple Cascade* — GoL + Wave + Fire (3 layers)
+- *Quad Stack* — GoL + Wave + Boids + Physarum (4 layers)
+
+**Per-layer controls:** opacity (0–1), tick rate multiplier (×1–×8), blend mode cycling.
+Custom layer builder lets users pick 2–4 simulations and blend modes interactively.
+
+**Key distinction from Mashup:** zero simulation coupling — layers run independently and are
+composited purely visually. This produces emergent visual patterns without altering simulation
+dynamics.
+
+**Controls:** `Space` play/pause, `n` step, `Tab` cycle focused layer, `+/-` opacity,
+`t/T` tick rate, `b` blend mode, `r` reset, `R` menu, `</>` speed.
+
+**Integration points:**
+- `life/app.py` — 13 state variables; draw dispatch and key dispatch for menu + simulation
+- `life/modes/__init__.py` — registration
+- `life/registry.py` — mode entry (Ctrl+K, "Meta Modes" category)
+
+**Design decisions:**
+- Re-uses mini-simulation engines from Mashup mode (`_ENGINES`, `MASHUP_SIMS`) — no code duplication
+- Each layer steps at its own tick rate via generation-modulo gating
+- Compositing renders per-cell with dominant-layer coloring for visual clarity
+- Menu system supports both preset selection and interactive custom layer building (up to 4 layers)
+
 ### Added: Visual Post-Processing Pipeline — composable ASCII visual effects that layer on top of ANY simulation mode
 
 A horizontal meta-feature that adds 6 stackable terminal-space effects applied *after* any mode

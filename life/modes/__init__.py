@@ -212,6 +212,8 @@ def register_all_modes(App):
     reg_topology(App)
     from life.modes.post_processing import register as reg_pp
     reg_pp(App)
+    from life.modes.layer_compositing import register as reg_comp
+    reg_comp(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

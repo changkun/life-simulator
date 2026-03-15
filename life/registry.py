@@ -248,6 +248,9 @@ MODE_REGISTRY = [
     # ── Simulation Observatory ──
     {"name": "Simulation Observatory", "key": "Ctrl+O", "category": "Meta Modes",
      "desc": "Tiled split-screen running 4-9 simulations simultaneously with synced controls", "attr": "obs_mode", "enter": "_enter_observatory_mode", "exit": "_exit_observatory_mode"},
+    # ── Layer Compositing ──
+    {"name": "Layer Compositing", "key": "Ctrl+K", "category": "Meta Modes",
+     "desc": "Stack 2-4 simulations as transparent layers with blend modes (add, XOR, mask, multiply)", "attr": "comp_mode", "enter": "_enter_comp_mode", "exit": "_exit_comp_mode"},
     # ── Cinematic Demo Reel ──
     {"name": "Cinematic Demo Reel", "key": "Ctrl+Shift+D", "category": "Meta Modes",
      "desc": "Auto-playing director with crossfade transitions, camera moves & parameter sweeps", "attr": "cinem_mode", "enter": "_enter_cinematic_demo_mode", "exit": "_exit_cinematic_demo_mode"},

@@ -308,6 +308,19 @@ class App:
         self.mashup_cols = 0
         self.mashup_density_a: list[list[float]] = []
         self.mashup_density_b: list[list[float]] = []
+        # Layer compositing mode state
+        self.comp_mode = False
+        self.comp_menu = False
+        self.comp_menu_sel = 0
+        self.comp_menu_phase = 0
+        self.comp_custom_layers: list = []
+        self.comp_pick_sim = ""
+        self.comp_running = False
+        self.comp_generation = 0
+        self.comp_layers: list = []
+        self.comp_rows = 0
+        self.comp_cols = 0
+        self.comp_focus = 0
         # Visual post-processing pipeline state
         self.pp_active: set[str] = set()       # active effect IDs
         self.pp_menu = False                   # effect toggle menu visible
@@ -3064,6 +3077,17 @@ class App:
                         self._portal_step()
                     continue
 
+            if self.comp_menu:
+                if self._handle_comp_menu_key(key):
+                    continue
+            elif self.comp_mode:
+                if self._handle_comp_key(key):
+                    if self.comp_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        self._comp_step()
+                    continue
+
             if self.mashup_menu:
                 if self._handle_mashup_menu_key(key):
                     continue
@@ -5353,6 +5377,16 @@ class App:
 
         if self.portal_mode:
             self._draw_portal(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.comp_menu:
+            self._draw_comp_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.comp_mode:
+            self._draw_comp(max_y, max_x)
             self.stdscr.refresh()
             return
 
