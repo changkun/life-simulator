@@ -342,6 +342,21 @@ class App:
         self.achem_grid = []
         self.achem_energy = []
         self.achem_mol_history = []
+        # ── Immune System mode state ──
+        self.immune_mode = False
+        self.immune_menu = False
+        self.immune_menu_sel = 0
+        self.immune_running = False
+        self.immune_generation = 0
+        self.immune_rows = 0
+        self.immune_cols = 0
+        self.immune_steps_per_frame = 1
+        self.immune_grid = []
+        self.immune_cytokine = []
+        self.immune_antigen_map = []
+        self.immune_receptor_map = []
+        self.immune_age = []
+        self.immune_preset_idx = 0
         # ── Morphogenesis mode state ──
         self.morpho_mode = False
         self.morpho_menu = False
@@ -3556,6 +3571,18 @@ class App:
                             self._achem_step()
                     continue
 
+            if self.immune_menu:
+                if self._handle_immune_menu_key(key):
+                    continue
+            elif self.immune_mode:
+                if self._handle_immune_key(key):
+                    if self.immune_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        for _ in range(self.immune_steps_per_frame):
+                            self._immune_step()
+                    continue
+
             if self.hyp_menu:
                 if self._handle_hyp_menu_key(key):
                     continue
@@ -5954,6 +5981,16 @@ class App:
 
         if self.achem_mode:
             self._draw_achem(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.immune_menu:
+            self._draw_immune_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.immune_mode:
+            self._draw_immune(max_y, max_x)
             self.stdscr.refresh()
             return
 

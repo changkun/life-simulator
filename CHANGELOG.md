@@ -4,6 +4,51 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Immune System Simulation — Adaptive Immune Response with Pathogen Arms Race
+
+Simulates a 2D spatial immune response: pathogens (bacteria/viruses) invade and replicate
+while innate responders (macrophages, neutrophils) rush to infection sites via chemotaxis
+on a diffusing cytokine gradient. Adaptive immune cells (T-cells, B-cells) recognize
+pathogen antigen shapes using 6-bit Hamming-distance matching, proliferate via clonal
+expansion on match, and form long-lived memory cells for faster secondary responses.
+Pathogens mutate their antigens over time via bit-flips, driving an evolutionary arms race.
+This completes a biological trifecta alongside the Morphogenesis and Artificial Chemistry
+modes — the emergent coordination of immune cells from simple local rules is a natural fit
+for a project exploring complexity from simplicity.
+
+**New file:** `life/modes/immune_system.py` (~1040 lines)
+
+**Core mechanics:**
+
+| Concept | Implementation |
+|---------|---------------|
+| Entity types | 12 types: empty, tissue, infected tissue, bacteria, virus, macrophage, neutrophil, T-cell, B-cell, memory cell, antibody, debris |
+| Cytokine gradient | Diffuses from infection sites across the grid — guides immune cell chemotaxis toward pathogens |
+| Antigen/receptor matching | 6-bit antigen shapes with Hamming-distance similarity scoring — immune cells activate on high match |
+| Innate immunity | Macrophages (long-lived phagocytes) and neutrophils (fast, short-lived killers) follow cytokine gradients |
+| Adaptive immunity | T-cells kill on antigen match + clonal expansion; B-cells produce free antibodies + clonal expansion |
+| Memory cells | Formed from activated T/B cells — reactivate rapidly on secondary exposure for faster clearance |
+| Pathogen mutation | Antigens drift via random bit-flips, evading existing immune recognition — arms race dynamics |
+| Bone marrow reinforcements | Innate cells replenished from edges when infection is detected |
+
+**5 presets:**
+
+| Preset | Description |
+|--------|-------------|
+| Bacterial Invasion | Bacteria flood in and replicate — innate immunity scrambles to contain |
+| Viral Outbreak | Viruses infect tissue cells, hijack replication — adaptive response critical |
+| Vaccination | Pre-seeded memory cells — watch the rapid secondary immune response |
+| Autoimmune | Immune cells mistakenly attack healthy tissue — friendly fire |
+| Cytokine Storm | Runaway positive feedback — immune overreaction causes collateral tissue damage |
+
+**3 view modes:** cells (color-coded by entity type), cytokine heatmap (gradient intensity), antigen map (pathogen diversity).
+
+**Controls:** `Space` play/pause, `n` step, `v` cycle views, `p` inject pathogens,
+`i` immune boost, `u` force pathogen mutation, `+`/`-` speed, `r` reset, `R` preset menu,
+`q` quit. Accessible via `Ctrl+Shift+I` from the main menu under "Chemical & Biological."
+
+---
+
 ### Added: Artificial Chemistry — Spontaneous Emergence of Self-Replicating Molecules
 
 Simulates a primordial soup of abstract molecules that drift, collide, and react via

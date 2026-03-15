@@ -236,6 +236,8 @@ def register_all_modes(App):
     reg_morpho(App)
     from life.modes.artificial_chemistry import register as reg_achem
     reg_achem(App)
+    from life.modes.immune_system import register as reg_immune
+    reg_immune(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

@@ -293,4 +293,7 @@ MODE_REGISTRY = [
     # ── Artificial Chemistry ──
     {"name": "Artificial Chemistry", "key": "Ctrl+Shift+C", "category": "Chemical & Biological",
      "desc": "Primordial soup of abstract molecules — spontaneous polymerization, autocatalytic cycles & self-replicator emergence", "attr": "achem_mode", "enter": "_enter_achem_mode", "exit": "_exit_achem_mode"},
+    # ── Immune System ──
+    {"name": "Immune System Simulation", "key": "Ctrl+Shift+I", "category": "Chemical & Biological",
+     "desc": "Adaptive immune response — pathogens invade, innate & adaptive cells coordinate, memory forms, antigens mutate", "attr": "immune_mode", "enter": "_enter_immune_mode", "exit": "_exit_immune_mode"},
 ]
