@@ -142,6 +142,8 @@ def register_all_modes(App):
     reg_sandpile(App)
     from life.modes.schelling import register as reg_schelling
     reg_schelling(App)
+    from life.modes.screensaver import register as reg_screensaver
+    reg_screensaver(App)
     from life.modes.shader_toy import register as reg_shadertoy
     reg_shadertoy(App)
     from life.modes.sir_epidemic import register as reg_sir

@@ -1934,6 +1934,25 @@ class App:
         self.collider_collision_points: list = []  # interaction points on ring
         self.collider_detector_log: list = []      # scrolling event log
 
+        # ── Screensaver / Demo Reel state ──
+        self.screensaver_mode: bool = False
+        self.screensaver_menu: bool = False
+        self.screensaver_menu_sel: int = 0
+        self.screensaver_running: bool = False
+        self.screensaver_generation: int = 0
+        self.screensaver_time: float = 0.0
+        self.screensaver_preset_name: str = ""
+        self.screensaver_interval: int = 15  # seconds per mode
+        self.screensaver_playlist: list = []
+        self.screensaver_playlist_idx: int = 0
+        self.screensaver_active_mode = None
+        self.screensaver_mode_start_time: float = 0.0
+        self.screensaver_transition_phase: float = 0.0
+        self.screensaver_transition_buf: list = []
+        self.screensaver_overlay_alpha: float = 0.0
+        self.screensaver_paused: bool = False
+        self.screensaver_show_overlay: bool = True
+
         # ── Minimap overlay state ──
         self.show_minimap = False  # toggled with Tab key
 
@@ -2702,6 +2721,11 @@ class App:
 
         while True:
             self._draw()
+            # ── Screensaver overlay (drawn after sub-mode content) ──
+            if self.screensaver_mode and self.screensaver_running and not self.screensaver_menu:
+                _my, _mx = self.stdscr.getmaxyx()
+                self._draw_screensaver(_my, _mx)
+                self.stdscr.refresh()
             # ── Minimap overlay (drawn after mode-specific content, before next input) ──
             if self.show_minimap and not self._any_menu_open():
                 _my, _mx = self.stdscr.getmaxyx()
@@ -2751,6 +2775,14 @@ class App:
                 if key == ord("q"):
                     self._mp_exit()
                 continue
+
+            if self.screensaver_menu:
+                if self._handle_screensaver_menu_key(key):
+                    continue
+            elif self.screensaver_mode and self.screensaver_running:
+                if self._handle_screensaver_key(key):
+                    self._screensaver_step()
+                    continue
 
             if self.dashboard:
                 if self._handle_dashboard_key(key):
@@ -4941,6 +4973,11 @@ class App:
         self.stdscr.erase()
         max_y, max_x = self.stdscr.getmaxyx()
 
+        if self.screensaver_menu:
+            self._draw_screensaver_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
         if self.dashboard:
             self._draw_dashboard(max_y, max_x)
             self.stdscr.refresh()
@@ -6476,6 +6513,16 @@ def main():
         help="Skip the dashboard and start directly in Game of Life mode",
     )
     parser.add_argument(
+        "--screensaver", nargs="?", const="all_shuffle", default=None,
+        metavar="PRESET",
+        help="Launch screensaver/demo reel mode (presets: all_sequential, all_shuffle, fav_sequential, fav_shuffle)",
+    )
+    parser.add_argument(
+        "--screensaver-interval", type=int, default=15,
+        metavar="SECONDS",
+        help="Seconds per mode in screensaver mode (default: 15)",
+    )
+    parser.add_argument(
         "--host", type=int, nargs="?", const=MP_DEFAULT_PORT, default=None,
         metavar="PORT",
         help=f"Host a multiplayer game (default port: {MP_DEFAULT_PORT})",
@@ -6495,8 +6542,12 @@ def main():
 
     def start(stdscr):
         app = App(stdscr, args.pattern, args.rows, args.cols)
+        # Screensaver mode
+        if args.screensaver is not None:
+            app.screensaver_interval = args.screensaver_interval
+            app._screensaver_init(args.screensaver)
         # Show dashboard on startup unless a pattern, multiplayer, or --no-dashboard is specified
-        if args.pattern is None and args.host is None and args.connect is None and not args.no_dashboard:
+        elif args.pattern is None and args.host is None and args.connect is None and not args.no_dashboard:
             app._dashboard_init()
         # Auto-start multiplayer if CLI flags given
         if args.host is not None:

@@ -224,4 +224,7 @@ MODE_REGISTRY = [
     # ── Particle Collider / Hadron Collider ──
     {"name": "Particle Collider / Hadron Collider", "key": "Ctrl+Shift+Z", "category": "Physics & Math",
      "desc": "CERN-inspired particle accelerator ring with collisions, decay showers, energy readouts & particle detection", "attr": "collider_mode", "enter": "_enter_collider_mode", "exit": "_exit_collider_mode"},
+    # ── Screensaver / Demo Reel ──
+    {"name": "Screensaver / Demo Reel", "key": "Ctrl+Shift+C", "category": "Meta Modes",
+     "desc": "Auto-cycling showcase that plays through all modes with smooth transitions", "attr": "screensaver_mode", "enter": "_enter_screensaver_mode", "exit": "_exit_screensaver_mode"},
 ]

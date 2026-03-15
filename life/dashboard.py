@@ -235,6 +235,25 @@ def _preview_static(name, tick, h, w):
                 if 0 <= mc < w:
                     out.append((r, mc, "─", 2))
 
+    elif "screensaver" in name.lower() or "demo reel" in name.lower():
+        # Animated mode-switching preview — cycling symbols
+        symbols = ["◎", "〜", "≈", "◉", "❋", "⚙", "◈", "♫", "⬡", "⚖"]
+        for i in range(min(10, h * w // 4)):
+            phase = (tick + i * 3) % 20
+            r = int((math.sin(t * 0.7 + i * 1.1) * 0.4 + 0.5) * h) % h
+            c = int((math.cos(t * 0.5 + i * 0.9) * 0.4 + 0.5) * w) % w
+            sym = symbols[(tick // 3 + i) % len(symbols)]
+            cp = 1 + (i % 6) + 1
+            if 0 <= r < h and 0 <= c < w:
+                out.append((r, c, sym, cp))
+        # Scrolling bar at bottom
+        bar_r = h - 1
+        bar_pos = int(t * 2) % w
+        for dc in range(min(5, w)):
+            bc = (bar_pos + dc) % w
+            if 0 <= bc < w:
+                out.append((bar_r, bc, "▸", 2))
+
     elif "collider" in name.lower() or "hadron" in name.lower():
         cx, cy = w // 2, h // 2
         radius = min(cx - 1, cy - 1, 8)
@@ -521,6 +540,12 @@ def _handle_dashboard_key(self, key):
     if key == ord("?") and not self.dashboard_search:
         self.dashboard = False
         self.show_help = True
+        return True
+
+    # s = launch screensaver
+    if key == ord("s") and not self.dashboard_search:
+        self.dashboard = False
+        self._enter_screensaver_mode()
         return True
 
     # q = quit
@@ -865,6 +890,7 @@ def _draw_dashboard(self, max_y, max_x):
         "Enter Launch",
         "f Favorite",
         "Tab Favs",
+        "s Screensaver",
         "Ctrl+A Category",
         "? Help",
         "Esc Exit",

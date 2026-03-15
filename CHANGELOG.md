@@ -4,6 +4,45 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Screensaver / Demo Reel mode — auto-cycling showcase of all simulation modes
+
+Turns 91 simulation modes into a single cinematic experience you can launch and walk
+away from. Cycles through modes on a configurable timer with smooth dissolve transitions
+and an overlay showing mode name, category, and playback position.
+
+**New file:** `life/modes/screensaver.py` (~530 lines)
+
+**Features:**
+- 12 presets: All Sequential, All Shuffle, Favorites Sequential/Shuffle, plus 8 category-specific playlists
+- Configurable timer: 5–120 seconds per mode (default 15s), adjustable live with `+`/`-`
+- Fade/dissolve transition between modes using block-character density effect
+- Mode name/category overlay box that auto-fades after 3 seconds (toggle persistent with `i`)
+- Status bar: current mode, playlist position, countdown to next, controls summary
+- Auto-preset selection: automatically picks the first preset for each mode's menu so modes start without manual intervention
+- Reshuffles playlist on loop when using shuffle presets
+- State preservation across mode switches (saves/restores screensaver state around `_exit_current_modes`)
+
+**Controls during playback:**
+
+| Key | Action |
+|-----|--------|
+| `Space` | Pause/resume cycling |
+| `n` / `Right` | Skip to next mode |
+| `p` / `Left` | Go to previous mode |
+| `+`/`-` | Adjust interval (±5s) |
+| `i` | Toggle persistent info overlay |
+| `Esc`/`q` | Exit back to dashboard |
+
+**Integration:**
+- Registry: mode #92, category "Meta Modes", hotkey `Ctrl+Shift+C`
+- Dashboard: `s` hotkey launches screensaver directly; animated preview in mode list
+- CLI: `--screensaver [PRESET]` and `--screensaver-interval SECONDS` flags
+- Key/draw dispatch: screensaver handlers intercept before sub-mode and dashboard handlers; overlay draws after sub-mode content
+
+**Why:** With 91 modes and a polished dashboard for browsing them, the natural next
+piece is an auto-pilot showcase. This turns 45,000+ lines of simulation code into a
+single visual showpiece — perfect for leaving on a terminal as ambient art.
+
 ### Added: TUI Dashboard — landing screen with live preview, categories, and favorites
 
 Replaces the old "drop straight into Game of Life" startup with a polished home screen
