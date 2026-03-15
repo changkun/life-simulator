@@ -330,6 +330,35 @@ class App:
         self.smr_pop_history = []
         self.smr_speed_mult = 1
         self.smr_preset_name = ""
+        # ── Morphogenesis mode state ──
+        self.morpho_mode = False
+        self.morpho_menu = False
+        self.morpho_menu_sel = 0
+        self.morpho_running = False
+        self.morpho_generation = 0
+        self.morpho_rows = 0
+        self.morpho_cols = 0
+        self.morpho_cells: list[list[int]] = []
+        self.morpho_genome_map: list = []
+        self.morpho_morph_A: list[list[float]] = []
+        self.morpho_morph_B: list[list[float]] = []
+        self.morpho_nutrient: list[list[float]] = []
+        self.morpho_age: list[list[int]] = []
+        self.morpho_clock: list[list[float]] = []
+        self.morpho_preset_name: str = ""
+        self.morpho_steps_per_frame: int = 1
+        self.morpho_mA_diff: float = 0.08
+        self.morpho_mB_diff: float = 0.06
+        self.morpho_mA_decay: float = 0.02
+        self.morpho_mB_decay: float = 0.015
+        self.morpho_nutr_rate: float = 0.5
+        self.morpho_symmetry: str = "radial"
+        self.morpho_extras: dict = {}
+        self.morpho_total_cells: int = 0
+        self.morpho_total_divisions: int = 0
+        self.morpho_total_deaths: int = 0
+        self.morpho_max_cells: int = 0
+        self.morpho_view: str = "cells"
         # Neural CA mode state
         self.nca_mode = False
         self.nca_menu = False
@@ -3491,6 +3520,18 @@ class App:
                             self._smr_step()
                     continue
 
+            if self.morpho_menu:
+                if self._handle_morpho_menu_key(key):
+                    continue
+            elif self.morpho_mode:
+                if self._handle_morpho_key(key):
+                    if self.morpho_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        for _ in range(self.morpho_steps_per_frame):
+                            self._morpho_step()
+                    continue
+
             if self.hyp_menu:
                 if self._handle_hyp_menu_key(key):
                     continue
@@ -5869,6 +5910,16 @@ class App:
 
         if self.smr_mode:
             self._draw_smr(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.morpho_menu:
+            self._draw_morpho_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.morpho_mode:
+            self._draw_morpho(max_y, max_x)
             self.stdscr.refresh()
             return
 

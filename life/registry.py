@@ -287,4 +287,7 @@ MODE_REGISTRY = [
     # ── Self-Modifying Rules CA ──
     {"name": "Self-Modifying Rules CA", "key": "Ctrl+Shift+G", "category": "Meta Modes",
      "desc": "Each cell carries its own rule DNA that mutates, spreads & competes — rules from rules", "attr": "smr_mode", "enter": "_enter_smr_mode", "exit": "_exit_smr_mode"},
+    # ── Morphogenesis ──
+    {"name": "Morphogenesis", "key": "Ctrl+Shift+M", "category": "Chemical & Biological",
+     "desc": "Embryonic development from a single cell — division, differentiation, morphogen gradients & body plans", "attr": "morpho_mode", "enter": "_enter_morpho_mode", "exit": "_exit_morpho_mode"},
 ]

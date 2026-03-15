@@ -4,6 +4,54 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Morphogenesis — Embryonic Development from a Single Cell
+
+Simulates biological embryonic development: a single fertilized "egg" cell divides,
+differentiates, and self-organizes into a complex multicellular organism using morphogen
+gradients, gene regulatory networks, and local cell-cell signaling. Each cell carries a
+heritable genome controlling division rules, differentiation responses, morphogen production,
+adhesion, and apoptosis — with mutation on division. This is the first mode to simulate the
+developmental biology process of morphogenesis, turning the project's existing chemical and
+biological themes (reaction-diffusion, chemotaxis, evolution) into a unified developmental
+narrative where structured complexity emerges from ONE cell.
+
+**New file:** `life/modes/morphogenesis.py` (~760 lines)
+
+**Core mechanics:**
+
+| Concept | Implementation |
+|---------|---------------|
+| Cell types | 7 types: stem, ectoderm, mesoderm, endoderm, neural, signaling center, apoptotic — each with distinct ASCII character and color |
+| Genome | Per-cell heritable parameters: division rate, nutrient threshold, morphogen A/B production, differentiation thresholds, adhesion, apoptosis rate, mutation rate |
+| Morphogen gradients | Dual fields (A and B) that diffuse, decay, and are produced by cells — drive differentiation decisions (high A → ecto, high B → endo, both → meso) |
+| Nutrient field | Diffusing resource that cells consume — limits growth, creating natural size constraints |
+| Division | Probability-based with nutrient gating, crowding limits, and growth slowdown at large population — daughter inherits mutated genome |
+| Differentiation | Stem cells differentiate based on local morphogen concentrations crossing genome-encoded thresholds |
+| Apoptosis | Programmed cell death shaped by crowding, nutrient starvation, and spatial sculpting for body boundaries |
+| Organiser centers | Signaling cells placed strategically to establish body axes via high morphogen production |
+
+**8 presets:**
+
+| Preset | Description |
+|--------|-------------|
+| Radial Embryo | Single egg — radial symmetry, layered germ layers |
+| Bilateral Body Plan | Left-right symmetry axis with dorsal organiser |
+| Gastrulation | Invagination — cells fold inward to form gut tube |
+| Neural Tube Formation | Dorsal ectoderm folds to create neural crest |
+| Limb Bud Outgrowth | Outgrowth from a body wall with ZPA signaling |
+| Regeneration | Cut in half at gen 100 — watch it regrow missing tissue |
+| Somitogenesis | Segmented body plan via oscillating morphogen clock |
+| Minimal Egg | Bare-bones: one cell, no organiser, pure emergence |
+
+**4 view modes:** cells (colored by type), morphogen-A heatmap, morphogen-B heatmap, nutrient heatmap.
+
+**Controls:** `Space` play/pause, `n` step, `v` cycle views, `u`/`U` mutation rate,
+`f`/`F` nutrient rate, `+`/`-` speed, `r` reset, `R` preset menu, mouse-click to place
+stem cells, `q` quit. Accessible via `Ctrl+Shift+M` from the main menu under "Chemical &
+Biological."
+
+---
+
 ### Added: Self-Modifying Rules CA — Cells Carry Their Own Evolving Rule DNA
 
 A cellular automaton where rules aren't global — they live *inside* the cells. Each living cell
