@@ -1515,6 +1515,156 @@ SPEED_LABELS = ["0.5×", "1×", "2×", "4×", "10×", "20×", "50×", "100×"]
 
 SPARKLINE_CHARS = "▁▂▃▄▅▆▇█"
 
+# ── Mode Registry (for mode browser) ─────────────────────────────────────────
+
+MODE_CATEGORIES = [
+    "Classic CA",
+    "Particle & Swarm",
+    "Physics & Waves",
+    "Fluid Dynamics",
+    "Chemical & Biological",
+    "Game Theory & Social",
+    "Fractals & Chaos",
+    "Procedural & Computational",
+    "Complex Simulations",
+    "Meta Modes",
+]
+
+MODE_REGISTRY = [
+    # ── Classic CA ──
+    {"name": "Game of Life", "key": "—", "category": "Classic CA",
+     "desc": "Conway's classic cellular automaton", "attr": None, "enter": None, "exit": None},
+    {"name": "Wolfram 1D Automaton", "key": "1", "category": "Classic CA",
+     "desc": "Elementary CA rules 0-255", "attr": "wolfram_mode", "enter": "_enter_wolfram_mode", "exit": "_exit_wolfram_mode"},
+    {"name": "Langton's Ant", "key": "2", "category": "Classic CA",
+     "desc": "Turmite that creates emergent highways", "attr": "ant_mode", "enter": "_enter_ant_mode", "exit": "_exit_ant_mode"},
+    {"name": "Hexagonal Grid", "key": "3", "category": "Classic CA",
+     "desc": "6-neighbor Conway variant on hex grid", "attr": "hex_mode", "enter": "_enter_hex_browser", "exit": "_exit_hex_browser"},
+    {"name": "Wireworld", "key": "4", "category": "Classic CA",
+     "desc": "Circuit simulation with electron heads/tails", "attr": "ww_mode", "enter": "_enter_ww_mode", "exit": "_exit_ww_mode"},
+    {"name": "Cyclic CA", "key": "U", "category": "Classic CA",
+     "desc": "Cyclic cellular automaton with N states", "attr": "cyclic_mode", "enter": "_enter_cyclic_mode", "exit": "_exit_cyclic_mode"},
+    {"name": "Hodgepodge Machine", "key": "~", "category": "Classic CA",
+     "desc": "BZ-like excitable medium automaton", "attr": "hodge_mode", "enter": "_enter_hodge_mode", "exit": "_exit_hodge_mode"},
+    {"name": "Lenia", "key": "7", "category": "Classic CA",
+     "desc": "Continuous cellular automaton with smooth kernels", "attr": "lenia_mode", "enter": "_enter_lenia_mode", "exit": "_exit_lenia_mode"},
+    {"name": "Turmites", "key": "Q", "category": "Classic CA",
+     "desc": "2D Turing machines with colored states", "attr": "turmite_mode", "enter": "_enter_turmite_mode", "exit": "_exit_turmite_mode"},
+    # ── Particle & Swarm ──
+    {"name": "Falling Sand", "key": "5", "category": "Particle & Swarm",
+     "desc": "Particle physics sandbox with sand/water/fire", "attr": "sand_mode", "enter": "_enter_sand_mode", "exit": "_exit_sand_mode"},
+    {"name": "Boids Flocking", "key": "9", "category": "Particle & Swarm",
+     "desc": "Flocking simulation with separation/alignment/cohesion", "attr": "boids_mode", "enter": "_enter_boids_mode", "exit": "_exit_boids_mode"},
+    {"name": "Particle Life", "key": "0", "category": "Particle & Swarm",
+     "desc": "Attraction-based colored particle system", "attr": "plife_mode", "enter": "_enter_plife_mode", "exit": "_exit_plife_mode"},
+    {"name": "Physarum Slime Mold", "key": "8", "category": "Particle & Swarm",
+     "desc": "Agent-based slime mold network formation", "attr": "physarum_mode", "enter": "_enter_physarum_mode", "exit": "_exit_physarum_mode"},
+    {"name": "Ant Colony Optimization", "key": "A", "category": "Particle & Swarm",
+     "desc": "Swarm pathfinding with pheromone trails", "attr": "aco_mode", "enter": "_enter_aco_mode", "exit": "_exit_aco_mode"},
+    {"name": "N-Body Gravity", "key": "Y", "category": "Particle & Swarm",
+     "desc": "Gravitational orbital mechanics simulation", "attr": "nbody_mode", "enter": "_enter_nbody_mode", "exit": "_exit_nbody_mode"},
+    {"name": "Diffusion-Limited Aggregation", "key": "D", "category": "Particle & Swarm",
+     "desc": "Crystal growth via random particle sticking", "attr": "dla_mode", "enter": "_enter_dla_mode", "exit": "_exit_dla_mode"},
+    # ── Physics & Waves ──
+    {"name": "Wave Equation", "key": "!", "category": "Physics & Waves",
+     "desc": "2D wave propagation and interference", "attr": "wave_mode", "enter": "_enter_wave_mode", "exit": "_exit_wave_mode"},
+    {"name": "Ising Model", "key": "#", "category": "Physics & Waves",
+     "desc": "Magnetic spin system with temperature", "attr": "ising_mode", "enter": "_enter_ising_mode", "exit": "_exit_ising_mode"},
+    {"name": "Kuramoto Oscillators", "key": "(", "category": "Physics & Waves",
+     "desc": "Coupled phase oscillator synchronization", "attr": "kuramoto_mode", "enter": "_enter_kuramoto_mode", "exit": "_exit_kuramoto_mode"},
+    {"name": "Quantum Walk", "key": "^", "category": "Physics & Waves",
+     "desc": "Quantum interference on a lattice", "attr": "qwalk_mode", "enter": "_enter_qwalk_mode", "exit": "_exit_qwalk_mode"},
+    {"name": "Lightning", "key": "^", "category": "Physics & Waves",
+     "desc": "Dielectric breakdown lightning bolt patterns", "attr": "lightning_mode", "enter": "_enter_lightning_mode", "exit": "_exit_lightning_mode"},
+    {"name": "Chladni Plate Vibrations", "key": "Ctrl+L", "category": "Physics & Waves",
+     "desc": "Acoustic vibration nodal patterns", "attr": "chladni_mode", "enter": "_enter_chladni_mode", "exit": "_exit_chladni_mode"},
+    {"name": "Magnetic Field Lines", "key": "Ctrl+N", "category": "Physics & Waves",
+     "desc": "Dipole magnetic field visualization", "attr": "magfield_mode", "enter": "_enter_magfield_mode", "exit": "_exit_magfield_mode"},
+    {"name": "FDTD Electromagnetic Waves", "key": "Ctrl+E", "category": "Physics & Waves",
+     "desc": "Finite-difference time-domain EM propagation", "attr": "fdtd_mode", "enter": "_enter_fdtd_mode", "exit": "_exit_fdtd_mode"},
+    {"name": "Double Pendulum", "key": "Ctrl+P", "category": "Physics & Waves",
+     "desc": "Chaotic double pendulum phase traces", "attr": "dpend_mode", "enter": "_enter_dpend_mode", "exit": "_exit_dpend_mode"},
+    {"name": "Cloth Simulation", "key": "'", "category": "Physics & Waves",
+     "desc": "Spring-mass cloth with gravity and wind", "attr": "cloth_mode", "enter": "_enter_cloth_mode", "exit": "_exit_cloth_mode"},
+    # ── Fluid Dynamics ──
+    {"name": "Lattice Boltzmann Fluid", "key": "F", "category": "Fluid Dynamics",
+     "desc": "Fluid flow simulation via lattice Boltzmann method", "attr": "fluid_mode", "enter": "_enter_fluid_mode", "exit": "_exit_fluid_mode"},
+    {"name": "Navier-Stokes", "key": "Ctrl+D", "category": "Fluid Dynamics",
+     "desc": "Incompressible fluid dye advection", "attr": "ns_mode", "enter": "_enter_ns_mode", "exit": "_exit_ns_mode"},
+    {"name": "Rayleigh-Benard Convection", "key": "Ctrl+R", "category": "Fluid Dynamics",
+     "desc": "Thermal convection rolls and plumes", "attr": "rbc_mode", "enter": "_enter_rbc_mode", "exit": "_exit_rbc_mode"},
+    {"name": "SPH Fluid", "key": "Ctrl+A", "category": "Fluid Dynamics",
+     "desc": "Smoothed particle hydrodynamics simulation", "attr": "sph_mode", "enter": "_enter_sph_mode", "exit": "_exit_sph_mode"},
+    {"name": "MHD Plasma", "key": "}", "category": "Fluid Dynamics",
+     "desc": "Magnetohydrodynamic plasma turbulence", "attr": "mhd_mode", "enter": "_enter_mhd_mode", "exit": "_exit_mhd_mode"},
+    # ── Chemical & Biological ──
+    {"name": "Reaction-Diffusion", "key": "6", "category": "Chemical & Biological",
+     "desc": "Gray-Scott model: spots, stripes, and waves", "attr": "rd_mode", "enter": "_enter_rd_mode", "exit": "_exit_rd_mode"},
+    {"name": "BZ Reaction", "key": "`", "category": "Chemical & Biological",
+     "desc": "Belousov-Zhabotinsky chemical spirals", "attr": "bz_mode", "enter": "_enter_bz_mode", "exit": "_exit_bz_mode"},
+    {"name": "Chemotaxis", "key": "{", "category": "Chemical & Biological",
+     "desc": "Bacterial colony formation with chemotaxis", "attr": "chemo_mode", "enter": "_enter_chemo_mode", "exit": "_exit_chemo_mode"},
+    {"name": "Forest Fire", "key": "O", "category": "Chemical & Biological",
+     "desc": "Fire spread with growth and lightning strikes", "attr": "fire_mode", "enter": "_enter_fire_mode", "exit": "_exit_fire_mode"},
+    {"name": "SIR Epidemic", "key": "E", "category": "Chemical & Biological",
+     "desc": "Disease spread model (Susceptible/Infected/Recovered)", "attr": "sir_mode", "enter": "_enter_sir_mode", "exit": "_exit_sir_mode"},
+    {"name": "Lotka-Volterra", "key": "J", "category": "Chemical & Biological",
+     "desc": "Predator-prey population dynamics", "attr": "lv_mode", "enter": "_enter_lv_mode", "exit": "_exit_lv_mode"},
+    {"name": "Spiking Neural Network", "key": ")", "category": "Chemical & Biological",
+     "desc": "Izhikevich neuron model with spike propagation", "attr": "snn_mode", "enter": "_enter_snn_mode", "exit": "_exit_snn_mode"},
+    {"name": "Cellular Potts Model", "key": "Ctrl+T", "category": "Chemical & Biological",
+     "desc": "Tissue/cell simulation with adhesion energy", "attr": "cpm_mode", "enter": "_enter_cpm_mode", "exit": "_exit_cpm_mode"},
+    # ── Game Theory & Social ──
+    {"name": "Spatial Prisoner's Dilemma", "key": "@", "category": "Game Theory & Social",
+     "desc": "Cooperation vs defection on a grid", "attr": "spd_mode", "enter": "_enter_spd_mode", "exit": "_exit_spd_mode"},
+    {"name": "Schelling Segregation", "key": "K", "category": "Game Theory & Social",
+     "desc": "Neighborhood preference-driven segregation", "attr": "schelling_mode", "enter": "_enter_schelling_mode", "exit": "_exit_schelling_mode"},
+    {"name": "Rock-Paper-Scissors", "key": "&", "category": "Game Theory & Social",
+     "desc": "Cyclic dominance spatial competition", "attr": "rps_mode", "enter": "_enter_rps_mode", "exit": "_exit_rps_mode"},
+    # ── Fractals & Chaos ──
+    {"name": "Abelian Sandpile", "key": "P", "category": "Fractals & Chaos",
+     "desc": "Self-organized criticality with toppling", "attr": "sandpile_mode", "enter": "_enter_sandpile_mode", "exit": "_exit_sandpile_mode"},
+    {"name": "Strange Attractors", "key": "|", "category": "Fractals & Chaos",
+     "desc": "Lorenz, Rossler, and other chaotic ODEs", "attr": "attractor_mode", "enter": "_enter_attractor_mode", "exit": "_exit_attractor_mode"},
+    {"name": "Fractal Explorer", "key": "Ctrl+B", "category": "Fractals & Chaos",
+     "desc": "Mandelbrot and Julia set zoom explorer", "attr": "fractal_mode", "enter": "_enter_fractal_mode", "exit": "_exit_fractal_mode"},
+    {"name": "Snowflake Growth", "key": "*", "category": "Fractals & Chaos",
+     "desc": "Reiter crystal growth model", "attr": "snowflake_mode", "enter": "_enter_snowflake_mode", "exit": "_exit_snowflake_mode"},
+    {"name": "Erosion Patterns", "key": "$", "category": "Fractals & Chaos",
+     "desc": "Dielectric breakdown fractal branching", "attr": "erosion_mode", "enter": "_enter_erosion_mode", "exit": "_exit_erosion_mode"},
+    {"name": "Chaos Game / IFS Fractals", "key": "Ctrl+G", "category": "Fractals & Chaos",
+     "desc": "Iterated function system fractal generation", "attr": "ifs_mode", "enter": "_enter_ifs_mode", "exit": "_exit_ifs_mode"},
+    {"name": "L-System Plants", "key": "/", "category": "Fractals & Chaos",
+     "desc": "Lindenmayer system procedural plant growth", "attr": "lsystem_mode", "enter": "_enter_lsystem_mode", "exit": "_exit_lsystem_mode"},
+    # ── Procedural & Computational ──
+    {"name": "Wave Function Collapse", "key": "X", "category": "Procedural & Computational",
+     "desc": "Constraint-based procedural tile generation", "attr": "wfc_mode", "enter": "_enter_wfc_mode", "exit": "_exit_wfc_mode"},
+    {"name": "Maze Generation", "key": "L", "category": "Procedural & Computational",
+     "desc": "Recursive backtracker maze with pathfinding", "attr": "maze_mode", "enter": "_enter_maze_mode", "exit": "_exit_maze_mode"},
+    {"name": "Voronoi Diagram", "key": "%", "category": "Procedural & Computational",
+     "desc": "Spatial partitioning with colored regions", "attr": "voronoi_mode", "enter": "_enter_voronoi_mode", "exit": "_exit_voronoi_mode"},
+    {"name": "Terrain Generation", "key": ";", "category": "Procedural & Computational",
+     "desc": "Procedural landscape with erosion simulation", "attr": "terrain_mode", "enter": "_enter_terrain_mode", "exit": "_exit_terrain_mode"},
+    # ── Complex Simulations ──
+    {"name": "Traffic Flow", "key": "T", "category": "Complex Simulations",
+     "desc": "Nagel-Schreckenberg highway traffic model", "attr": "traffic_mode", "enter": "_enter_traffic_mode", "exit": "_exit_traffic_mode"},
+    {"name": "Galaxy Formation", "key": "\"", "category": "Complex Simulations",
+     "desc": "N-body spiral galaxy dynamics", "attr": "galaxy_mode", "enter": "_enter_galaxy_mode", "exit": "_exit_galaxy_mode"},
+    {"name": "Smoke & Fire", "key": "\\", "category": "Complex Simulations",
+     "desc": "Fluid-based smoke and fire particles", "attr": "smokefire_mode", "enter": "_enter_smokefire_mode", "exit": "_exit_smokefire_mode"},
+    {"name": "Fireworks", "key": "Ctrl+F", "category": "Complex Simulations",
+     "desc": "Particle explosion fireworks display", "attr": "fireworks_mode", "enter": "_enter_fireworks_mode", "exit": "_exit_fireworks_mode"},
+    # ── Meta Modes ──
+    {"name": "Compare Rules", "key": "V", "category": "Meta Modes",
+     "desc": "Side-by-side rule comparison view", "attr": "compare_mode", "enter": "_enter_compare_mode", "exit": "_exit_compare_mode"},
+    {"name": "Multi-Rule Race", "key": "Z", "category": "Meta Modes",
+     "desc": "Race 2-4 rules simultaneously", "attr": "race_mode", "enter": "_enter_race_mode", "exit": "_exit_race_mode"},
+    {"name": "Puzzle / Challenge", "key": "C", "category": "Meta Modes",
+     "desc": "Solve cellular automata challenges", "attr": "puzzle_mode", "enter": "_enter_puzzle_mode", "exit": "_exit_puzzle_mode"},
+    {"name": "Evolution / GA", "key": "E", "category": "Meta Modes",
+     "desc": "Genetic algorithm rule evolution", "attr": "evo_mode", "enter": "_enter_evo_mode", "exit": "_exit_evo_mode"},
+]
+
 
 def sparkline(values: list[int], width: int) -> str:
     """Return a Unicode sparkline string for the given values, scaled to fit width."""
@@ -1548,6 +1698,12 @@ class App:
         self.message_time = 0.0
         self.pattern_menu = False
         self.stamp_menu = False  # stamp mode: overlay pattern at cursor
+        # Mode browser state
+        self.mode_browser = False
+        self.mode_browser_sel = 0  # index into flattened visible list
+        self.mode_browser_scroll = 0  # scroll offset
+        self.mode_browser_search = ""  # search/filter string
+        self.mode_browser_filtered: list[dict] = list(MODE_REGISTRY)  # filtered list
         self.pattern_list: list[str] = []
         self.pattern_sel = 0
         self.pop_history: list[int] = []
@@ -3160,7 +3316,10 @@ class App:
                     self._mp_exit()
                 continue
 
-            if self.puzzle_menu:
+            if self.mode_browser:
+                if self._handle_mode_browser_key(key):
+                    continue
+            elif self.puzzle_menu:
                 if self._handle_puzzle_menu_key(key):
                     continue
             elif self.puzzle_mode and self.puzzle_phase == "planning":
@@ -3830,6 +3989,13 @@ class App:
             sys.exit(0)
         if key == ord("?") or key == ord("h"):
             self.show_help = True
+            return True
+        if key == ord("m"):
+            self.mode_browser = True
+            self.mode_browser_search = ""
+            self.mode_browser_filtered = list(MODE_REGISTRY)
+            self.mode_browser_sel = 0
+            self.mode_browser_scroll = 0
             return True
         if key == ord(" "):
             self.running = not self.running
@@ -6257,6 +6423,209 @@ class App:
             return True
         return True
 
+    # ── Mode Browser ──────────────────────────────────────────────────────────
+
+    def _enter_hex_browser(self):
+        """Enter hex mode (called from mode browser)."""
+        self.hex_mode = True
+        self.grid.hex_mode = True
+        self.grid.birth = {2}
+        self.grid.survival = {3, 4}
+        self._flash("Hex grid ON (6 neighbors, rule B2/S34)")
+
+    def _exit_hex_browser(self):
+        """Exit hex mode (called from mode browser)."""
+        self.hex_mode = False
+        self.grid.hex_mode = False
+        self.grid.birth = {3}
+        self.grid.survival = {2, 3}
+        self._flash("Hex grid OFF")
+
+    def _exit_current_modes(self):
+        """Exit any currently active simulation mode."""
+        for entry in MODE_REGISTRY:
+            if entry["attr"] and getattr(self, entry["attr"], False):
+                exit_fn = getattr(self, entry["exit"], None)
+                if exit_fn:
+                    exit_fn()
+
+    def _mode_browser_apply_filter(self):
+        """Filter MODE_REGISTRY by search string."""
+        q = self.mode_browser_search.lower()
+        if not q:
+            self.mode_browser_filtered = list(MODE_REGISTRY)
+        else:
+            self.mode_browser_filtered = [
+                m for m in MODE_REGISTRY
+                if q in m["name"].lower() or q in m["desc"].lower() or q in m["category"].lower()
+            ]
+        # Clamp selection
+        if self.mode_browser_filtered:
+            self.mode_browser_sel = min(self.mode_browser_sel, len(self.mode_browser_filtered) - 1)
+        else:
+            self.mode_browser_sel = 0
+        self.mode_browser_scroll = 0
+
+    def _handle_mode_browser_key(self, key: int) -> bool:
+        """Handle input in the mode browser/picker."""
+        if key == -1:
+            return True
+        if key == 27:  # Esc
+            self.mode_browser = False
+            return True
+        items = self.mode_browser_filtered
+        n = len(items)
+        # Arrow keys always navigate; j/k navigate only when not searching
+        nav_up = key == curses.KEY_UP or (key == ord("k") and not self.mode_browser_search)
+        nav_down = key == curses.KEY_DOWN or (key == ord("j") and not self.mode_browser_search)
+        if nav_up:
+            if n > 0:
+                self.mode_browser_sel = (self.mode_browser_sel - 1) % n
+            return True
+        if nav_down:
+            if n > 0:
+                self.mode_browser_sel = (self.mode_browser_sel + 1) % n
+            return True
+        if key in (curses.KEY_PPAGE,):  # Page Up
+            if n > 0:
+                self.mode_browser_sel = max(0, self.mode_browser_sel - 10)
+            return True
+        if key in (curses.KEY_NPAGE,):  # Page Down
+            if n > 0:
+                self.mode_browser_sel = min(n - 1, self.mode_browser_sel + 10)
+            return True
+        if key in (curses.KEY_HOME,):
+            self.mode_browser_sel = 0
+            return True
+        if key in (curses.KEY_END,):
+            if n > 0:
+                self.mode_browser_sel = n - 1
+            return True
+        if key in (10, 13, curses.KEY_ENTER):
+            # Launch the selected mode
+            if items:
+                entry = items[self.mode_browser_sel]
+                self.mode_browser = False
+                # Exit any currently active mode first
+                self._exit_current_modes()
+                if entry["enter"] is not None:
+                    enter_fn = getattr(self, entry["enter"], None)
+                    if enter_fn:
+                        enter_fn()
+                else:
+                    # Game of Life (default) — just flash
+                    self._flash("Game of Life (default mode)")
+            return True
+        if key in (curses.KEY_BACKSPACE, 127, 8):
+            if self.mode_browser_search:
+                self.mode_browser_search = self.mode_browser_search[:-1]
+                self._mode_browser_apply_filter()
+            return True
+        # Printable characters → search filter
+        if 32 <= key <= 126:
+            self.mode_browser_search += chr(key)
+            self._mode_browser_apply_filter()
+            return True
+        return True
+
+    def _draw_mode_browser(self, max_y: int, max_x: int):
+        """Draw the categorized mode selection browser."""
+        title = "── Mode Browser (Enter=launch, Esc=cancel, type to search) ──"
+        try:
+            self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
+                               curses.color_pair(7) | curses.A_BOLD)
+        except curses.error:
+            pass
+
+        # Search bar
+        search_label = f" Search: {self.mode_browser_search}█" if self.mode_browser_search else " Search: type to filter..."
+        search_attr = curses.color_pair(6) if self.mode_browser_search else curses.color_pair(6) | curses.A_DIM
+        try:
+            self.stdscr.addstr(3, 2, search_label[:max_x - 4], search_attr)
+        except curses.error:
+            pass
+
+        items = self.mode_browser_filtered
+        n = len(items)
+        if n == 0:
+            try:
+                self.stdscr.addstr(5, 4, "No matching modes found.", curses.color_pair(1))
+            except curses.error:
+                pass
+            return
+
+        # Build display lines grouped by category
+        lines: list[tuple[str, int, dict | None]] = []  # (text, color_pair, mode_entry_or_None)
+        current_cat = ""
+        for entry in items:
+            if entry["category"] != current_cat:
+                current_cat = entry["category"]
+                if lines:
+                    lines.append(("", 0, None))  # blank separator
+                lines.append((f"  ─── {current_cat} ───", 7, None))  # category header
+            key_str = f"[{entry['key']:>6s}]" if entry["key"] != "—" else "[      ]"
+            line = f"    {key_str}  {entry['name']:<30s}  {entry['desc']}"
+            lines.append((line, 6, entry))
+
+        # Calculate which lines are selectable (have an entry)
+        selectable_indices = [i for i, (_, _, e) in enumerate(lines) if e is not None]
+
+        # Map mode_browser_sel to selectable line index
+        if self.mode_browser_sel >= len(selectable_indices):
+            self.mode_browser_sel = max(0, len(selectable_indices) - 1)
+        sel_line_idx = selectable_indices[self.mode_browser_sel] if selectable_indices else -1
+
+        # Scrollable area
+        list_start_y = 5
+        visible_rows = max_y - list_start_y - 2  # leave room for footer
+        if visible_rows < 1:
+            return
+
+        # Adjust scroll to keep selection visible
+        if sel_line_idx >= 0:
+            if sel_line_idx < self.mode_browser_scroll:
+                self.mode_browser_scroll = sel_line_idx
+            elif sel_line_idx >= self.mode_browser_scroll + visible_rows:
+                self.mode_browser_scroll = sel_line_idx - visible_rows + 1
+        self.mode_browser_scroll = max(0, min(self.mode_browser_scroll, max(0, len(lines) - visible_rows)))
+
+        # Render visible lines
+        for vi in range(visible_rows):
+            li = self.mode_browser_scroll + vi
+            if li >= len(lines):
+                break
+            text, cpair, entry = lines[li]
+            y = list_start_y + vi
+            if li == sel_line_idx:
+                attr = curses.color_pair(7) | curses.A_REVERSE
+            elif entry is None:
+                # Category header or blank
+                attr = curses.color_pair(cpair) | curses.A_BOLD if cpair else 0
+            else:
+                attr = curses.color_pair(cpair)
+            try:
+                self.stdscr.addstr(y, 0, text[:max_x - 1].ljust(max_x - 1), attr)
+            except curses.error:
+                pass
+
+        # Scrollbar indicator
+        if len(lines) > visible_rows:
+            sb_frac = self.mode_browser_scroll / max(1, len(lines) - visible_rows)
+            sb_pos = list_start_y + int(sb_frac * (visible_rows - 1))
+            try:
+                self.stdscr.addstr(sb_pos, max_x - 1, "█", curses.color_pair(7))
+            except curses.error:
+                pass
+
+        # Footer
+        count_text = f" {n} modes"
+        footer = f" ↑↓/jk=navigate │ PgUp/PgDn=scroll │ Enter=launch │ Esc=cancel │{count_text}"
+        try:
+            self.stdscr.addstr(max_y - 1, 0, footer[:max_x - 1],
+                               curses.color_pair(6) | curses.A_DIM)
+        except curses.error:
+            pass
+
     def _draw_puzzle_menu(self, max_y: int, max_x: int):
         """Draw the puzzle selection menu."""
         title = "── Puzzle / Challenge Mode (Enter=start, q/Esc=cancel) ──"
@@ -7152,6 +7521,11 @@ class App:
     def _draw(self):
         self.stdscr.erase()
         max_y, max_x = self.stdscr.getmaxyx()
+
+        if self.mode_browser:
+            self._draw_mode_browser(max_y, max_x)
+            self.stdscr.refresh()
+            return
 
         if self.puzzle_menu:
             self._draw_puzzle_menu(max_y, max_x)
@@ -18745,6 +19119,7 @@ class App:
             "║  d         Draw mode (paint while moving)     ║",
             "║  x         Erase mode (erase while moving)    ║",
             "║  Esc       Exit draw/erase mode               ║",
+            "║  m         Mode browser (browse all modes)     ║",
             "║  p         Open pattern selector              ║",
             "║  t         Stamp pattern at cursor            ║",
             "║  R         Rule editor (B../S.. presets)      ║",
