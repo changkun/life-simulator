@@ -275,4 +275,7 @@ MODE_REGISTRY = [
     # ── Timeline Branching ──
     {"name": "Timeline Branching", "key": "Ctrl+F (scrub)", "category": "Meta Modes",
      "desc": "Fork alternate timelines from any past frame and watch original vs branch evolve side-by-side", "attr": "tbranch_mode", "enter": None, "exit": "_tbranch_exit"},
+    # ── Ancestor Search (Reverse-Engineering) ──
+    {"name": "Ancestor Search", "key": "Ctrl+Shift+A", "category": "Meta Modes",
+     "desc": "Reverse-engineer predecessors of any pattern; detect Garden of Eden states with no ancestor", "attr": "anc_mode", "enter": "_enter_ancestor_search", "exit": "_exit_ancestor_search"},
 ]

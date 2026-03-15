@@ -240,6 +240,24 @@ class App:
         self.elab_tile_w = 8
         self.elab_best_ever: dict | None = None
         self.elab_history: list = []
+        # Ancestor Search mode state
+        self.anc_mode = False
+        self.anc_menu = False
+        self.anc_menu_sel = 0
+        self.anc_running = False
+        self.anc_engine = None
+        self.anc_target_flat = None
+        self.anc_grid_h = 12
+        self.anc_grid_w = 16
+        self.anc_phase = "menu"
+        self.anc_draw_cursor_r = 0
+        self.anc_draw_cursor_c = 0
+        self.anc_draw_cells = None
+        self.anc_solutions_page = 0
+        self.anc_view_sel = 0
+        self.anc_birth = {3}
+        self.anc_survival = {2, 3}
+        self.anc_use_current = False
         # Neural CA mode state
         self.nca_mode = False
         self.nca_menu = False
@@ -3369,6 +3387,14 @@ class App:
                         self._elab_step()
                     continue
 
+            if self.anc_mode:
+                if self._handle_ancestor_search_key(key):
+                    if self.anc_running and self.anc_engine and not self.anc_engine.search_complete:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        self._anc_step()
+                    continue
+
             if self.nca_menu:
                 if self._handle_nca_menu_key(key):
                     continue
@@ -5710,6 +5736,11 @@ class App:
 
         if self.ep_mode:
             self._draw_ep(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.anc_mode:
+            self._draw_ancestor_search(max_y, max_x)
             self.stdscr.refresh()
             return
 

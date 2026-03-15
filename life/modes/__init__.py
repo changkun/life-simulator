@@ -224,6 +224,8 @@ def register_all_modes(App):
     reg_scripting(App)
     from life.modes.neural_ca import register as reg_nca
     reg_nca(App)
+    from life.modes.ancestor_search import register as reg_anc
+    reg_anc(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

@@ -4,6 +4,45 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Ancestor Search / Reverse-Engineering Mode — find predecessors of any pattern and detect Garden of Eden states
+
+Given any frozen grid state, this mode searches backwards through CA time to find predecessor
+configurations — grids that evolve INTO the target pattern after one step. Uses stochastic
+search (simulated annealing + genetic operators) and declares **Garden of Eden** patterns when
+exhaustive search finds no possible predecessor. This tackles a genuinely hard problem in
+cellular automata theory: the inverse of the forward simulation.
+
+**New file:** `life/modes/ancestor_search.py` (~830 lines)
+
+**Search engine:**
+
+| Component | Description |
+|-----------|-------------|
+| **Simulated annealing** | Temperature-controlled acceptance of worse candidates to escape local optima |
+| **Genetic operators** | Mutation (adaptive rate based on fitness) and single-point crossover with elite |
+| **Population management** | 8 parallel candidates with periodic restarts (replace worst half) |
+| **Garden of Eden detection** | After 200+ restarts and 500 exhaustive local tries, declares no-ancestor with confidence score |
+| **Solution deduplication** | MD5-based hashing prevents duplicate ancestor discoveries |
+
+**User interface:**
+
+| Feature | Description |
+|---------|-------------|
+| **Preset menu** | 8 classic patterns (block, blinker, glider, beehive, toad, loaf, boat, r-pentomino) plus custom drawing and "use current grid" |
+| **Pattern editor** | Draw custom targets with cursor movement (arrows/hjkl), space to toggle, c to clear |
+| **3-panel visualization** | TARGET (left) \| BEST ANCESTOR (center) \| SOLUTION/EVOLVED (right) with mismatch counts |
+| **Progress bar** | Real-time fitness display (matching cells / total cells) with generation and eval counters |
+| **Solution browser** | h/l to browse multiple discovered ancestors, a to apply selected ancestor to main grid |
+
+**Search controls:** Space (pause/resume), n (single step), r (restart), +/- (resize grid), q (quit)
+
+**Integration:** Registered as "Ancestor Search" under Meta Modes with `Ctrl+Shift+A` keybinding.
+Works with any B/S ruleset — inherits rules from the current grid configuration.
+
+**Files modified:** `life/app.py` (state init + key/draw dispatch), `life/modes/__init__.py` (registration), `life/registry.py` (mode entry)
+
+---
+
 ### Added: Time-Travel Timeline Branching — fork alternate timelines from any past frame and compare divergent evolution side-by-side
 
 Pause any running simulation, scrub backward through its history, then fork an alternate
