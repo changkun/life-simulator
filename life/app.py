@@ -363,6 +363,18 @@ class App:
         self.reef_steps_per_frame = 1
         self.reef_grid = []
         self.reef_entities = []
+        # ── Primordial Soup / Origin of Life mode state ──
+        self.psoup_mode = False
+        self.psoup_menu = False
+        self.psoup_menu_sel = 0
+        self.psoup_running = False
+        self.psoup_generation = 0
+        self.psoup_rows = 0
+        self.psoup_cols = 0
+        self.psoup_steps_per_frame = 1
+        self.psoup_grid = []
+        self.psoup_energy_grid = []
+        self.psoup_protocells = []
         self.civ_mode = False
         self.civ_menu = False
         self.civ_menu_sel = 0
@@ -3658,6 +3670,18 @@ class App:
                             self._reef_step()
                     continue
 
+            if self.psoup_menu:
+                if self._handle_psoup_menu_key(key):
+                    continue
+            elif self.psoup_mode:
+                if self._handle_psoup_key(key):
+                    if self.psoup_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        for _ in range(self.psoup_steps_per_frame):
+                            self._psoup_step()
+                    continue
+
             if self.civ_menu:
                 if self._handle_civ_menu_key(key):
                     continue
@@ -6117,6 +6141,16 @@ class App:
 
         if self.reef_mode:
             self._draw_reef(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.psoup_menu:
+            self._draw_psoup_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.psoup_mode:
+            self._draw_psoup(max_y, max_x)
             self.stdscr.refresh()
             return
 

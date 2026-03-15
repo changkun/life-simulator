@@ -250,6 +250,8 @@ def register_all_modes(App):
     reg_mycelium(App)
     from life.modes.nn_training import register as reg_nntrain
     reg_nntrain(App)
+    from life.modes.primordial_soup import register as reg_psoup
+    reg_psoup(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

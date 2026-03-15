@@ -4,6 +4,52 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Primordial Soup / Origin of Life — Abiogenesis Simulation
+
+An abiogenesis simulation where simple molecules spontaneously form self-replicating
+polymers near hydrothermal vents, lipid membranes self-assemble into vesicles, primitive
+metabolism emerges from autocatalytic cycles, and competing protocells undergo Darwinian
+selection — the transition from chemistry to biology. This fills the narrative gap
+between the existing Chemical modes (reaction-diffusion, BZ reaction, artificial
+chemistry) and the Biological modes (coral reef, ecosystem evolution), modeling how
+life begins from raw chemistry.
+
+**New file:** `life/modes/primordial_soup.py` (~889 lines)
+
+**Core mechanics:**
+
+| Concept | Implementation |
+|---------|---------------|
+| Energy gradients | Hydrothermal vents radiate energy that decays with distance — drives all reactions |
+| Mineral → monomer | Dissolved minerals convert to organic monomers near energy sources |
+| Polymerization | Monomers near other monomers + energy spontaneously form polymer chains |
+| Replication | Polymers near other polymers/replicators undergo autocatalysis → self-replicating RNA-like molecules |
+| Lipid assembly | Lipids self-assemble into vesicles when enough neighbors cluster together |
+| Protocell formation | Vesicles that capture replicators become protocells with metabolism and energy budgets |
+| Protocell division | Protocells split when energy exceeds threshold; daughter inherits genome with possible mutation |
+| Darwinian selection | Fitness mutations during division — fitter protocells metabolize more efficiently, outcompete neighbors |
+| Environmental controls | Temperature modifies reaction rates; UV creates/destroys molecules; ice concentrates organics via freeze-thaw |
+| Nutrient recycling | Dead matter decomposes back into minerals and monomers |
+
+**12 cell types:** water, rock, hydrothermal vent, mineral, monomer, polymer, replicator, lipid, vesicle, protocell, dead matter, ice.
+
+**6 presets:**
+
+| Preset | Description |
+|--------|-------------|
+| Hydrothermal Vent Field | Black smoker chimneys pour energy and minerals into the deep — classic abiogenesis |
+| Warm Little Pond | Darwin's warm little pond — shallow, UV-irradiated, wet-dry cycling |
+| Volcanic Tidepool | Geothermally heated tidepool with mineral-rich volcanic rock and UV exposure |
+| Deep Ocean Seep | Cold methane seep on the abyssal plain — slow, steady chemistry |
+| Frozen Comet Lake | Ice-covered lake with freeze-thaw cycles concentrating organics in eutectic veins |
+| Chemical Garden | Semipermeable mineral chimneys with strong pH gradients — proton-motive abiogenesis |
+
+**3 view modes:** soup (main simulation), energy (heat map of energy gradients), density (molecular complexity highlighting).
+
+**Interactive controls:** `Space` play/pause, `n` single step, `v` cycle views, `h` heat burst (+15°C), `c` cool down (-15°C), `l` lightning strike (spawn monomers), `M` mineral injection, `u` toggle UV, `+`/`-` speed, `r` reset, `R` preset menu, `q` quit. Accessible via `Ctrl+Shift+P` from the main menu under "Chemical & Biological."
+
+---
+
 ### Added: Neural Network Training Visualizer — Watch a Neural Network Learn in Real Time
 
 A real-time ASCII visualization of a small neural network learning classification and

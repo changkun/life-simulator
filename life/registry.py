@@ -313,4 +313,7 @@ MODE_REGISTRY = [
     # ── Neural Network Training Visualizer ──
     {"name": "Neural Network Training Visualizer", "key": "Ctrl+Shift+N", "category": "Procedural & Computational",
      "desc": "Watch a neural network learn XOR, spirals & more — live neurons, gradient flow, decision boundary & loss curves", "attr": "nntrain_mode", "enter": "_enter_nntrain_mode", "exit": "_exit_nntrain_mode"},
+    # ── Primordial Soup / Origin of Life ──
+    {"name": "Primordial Soup / Origin of Life", "key": "Ctrl+Shift+P", "category": "Chemical & Biological",
+     "desc": "Abiogenesis — molecules polymerize, membranes self-assemble, protocells divide & compete", "attr": "psoup_mode", "enter": "_enter_psoup_mode", "exit": "_exit_psoup_mode"},
 ]
