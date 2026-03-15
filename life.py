@@ -2904,6 +2904,9 @@ class App:
         self.sph_damping: float = 0.5      # boundary collision damping
         self.sph_viz_mode: int = 0          # 0=density, 1=velocity, 2=pressure
 
+        # ── Minimap overlay state ──
+        self.show_minimap = False  # toggled with Tab key
+
         self._rebuild_pattern_list()
 
         if pattern:
@@ -2943,6 +2946,475 @@ class App:
     def _flash(self, msg: str):
         self.message = msg
         self.message_time = time.monotonic()
+
+    # ── Minimap overlay ──
+
+    def _any_menu_open(self) -> bool:
+        """Return True if any menu or non-simulation overlay is active."""
+        if self.mode_browser or self.show_help or self.blueprint_menu:
+            return True
+        # Check all mode-specific menus (pattern: self.X_menu = bool)
+        _menu_attrs = [
+            'puzzle_menu', 'pattern_menu', 'stamp_menu', 'bookmark_menu',
+            'rule_menu', 'compare_rule_menu', 'race_rule_menu',
+            'wolfram_menu', 'ant_menu', 'ww_menu', 'sand_menu', 'rd_menu',
+            'lenia_menu', 'physarum_menu', 'boids_menu', 'plife_menu',
+            'nbody_menu', 'fluid_menu', 'wfc_menu', 'aco_menu', 'maze_menu',
+            'dla_menu', 'sandpile_menu', 'fire_menu', 'sir_menu',
+            'cyclic_menu', 'ising_menu', 'hodge_menu', 'lv_menu',
+            'schelling_menu', 'spd_menu', 'lightning_menu', 'erosion_menu',
+            'voronoi_menu', 'rps_menu', 'wave_menu', 'kuramoto_menu',
+            'bz_menu', 'chemo_menu', 'mhd_menu', 'attractor_menu',
+            'qwalk_menu', 'terrain_menu', 'smokefire_menu', 'cloth_menu',
+            'galaxy_menu', 'lsystem_menu', 'fractal_menu', 'fireworks_menu',
+            'ns_menu', 'traffic_menu', 'snowflake_menu', 'turmite_menu',
+            'evo_menu', 'chladni_menu', 'cpm_menu', 'fdtd_menu',
+            'magfield_menu', 'rbc_menu', 'sph_menu',
+        ]
+        for attr in _menu_attrs:
+            if getattr(self, attr, False):
+                return True
+        return False
+
+    def _get_minimap_data(self):
+        """Return (rows, cols, sample_func, view_r, view_c, view_h, view_w) for current mode.
+
+        sample_func(r, c) -> float 0.0-1.0 indicating activity.
+        view_* describe the currently visible viewport rectangle.
+        Returns None if minimap is not available.
+        """
+        # Helper to detect which mode is active and return its grid data
+        # Dict-based grids
+        if self.ant_mode and self.ant_rows > 0:
+            g = self.ant_grid
+            return (self.ant_rows, self.ant_cols,
+                    lambda r, c: 1.0 if g.get((r, c), 0) > 0 else 0.0,
+                    0, 0, self.ant_rows, self.ant_cols)
+        if self.ww_mode and self.ww_rows > 0:
+            g = self.ww_grid
+            def _ww(r, c):
+                s = g.get((r, c), 0)
+                return (1.0 if s == 2 else 0.7 if s == 3 else 0.3 if s == 1 else 0.0)
+            return (self.ww_rows, self.ww_cols, _ww,
+                    0, 0, self.ww_rows, self.ww_cols)
+        if self.sand_mode and self.sand_rows > 0:
+            g = self.sand_grid
+            return (self.sand_rows, self.sand_cols,
+                    lambda r, c: 1.0 if g.get((r, c)) is not None else 0.0,
+                    0, 0, self.sand_rows, self.sand_cols)
+        if self.turmite_mode and self.turmite_rows > 0:
+            g = self.turmite_grid
+            return (self.turmite_rows, self.turmite_cols,
+                    lambda r, c: 1.0 if g.get((r, c), 0) > 0 else 0.0,
+                    0, 0, self.turmite_rows, self.turmite_cols)
+
+        # Float 2D list grids
+        if self.rd_mode and self.rd_rows > 0:
+            V = self.rd_V
+            return (self.rd_rows, self.rd_cols,
+                    lambda r, c: min(1.0, V[r][c]),
+                    0, 0, self.rd_rows, self.rd_cols)
+        if self.lenia_mode and self.lenia_rows > 0:
+            g = self.lenia_grid
+            return (self.lenia_rows, self.lenia_cols,
+                    lambda r, c: min(1.0, g[r][c]),
+                    0, 0, self.lenia_rows, self.lenia_cols)
+        if self.physarum_mode and self.physarum_rows > 0:
+            t = self.physarum_trail
+            return (self.physarum_rows, self.physarum_cols,
+                    lambda r, c: min(1.0, t[r][c]),
+                    0, 0, self.physarum_rows, self.physarum_cols)
+        if self.wave_mode and self.wave_rows > 0:
+            u = self.wave_u
+            return (self.wave_rows, self.wave_cols,
+                    lambda r, c: min(1.0, abs(u[r][c])),
+                    0, 0, self.wave_rows, self.wave_cols)
+        if self.kuramoto_mode and self.kuramoto_rows > 0:
+            p = self.kuramoto_phases
+            _two_pi = 2 * math.pi
+            return (self.kuramoto_rows, self.kuramoto_cols,
+                    lambda r, c: (p[r][c] % _two_pi) / _two_pi,
+                    0, 0, self.kuramoto_rows, self.kuramoto_cols)
+        if self.bz_mode and self.bz_rows > 0:
+            a = self.bz_a
+            return (self.bz_rows, self.bz_cols,
+                    lambda r, c: min(1.0, max(0.0, a[r][c])),
+                    0, 0, self.bz_rows, self.bz_cols)
+        if self.attractor_mode and self.attractor_rows > 0:
+            d = self.attractor_density
+            mx = max(self.attractor_max_density, 1.0)
+            return (self.attractor_rows, self.attractor_cols,
+                    lambda r, c: min(1.0, d[r][c] / mx) if d and r < len(d) and c < len(d[0]) else 0.0,
+                    0, 0, self.attractor_rows, self.attractor_cols)
+        if self.terrain_mode and self.terrain_rows > 0:
+            h = self.terrain_heightmap
+            return (self.terrain_rows, self.terrain_cols,
+                    lambda r, c: min(1.0, h[r][c]) if h else 0.0,
+                    0, 0, self.terrain_rows, self.terrain_cols)
+        if self.smokefire_mode and self.smokefire_rows > 0:
+            t = self.smokefire_temp
+            s = self.smokefire_smoke
+            return (self.smokefire_rows, self.smokefire_cols,
+                    lambda r, c: min(1.0, max(t[r][c], s[r][c])),
+                    0, 0, self.smokefire_rows, self.smokefire_cols)
+        if self.ns_mode and self.ns_rows > 0:
+            d = self.ns_dye
+            return (self.ns_rows, self.ns_cols,
+                    lambda r, c: min(1.0, max(0.0, d[r][c])),
+                    0, 0, self.ns_rows, self.ns_cols)
+        if self.rbc_mode and self.rbc_rows > 0:
+            T = self.rbc_T
+            return (self.rbc_rows, self.rbc_cols,
+                    lambda r, c: min(1.0, max(0.0, T[r][c])),
+                    0, 0, self.rbc_rows, self.rbc_cols)
+        if self.fdtd_mode and self.fdtd_rows > 0:
+            Ez = self.fdtd_Ez
+            return (self.fdtd_rows, self.fdtd_cols,
+                    lambda r, c: min(1.0, abs(Ez[r][c])) if Ez and r < len(Ez) else 0.0,
+                    0, 0, self.fdtd_rows, self.fdtd_cols)
+        if self.chemo_mode and self.chemo_rows > 0:
+            b = self.chemo_bacteria
+            if b and len(b) > 0:
+                return (self.chemo_rows, self.chemo_cols,
+                        lambda r, c: min(1.0, b[r][c]) if r < len(b) and c < len(b[0]) else 0.0,
+                        0, 0, self.chemo_rows, self.chemo_cols)
+        if self.mhd_mode and self.mhd_rows > 0:
+            rho = self.mhd_rho
+            if rho and len(rho) > 0:
+                return (self.mhd_rows, self.mhd_cols,
+                        lambda r, c: min(1.0, max(0.0, rho[r][c])) if r < len(rho) and c < len(rho[0]) else 0.0,
+                        0, 0, self.mhd_rows, self.mhd_cols)
+        if self.fluid_mode and self.fluid_rows > 0 and self.fluid_f:
+            f = self.fluid_f
+            obs = self.fluid_obstacle
+            def _fluid_sample(r, c):
+                if r >= len(f) or c >= len(f[0]):
+                    return 0.0
+                if obs and r < len(obs) and c < len(obs[0]) and obs[r][c]:
+                    return 0.8  # obstacle
+                rho = sum(f[r][c])
+                # LBM density is ~1.0 at rest; show deviations
+                return min(1.0, max(0.0, abs(rho - 1.0) * 5 + 0.1))
+            return (self.fluid_rows, self.fluid_cols, _fluid_sample,
+                    0, 0, self.fluid_rows, self.fluid_cols)
+        if self.erosion_mode and self.erosion_rows > 0 and self.erosion_terrain:
+            h = self.erosion_terrain
+            return (self.erosion_rows, self.erosion_cols,
+                    lambda r, c: min(1.0, h[r][c]) if r < len(h) and c < len(h[0]) else 0.0,
+                    0, 0, self.erosion_rows, self.erosion_cols)
+
+        # Quantum walk (probability grid)
+        if self.qwalk_mode and self.qwalk_rows > 0 and self.qwalk_prob:
+            p = self.qwalk_prob
+            return (self.qwalk_rows, self.qwalk_cols,
+                    lambda r, c: min(1.0, p[r][c] * 10) if r < len(p) and c < len(p[0]) else 0.0,
+                    0, 0, self.qwalk_rows, self.qwalk_cols)
+
+        # Chladni patterns
+        if self.chladni_mode:
+            sand = getattr(self, 'chladni_sand', None)
+            rows = getattr(self, 'chladni_rows', 0)
+            cols = getattr(self, 'chladni_cols', 0)
+            if sand and rows > 0 and cols > 0:
+                return (rows, cols,
+                        lambda r, c: min(1.0, sand[r][c]) if r < len(sand) and c < len(sand[0]) else 0.0,
+                        0, 0, rows, cols)
+
+        # Galaxy (density grid)
+        if self.galaxy_mode and self.galaxy_rows > 0 and self.galaxy_density:
+            d = self.galaxy_density
+            return (self.galaxy_rows, self.galaxy_cols,
+                    lambda r, c: min(1.0, d[r][c]) if r < len(d) and c < len(d[0]) else 0.0,
+                    0, 0, self.galaxy_rows, self.galaxy_cols)
+
+        # Integer 2D list grids (>0 = occupied)
+        int_grid_modes = [
+            ("dla_mode", "dla_rows", "dla_cols", "dla_grid"),
+            ("sir_mode", "sir_rows", "sir_cols", "sir_grid"),
+            ("sandpile_mode", "sandpile_rows", "sandpile_cols", "sandpile_grid"),
+            ("fire_mode", "fire_rows", "fire_cols", "fire_grid"),
+            ("cyclic_mode", "cyclic_rows", "cyclic_cols", "cyclic_grid"),
+            ("hodge_mode", "hodge_rows", "hodge_cols", "hodge_grid"),
+            ("lv_mode", "lv_rows", "lv_cols", "lv_grid"),
+            ("spd_mode", "spd_rows", "spd_cols", "spd_grid"),
+            ("schelling_mode", "schelling_rows", "schelling_cols", "schelling_grid"),
+            ("lightning_mode", "lightning_rows", "lightning_cols", "lightning_grid"),
+            ("voronoi_mode", "voronoi_rows", "voronoi_cols", "voronoi_grid"),
+            ("rps_mode", "rps_rows", "rps_cols", "rps_grid"),
+            ("maze_mode", "maze_rows", "maze_cols", "maze_grid"),
+            ("cpm_mode", "cpm_rows", "cpm_cols", "cpm_grid"),
+            ("traffic_mode", "traffic_rows", "traffic_cols", "traffic_grid"),
+        ]
+        for mode_attr, rows_attr, cols_attr, grid_attr in int_grid_modes:
+            if getattr(self, mode_attr, False):
+                rows = getattr(self, rows_attr, 0)
+                cols = getattr(self, cols_attr, 0)
+                g = getattr(self, grid_attr, None)
+                if rows > 0 and cols > 0 and g and len(g) >= rows:
+                    def _make_sampler(grid, nrows, ncols):
+                        def _sample(r, c):
+                            if r < nrows and c < ncols and r < len(grid) and c < len(grid[r]):
+                                v = grid[r][c]
+                                return 1.0 if v > 0 else 0.0
+                            return 0.0
+                        return _sample
+                    return (rows, cols, _make_sampler(g, rows, cols),
+                            0, 0, rows, cols)
+
+        # Snowflake (bool frozen grid)
+        if self.snowflake_mode and self.snowflake_rows > 0 and self.snowflake_frozen:
+            g = self.snowflake_frozen
+            return (self.snowflake_rows, self.snowflake_cols,
+                    lambda r, c: 1.0 if r < len(g) and c < len(g[0]) and g[r][c] else 0.0,
+                    0, 0, self.snowflake_rows, self.snowflake_cols)
+
+        # ACO (pheromone float grid)
+        if self.aco_mode and self.aco_rows > 0 and self.aco_pheromone:
+            p = self.aco_pheromone
+            return (self.aco_rows, self.aco_cols,
+                    lambda r, c: min(1.0, p[r][c]) if r < len(p) and c < len(p[0]) else 0.0,
+                    0, 0, self.aco_rows, self.aco_cols)
+
+        # Ising (always occupied: +1/-1)
+        if self.ising_mode and self.ising_rows > 0 and self.ising_grid:
+            g = self.ising_grid
+            return (self.ising_rows, self.ising_cols,
+                    lambda r, c: 1.0 if g[r][c] > 0 else 0.3,
+                    0, 0, self.ising_rows, self.ising_cols)
+
+        # Particle-based modes: project to density grid
+        particle_modes = [
+            ("boids_mode", "boids_rows", "boids_cols", "boids_agents"),
+            ("plife_mode", "plife_rows", "plife_cols", "plife_particles"),
+            ("nbody_mode", "nbody_rows", "nbody_cols", "nbody_bodies"),
+            ("sph_mode", "sph_rows", "sph_cols", "sph_particles"),
+            ("magfield_mode", "magfield_rows", "magfield_cols", "magfield_particles"),
+            ("fireworks_mode", "fireworks_rows", "fireworks_cols", "fireworks_particles"),
+        ]
+        for mode_attr, rows_attr, cols_attr, parts_attr in particle_modes:
+            if getattr(self, mode_attr, False):
+                rows = getattr(self, rows_attr, 0)
+                cols = getattr(self, cols_attr, 0)
+                parts = getattr(self, parts_attr, [])
+                if rows > 0 and cols > 0 and parts:
+                    # Build a quick density set from particle positions
+                    occ = set()
+                    for p in parts:
+                        if isinstance(p, (list, tuple)) and len(p) >= 2:
+                            pr = int(p[0]) if not isinstance(p, dict) else int(p.get("r", p.get("y", 0)))
+                            pc = int(p[1]) if not isinstance(p, dict) else int(p.get("c", p.get("x", 0)))
+                            if 0 <= pr < rows and 0 <= pc < cols:
+                                occ.add((pr, pc))
+                        elif isinstance(p, dict):
+                            pr = int(p.get("r", p.get("y", p.get("row", 0))))
+                            pc = int(p.get("c", p.get("x", p.get("col", 0))))
+                            if 0 <= pr < rows and 0 <= pc < cols:
+                                occ.add((pr, pc))
+                    return (rows, cols,
+                            lambda r, c, _o=occ: 1.0 if (r, c) in _o else 0.0,
+                            0, 0, rows, cols)
+
+        # Fractal mode
+        if self.fractal_mode and self.fractal_rows > 0 and self.fractal_buffer:
+            buf = self.fractal_buffer
+            mx = max(self.fractal_max_iter, 1)
+            return (self.fractal_rows, self.fractal_cols,
+                    lambda r, c: buf[r][c] / mx if r < len(buf) and c < len(buf[0]) else 0.0,
+                    0, 0, self.fractal_rows, self.fractal_cols)
+
+        # WFC mode
+        if self.wfc_mode and self.wfc_rows > 0 and self.wfc_grid:
+            g = self.wfc_grid
+            return (self.wfc_rows, self.wfc_cols,
+                    lambda r, c: (1.0 if len(g[r][c]) == 1 else 0.3) if r < len(g) and c < len(g[0]) else 0.0,
+                    0, 0, self.wfc_rows, self.wfc_cols)
+
+        # Wolfram 1D CA — uses the accumulated row history
+        if self.wolfram_mode:
+            g = self.wolfram_rows  # list[list[int]], each entry is one generation
+            if g and len(g) > 0:
+                rows = len(g)
+                cols = len(g[0])
+                return (rows, cols,
+                        lambda r, c: 1.0 if r < len(g) and c < len(g[r]) and g[r][c] > 0 else 0.0,
+                        0, 0, rows, cols)
+
+        # Default: Game of Life
+        if self.grid.rows > 0 and self.grid.cols > 0:
+            max_y, max_x = self.stdscr.getmaxyx()
+            zoom = self.zoom_level
+            vis_rows = max(1, max_y - 5)
+            vis_cols = max(1, (max_x - 1) // 2)
+            grid_vis_rows = vis_rows * zoom
+            grid_vis_cols = vis_cols * zoom
+            vr = self.cursor_r - grid_vis_rows // 2
+            vc = self.cursor_c - grid_vis_cols // 2
+            cells = self.grid.cells
+            return (self.grid.rows, self.grid.cols,
+                    lambda r, c: 1.0 if cells[r][c] > 0 else 0.0,
+                    vr, vc, grid_vis_rows, grid_vis_cols)
+
+        return None
+
+    def _draw_minimap(self, max_y: int, max_x: int):
+        """Draw a minimap overlay in the top-right corner of the screen."""
+        data = self._get_minimap_data()
+        if data is None:
+            return
+
+        grid_rows, grid_cols, sample_fn, view_r, view_c, view_h, view_w = data
+        if grid_rows <= 0 or grid_cols <= 0:
+            return
+
+        # Calculate minimap dimensions (including 2-char border)
+        # Each minimap cell is 1 char wide (not 2 like main grid) for compactness
+        max_map_w = min(40, max_x // 3)  # max width in chars including border
+        max_map_h = min(20, max_y // 3)  # max height including border
+        inner_w = max(4, max_map_w - 2)
+        inner_h = max(3, max_map_h - 2)
+
+        # Maintain aspect ratio of the grid
+        grid_aspect = grid_cols / max(1, grid_rows)
+        if grid_aspect > inner_w / inner_h:
+            # Wide grid: fit to width
+            map_w = inner_w
+            map_h = max(3, int(inner_w / grid_aspect))
+        else:
+            # Tall grid: fit to height
+            map_h = inner_h
+            map_w = max(4, int(inner_h * grid_aspect))
+
+        # Total dimensions with border
+        total_w = map_w + 2  # left border + content + right border
+        total_h = map_h + 2  # top border + content + bottom border
+
+        # Position: top-right corner with 1-char margin
+        start_x = max_x - total_w - 1
+        start_y = 1
+        if start_x < 2 or start_y + total_h >= max_y - 2:
+            return  # not enough room
+
+        # Grid cells per minimap cell
+        step_r = grid_rows / map_h
+        step_c = grid_cols / map_w
+
+        # Density glyphs for single-char cells
+        MINI_GLYPHS = " ░▒▓█"
+
+        # Draw border and label
+        label = " MINIMAP "
+        if map_w >= len(label):
+            top_border = "┌" + label + "─" * (map_w - len(label)) + "┐"
+        else:
+            top_border = "┌" + "─" * map_w + "┐"
+        bot_border = "└" + "─" * map_w + "┘"
+
+        border_attr = curses.color_pair(6) | curses.A_DIM
+        try:
+            self.stdscr.addstr(start_y, start_x, top_border[:total_w], border_attr)
+        except curses.error:
+            pass
+        try:
+            self.stdscr.addstr(start_y + total_h - 1, start_x, bot_border[:total_w], border_attr)
+        except curses.error:
+            pass
+
+        # Compute viewport rectangle in minimap coordinates
+        vp_r0 = view_r / step_r if step_r > 0 else 0
+        vp_c0 = view_c / step_c if step_c > 0 else 0
+        vp_r1 = (view_r + view_h) / step_r if step_r > 0 else map_h
+        vp_c1 = (view_c + view_w) / step_c if step_c > 0 else map_w
+
+        # Check if viewport covers the whole grid (no zoom)
+        full_view = (view_h >= grid_rows and view_w >= grid_cols)
+
+        # Draw content rows
+        for my in range(map_h):
+            sy = start_y + 1 + my
+            if sy >= max_y - 1:
+                break
+
+            # Left border
+            try:
+                self.stdscr.addstr(sy, start_x, "│", border_attr)
+            except curses.error:
+                pass
+
+            for mx in range(map_w):
+                sx = start_x + 1 + mx
+                if sx >= max_x - 1:
+                    break
+
+                # Sample grid block for this minimap cell
+                gr_start = int(my * step_r)
+                gr_end = int((my + 1) * step_r)
+                gc_start = int(mx * step_c)
+                gc_end = int((mx + 1) * step_c)
+                gr_end = max(gr_end, gr_start + 1)
+                gc_end = max(gc_end, gc_start + 1)
+
+                total = 0
+                active = 0.0
+                for gr in range(gr_start, min(gr_end, grid_rows)):
+                    for gc in range(gc_start, min(gc_end, grid_cols)):
+                        total += 1
+                        try:
+                            active += sample_fn(gr % grid_rows, gc % grid_cols)
+                        except (IndexError, KeyError):
+                            pass
+
+                if total > 0:
+                    density = active / total
+                else:
+                    density = 0.0
+
+                # Pick glyph
+                if density <= 0:
+                    gi = 0
+                elif density <= 0.2:
+                    gi = 1
+                elif density <= 0.45:
+                    gi = 2
+                elif density <= 0.7:
+                    gi = 3
+                else:
+                    gi = 4
+                ch = MINI_GLYPHS[gi]
+
+                # Color based on density
+                if density > 0.5:
+                    attr = curses.color_pair(1) | curses.A_BOLD  # green bold
+                elif density > 0.15:
+                    attr = curses.color_pair(2)  # cyan
+                elif density > 0:
+                    attr = curses.color_pair(6) | curses.A_DIM  # dim
+                else:
+                    attr = curses.color_pair(0)
+
+                # Highlight viewport rectangle (if zoomed in)
+                if not full_view:
+                    in_vp = (vp_r0 <= my < vp_r1 and vp_c0 <= mx < vp_c1)
+                    on_vp_border = (in_vp and
+                                    (my < vp_r0 + 1 or my >= vp_r1 - 1 or
+                                     mx < vp_c0 + 1 or mx >= vp_c1 - 1))
+                    if on_vp_border:
+                        attr = curses.color_pair(3) | curses.A_BOLD  # yellow border
+                        if gi == 0:
+                            ch = "·"
+                    elif in_vp and gi == 0:
+                        ch = "·"
+                        attr = curses.color_pair(3) | curses.A_DIM
+
+                try:
+                    self.stdscr.addstr(sy, sx, ch, attr)
+                except curses.error:
+                    pass
+
+            # Right border
+            try:
+                self.stdscr.addstr(sy, start_x + map_w + 1, "│", border_attr)
+            except curses.error:
+                pass
 
     def _record_pop(self):
         self.pop_history.append(self.grid.population)
@@ -3278,7 +3750,19 @@ class App:
 
         while True:
             self._draw()
+            # ── Minimap overlay (drawn after mode-specific content, before next input) ──
+            if self.show_minimap and not self._any_menu_open():
+                _my, _mx = self.stdscr.getmaxyx()
+                self._draw_minimap(_my, _mx)
+                self.stdscr.refresh()
+
             key = self.stdscr.getch()
+
+            # ── Minimap toggle (Tab key, global across all modes) ──
+            if key == 9:  # Tab
+                self.show_minimap = not self.show_minimap
+                self._flash("Minimap ON" if self.show_minimap else "Minimap OFF")
+                continue
 
             # ── Multiplayer network tick ──
             if self.mp_mode:
@@ -8435,6 +8919,8 @@ class App:
                 mode += "  │  ⬡ HEX"
             if self.iso_mode:
                 mode += "  │  🏙 ISO-3D"
+            if self.show_minimap:
+                mode += "  │  MAP"
             if self.draw_mode == "draw":
                 mode += "  │  ✏ DRAW"
             elif self.draw_mode == "erase":
@@ -8461,7 +8947,7 @@ class App:
             if self.message and now - self.message_time < 3.0:
                 hint = f" {self.message}"
             else:
-                hint = " [Space]=play [n]=step [u]=rewind [/]=scrub10 [b]=bookmark [B]=bookmarks [p]=patterns [t]=stamp [W]=blueprint [T]=blueprints [e]=edit [d]=draw [F]=search [H]=heatmap [I]=3D [1]=wolfram [2]=ant [3]=hex [M]=sound [R]=rules [V]=compare [Z]=race [C]=puzzles [N]=multiplayer [G]=record GIF [s]=save [o]=load [+/-]=zoom [0]=reset zoom [</>]=speed [?]=help [q]=quit"
+                hint = " [Space]=play [n]=step [u]=rewind [/]=scrub10 [b]=bookmark [B]=bookmarks [p]=patterns [t]=stamp [W]=blueprint [T]=blueprints [e]=edit [d]=draw [F]=search [H]=heatmap [I]=3D [Tab]=minimap [1]=wolfram [2]=ant [3]=hex [M]=sound [R]=rules [V]=compare [Z]=race [C]=puzzles [N]=multiplayer [G]=record GIF [s]=save [o]=load [+/-]=zoom [0]=reset zoom [</>]=speed [?]=help [q]=quit"
             hint = hint[:max_x - 1]
             try:
                 self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -19129,6 +19615,7 @@ class App:
             "║  f         Pattern search (find known shapes) ║",
             "║  H         Toggle heatmap (cell activity)      ║",
             "║  I         Toggle 3D isometric view            ║",
+            "║  Tab       Toggle minimap overlay              ║",
             "║  V         Compare two rules side-by-side     ║",
             "║  Z         Race 2-4 rules with scoreboard      ║",
             "║  N         Multiplayer (host or connect)       ║",
