@@ -4,6 +4,36 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Real-Time Simulation Analytics Overlay — quantitative metrics HUD for measuring and classifying simulation behavior
+
+A toggleable analytics panel (`Ctrl+K`) that works across all modes, overlaying live quantitative
+metrics on the running simulation. Turns the simulator from a pure visual experience into a
+scientific instrument where users can measure what they're seeing, spot phase transitions, and
+identify mathematically interesting parameter regimes.
+
+**New file:** `life/analytics.py` (~254 lines)
+
+**Metrics displayed:**
+
+| Metric | Description |
+|--------|-------------|
+| **Population** | Live cell count with rolling 60-frame Unicode sparkline history |
+| **Shannon entropy** | Information-theoretic disorder metric (0 = uniform, higher = more disorder) |
+| **Rate of change** | Average population delta per tick over 5-tick window with trend arrows (↑↓⇑⇓─) |
+| **Periodicity** | Detects when the simulation enters a repeating cycle and reports the period length |
+| **Symmetry score** | Horizontal, vertical, and 180° rotational symmetry (0–100%) with visual bar |
+| **Stability class** | Categorizes state as: starting, extinct, static, oscillating, growing, dying, chaotic, or stable |
+| **Grid density** | Population as percentage of total cells, with grid dimensions |
+
+**Performance:** Expensive metrics (symmetry every 5 frames, entropy every 2 frames) are computed
+at reduced intervals to avoid impacting simulation speed.
+
+**Integration points in `life/app.py`:**
+- Toggle with `Ctrl+K` (key code 11) — global across all modes
+- Overlay drawn bottom-left as a bordered panel after all other overlays
+- Metrics update on every simulation step (running or single-step)
+- Analytics state resets on grid clear (`c`) and randomize (`r`)
+
 ### Added: Simulation Scripting & Choreography System — programmable show director for timed sequences of mode transitions, effects, and parameter sweeps
 
 A new meta-mode (`Ctrl+U`) that lets users write and play back simple scripts to orchestrate

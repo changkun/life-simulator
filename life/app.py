@@ -33,6 +33,7 @@ from life.grid import Grid
 from life.sound import SoundEngine
 from life.multiplayer import MultiplayerNet, MP_DEFAULT_PORT, MP_SIM_GENS
 from life.registry import MODE_CATEGORIES, MODE_REGISTRY
+from life.analytics import AnalyticsState, _sparkline as _analytics_sparkline
 
 
 class App:
@@ -2157,6 +2158,9 @@ class App:
         self.pexplorer_generation: int = 0
         self.pexplorer_sims: list = []
 
+        # ── Analytics overlay state ──
+        self.analytics = AnalyticsState()
+
         # ── Minimap overlay state ──
         self.show_minimap = False  # toggled with Tab key
 
@@ -2203,6 +2207,187 @@ class App:
     def _flash(self, msg: str):
         self.message = msg
         self.message_time = time.monotonic()
+
+    # ── Analytics overlay ──
+
+    def _draw_analytics_overlay(self, max_y: int, max_x: int):
+        """Draw the analytics HUD panel on the left side of the screen."""
+        a = self.analytics
+        # Panel dimensions
+        panel_w = 38
+        panel_h = 14
+        if max_x < panel_w + 4 or max_y < panel_h + 4:
+            return  # terminal too small
+
+        # Position: bottom-left corner with 1-char margin
+        start_x = 1
+        start_y = max(1, max_y - panel_h - 2)
+
+        border_attr = curses.color_pair(7) | curses.A_DIM
+        text_attr = curses.color_pair(6)
+        val_attr = curses.color_pair(7)
+        spark_attr = curses.color_pair(1)
+
+        # Draw border
+        label = " ANALYTICS "
+        inner_w = panel_w - 2
+        top = "┌" + label + "─" * max(0, inner_w - len(label)) + "┐"
+        bot = "└" + "─" * inner_w + "┘"
+        try:
+            self.stdscr.addstr(start_y, start_x, top[:panel_w], border_attr)
+        except curses.error:
+            pass
+        for row_off in range(1, panel_h - 1):
+            try:
+                self.stdscr.addstr(start_y + row_off, start_x, "│", border_attr)
+                self.stdscr.addstr(start_y + row_off, start_x + panel_w - 1, "│", border_attr)
+            except curses.error:
+                pass
+        try:
+            self.stdscr.addstr(start_y + panel_h - 1, start_x, bot[:panel_w], border_attr)
+        except curses.error:
+            pass
+
+        # Clear interior
+        blank = " " * inner_w
+        for row_off in range(1, panel_h - 1):
+            try:
+                self.stdscr.addstr(start_y + row_off, start_x + 1, blank)
+            except curses.error:
+                pass
+
+        y = start_y + 1
+        x = start_x + 2
+        w = inner_w - 2  # usable text width
+
+        # ── Population with sparkline ──
+        pop = self.grid.population
+        pop_str = f"Pop: {pop:,}"
+        spark_w = max(0, w - len(pop_str) - 1)
+        spark = _analytics_sparkline(list(a.pop_sparkline), spark_w)
+        try:
+            self.stdscr.addstr(y, x, pop_str, val_attr)
+            if spark:
+                self.stdscr.addstr(y, x + len(pop_str) + 1, spark[:spark_w], spark_attr)
+        except curses.error:
+            pass
+        y += 1
+
+        # ── Shannon Entropy with sparkline ──
+        ent_str = f"Entropy: {a.last_entropy:.3f}"
+        ent_spark_w = max(0, w - len(ent_str) - 1)
+        ent_spark = _analytics_sparkline(list(a.entropy_history), ent_spark_w)
+        try:
+            self.stdscr.addstr(y, x, ent_str, val_attr)
+            if ent_spark:
+                self.stdscr.addstr(y, x + len(ent_str) + 1, ent_spark[:ent_spark_w], spark_attr)
+        except curses.error:
+            pass
+        y += 1
+
+        # ── Rate of Change ──
+        delta_str = f"Δ/tick: {a.last_delta:+.1f} {a.last_trend}"
+        try:
+            self.stdscr.addstr(y, x, delta_str, val_attr)
+        except curses.error:
+            pass
+        y += 1
+
+        # ── Periodicity ──
+        if a.periodicity.period is not None:
+            per_str = f"Period: {a.periodicity.period}"
+            per_attr = curses.color_pair(3)  # yellow highlight
+        else:
+            per_str = "Period: none detected"
+            per_attr = text_attr | curses.A_DIM
+        try:
+            self.stdscr.addstr(y, x, per_str[:w], per_attr)
+        except curses.error:
+            pass
+        y += 1
+
+        # ── Separator ──
+        try:
+            self.stdscr.addstr(y, start_x + 1, "─" * inner_w, border_attr)
+        except curses.error:
+            pass
+        y += 1
+
+        # ── Symmetry Scores ──
+        sym = a.last_symmetry
+        sym_str = f"Sym  H:{sym['horiz']:.0%} V:{sym['vert']:.0%} R:{sym['rot180']:.0%}"
+        try:
+            self.stdscr.addstr(y, x, sym_str[:w], val_attr)
+        except curses.error:
+            pass
+        y += 1
+
+        # ── Symmetry bar visualization ──
+        bar_w = w - 2
+        if bar_w > 6:
+            avg_sym = (sym["horiz"] + sym["vert"] + sym["rot180"]) / 3
+            filled = int(avg_sym * bar_w)
+            bar = "█" * filled + "░" * (bar_w - filled)
+            try:
+                self.stdscr.addstr(y, x, "[" + bar[:bar_w] + "]", spark_attr)
+            except curses.error:
+                pass
+        y += 1
+
+        # ── Separator ──
+        try:
+            self.stdscr.addstr(y, start_x + 1, "─" * inner_w, border_attr)
+        except curses.error:
+            pass
+        y += 1
+
+        # ── Stability Classification ──
+        stab = a.last_stability
+        stab_icons = {
+            "starting": "◌",
+            "extinct": "✕",
+            "static": "■",
+            "oscillating": "∿",
+            "growing": "△",
+            "dying": "▽",
+            "chaotic": "⚡",
+            "stable": "●",
+        }
+        stab_colors = {
+            "starting": text_attr | curses.A_DIM,
+            "extinct": curses.color_pair(5),        # red
+            "static": curses.color_pair(6),          # white
+            "oscillating": curses.color_pair(3),     # yellow
+            "growing": curses.color_pair(1),         # green
+            "dying": curses.color_pair(5),           # red
+            "chaotic": curses.color_pair(4),         # magenta
+            "stable": curses.color_pair(2),          # cyan
+        }
+        icon = stab_icons.get(stab, "?")
+        stab_attr = stab_colors.get(stab, val_attr)
+        stab_line = f"State: {icon} {stab.upper()}"
+        try:
+            self.stdscr.addstr(y, x, stab_line[:w], stab_attr | curses.A_BOLD)
+        except curses.error:
+            pass
+        y += 1
+
+        # ── Grid density ──
+        total = self.grid.rows * self.grid.cols
+        density = pop / total if total > 0 else 0.0
+        dens_str = f"Density: {density:.1%}  ({self.grid.rows}×{self.grid.cols})"
+        try:
+            self.stdscr.addstr(y, x, dens_str[:w], text_attr | curses.A_DIM)
+        except curses.error:
+            pass
+        y += 1
+
+        # ── Footer hint ──
+        hint = "Ctrl+K to close"
+        try:
+            self.stdscr.addstr(y, x, hint[:w], text_attr | curses.A_DIM)
+        except curses.error:
+            pass
 
     # ── Minimap overlay ──
 
@@ -2973,6 +3158,11 @@ class App:
                 _my, _mx = self.stdscr.getmaxyx()
                 self._draw_cast_indicator(_my, _mx)
                 self.stdscr.refresh()
+            # ── Analytics overlay (drawn after all other overlays) ──
+            if self.analytics.enabled and not self._any_menu_open():
+                _my, _mx = self.stdscr.getmaxyx()
+                self._draw_analytics_overlay(_my, _mx)
+                self.stdscr.refresh()
             # ── Cast export menu ──
             if self.cast_export_menu:
                 _my, _mx = self.stdscr.getmaxyx()
@@ -2993,6 +3183,14 @@ class App:
             if key == 9:  # Tab
                 self.show_minimap = not self.show_minimap
                 self._flash("Minimap ON" if self.show_minimap else "Minimap OFF")
+                continue
+
+            # ── Analytics overlay toggle (Ctrl+K, global across all modes) ──
+            if key == 11:  # Ctrl+K
+                self.analytics.enabled = not self.analytics.enabled
+                if self.analytics.enabled:
+                    self.analytics.update(self.grid, self.pop_history)
+                self._flash("Analytics ON" if self.analytics.enabled else "Analytics OFF")
                 continue
 
             # ── Universal time-travel key handling ──
@@ -4052,6 +4250,8 @@ class App:
                 self._update_heatmap()
                 self._record_pop()
                 self._check_cycle()
+                if self.analytics.enabled:
+                    self.analytics.update(self.grid, self.pop_history)
                 if self.pattern_search_mode:
                     self._scan_patterns()
                 # Step the second grid in comparison mode
@@ -4095,6 +4295,8 @@ class App:
             self._update_heatmap()
             self._record_pop()
             self._check_cycle()
+            if self.analytics.enabled:
+                self.analytics.update(self.grid, self.pop_history)
             if self.pattern_search_mode:
                 self._scan_patterns()
             if self.compare_mode and self.grid2:
@@ -4163,6 +4365,7 @@ class App:
             self.pop_history.clear()
             self._record_pop()
             self._reset_cycle_detection()
+            self.analytics.reset()
             self.heatmap = [[0] * self.grid.cols for _ in range(self.grid.rows)]
             self.heatmap_max = 0
             self._flash("Cleared")
@@ -4178,6 +4381,7 @@ class App:
             self.pop_history.clear()
             self._record_pop()
             self._reset_cycle_detection()
+            self.analytics.reset()
             self.heatmap = [[0] * self.grid.cols for _ in range(self.grid.rows)]
             self.heatmap_max = 0
             self._flash("Randomised")
