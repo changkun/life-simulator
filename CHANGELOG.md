@@ -4,6 +4,36 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: TUI Dashboard — landing screen with live preview, categories, and favorites
+
+Replaces the old "drop straight into Game of Life" startup with a polished home screen
+that lets users discover, browse, and launch all 90+ simulation modes.
+
+**New file:** `life/dashboard.py` (~880 lines)
+
+**Features:**
+- ASCII art "LIFE SIM" banner (auto-downsizes for narrow terminals)
+- Left panel: all modes grouped by category with icons (⬡ Classic CA, ◎ Particle & Swarm, ≈ Fluid Dynamics, etc.)
+- Right panel: mode info (name, category, description, hotkey) + live animated mini-preview of the selected mode
+- 20+ unique preview animations (waves, particles, fractals, fire, matrix rain, fish tank, DNA helix, pendulums, colliders, etc.)
+- Favorites: press `f` to star/unstar, `Tab` to filter to favorites only, persisted to `~/.life_saves/favorites.json`
+- Live search: type to filter modes by name, description, or category
+- Category cycling: `Ctrl+A` cycles through category filters
+- `Enter` launches selected mode, `Esc` exits to default Game of Life
+- `M` opens the legacy mode browser (still accessible as a hidden shortcut)
+
+**Integration:**
+- Dashboard auto-opens on startup unless `--pattern`, `--host`, `--connect`, or `--no-dashboard` is specified
+- `m` key now opens the dashboard (previously opened the flat mode browser)
+- Dashboard renders at highest priority in the draw loop (before mode browser)
+- Dashboard key handling is first check in the run loop
+
+**CLI:** `--no-dashboard` flag for users who prefer the old immediate-start behavior
+
+**Why:** With 90+ modes, the old CLI-flag / in-app-mode-browser flow made discovery
+hard. The dashboard transforms this from a CLI tool into a showcase application — a
+visual "home base" for the entire simulation collection.
+
 ### Refactored: Split 51K-line monolith into modular package
 
 The single-file `life.py` (51,228 lines, 987 functions) has been decomposed into a

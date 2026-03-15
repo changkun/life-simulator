@@ -50,6 +50,17 @@ class App:
         self.message_time = 0.0
         self.pattern_menu = False
         self.stamp_menu = False  # stamp mode: overlay pattern at cursor
+        # Dashboard state (initialized later by _dashboard_init)
+        self.dashboard = False
+        self.dashboard_sel = 0
+        self.dashboard_scroll = 0
+        self.dashboard_search = ""
+        self.dashboard_category_filter = None
+        self.dashboard_favorites = set()
+        self.dashboard_show_favorites_only = False
+        self.dashboard_preview_tick = 0
+        self.dashboard_last_preview_time = 0.0
+        self.dashboard_tab = 0
         # Mode browser state
         self.mode_browser = False
         self.mode_browser_sel = 0  # index into flattened visible list
@@ -2741,6 +2752,9 @@ class App:
                     self._mp_exit()
                 continue
 
+            if self.dashboard:
+                if self._handle_dashboard_key(key):
+                    continue
             if self.mode_browser:
                 if self._handle_mode_browser_key(key):
                     continue
@@ -3657,11 +3671,7 @@ class App:
             self.show_help = True
             return True
         if key == ord("m"):
-            self.mode_browser = True
-            self.mode_browser_search = ""
-            self.mode_browser_filtered = list(MODE_REGISTRY)
-            self.mode_browser_sel = 0
-            self.mode_browser_scroll = 0
+            self._dashboard_init()
             return True
         if key == ord(" "):
             self.running = not self.running
@@ -4930,6 +4940,11 @@ class App:
     def _draw(self):
         self.stdscr.erase()
         max_y, max_x = self.stdscr.getmaxyx()
+
+        if self.dashboard:
+            self._draw_dashboard(max_y, max_x)
+            self.stdscr.refresh()
+            return
 
         if self.mode_browser:
             self._draw_mode_browser(max_y, max_x)
@@ -6457,6 +6472,10 @@ def main():
         help="List available patterns and exit",
     )
     parser.add_argument(
+        "--no-dashboard", action="store_true",
+        help="Skip the dashboard and start directly in Game of Life mode",
+    )
+    parser.add_argument(
         "--host", type=int, nargs="?", const=MP_DEFAULT_PORT, default=None,
         metavar="PORT",
         help=f"Host a multiplayer game (default port: {MP_DEFAULT_PORT})",
@@ -6476,6 +6495,9 @@ def main():
 
     def start(stdscr):
         app = App(stdscr, args.pattern, args.rows, args.cols)
+        # Show dashboard on startup unless a pattern, multiplayer, or --no-dashboard is specified
+        if args.pattern is None and args.host is None and args.connect is None and not args.no_dashboard:
+            app._dashboard_init()
         # Auto-start multiplayer if CLI flags given
         if args.host is not None:
             app.mp_host_port = args.host
