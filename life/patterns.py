@@ -1,0 +1,200 @@
+"""Preset patterns and puzzle definitions for the life simulation."""
+
+PATTERNS = {
+    "glider": {
+        "description": "A small pattern that moves diagonally",
+        "cells": [(0, 1), (1, 2), (2, 0), (2, 1), (2, 2)],
+    },
+    "blinker": {
+        "description": "Period-2 oscillator",
+        "cells": [(0, 0), (0, 1), (0, 2)],
+    },
+    "toad": {
+        "description": "Period-2 oscillator",
+        "cells": [(0, 1), (0, 2), (0, 3), (1, 0), (1, 1), (1, 2)],
+    },
+    "beacon": {
+        "description": "Period-2 oscillator",
+        "cells": [(0, 0), (0, 1), (1, 0), (2, 3), (3, 2), (3, 3)],
+    },
+    "pulsar": {
+        "description": "Period-3 oscillator",
+        "cells": [
+            # Top-left quadrant (and mirrors)
+            (0, 2), (0, 3), (0, 4), (0, 8), (0, 9), (0, 10),
+            (2, 0), (2, 5), (2, 7), (2, 12),
+            (3, 0), (3, 5), (3, 7), (3, 12),
+            (4, 0), (4, 5), (4, 7), (4, 12),
+            (5, 2), (5, 3), (5, 4), (5, 8), (5, 9), (5, 10),
+            (7, 2), (7, 3), (7, 4), (7, 8), (7, 9), (7, 10),
+            (8, 0), (8, 5), (8, 7), (8, 12),
+            (9, 0), (9, 5), (9, 7), (9, 12),
+            (10, 0), (10, 5), (10, 7), (10, 12),
+            (12, 2), (12, 3), (12, 4), (12, 8), (12, 9), (12, 10),
+        ],
+    },
+    "pentadecathlon": {
+        "description": "Period-15 oscillator",
+        "cells": [
+            (0, 1), (1, 1), (2, 0), (2, 2), (3, 1), (4, 1),
+            (5, 1), (6, 1), (7, 0), (7, 2), (8, 1), (9, 1),
+        ],
+    },
+    "lwss": {
+        "description": "Lightweight spaceship — moves horizontally",
+        "cells": [
+            (0, 1), (0, 4), (1, 0), (2, 0), (2, 4), (3, 0),
+            (3, 1), (3, 2), (3, 3),
+        ],
+    },
+    "glider_gun": {
+        "description": "Gosper glider gun — emits gliders forever",
+        "cells": [
+            (0, 24),
+            (1, 22), (1, 24),
+            (2, 12), (2, 13), (2, 20), (2, 21), (2, 34), (2, 35),
+            (3, 11), (3, 15), (3, 20), (3, 21), (3, 34), (3, 35),
+            (4, 0), (4, 1), (4, 10), (4, 16), (4, 20), (4, 21),
+            (5, 0), (5, 1), (5, 10), (5, 14), (5, 16), (5, 17), (5, 22), (5, 24),
+            (6, 10), (6, 16), (6, 24),
+            (7, 11), (7, 15),
+            (8, 12), (8, 13),
+        ],
+    },
+    "r_pentomino": {
+        "description": "R-pentomino — small but chaotic, stabilises after 1103 generations",
+        "cells": [(0, 1), (0, 2), (1, 0), (1, 1), (2, 1)],
+    },
+    "diehard": {
+        "description": "Diehard — vanishes after 130 generations",
+        "cells": [
+            (0, 6), (1, 0), (1, 1), (2, 1), (2, 5), (2, 6), (2, 7),
+        ],
+    },
+    "acorn": {
+        "description": "Acorn — takes 5206 generations to stabilise",
+        "cells": [
+            (0, 1), (1, 3), (2, 0), (2, 1), (2, 4), (2, 5), (2, 6),
+        ],
+    },
+    "block": {
+        "description": "Still life — 2×2 block",
+        "cells": [(0, 0), (0, 1), (1, 0), (1, 1)],
+    },
+    "beehive": {
+        "description": "Still life — beehive",
+        "cells": [(0, 1), (0, 2), (1, 0), (1, 3), (2, 1), (2, 2)],
+    },
+}
+
+
+PUZZLES = [
+    {
+        "id": 1,
+        "name": "First Still Life",
+        "description": "Place exactly 4 cells that form a still life (stable pattern).",
+        "type": "still_life",
+        "max_cells": 4,
+        "sim_gens": 50,
+        "goal_text": "Achieve a still life after 50 generations",
+        "hint": "A 2x2 block is the simplest still life.",
+    },
+    {
+        "id": 2,
+        "name": "Blinker Builder",
+        "description": "Create an oscillator with period >= 2 using at most 5 cells.",
+        "type": "oscillator",
+        "min_period": 2,
+        "max_cells": 5,
+        "sim_gens": 60,
+        "goal_text": "Build an oscillator (period >= 2) using <= 5 cells",
+        "hint": "Three cells in a row will oscillate.",
+    },
+    {
+        "id": 3,
+        "name": "Population Boom",
+        "description": "Place at most 5 cells that grow to population 20+ within 100 generations.",
+        "type": "reach_population",
+        "target_pop": 20,
+        "max_cells": 5,
+        "sim_gens": 100,
+        "goal_text": "Reach population 20+ within 100 gens (max 5 cells)",
+        "hint": "The R-pentomino is famous for explosive growth from just 5 cells.",
+    },
+    {
+        "id": 4,
+        "name": "Spaceship Launch",
+        "description": "Build a pattern that escapes a 10x10 bounding box within 30 generations.",
+        "type": "escape_box",
+        "box_size": 10,
+        "max_cells": 6,
+        "sim_gens": 30,
+        "goal_text": "Create a spaceship that escapes a 10x10 box (max 6 cells)",
+        "hint": "A glider moves diagonally, escaping any bounded region.",
+    },
+    {
+        "id": 5,
+        "name": "Extinction Event",
+        "description": "Place at most 7 cells that all die out within 150 generations.",
+        "type": "extinction",
+        "max_cells": 7,
+        "sim_gens": 150,
+        "goal_text": "All cells must die within 150 generations (max 7 cells)",
+        "hint": "The 'diehard' pattern vanishes after 130 generations from 7 cells.",
+    },
+    {
+        "id": 6,
+        "name": "Higher Period",
+        "description": "Create an oscillator with period >= 3 using at most 20 cells.",
+        "type": "oscillator",
+        "min_period": 3,
+        "max_cells": 20,
+        "sim_gens": 100,
+        "goal_text": "Build an oscillator with period >= 3 (max 20 cells)",
+        "hint": "The pulsar is a period-3 oscillator.",
+    },
+    {
+        "id": 7,
+        "name": "Population Explosion",
+        "description": "Reach population 100+ within 200 generations from at most 10 cells.",
+        "type": "reach_population",
+        "target_pop": 100,
+        "max_cells": 10,
+        "sim_gens": 200,
+        "goal_text": "Reach population 100+ within 200 gens (max 10 cells)",
+        "hint": "Try configurations that produce gliders or other expanding structures.",
+    },
+    {
+        "id": 8,
+        "name": "Efficient Still Life",
+        "description": "Create a still life with exactly 6 cells.",
+        "type": "still_life",
+        "max_cells": 6,
+        "sim_gens": 50,
+        "goal_text": "Build a 6-cell still life",
+        "hint": "A beehive has 6 cells and is perfectly stable.",
+    },
+    {
+        "id": 9,
+        "name": "Speed Run",
+        "description": "Reach population 50+ in the fewest generations from at most 8 cells.",
+        "type": "reach_population",
+        "target_pop": 50,
+        "max_cells": 8,
+        "sim_gens": 300,
+        "goal_text": "Reach population 50+ within 300 gens (max 8 cells, fewer gens = better)",
+        "hint": "Methuselahs like the acorn grow slowly but surely.",
+    },
+    {
+        "id": 10,
+        "name": "Grand Challenge",
+        "description": "Place at most 6 cells that survive 500+ generations without going extinct or reaching a still life.",
+        "type": "survive_gens",
+        "target_gens": 500,
+        "max_cells": 6,
+        "sim_gens": 600,
+        "goal_text": "Pattern must stay active (not still/extinct) for 500+ gens (max 6 cells)",
+        "hint": "The R-pentomino stays active for over 1000 generations from 5 cells.",
+    },
+]
+

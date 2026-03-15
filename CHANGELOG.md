@@ -4,6 +4,42 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Refactored: Split 51K-line monolith into modular package
+
+The single-file `life.py` (51,228 lines, 987 functions) has been decomposed into a
+104-file Python package under `life/`. The original entry point (`life.py`) is now a
+10-line shim; all logic lives in the package.
+
+**Package layout:**
+
+| Module | Purpose | Lines |
+|--------|---------|-------|
+| `life/app.py` | App class core — init, run loop, draw dispatch | ~6,500 |
+| `life/grid.py` | Grid class — toroidal cellular automaton grid | ~140 |
+| `life/constants.py` | Speed tables, cell chars, zoom levels | ~30 |
+| `life/patterns.py` | 13 preset patterns + 10 puzzle challenges | ~200 |
+| `life/rules.py` | Rule presets, `rule_string()`, `parse_rule_string()` | ~40 |
+| `life/colors.py` | Color palettes, age/mp/heat color helpers | ~330 |
+| `life/utils.py` | Pattern recognition, RLE parsing, GIF encoder, sparkline | ~520 |
+| `life/sound.py` | SoundEngine — procedural audio synthesis | ~175 |
+| `life/multiplayer.py` | MultiplayerNet — TCP networking | ~380 |
+| `life/registry.py` | MODE_CATEGORIES + MODE_REGISTRY (89 entries) | ~230 |
+| `life/modes/*.py` | **91 mode files**, one per simulation mode | ~44,700 |
+
+**Architecture:**
+
+- Each mode file defines standalone functions (`enter`/`exit`/`step`/`draw`/`handle`)
+  and a `register(App)` function that monkey-patches them onto the App class.
+- `life/modes/__init__.py` has `register_all_modes()` which loads all 91 mode files.
+- `life/__init__.py` uses lazy imports to avoid circular dependencies.
+- Backward compatible: `./life.py` still works; `python -m life` also works.
+- App class has 929 methods after all modes register.
+
+**Why:** At 51K lines, the monolith was becoming impractical to navigate, test, or
+extend. Every new simulation mode made the problem worse. The package structure makes
+future mode additions trivial (add one file, register in `__init__.py`) and the
+codebase navigable.
+
 ### Added: Particle Collider / Hadron Collider (Ctrl+Shift+Z)
 
 A CERN-inspired particle physics simulation — beams orbit an elliptical accelerator ring and collide at detector interaction points, producing showers of decay products.
