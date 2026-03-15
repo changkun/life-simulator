@@ -233,6 +233,9 @@ MODE_REGISTRY = [
     # ── Evolutionary Playground ──
     {"name": "Evolutionary Playground", "key": "Ctrl+Shift+I", "category": "Meta Modes",
      "desc": "Breed novel CA rules through interactive natural selection with crossover & mutation", "attr": "ep_mode", "enter": "_enter_evo_playground", "exit": "_exit_evo_playground"},
+    # ── Live Rule Editor ──
+    {"name": "Live Rule Editor", "key": "Ctrl+Shift+L", "category": "Meta Modes",
+     "desc": "Type Python expressions to define custom CA rules and watch them run live", "attr": "re_mode", "enter": "_enter_rule_editor_mode", "exit": "_exit_rule_editor_mode"},
     # ── Simulation Mashup ──
     {"name": "Simulation Mashup", "key": "Ctrl+M", "category": "Meta Modes",
      "desc": "Layer two simulations on the same grid with coupling for emergent behavior", "attr": "mashup_mode", "enter": "_enter_mashup_mode", "exit": "_exit_mashup_mode"},

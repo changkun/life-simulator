@@ -203,6 +203,30 @@ class App:
         self.ep_grid_cols = 4
         self.ep_tile_h = 6
         self.ep_tile_w = 8
+        # Live Rule Editor mode state
+        self.re_mode = False
+        self.re_menu = False
+        self.re_menu_sel = 0
+        self.re_menu_tab = 0
+        self.re_saved_rules = []
+        self.re_rows = 0
+        self.re_cols = 0
+        self.re_grid = []
+        self.re_generation = 0
+        self.re_population = 0
+        self.re_running = False
+        self.re_birth_expr = ""
+        self.re_survival_expr = ""
+        self.re_rule_name = ""
+        self.re_birth_code = None
+        self.re_birth_err = None
+        self.re_survival_code = None
+        self.re_survival_err = None
+        self.re_editing = None
+        self.re_edit_buf = ""
+        self.re_edit_cursor = 0
+        self.re_focus = 0
+        self.re_pop_history = []
         # Battle Royale mode state
         self.br_mode = False
         self.br_menu = False
@@ -2861,6 +2885,17 @@ class App:
                     self._screensaver_step()
                     continue
 
+            if self.re_menu:
+                if self._handle_re_menu_key(key):
+                    continue
+            elif self.re_mode:
+                if self._handle_re_key(key):
+                    if self.re_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        self._re_step()
+                    continue
+
             if self.ep_menu:
                 if self._handle_ep_menu_key(key):
                     continue
@@ -5100,6 +5135,16 @@ class App:
 
         if self.screensaver_menu:
             self._draw_screensaver_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.re_menu:
+            self._draw_re_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.re_mode:
+            self._draw_re(max_y, max_x)
             self.stdscr.refresh()
             return
 

@@ -4,6 +4,77 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Live Rule Editor — type Python expressions to define custom CA rules and watch them run in real time
+
+A new meta-mode that turns users from passive viewers into active creators. Instead of choosing
+from pre-built rules, users type Python expressions like `sum(neighbors) == 3` for birth and
+`sum(neighbors) in (2, 3)` for survival, and the grid immediately starts running the custom
+rule. Expressions can reference `neighbors`, `age`, `x`, `y`, `step`, and `random()` for
+stochastic, positional, temporal, and age-dependent rules that go far beyond standard B/S
+notation.
+
+**New file:** `life/modes/rule_editor.py` (~430 lines)
+
+**10 starter snippets** covering the spectrum from classic to exotic:
+
+| Snippet | Birth | Survival |
+|---------|-------|----------|
+| Classic Life (B3/S23) | `sum(neighbors) == 3` | `sum(neighbors) in (2, 3)` |
+| HighLife (B36/S23) | `sum(neighbors) in (3, 6)` | `sum(neighbors) in (2, 3)` |
+| Day & Night | `sum(neighbors) in (3, 6, 7, 8)` | `sum(neighbors) in (3, 4, 6, 7, 8)` |
+| Seeds (B2/S—) | `sum(neighbors) == 2` | `False` |
+| Diamoeba | `sum(neighbors) in (3, 5, 6, 7, 8)` | `sum(neighbors) in (5, 6, 7, 8)` |
+| Age-Dependent Decay | `sum(neighbors) == 3` | `sum(neighbors) in (2, 3) and age < 10` |
+| Positional Bias | `sum(neighbors) == 3 and (x + y) % 3 == 0` | `sum(neighbors) in (2, 3)` |
+| Stochastic Life | `sum(neighbors) == 3 or (... random() < 0.05)` | `sum(neighbors) in (2, 3)` |
+| Pulse (step-dependent) | `sum(neighbors) == 3 or (... step % 10 < 3)` | `sum(neighbors) in (2, 3)` |
+| Anneal (B4678/S35678) | `sum(neighbors) in (4, 6, 7, 8)` | `sum(neighbors) in (3, 5, 6, 7, 8)` |
+
+**Inline editor** with Tab to cycle between Birth/Survival/Name fields, Enter to edit, full
+cursor movement (arrows, Home/End, Ctrl+A/E/K/U), Esc to cancel. Expressions are compiled on
+confirm and errors are shown inline.
+
+**Save/load system:** Custom rules persist to `~/.life_saves/custom_rules.json`. The menu has
+tabs for browsing snippets vs saved rules, with delete support via `x`.
+
+**Sandboxed eval:** `__builtins__` is set to `{}` — only safe math/list builtins (`sum`, `len`,
+`min`, `max`, `abs`, `any`, `all`, `int`, `float`, `math`) are exposed.
+
+**Integration with other modes:**
+- `i` = Import from Evolutionary Playground — converts an EP genome's birth/survival sets into
+  expression form for fine-tuning
+- `a` = Adopt to main GoL — probes the rule for each neighbor count 0–8 and sets `grid.birth`
+  and `grid.survival` to the inferred B/S sets
+
+**Controls:**
+
+| Key | Action |
+|-----|--------|
+| `Space` | Play/pause simulation |
+| `.` | Single step |
+| `Enter` | Edit focused field |
+| `Tab` | Cycle focus (Birth → Survival → Name) |
+| `+` / `-` | Adjust speed |
+| `r` | Randomize grid |
+| `c` | Clear grid |
+| `S` | Save current rule |
+| `a` | Adopt rule to main GoL grid |
+| `i` | Import from Evolutionary Playground |
+| `m` | Back to snippet/load menu |
+| `q` / `Esc` | Exit rule editor |
+
+**Registration:**
+- Registry: category "Meta Modes", hotkey `Ctrl+Shift+L`
+- App: 24 state variables, menu/editor key dispatch, draw dispatch
+- Modes `__init__.py`: registered via `rule_editor.register(App)`
+
+**Why:** The project has 94+ modes but they're all pre-built — users can watch but not create.
+The Live Rule Editor is the difference between a museum and a workshop. It pairs with the
+Evolutionary Playground (evolve rules, then import and fine-tune expressions) and the Parameter
+Space Explorer (explore your custom rules' parameter landscape). Expression-based rules also
+unlock behaviors impossible in standard B/S notation: age-dependent decay, spatial patterning,
+stochastic transitions, and temporal pulses.
+
 ### Added: Battle Royale Mode — 4 cellular automata factions compete for territory in real-time
 
 A new meta-mode where four different cellular automata rules spawn in corners of a shared grid
