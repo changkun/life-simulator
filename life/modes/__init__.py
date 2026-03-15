@@ -196,6 +196,8 @@ def register_all_modes(App):
     reg_br(App)
     from life.modes.mashup import register as reg_mashup
     reg_mashup(App)
+    from life.modes.observatory import register as reg_observatory
+    reg_observatory(App)
     from life.modes.time_travel import register as reg_tt
     reg_tt(App)
     from life.modes.sonification import register as reg_sonify

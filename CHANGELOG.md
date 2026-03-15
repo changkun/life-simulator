@@ -4,6 +4,72 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Simulation Observatory — tiled split-screen running 4-9 simulations simultaneously with synced controls
+
+A new meta-mode that displays multiple simulations side-by-side in a tiled grid, letting users
+visually compare different cellular automata and simulation engines running in real time. With
+95+ modes in the library, users previously had to view them one at a time — the Observatory
+makes cross-simulation discovery possible by running up to 9 independent viewports on screen.
+
+**New file:** `life/modes/observatory.py` (~591 lines)
+
+**Layouts:**
+
+| Layout | Grid | Viewports |
+|--------|------|-----------|
+| Side by Side | 2×1 | 2 |
+| Quad | 2×2 | 4 |
+| Wide | 3×2 | 6 |
+| Full Grid | 3×3 | 9 |
+
+**5 curated presets** for instant discovery:
+
+| Preset | Simulations | Layout |
+|--------|------------|--------|
+| Fluid Trio | Wave Equation, Reaction-Diffusion, Physarum | 3×2 |
+| Chaos Theory | Game of Life, Rock-Paper-Scissors, Ising Model, Forest Fire | 2×2 |
+| Micro vs Macro | Boids, Physarum, Game of Life, Wave Equation | 2×2 |
+| Nature's Patterns | Reaction-Diffusion, Forest Fire, Physarum, Rock-Paper-Scissors | 2×2 |
+| Everything | All 8 simulation engines + 1 duplicate | 3×3 |
+
+**Custom picker:** Choose a layout, then select simulations one by one from the full engine
+list. Reuses the 8 mini-simulation engines from `mashup.py` (`_ENGINES` dispatch table),
+keeping things DRY.
+
+**Focus zoom:** Press `1`-`9` to expand any viewport to full screen for closer inspection,
+`0` to return to the tiled view. Focused viewports show the simulation at full terminal
+resolution.
+
+**Controls:**
+
+| Key | Action |
+|-----|--------|
+| `Ctrl+O` | Enter Observatory mode |
+| `Space` | Play / pause all viewports |
+| `n` / `.` | Single step all viewports |
+| `1`-`9` | Focus-zoom viewport N |
+| `0` | Unfocus (return to tiled view) |
+| `>` / `<` | Speed up / slow down |
+| `r` | Reset all viewports |
+| `R` | Return to preset/layout menu |
+| `q` / `Esc` | Exit Observatory |
+
+**Integration points in `life/app.py`:**
+- Instance state: 15 `obs_*` attributes for mode, menu, viewports, grid dimensions, and focus
+- Draw dispatch: `_draw_observatory_menu()` and `_draw_observatory()` before mashup checks
+- Key dispatch: `_handle_observatory_menu_key()` and `_handle_observatory_key()` before mashup
+
+**Architecture:** Each viewport maintains independent simulation state (no coupling between
+tiles). All viewports share global speed/pause controls and advance in lockstep. The mode
+builds on the proven meta-mode pattern established by Mashup and Battle Royale.
+
+**Why:** The project has accumulated 95+ simulation modes, but users can only view them one at
+a time. Recent features (Time-Travel Scrubber, Sonification, Mashup Mode) have been
+cross-cutting "meta" features. The Observatory is the natural culmination — any combination
+of modes, running together, compared visually in real time. It showcases the breadth of the
+simulation library and enables discovery of surprising visual similarities between unrelated
+simulations.
+
 ### Added: Simulation Sonification Layer — maps any running simulation's visual state to real-time procedural audio
 
 A horizontal feature (like the Time-Travel Scrubber) that turns all 99+ simulation modes into

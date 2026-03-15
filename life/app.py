@@ -249,6 +249,21 @@ class App:
         self.br_scores: list[int] = [0, 0, 0, 0]
         self.br_eliminated: list[bool] = [False] * 4
         self.br_winner = -1
+        # Observatory mode state
+        self.obs_mode = False
+        self.obs_menu = False
+        self.obs_menu_sel = 0
+        self.obs_menu_phase = 0
+        self.obs_pick_layout = None
+        self.obs_pick_sims = []
+        self.obs_running = False
+        self.obs_generation = 0
+        self.obs_viewports = []
+        self.obs_grid_rows = 2
+        self.obs_grid_cols = 2
+        self.obs_vp_h = 10
+        self.obs_vp_w = 20
+        self.obs_focus = -1
         # Mashup mode state
         self.mashup_mode = False
         self.mashup_menu = False
@@ -2941,6 +2956,17 @@ class App:
                         self._br_do_step()
                     continue
 
+            if self.obs_menu:
+                if self._handle_observatory_menu_key(key):
+                    continue
+            elif self.obs_mode:
+                if self._handle_observatory_key(key):
+                    if self.obs_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        self._observatory_step()
+                    continue
+
             if self.mashup_menu:
                 if self._handle_mashup_menu_key(key):
                     continue
@@ -5198,6 +5224,16 @@ class App:
 
         if self.br_mode:
             self._draw_battle_royale(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.obs_menu:
+            self._draw_observatory_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.obs_mode:
+            self._draw_observatory(max_y, max_x)
             self.stdscr.refresh()
             return
 
