@@ -264,6 +264,31 @@ class App:
         self.obs_vp_h = 10
         self.obs_vp_w = 20
         self.obs_focus = -1
+        # Portal mode state
+        self.portal_mode = False
+        self.portal_menu = False
+        self.portal_menu_sel = 0
+        self.portal_menu_phase = 0
+        self.portal_pick_a = ""
+        self.portal_pick_b = ""
+        self.portal_running = False
+        self.portal_generation = 0
+        self.portal_sim_a = None
+        self.portal_sim_b = None
+        self.portal_sim_a_id = ""
+        self.portal_sim_b_id = ""
+        self.portal_sim_a_name = ""
+        self.portal_sim_b_name = ""
+        self.portal_coupling = 0.5
+        self.portal_bleed = 3
+        self.portal_orientation = "vertical"
+        self.portal_sim_rows = 0
+        self.portal_sim_cols = 0
+        self.portal_split = 0
+        self.portal_avail_rows = 0
+        self.portal_avail_cols = 0
+        self.portal_density_a: list[list[float]] = []
+        self.portal_density_b: list[list[float]] = []
         # Mashup mode state
         self.mashup_mode = False
         self.mashup_menu = False
@@ -3000,6 +3025,17 @@ class App:
                         self._observatory_step()
                     continue
 
+            if self.portal_menu:
+                if self._handle_portal_menu_key(key):
+                    continue
+            elif self.portal_mode:
+                if self._handle_portal_key(key):
+                    if self.portal_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        self._portal_step()
+                    continue
+
             if self.mashup_menu:
                 if self._handle_mashup_menu_key(key):
                     continue
@@ -5279,6 +5315,16 @@ class App:
 
         if self.obs_mode:
             self._draw_observatory(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.portal_menu:
+            self._draw_portal_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.portal_mode:
+            self._draw_portal(max_y, max_x)
             self.stdscr.refresh()
             return
 

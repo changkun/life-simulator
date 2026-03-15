@@ -242,6 +242,9 @@ MODE_REGISTRY = [
     # ── Battle Royale ──
     {"name": "Battle Royale", "key": "Ctrl+Shift+U", "category": "Meta Modes",
      "desc": "4 CA factions fight for territory — last faction standing wins", "attr": "br_mode", "enter": "_enter_battle_royale", "exit": "_exit_battle_royale"},
+    # ── Simulation Portal ──
+    {"name": "Simulation Portal", "key": "Ctrl+J", "category": "Meta Modes",
+     "desc": "Spatial gateways connecting two simulations at a boundary with cross-talk", "attr": "portal_mode", "enter": "_enter_portal_mode", "exit": "_exit_portal_mode"},
     # ── Simulation Observatory ──
     {"name": "Simulation Observatory", "key": "Ctrl+O", "category": "Meta Modes",
      "desc": "Tiled split-screen running 4-9 simulations simultaneously with synced controls", "attr": "obs_mode", "enter": "_enter_observatory_mode", "exit": "_exit_observatory_mode"},

@@ -4,6 +4,76 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Simulation Portal System — spatial gateways connecting two simulations at a boundary with cross-talk
+
+A new meta-mode that creates a spatial boundary inside a single viewport where two different
+simulation types run side-by-side. At the seam, each simulation's output bleeds into the other,
+creating emergent cross-talk behavior that doesn't exist in either simulation alone. Unlike
+Mashup mode (which couples whole simulations globally), portals create a *localized spatial
+interface* — e.g., a Reaction-Diffusion system on the left feeding energy into Particle Life
+on the right, with visible influence fading over a configurable bleed depth.
+
+**New file:** `life/modes/portal.py` (~762 lines)
+
+**8 curated portal presets** with descriptions:
+
+| Preset | Orientation | Description |
+|--------|-------------|-------------|
+| RD ↔ Particle Life | vertical | Reaction-Diffusion feeds energy into Boids at the seam |
+| Wave ↔ Forest Fire | vertical | Wave amplitude ignites fire; fire damps waves at the border |
+| Game of Life ↔ Ising | vertical | Life births polarize spins; spin alignment births life |
+| Physarum ↔ RPS | horizontal | Slime trails guide invasion; invasions deposit pheromone |
+| Boids ↔ Wave | horizontal | Boids create ripples at boundary; waves steer boids |
+| Fire ↔ Game of Life | vertical | Fire clears life; life regrows and fuels fire across the seam |
+| Ising ↔ RD | horizontal | Spin domains modulate reaction feed rate at the interface |
+| RPS ↔ Wave | vertical | Cyclic invasion creates wave pulses; waves bias dominance |
+
+**Custom portal builder:** Pick any two of the 8 mini-engines, then choose vertical or horizontal
+orientation for a fully custom portal setup.
+
+**Boundary cross-talk algorithm:**
+- Each simulation's edge density is sampled over a configurable bleed depth (1–20 cells)
+- Influence fades linearly from the seam: cells at the boundary get full coupling, cells at
+  bleed depth get zero
+- A→B influence uses A's right/bottom edge mapped to B's left/top edge, and vice versa
+- Coupling strength (0.0–1.0) scales the influence before it's passed to each engine's step function
+- Reuses the existing `_ENGINES` dispatch table from Mashup mode for init/step/density functions
+
+**Visual features:**
+- Yellow `┃` (vertical) or `━` (horizontal) seam line at the portal boundary
+- Sim A rendered in cyan, Sim B in red, with magenta highlights in the bleed zone
+- Header bar showing mode, generation count, coupling strength, bleed depth, and play state
+- Status bar with per-side average density statistics
+
+**Controls:**
+
+| Key | Action |
+|-----|--------|
+| `Space` | Play / pause |
+| `n` / `.` | Single step |
+| `+` / `-` | Increase / decrease coupling strength (±0.05) |
+| `b` / `B` | Increase / decrease bleed depth (±1 cell) |
+| `o` | Toggle orientation (vertical ↔ horizontal) |
+| `0` | Set coupling to 0.0 (independent) |
+| `5` | Set coupling to 0.5 (default) |
+| `r` | Reset both simulations |
+| `R` | Return to preset menu |
+| `>` / `<` | Speed up / slow down |
+| `q` / `Esc` | Exit portal mode |
+
+**Integration points (4 files modified):**
+- `life/modes/__init__.py` — registered the portal module
+- `life/registry.py` — added `Simulation Portal` entry (Ctrl+J, Meta Modes category)
+- `life/app.py` — portal state initialization (~25 attributes), draw dispatch for menu and
+  simulation views, key handling and simulation advancement in the main loop
+
+**Why:** The existing meta-modes (Observatory, Battle Royale, Mashup) combine simulations at
+the *global* level — all cells share the same coupling. Portal mode introduces *spatial*
+coupling: two physics stitched together at a visible border with localized cross-talk. This
+creates visually novel emergent behavior at the interface that neither simulation produces
+alone, and builds naturally on the mini-engine dispatch table, per-mode rendering pipeline,
+and density-based coupling interface already established by prior meta-modes.
+
 ### Added: Simulation Genome Sharing System — encode any simulation's config as a compact, shareable seed string
 
 A horizontal feature that lets users export any running simulation's complete configuration as a
