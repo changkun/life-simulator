@@ -1,0 +1,387 @@
+# Fluid Dynamics
+
+The motion of liquids, gases, and plasmas — from kitchen honey to interstellar magnetohydrodynamics.
+
+This document covers the eight fluid dynamics simulation modes in Life Simulator. Each mode implements a distinct physical model, discretized for real-time ASCII visualization in the terminal. The models range from kinetic theory (Lattice Boltzmann) to continuum mechanics (Navier-Stokes), from astrophysical plasmas (MHD) to everyday viscous threads (fluid rope coiling).
+
+---
+
+## Lattice Boltzmann Fluid
+
+**Background.** The Lattice Boltzmann Method (LBM) originated in the late 1980s as an alternative to directly solving the Navier-Stokes equations. Instead of tracking macroscopic velocity and pressure, LBM models the fluid as populations of fictitious particles streaming and colliding on a discrete lattice. The method was pioneered by McNamara and Zanetti (1988) and refined by Qian, d'Humieres, and Lallemand into the D2Q9 model used here. LBM is prized for its natural handling of complex boundaries and its inherent parallelism.
+
+**Formulation.** The simulation uses the D2Q9 lattice (2 dimensions, 9 velocity directions) with the BGK (Bhatnagar-Gross-Krook) single-relaxation-time collision operator.
+
+```
+Lattice velocities (D2Q9):
+  Direction i:  0   1   2   3   4   5   6   7   8
+  ex:           0   1   0  -1   0   1  -1  -1   1
+  ey:           0   0   1   0  -1   1   1  -1  -1
+
+Weights:
+  w_0 = 4/9,  w_{1..4} = 1/9,  w_{5..8} = 1/36
+
+Equilibrium distribution:
+  f_i^eq = w_i * rho * (1 + 3*(e_i . u) + 4.5*(e_i . u)^2 - 1.5*|u|^2)
+
+BGK collision:
+  f_i(x + e_i, t+1) = f_i(x, t) + omega * (f_i^eq - f_i)
+
+where:
+  rho = sum_i f_i          (density)
+  u   = sum_i e_i * f_i / rho  (macroscopic velocity)
+  omega = relaxation parameter (0.5 < omega < 2.0)
+  nu  = (1/omega - 0.5) / 3    (kinematic viscosity)
+```
+
+Obstacle boundaries use the bounce-back rule: incoming distributions reverse direction. Inflow uses Zou-He-style equilibrium forcing; outflow copies from the interior. The lid-driven cavity preset instead enforces a moving wall velocity at the top boundary.
+
+**What to look for.** At low omega (high viscosity), flow is smooth and laminar. Increase omega toward 1.9 and the flow transitions to turbulence with vortex shedding visible in the vorticity view. The Von Karman Street preset produces the classic alternating vortex wake behind a cylinder. Switch visualization modes (speed, vorticity, density) to see different aspects of the same flow. The Reynolds number displayed approximates Re = u_0 * L / nu.
+
+**Presets:** Wind Tunnel (omega=1.4), Von Karman Street (omega=1.85), Lid-Driven Cavity (omega=1.5), Channel Flow (omega=1.6), Obstacle Course (omega=1.5), Turbulence (omega=1.9).
+
+**References.**
+- Qian, Y.H., d'Humieres, D., and Lallemand, P. "Lattice BGK Models for Navier-Stokes Equation." *Europhysics Letters*, 17(6), 1992. https://doi.org/10.1209/0295-5075/17/6/001
+- McNamara, G.R. and Zanetti, G. "Use of the Boltzmann Equation to Simulate Lattice-Gas Automata." *Physical Review Letters*, 61(20), 1988. https://doi.org/10.1103/PhysRevLett.61.2332
+
+---
+
+## Navier-Stokes
+
+**Background.** The Navier-Stokes equations are the fundamental description of viscous fluid motion, formulated by Claude-Louis Navier (1822) and George Gabriel Stokes (1845). This mode solves the 2D incompressible Navier-Stokes equations using Jos Stam's "Stable Fluids" method, which guarantees unconditional stability regardless of time step or viscosity. The approach splits each time step into diffusion, advection, and pressure projection.
+
+**Formulation.** The velocity step proceeds as diffuse-project-advect-project, and the dye/scalar field follows a separate diffuse-advect cycle.
+
+```
+Incompressible Navier-Stokes:
+  du/dt = -(u . grad)u - grad(p)/rho + nu * laplacian(u)
+  div(u) = 0
+
+Stam splitting (per timestep dt):
+
+  1. Diffusion (implicit Gauss-Seidel, 20 iterations):
+     x[r][c] = (x0[r][c] + a * sum_neighbors(x)) / (1 + a * n_neighbors)
+     where a = dt * nu * N^2
+
+  2. Pressure projection (Gauss-Seidel, 20 iterations):
+     div = -0.5 * (h_x*(vx[c+1]-vx[c-1]) + h_y*(vy[r+1]-vy[r-1]))
+     p[r][c] = (div + sum_neighbors(p)) / n_neighbors
+     Then: vx -= 0.5 * (p[c+1] - p[c-1]) * cols
+            vy -= 0.5 * (p[r+1] - p[r-1]) * rows
+
+  3. Advection (semi-Lagrangian, bilinear interpolation):
+     Trace particle backward: x_src = x - dt*N*vx, y_src = y - dt*N*vy
+     Interpolate d[r][c] from d0 at (x_src, y_src)
+
+Parameters:
+  nu       = 0.0001   (kinematic viscosity)
+  diffusion = 0.00001  (dye diffusion coefficient)
+  dt       = 0.1       (time step)
+  iterations = 20      (Gauss-Seidel relaxation count)
+```
+
+The dye field is passively advected through the velocity field and undergoes slow dissipation (multiplied by 0.999 each step). Users can interactively inject dye and momentum at the cursor position, and place or remove circular obstacles.
+
+**What to look for.** The Vortex Pair preset shows two counter-rotating vortices that orbit and merge. The Karman Vortices preset demonstrates vortex shedding behind a circular obstacle, with dye bands making the alternating wake visible. The Shear Layer preset seeds Kelvin-Helmholtz instability: opposing flows create rolling vortices along the interface. Reduce viscosity to see finer turbulent structures; increase it to see smooth laminar flow.
+
+**References.**
+- Stam, J. "Stable Fluids." *Proceedings of SIGGRAPH 1999*, ACM, 1999. https://doi.org/10.1145/311535.311548
+- Stam, J. "Real-Time Fluid Dynamics for Games." *Game Developers Conference*, 2003. https://www.dgp.toronto.edu/public_user/stam/reality/Research/pdf/GDC03.pdf
+
+---
+
+## Rayleigh-Benard Convection
+
+**Background.** When a fluid layer is heated from below and cooled from above, it remains still until the temperature difference exceeds a critical threshold. Beyond that threshold, buoyancy overcomes viscous drag and the fluid organizes into convection cells -- rising hot plumes and sinking cold sheets. This phenomenon was studied experimentally by Henri Benard (1900) and analyzed theoretically by Lord Rayleigh (1916). It governs patterns in boiling water, Earth's mantle convection, solar granulation, and atmospheric weather cells.
+
+**Formulation.** The simulation uses a 2D Boussinesq approximation: density variations are ignored except in the buoyancy term.
+
+```
+Boussinesq equations (simplified):
+
+  Temperature:
+    dT/dt = kappa * laplacian(T) - (u . grad)T
+
+  Velocity:
+    dvx/dt = nu * laplacian(vx) - (u . grad)vx
+    dvy/dt = nu * laplacian(vy) - (u . grad)vy - Ra * C * (T - T_ref)
+
+  Divergence reduction:
+    4 Gauss-Seidel iterations pushing divergence to neighbors
+
+where:
+  Ra     = Rayleigh number (500 to 10000, controls convective vigor)
+  Pr     = Prandtl number (nu/kappa: 0.025 for plasma, 0.71 for air, 10 for mantle)
+  kappa  = 1.0 (thermal diffusivity, normalized)
+  nu     = Pr  (kinematic viscosity)
+  T_ref  = 0.5 * (T_hot + T_cold)
+  C      = Ra * dt * 0.0001 (scaled buoyancy coefficient)
+
+Boundary conditions:
+  Top:    T = T_cold = 0.0, no-slip (vx = vy = 0)
+  Bottom: T = T_hot  = 1.0, no-slip
+  Sides:  Periodic in x
+
+Advection uses first-order upwind differencing.
+Velocities are clamped to [-5, 5] for stability.
+```
+
+**What to look for.** The Classic preset (Ra=2000, Pr=0.71) produces steady convection rolls that emerge from small sinusoidal perturbations. Increase Ra with the +/- keys to see rolls become unsteady and eventually turbulent. The Mantle preset (Pr=10) models Earth's interior: high viscosity produces broad, slow-moving cells. The Solar preset (Pr=0.025, Ra=10000) simulates stellar convection with vigorous, small-scale turbulence. Switch to vorticity view to see the roll boundaries where shear is strongest.
+
+**Presets:** Classic Rolls (Ra=2000), Gentle Flow (Ra=500), Turbulent (Ra=8000), Hexagonal Cells (Ra=3000), Mantle Convection (Ra=1200, Pr=10), Solar Convection (Ra=10000, Pr=0.025), Asymmetric Heating (Ra=3000), Random (Ra=4000).
+
+**References.**
+- Rayleigh, Lord. "On Convection Currents in a Horizontal Layer of Fluid, When the Higher Temperature Is on the Under Side." *Philosophical Magazine*, 32(192), 1916. https://doi.org/10.1080/14786441608635602
+- Chandrasekhar, S. *Hydrodynamic and Hydromagnetic Stability*. Oxford University Press, 1961. https://doi.org/10.1093/oso/9780198512790.001.0001
+
+---
+
+## SPH Fluid
+
+**Background.** Smoothed Particle Hydrodynamics (SPH) represents a fluid as a collection of discrete particles, each carrying mass, velocity, and thermodynamic quantities. Originally invented by Gingold and Monaghan (1977) for astrophysical simulations, SPH was adapted for free-surface flows by Muller, Charypar, and Gross (2003). Unlike grid-based methods, SPH naturally handles splashing, fragmentation, and topological changes -- making it ideal for dam breaks, droplets, and fountains.
+
+**Formulation.** Each particle stores position (x, y), velocity (vx, vy), density (rho), and pressure (P). The algorithm proceeds in five stages per timestep.
+
+```
+SPH Kernels:
+  Poly6 (density):     W(r,h) = 315/(64*pi*h^9) * (h^2 - r^2)^3
+  Spiky (pressure):    grad W = -45/(pi*h^6) * (h - r)^2 * r_hat
+  Viscosity (laplacian): lap W = 45/(pi*h^6) * (h - r)
+
+Algorithm per timestep:
+  1. Density:  rho_i = sum_j m * W_poly6(|r_i - r_j|, h)
+
+  2. Pressure (equation of state):
+     P_i = k * (rho_i - rho_0)
+
+  3. Forces:
+     F_pressure = -sum_j m*(P_i+P_j)/(2*rho_j) * grad W_spiky
+     F_viscosity = mu * sum_j m/rho_j * (v_j - v_i) * lap W_visc
+     a_i = (F_pressure + F_viscosity) / rho_i + g
+
+  4. Integration (symplectic Euler):
+     v_i += a_i * dt
+     x_i += v_i * dt
+
+  5. Boundary collisions:
+     Reflect with damping factor at walls
+
+Default parameters:
+  h (smoothing radius) = 1.5
+  rho_0 (rest density)  = 1000
+  k (gas constant)      = 2000
+  mu (viscosity)        = 250
+  g (gravity)           = 9.8
+  dt                    = 0.003
+  damping               = 0.5
+```
+
+The Fountain preset applies a continuous upward velocity kick to particles near the bottom center, creating a sustained jet that falls back under gravity.
+
+**What to look for.** The Dam Break preset shows a column of water collapsing under gravity and splashing against the far wall. Watch for the wavefront, the splashback, and eventual sloshing equilibrium. The Drop preset shows a dense block falling into a pool, generating a crown splash. Increase gravity with +/- to see more energetic dynamics; the particles respond immediately because SPH is a Lagrangian method. The density visualization reveals pressure waves propagating through the fluid.
+
+**Presets:** Dam Break, Double Dam, Drop Impact, Rainfall, Wave, Fountain.
+
+**References.**
+- Muller, M., Charypar, D., and Gross, M. "Particle-Based Fluid Simulation for Interactive Applications." *Proceedings of the 2003 ACM SIGGRAPH/Eurographics Symposium on Computer Animation*, 2003. https://doi.org/10.2312/SCA03/154-159
+- Monaghan, J.J. "Smoothed Particle Hydrodynamics." *Annual Review of Astronomy and Astrophysics*, 30, 1992. https://doi.org/10.1146/annurev.aa.30.090192.002551
+
+---
+
+## MHD Plasma
+
+**Background.** Magnetohydrodynamics (MHD) describes the behavior of electrically conducting fluids -- plasmas, liquid metals, and salt water -- in the presence of magnetic fields. The coupling between fluid flow and magnetic field produces phenomena with no analogue in ordinary fluids: magnetic reconnection, Alfven waves, and the formation of current sheets. Hannes Alfven received the 1970 Nobel Prize in Physics for founding MHD theory. This mode solves the resistive MHD equations in 2D using explicit finite differences.
+
+**Formulation.** The simulation evolves five coupled fields: density (rho), velocity (vx, vy), and magnetic field (Bx, By).
+
+```
+Resistive MHD equations:
+  d(rho)/dt = -div(rho*v) + 0.01 * laplacian(rho)     (continuity)
+  dv/dt     = -(v.grad)v - grad(p)/rho + (JxB)/rho + nu*laplacian(v)  (momentum)
+  dB/dt     = curl(v x B) + eta * laplacian(B)          (induction)
+
+where:
+  J = curl(B) = dBy/dx - dBx/dy     (current density, z-component only in 2D)
+  p = p_coeff * rho                  (isothermal equation of state)
+
+  Lorentz force (2D):
+    Fx = Jz * By
+    Fy = -Jz * Bx
+
+  Induction equation (2D):
+    Ez = vx*By - vy*Bx               (z-component of v x B)
+    dBx/dt = -dEz/dy + eta * laplacian(Bx)
+    dBy/dt =  dEz/dx + eta * laplacian(By)
+
+Spatial discretization: 5-point stencil, central differences, periodic BCs
+Time integration: explicit Euler, dt = 0.02
+Velocity and B clamped to [-2, 2] for stability
+
+Typical parameters:
+  eta (resistivity): 0.005 - 0.050
+  nu  (viscosity):   0.005 - 0.050
+  p_coeff:           0.5 - 2.0
+```
+
+**What to look for.** The Harris Current Sheet preset initializes anti-parallel magnetic fields (Bx = tanh(y)) separated by a thin current layer. Over time, the tearing instability breaks the sheet into magnetic islands -- this is magnetic reconnection, the same process that powers solar flares. The Orszag-Tang Vortex is a classic MHD turbulence benchmark: initially smooth velocity and magnetic fields cascade into shock-like structures and current sheets. Switch to the "current" view to see where Jz concentrates -- these are reconnection sites. The "magnetic" view colors field lines by direction, revealing the topology of magnetic flux.
+
+**Presets:** Harris Current Sheet, Orszag-Tang Vortex, Magnetic Island, MHD Blast Wave, Kelvin-Helmholtz (MHD), Double Current Sheet, Flux Rope, Random Turbulence.
+
+**References.**
+- Orszag, S.A. and Tang, C.M. "Small-Scale Structure of Two-Dimensional Magnetohydrodynamic Turbulence." *Journal of Fluid Mechanics*, 90(1), 1979. https://doi.org/10.1017/S0022112079000100
+- Biskamp, D. *Magnetic Reconnection in Plasmas*. Cambridge University Press, 2000. https://doi.org/10.1017/CBO9780511599958
+
+---
+
+## Atmospheric Weather
+
+**Background.** Weather systems arise from the interplay of solar heating, the Coriolis effect, moisture transport, and pressure gradients. This mode simulates synoptic-scale (hundreds of kilometers) atmospheric dynamics using a semi-Lagrangian advection scheme with parameterized physics. Pressure centers (highs and lows) drive geostrophic winds; fronts create temperature contrasts that trigger precipitation. The model captures the qualitative behavior described by the Norwegian cyclone model developed by Vilhelm Bjerknes and the Bergen School in the 1920s.
+
+**Formulation.** The simulation tracks six fields: pressure, temperature, humidity, wind (u and v components), cloud density, and precipitation.
+
+```
+Pressure field:
+  P(r,c) = 1013.25 + sum_centers[ dP * intensity * exp(-dist^2 / (2*R^2)) ]
+
+Geostrophic wind (from pressure gradient + Coriolis deflection):
+  u = -dP/dc * 0.5
+  v = -dP/dr * 0.5
+  u_new = u + f * v      (f = coriolis * sign(latitude))
+  v_new = v - f * u
+  coriolis = 0.15
+
+Temperature/humidity advection (semi-Lagrangian):
+  Trace back: src = (r,c) - (v,u) * 0.3 * speed
+  Bilinear interpolation from source position
+
+Cloud formation:
+  tendency = humidity * 0.6 + lift * 0.3 - 0.3
+  lift = (1013.25 - P) / 50     (low pressure = rising air)
+  cloud += convergence * 0.1    (wind convergence enhances clouds)
+  cloud = cloud * 0.8 + target * 0.2
+
+Precipitation:
+  if cloud > 0.6 and humidity > 0.65:
+    precip = (cloud - 0.5) * humidity * 2.0
+    type = snow if T < 2C, else rain
+  Precipitation depletes humidity
+
+Frontal effects:
+  Cold front: T -= 0.5*strength, humidity += 0.05*strength
+  Warm front: T += 0.3*strength, humidity += 0.08*strength
+  Both reduce pressure along the front line
+```
+
+**What to look for.** The Cyclone preset shows a deep low-pressure center (960 hPa) with counterclockwise winds (Northern Hemisphere). Watch precipitation bands spiral inward. The Fronts preset demonstrates cold and warm fronts: the cold front (marked with triangles) pushes under warm air, triggering intense but narrow precipitation. The Arctic Outbreak shows a polar high driving cold air southward against a stationary warm air mass. Switch between layers (pressure, temperature, wind, humidity) to see different aspects of the same weather system. New pressure centers occasionally spawn, and fronts weaken over time.
+
+**Presets:** Cyclone, Weather Fronts, High Pressure Dome, Monsoon, Arctic Outbreak, Random Weather.
+
+**References.**
+- Bjerknes, J. and Solberg, H. "Life Cycle of Cyclones and the Polar Front Theory of Atmospheric Circulation." *Geofysiske Publikationer*, 3(1), 1922. https://www.ngfweb.no/docs/NGF_GP_Vol03_no1.pdf
+- Holton, J.R. *An Introduction to Dynamic Meteorology*, 4th ed. Elsevier Academic Press, 2004. https://doi.org/10.1016/C2009-0-63394-8
+
+---
+
+## Ocean Currents
+
+**Background.** Ocean circulation is driven by wind forcing at the surface and density differences caused by temperature and salinity variations at depth -- the thermohaline circulation. Western boundary currents like the Gulf Stream are intensified by the Coriolis effect (western intensification, explained by Henry Stommel in 1948). This mode simulates both wind-driven gyres and thermohaline deep water formation, along with a simple biological model of plankton growth in nutrient-rich upwelling zones.
+
+**Formulation.** The simulation evolves temperature, salinity, current velocity, nutrient concentration, and plankton density on a 2D grid.
+
+```
+Gyre circulation (applied to current field):
+  For each gyre center (r_g, c_g) with radius R and strength S:
+    falloff = exp(-dist^2 / (2*R^2))
+    radial_scale = (dist/R) * exp(0.5 - dist/R)
+    Tangential velocity: perpendicular to radius vector, magnitude = S * radial_scale * falloff
+
+Coriolis deflection:
+  u += coriolis * sign(lat) * v * 0.1
+  v -= coriolis * sign(lat) * u * 0.1
+
+Seawater density (simplified UNESCO equation):
+  rho = 1000 + 0.8*S - 0.003*(T-4)^2 + 0.01*S*(35-S)
+
+Thermohaline forcing:
+  density gradient drives baroclinic currents:
+    du -= d(rho)/dc * 0.0005
+    dv -= d(rho)/dr * 0.0005
+
+Deep water formation zones:
+  Sinking: T decreases, S increases, downwelling
+  Upwelling: nutrients increase, cold water rises
+
+Advection: semi-Lagrangian with bilinear interpolation
+  src = (r,c) - (v,u) * 0.25 * speed
+
+Plankton dynamics (logistic + grazing):
+  growth = 0.04 * nutrient * light * temp_factor * (1 - plankton)
+  decay  = 0.015 * plankton
+  grazing = 0.02 * plankton^2
+  plankton += growth - decay - grazing
+  Plankton consumes nutrients; dead plankton recycles 30% back
+
+Upwelling = horizontal current divergence:
+  div = d(u)/dc + d(v)/dr
+  Positive divergence -> upwelling -> nutrient enrichment
+```
+
+**What to look for.** The Gulf Stream preset shows a strong northward western boundary current with mesoscale eddies spinning off the jet. The Thermohaline Conveyor shows warm surface water flowing north, cooling and sinking at the poles, then returning at depth -- the "great ocean conveyor belt." The El Nino preset demonstrates how weakened trade winds allow warm water to spread eastward, suppressing upwelling and devastating plankton productivity on the eastern coast. Switch to the plankton layer to see blooms forming in upwelling zones where cold, nutrient-rich water reaches the surface.
+
+**Presets:** Gulf Stream, Pacific Gyre, Antarctic Circumpolar, El Nino, Thermohaline Conveyor, Random Ocean.
+
+**References.**
+- Stommel, H. "The Westward Intensification of Wind-Driven Ocean Currents." *Transactions, American Geophysical Union*, 29(2), 1948. https://doi.org/10.1029/TR029i002p00202
+- Rahmstorf, S. "Ocean Circulation and Climate During the Past 120,000 Years." *Nature*, 419, 2002. https://doi.org/10.1038/nature01211
+
+---
+
+## Fluid Rope / Honey Coiling
+
+**Background.** When a viscous fluid like honey is poured from a height onto a surface, the falling thread does not simply pile up. Instead, it coils, folds, and meanders in regular patterns -- a phenomenon known as the liquid rope coiling instability. The coiling frequency depends on the fall height, flow rate, and viscosity. This was first systematically studied by G.I. Taylor (1968) and later analyzed in detail by Ribe, Habibi, and Bonn. The same physics governs how shampoo coils in your palm and how lava ropes form on volcanic flows.
+
+**Formulation.** The simulation models a falling viscous thread that coils upon contact with an accumulating pool below.
+
+```
+Rope dynamics:
+  Pour point: (pour_x * cols, pour_y * rows)  -- top center nozzle
+  Surface:    pour_y + pour_height             -- where coiling occurs
+
+  Coiling motion:
+    coil_angle += coil_speed * dt
+    land_x = base_x + coil_radius * cos(coil_angle)
+
+  Stream shape (each segment i of N):
+    frac = i / (N-1)
+    target_x = pour_x * (1 - frac^2) + land_x * frac^2
+    wobble = sin(t*3 + i*0.5) * 0.3 * frac * viscosity
+    segment_x = target_x + wobble
+
+  Fall speed (gravitational acceleration along stream):
+    speed_i = 0.5 + frac * 2.0
+
+Pool accumulation:
+  deposit = flow_rate * dt * 0.8
+  Gaussian spread around landing point: radius ~ coil_radius * 1.5
+  deposit_col += deposit * (1 - |dx|/(spread+1))^2
+
+Viscous spreading:
+  spread_rate = 0.02 / max(0.3, viscosity)
+  pool[c] += (avg_neighbors - pool[c]) * spread_rate
+
+  Pool height capped at 35% of screen height
+
+Parameters by preset:
+  Honey:     viscosity=1.0, flow_rate=1.0, height=0.70, coil_speed=2.5, coil_radius=3.0
+  Chocolate: viscosity=0.7, flow_rate=1.3, height=0.60, coil_speed=3.5, coil_radius=2.5
+  Shampoo:   viscosity=0.5, flow_rate=1.5, height=0.55, coil_speed=5.0, coil_radius=2.0
+  Lava:      viscosity=2.0, flow_rate=0.6, height=0.80, coil_speed=1.2, coil_radius=4.5
+
+dt = 0.02
+```
+
+**What to look for.** The Honey preset produces slow, wide coils -- the thread is thick and viscous, so it resists bending and makes large loops. The Shampoo preset coils much faster with a tighter radius because the lower viscosity allows the thread to buckle more readily. Try adjusting the pour height (h/H keys): taller falls produce faster coiling because the thread velocity at impact is higher. Move the surface laterally (s/S keys) to see the thread transition from coiling to folding to meandering -- the same regime transitions observed in laboratory experiments. The Lava preset shows the slowest, broadest coiling pattern with maximum viscosity.
+
+**References.**
+- Ribe, N.M. "Coiling of Viscous Jets." *Proceedings of the Royal Society A*, 460(2051), 2004. https://doi.org/10.1098/rspa.2004.1353
+- Habibi, M., Maleki, M., Golestanian, R., Ribe, N.M., and Bonn, D. "Dynamics of Liquid Rope Coiling." *Physical Review E*, 74(6), 2006. https://doi.org/10.1098/rspa.2004.1353
