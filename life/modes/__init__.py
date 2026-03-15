@@ -230,6 +230,8 @@ def register_all_modes(App):
     reg_hyp(App)
     from life.modes.graph_ca import register as reg_gca
     reg_gca(App)
+    from life.modes.self_modifying_rules import register as reg_smr
+    reg_smr(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

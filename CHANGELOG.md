@@ -4,6 +4,52 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Self-Modifying Rules CA — Cells Carry Their Own Evolving Rule DNA
+
+A cellular automaton where rules aren't global — they live *inside* the cells. Each living cell
+has its own birth/survival ruleset encoded as a pair of 9-bit integers (a "genome"). When a dead
+cell is born, it inherits the majority neighbor's genome, possibly mutated. Living cells survive
+or die by their own rules, not a shared one. Regions with different rules form competing species
+that expand, contract, and coevolve — producing emergent speciation, ecological niches, and arms
+races without any external fitness function.
+
+This creates a genuinely new level of emergence: not just patterns from rules, but **rules from
+rules**. It connects the project's themes of evolution (Evolution Lab), competition (Battle
+Royale), and rule exploration into a single self-organizing system.
+
+**New file:** `life/modes/self_modifying_rules.py` (~610 lines)
+
+**Core mechanics:**
+
+| Concept | Implementation |
+|---------|---------------|
+| Genome | Pair of 9-bit integers: `(birth_bits, survival_bits)` — bit *i* set means neighbor count *i* triggers |
+| Birth | Dead cell with enough live neighbors inherits majority neighbor's genome (possibly mutated) |
+| Survival | Live cell checks its *own* survival rule — no global rule |
+| Mutation | Per-birth chance to flip random bits in the genome, creating new species |
+| Species coloring | Hash of genome → 8 color slots with age-based brightness |
+
+**8 presets:**
+
+| Preset | Description |
+|--------|-------------|
+| Life vs HighLife | Two species: B3/S23 vs B36/S23 compete head-to-head |
+| Three Kingdoms | Life, Day&Night, and Seeds in a 3-way territorial battle |
+| Mutation Storm | Start with Life but high mutation (0.08) creates rapid speciation |
+| Sparse Ecology | Low density, low mutation — fragile ecosystems form slowly |
+| Cambrian Explosion | 8 random seed species with moderate mutation |
+| Arms Race | Aggressive vs defensive rules under high mutation pressure |
+| Single Seed | One species diversifies through mutation alone |
+| Blank Canvas | Every cell gets a random genome — pure emergence from chaos |
+
+**Info panel shows:** generation, population, species count, peak species, top 8 species with
+color-coded genome labels (e.g. `B3/S23`), diversity sparkline, and population sparkline.
+
+**Controls:** `Space` play/pause, `n` step, `r` randomize, `+`/`-` mutation rate, `[`/`]`
+steps per frame, `q` quit. Accessible via `Ctrl+Shift+G` from the main menu under "Meta Modes."
+
+---
+
 ### Added: Graph-Based Cellular Automata — Game of Life on Arbitrary Network Topologies
 
 Runs CA rules on non-grid structures where neighbor counts and connectivity patterns create

@@ -311,6 +311,25 @@ class App:
         self.gca_avg_deg: float = 0.0
         self.gca_max_deg: int = 0
         self.gca_pop_history: list = []
+        # Self-Modifying Rules CA mode state
+        self.smr_mode = False
+        self.smr_menu = False
+        self.smr_menu_sel = 0
+        self.smr_running = False
+        self.smr_rows = 40
+        self.smr_cols = 60
+        self.smr_alive = []
+        self.smr_age = []
+        self.smr_generation = 0
+        self.smr_mutation_rate = 0.02
+        self.smr_density = 0.3
+        self.smr_stats = {}
+        self.smr_total_mutations = 0
+        self.smr_peak_species = 0
+        self.smr_species_history = []
+        self.smr_pop_history = []
+        self.smr_speed_mult = 1
+        self.smr_preset_name = ""
         # Neural CA mode state
         self.nca_mode = False
         self.nca_menu = False
@@ -3460,6 +3479,18 @@ class App:
                             self._gca_step()
                     continue
 
+            if self.smr_menu:
+                if self._handle_smr_menu_key(key):
+                    continue
+            elif self.smr_mode:
+                if self._handle_smr_key(key):
+                    if self.smr_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        for _ in range(self.smr_speed_mult):
+                            self._smr_step()
+                    continue
+
             if self.hyp_menu:
                 if self._handle_hyp_menu_key(key):
                     continue
@@ -5828,6 +5859,16 @@ class App:
 
         if self.gca_mode:
             self._draw_gca(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.smr_menu:
+            self._draw_smr_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.smr_mode:
+            self._draw_smr(max_y, max_x)
             self.stdscr.refresh()
             return
 

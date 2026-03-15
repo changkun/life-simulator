@@ -284,4 +284,7 @@ MODE_REGISTRY = [
     # ── Graph-Based Cellular Automata ──
     {"name": "Graph Cellular Automata", "key": "G", "category": "Classic CA",
      "desc": "Game of Life on arbitrary network topologies: small-world, scale-free, random & more", "attr": "gca_mode", "enter": "_enter_gca_mode", "exit": "_exit_gca_mode"},
+    # ── Self-Modifying Rules CA ──
+    {"name": "Self-Modifying Rules CA", "key": "Ctrl+Shift+G", "category": "Meta Modes",
+     "desc": "Each cell carries its own rule DNA that mutates, spreads & competes — rules from rules", "attr": "smr_mode", "enter": "_enter_smr_mode", "exit": "_exit_smr_mode"},
 ]
