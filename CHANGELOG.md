@@ -4,6 +4,71 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Evolution Lab — Interactive Rule Evolution System that breeds CA rules via genetic algorithm to discover novel emergent behaviors
+
+A new meta-mode that turns the simulator from a playground into a laboratory. A population of
+cellular automata rulesets runs in parallel on a tiled grid, with fitness scored automatically
+by the analytics metrics already in place (Shannon entropy, symmetry, population stability).
+Each generation, top performers reproduce via crossover and mutation while weak rules are culled.
+Users can manually "favorite" organisms to protect them from selection pressure — human intuition
+guiding machine search.
+
+This is a synthesis of three existing systems:
+1. **Analytics metrics** (`life/analytics.py`) — entropy, symmetry, stability classification become the fitness function
+2. **Rule parsing/genomes** (B/S notation, neighborhoods, multi-state) — the genetic representation
+3. **Tiled multi-sim views** — parallel visualization of the population
+
+The result: an automated discovery engine that finds surprising, beautiful rule combinations
+no human would design by hand. After 109 hand-crafted modes, this lets the machine create
+mode 110 and beyond.
+
+**New file:** `life/modes/evolution_lab.py` (~1048 lines)
+
+**Genetic algorithm components:**
+
+| Component | Description |
+|-----------|-------------|
+| **Genome** | Birth/survival digit sets, neighborhood type (Moore/von Neumann), state count (2–5) |
+| **Crossover** | Uniform crossover — each birth/survival digit independently inherited from either parent |
+| **Mutation** | Configurable rate (0–100%); flips birth/survival digits, occasionally mutates neighborhood/states |
+| **Fitness** | Weighted sum of entropy, symmetry, stability, longevity, and diversity scores |
+| **Selection** | Rank-based: top elite + all favorites reproduce; rest are culled |
+
+**5 fitness presets** optimizing for different aesthetics:
+- **balanced** — equal weight across all metrics
+- **beauty** — 3× symmetry weight for visually striking patterns
+- **chaos** — 3× entropy weight for maximum disorder
+- **complexity** — high entropy + diversity for edge-of-chaos phenomena
+- **stability** — 3× stability weight for self-sustaining oscillators
+
+**Configurable parameters** (via settings menu):
+- Population size (4–20 organisms)
+- Evaluation generations (50–500 simulation steps per organism)
+- Mutation rate (0–100%)
+- Elite survivor count (how many top performers breed)
+- Auto-advance toggle (continuous breeding vs. manual)
+
+**Key controls:**
+- **Space** — play/pause; **b** — force breed; **S** — skip to scoring
+- **Arrow keys / WASD** — navigate organisms; **f / Enter** — favorite (protect from culling)
+- **s** — save organism to disk; **p** — cycle fitness preset; **A** — toggle auto-advance
+- **R** — return to settings menu; **q** — exit
+
+**Persistence:** Discovered organisms can be saved to `evolution_lab.json` and reloaded as seed
+populations for future runs, enabling long-running evolutionary campaigns across sessions.
+
+**Integration points:**
+- `life/app.py` — 25 state variables for evolution lab engine, draw dispatch (menu + tiled view), key dispatch, simulation stepping in run loop
+- `life/modes/__init__.py` — module registration
+- `life/registry.py` — mode browser entry under "Meta Modes" (key: Ctrl+Shift+E, category: Meta Modes)
+
+**Design decisions:**
+- Mini-simulations use a lightweight custom stepper (`_step_sim`) rather than the full Grid.step() to support multi-state decay and custom neighborhoods without polluting the main simulation engine
+- Fitness scoring reuses `shannon_entropy`, `symmetry_score`, and `classify_stability` from `life/analytics.py` — the same metrics visible in the analytics overlay, ensuring what users see matches what the GA optimizes
+- Population history tracked per-organism enables stability classification (coefficient of variation) and pattern richness (unique population values) as fitness dimensions
+- Tiled view layout auto-adapts to terminal size, computing optimal grid arrangement to maximize cell visibility
+- Favorites use index remapping after sort to maintain identity across generations
+
 ### Added: Real-Time Simulation Analytics Overlay — quantitative metrics HUD for measuring and classifying simulation behavior
 
 A toggleable analytics panel (`Ctrl+K`) that works across all modes, overlaying live quantitative

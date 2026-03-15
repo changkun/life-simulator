@@ -211,6 +211,33 @@ class App:
         self.ep_grid_cols = 4
         self.ep_tile_h = 6
         self.ep_tile_w = 8
+        # Evolution Lab mode state
+        self.elab_mode = False
+        self.elab_menu = False
+        self.elab_menu_sel = 0
+        self.elab_pop_size = 12
+        self.elab_eval_gens = 150
+        self.elab_mutation_rate = 0.15
+        self.elab_elite_count = 4
+        self.elab_fitness_preset = "balanced"
+        self.elab_auto_advance = True
+        self.elab_generation = 0
+        self.elab_sims: list = []
+        self.elab_genomes: list = []
+        self.elab_fitness: list = []
+        self.elab_pop_histories: list = []
+        self.elab_favorites: set = set()
+        self.elab_cursor = 0
+        self.elab_sim_step = 0
+        self.elab_phase = "idle"
+        self.elab_running = False
+        self.elab_auto_breed = True
+        self.elab_grid_rows = 3
+        self.elab_grid_cols = 4
+        self.elab_tile_h = 6
+        self.elab_tile_w = 8
+        self.elab_best_ever: dict | None = None
+        self.elab_history: list = []
         # Live Rule Editor mode state
         self.re_mode = False
         self.re_menu = False
@@ -3293,6 +3320,17 @@ class App:
                         self._ep_step()
                     continue
 
+            if self.elab_menu:
+                if self._handle_elab_menu_key(key):
+                    continue
+            elif self.elab_mode:
+                if self._handle_elab_key(key):
+                    if self.elab_running and self.elab_phase == "simulating":
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        self._elab_step()
+                    continue
+
             if self.pexplorer_menu:
                 if self._handle_pexplorer_menu_key(key):
                     continue
@@ -5621,6 +5659,16 @@ class App:
 
         if self.ep_mode:
             self._draw_ep(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.elab_menu:
+            self._draw_elab_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.elab_mode:
+            self._draw_elab(max_y, max_x)
             self.stdscr.refresh()
             return
 
