@@ -1994,6 +1994,23 @@ class App:
         self.traffic_flow = 0.0         # average flow (cars*speed)
         self.traffic_avg_speed = 0.0    # average speed of cars
 
+        # ── Snowflake Growth (Reiter Crystal) state ──
+        self.snowflake_mode = False
+        self.snowflake_menu = False
+        self.snowflake_menu_sel = 0
+        self.snowflake_running = False
+        self.snowflake_generation = 0
+        self.snowflake_rows = 0
+        self.snowflake_cols = 0
+        self.snowflake_frozen: list[list[bool]] = []     # True = ice crystal
+        self.snowflake_vapor: list[list[float]] = []     # diffusive vapor field
+        self.snowflake_steps_per_frame = 1
+        self.snowflake_preset_name = ""
+        self.snowflake_alpha = 0.4       # vapor deposition rate onto receptive cells
+        self.snowflake_beta = 0.4        # initial background vapor density
+        self.snowflake_gamma = 0.0001    # noise amplitude
+        self.snowflake_frozen_count = 0  # number of frozen cells
+
         # ── Predator-Prey (Lotka-Volterra) state ──
         self.lv_mode = False
         self.lv_menu = False
@@ -2724,6 +2741,17 @@ class App:
                         for _ in range(self.traffic_steps_per_frame):
                             self._traffic_step()
                     continue
+            elif self.snowflake_menu:
+                if self._handle_snowflake_menu_key(key):
+                    continue
+            elif self.snowflake_mode:
+                if self._handle_snowflake_key(key):
+                    if self.snowflake_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        for _ in range(self.snowflake_steps_per_frame):
+                            self._snowflake_step()
+                    continue
             elif self.evo_menu:
                 if self._handle_evo_menu_key(key):
                     continue
@@ -3115,6 +3143,12 @@ class App:
                 self._exit_ising_mode()
             else:
                 self._enter_ising_mode()
+            return True
+        if key == ord("*"):
+            if self.snowflake_mode:
+                self._exit_snowflake_mode()
+            else:
+                self._enter_snowflake_mode()
             return True
         if key == ord("J"):
             if self.lv_mode:
@@ -6212,6 +6246,16 @@ class App:
 
         if self.traffic_mode:
             self._draw_traffic(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.snowflake_menu:
+            self._draw_snowflake_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.snowflake_mode:
+            self._draw_snowflake(max_y, max_x)
             self.stdscr.refresh()
             return
 
@@ -13300,6 +13344,312 @@ class App:
                 hint = f" {self.message}"
             else:
                 hint = " [Space]=play [n]=step [t/T]=temp-/+ [f/F]=field-/+ [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = hint[:max_x - 1]
+            try:
+                self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
+            except curses.error:
+                pass
+
+    # ══════════════════════════════════════════════════════════════════════
+    #  Snowflake Growth (Reiter Crystal) — Mode *
+    # ══════════════════════════════════════════════════════════════════════
+
+    SNOWFLAKE_PRESETS = [
+        # (name, description, alpha, beta, gamma)
+        # alpha = deposition rate, beta = initial vapor, gamma = noise
+        ("Classic Dendrite", "Balanced growth — six-fold branching arms", 0.40, 0.40, 0.0001),
+        ("Thin Needles", "Low vapor — long thin branches", 0.30, 0.30, 0.0001),
+        ("Broad Plates", "High vapor — wide faceted plates", 0.50, 0.55, 0.0001),
+        ("Fernlike", "Fast deposition — highly branched fern shapes", 0.65, 0.35, 0.0001),
+        ("Stellar Dendrite", "Moderate vapor — classic star snowflake", 0.45, 0.45, 0.0001),
+        ("Sectored Plate", "High vapor, low deposition — sector plates", 0.20, 0.60, 0.0001),
+        ("Sparse Growth", "Very low vapor — slow sparse crystal", 0.25, 0.25, 0.0001),
+        ("Noisy Crystal", "High noise — irregular natural look", 0.40, 0.40, 0.005),
+    ]
+
+    def _enter_snowflake_mode(self):
+        """Enter Snowflake Growth mode — show preset menu."""
+        self.snowflake_menu = True
+        self.snowflake_menu_sel = 0
+        self._flash("Snowflake Growth (Reiter Crystal) — select a scenario")
+
+    def _exit_snowflake_mode(self):
+        """Exit Snowflake Growth mode."""
+        self.snowflake_mode = False
+        self.snowflake_menu = False
+        self.snowflake_running = False
+        self.snowflake_frozen = []
+        self.snowflake_vapor = []
+        self._flash("Snowflake Growth mode OFF")
+
+    def _snowflake_hex_neighbors(self, r: int, c: int) -> list[tuple[int, int]]:
+        """Return the 6 hex neighbors using offset coordinates (even-r)."""
+        if r % 2 == 0:
+            return [
+                (r - 1, c - 1), (r - 1, c),
+                (r, c - 1), (r, c + 1),
+                (r + 1, c - 1), (r + 1, c),
+            ]
+        else:
+            return [
+                (r - 1, c), (r - 1, c + 1),
+                (r, c - 1), (r, c + 1),
+                (r + 1, c), (r + 1, c + 1),
+            ]
+
+    def _snowflake_init(self, preset_idx: int):
+        """Initialize Snowflake Growth with the given preset."""
+        name, _desc, alpha, beta, gamma = self.SNOWFLAKE_PRESETS[preset_idx]
+        max_y, max_x = self.stdscr.getmaxyx()
+        rows = max(20, max_y - 4)
+        cols = max(20, (max_x - 1) // 2)
+        self.snowflake_rows = rows
+        self.snowflake_cols = cols
+        self.snowflake_alpha = alpha
+        self.snowflake_beta = beta
+        self.snowflake_gamma = gamma
+        self.snowflake_preset_name = name
+        self.snowflake_generation = 0
+        self.snowflake_steps_per_frame = 1
+
+        # Initialize vapor field to uniform beta, no frozen cells
+        self.snowflake_frozen = [[False] * cols for _ in range(rows)]
+        self.snowflake_vapor = [[beta] * cols for _ in range(rows)]
+
+        # Seed: freeze the center cell
+        cr, cc = rows // 2, cols // 2
+        self.snowflake_frozen[cr][cc] = True
+        self.snowflake_vapor[cr][cc] = 0.0
+        self.snowflake_frozen_count = 1
+
+        self.snowflake_mode = True
+        self.snowflake_menu = False
+        self.snowflake_running = False
+        self._flash(f"Snowflake: {name} — Space to start")
+
+    def _snowflake_step(self):
+        """Advance the Reiter snowflake model by one step.
+
+        Algorithm:
+        1. Identify receptive cells (non-frozen neighbors of frozen cells).
+        2. Add alpha to receptive cells (vapor deposition).
+        3. Diffuse vapor among non-frozen cells on the hex lattice.
+        4. Freeze any receptive cell with vapor >= 1.0.
+        """
+        frozen = self.snowflake_frozen
+        vapor = self.snowflake_vapor
+        rows, cols = self.snowflake_rows, self.snowflake_cols
+        alpha = self.snowflake_alpha
+        gamma = self.snowflake_gamma
+
+        # Step 1: identify receptive cells
+        receptive = [[False] * cols for _ in range(rows)]
+        for r in range(rows):
+            for c in range(cols):
+                if frozen[r][c]:
+                    continue
+                for nr, nc in self._snowflake_hex_neighbors(r, c):
+                    if 0 <= nr < rows and 0 <= nc < cols and frozen[nr][nc]:
+                        receptive[r][c] = True
+                        break
+
+        # Step 2: add deposition to receptive cells
+        for r in range(rows):
+            for c in range(cols):
+                if receptive[r][c]:
+                    vapor[r][c] += alpha
+                    if gamma > 0:
+                        vapor[r][c] += random.uniform(-gamma, gamma)
+
+        # Step 3: diffuse vapor among non-receptive, non-frozen cells
+        new_vapor = [[0.0] * cols for _ in range(rows)]
+        for r in range(rows):
+            for c in range(cols):
+                if frozen[r][c] or receptive[r][c]:
+                    new_vapor[r][c] = vapor[r][c]
+                    continue
+                # Average with hex neighbors (those that are also non-frozen, non-receptive)
+                total = vapor[r][c]
+                count = 1
+                for nr, nc in self._snowflake_hex_neighbors(r, c):
+                    if 0 <= nr < rows and 0 <= nc < cols:
+                        if not frozen[nr][nc] and not receptive[nr][nc]:
+                            total += vapor[nr][nc]
+                            count += 1
+                new_vapor[r][c] = total / count
+
+        # Step 4: freeze receptive cells that reached threshold
+        for r in range(rows):
+            for c in range(cols):
+                if receptive[r][c] and new_vapor[r][c] >= 1.0:
+                    frozen[r][c] = True
+                    new_vapor[r][c] = 0.0
+                    self.snowflake_frozen_count += 1
+
+        self.snowflake_vapor = new_vapor
+        self.snowflake_generation += 1
+
+    def _handle_snowflake_menu_key(self, key: int) -> bool:
+        """Handle input in Snowflake Growth preset menu."""
+        presets = self.SNOWFLAKE_PRESETS
+        if key == curses.KEY_DOWN or key == ord("j"):
+            self.snowflake_menu_sel = (self.snowflake_menu_sel + 1) % len(presets)
+        elif key == curses.KEY_UP or key == ord("k"):
+            self.snowflake_menu_sel = (self.snowflake_menu_sel - 1) % len(presets)
+        elif key in (10, 13, curses.KEY_ENTER):
+            self._snowflake_init(self.snowflake_menu_sel)
+        elif key == ord("q") or key == 27:
+            self.snowflake_menu = False
+            self._flash("Snowflake Growth cancelled")
+        return True
+
+    def _handle_snowflake_key(self, key: int) -> bool:
+        """Handle input in active Snowflake Growth simulation."""
+        if key == ord("q") or key == 27:
+            self._exit_snowflake_mode()
+            return True
+        if key == ord(" "):
+            self.snowflake_running = not self.snowflake_running
+            return True
+        if key == ord("n") or key == ord("."):
+            self._snowflake_step()
+            return True
+        if key == ord("r"):
+            idx = next(
+                (i for i, p in enumerate(self.SNOWFLAKE_PRESETS) if p[0] == self.snowflake_preset_name),
+                0,
+            )
+            self._snowflake_init(idx)
+            return True
+        if key == ord("R") or key == ord("m"):
+            self.snowflake_mode = False
+            self.snowflake_running = False
+            self.snowflake_menu = True
+            self.snowflake_menu_sel = 0
+            return True
+        if key == ord("+") or key == ord("="):
+            choices = [1, 2, 3, 5, 10, 20, 50]
+            idx = choices.index(self.snowflake_steps_per_frame) if self.snowflake_steps_per_frame in choices else 0
+            self.snowflake_steps_per_frame = choices[min(idx + 1, len(choices) - 1)]
+            self._flash(f"Speed: {self.snowflake_steps_per_frame} steps/frame")
+            return True
+        if key == ord("-") or key == ord("_"):
+            choices = [1, 2, 3, 5, 10, 20, 50]
+            idx = choices.index(self.snowflake_steps_per_frame) if self.snowflake_steps_per_frame in choices else 0
+            self.snowflake_steps_per_frame = choices[max(idx - 1, 0)]
+            self._flash(f"Speed: {self.snowflake_steps_per_frame} steps/frame")
+            return True
+        # Alpha controls: a/A to decrease/increase deposition rate
+        if key == ord("a"):
+            self.snowflake_alpha = max(0.01, self.snowflake_alpha - 0.05)
+            self._flash(f"Alpha (deposition): {self.snowflake_alpha:.2f}")
+            return True
+        if key == ord("A"):
+            self.snowflake_alpha = min(1.0, self.snowflake_alpha + 0.05)
+            self._flash(f"Alpha (deposition): {self.snowflake_alpha:.2f}")
+            return True
+        return True
+
+    def _draw_snowflake_menu(self, max_y: int, max_x: int):
+        """Draw the Snowflake Growth preset selection menu."""
+        self.stdscr.erase()
+        title = "── Snowflake Growth (Reiter Crystal) ── Select Scenario ──"
+        try:
+            self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
+                               curses.color_pair(7) | curses.A_BOLD)
+        except curses.error:
+            pass
+
+        for i, (name, desc, alpha, beta, gamma) in enumerate(self.SNOWFLAKE_PRESETS):
+            y = 3 + i
+            if y >= max_y - 2:
+                break
+            marker = "▸ " if i == self.snowflake_menu_sel else "  "
+            attr = curses.color_pair(3) | curses.A_BOLD if i == self.snowflake_menu_sel else curses.color_pair(7)
+            line = f"{marker}{name:22s} α={alpha:<5.2f} β={beta:<5.2f} γ={gamma:<6.4f}  {desc}"
+            try:
+                self.stdscr.addstr(y, 2, line[:max_x - 3], attr)
+            except curses.error:
+                pass
+
+        hint_y = max_y - 1
+        if hint_y > 0:
+            hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+            try:
+                self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
+            except curses.error:
+                pass
+
+    def _draw_snowflake(self, max_y: int, max_x: int):
+        """Draw the active Snowflake Growth simulation."""
+        self.stdscr.erase()
+        frozen = self.snowflake_frozen
+        vapor = self.snowflake_vapor
+        rows, cols = self.snowflake_rows, self.snowflake_cols
+        state = "▶ RUNNING" if self.snowflake_running else "⏸ PAUSED"
+
+        # Title bar
+        title = (f" Snowflake: {self.snowflake_preset_name}  |  step {self.snowflake_generation}"
+                 f"  |  α={self.snowflake_alpha:.2f}  β={self.snowflake_beta:.2f}"
+                 f"  |  frozen={self.snowflake_frozen_count}"
+                 f"  |  {state}")
+        try:
+            self.stdscr.addstr(0, 0, title[:max_x - 1], curses.color_pair(7) | curses.A_BOLD)
+        except curses.error:
+            pass
+
+        view_rows = max_y - 4
+        view_cols = (max_x - 1) // 2
+
+        # Rendering characters for crystal visualization
+        # Frozen cells: bright white/cyan crystal chars based on neighbor count
+        # Vapor cells: dimmer based on vapor density
+        for r in range(min(rows, view_rows)):
+            for c in range(min(cols, view_cols)):
+                sx = c * 2
+                sy = 1 + r
+                if frozen[r][c]:
+                    # Ice crystal — bright white/cyan
+                    try:
+                        self.stdscr.addstr(sy, sx, "██", curses.color_pair(6) | curses.A_BOLD)
+                    except curses.error:
+                        pass
+                else:
+                    v = vapor[r][c]
+                    if v >= 0.7:
+                        # High vapor — visible
+                        try:
+                            self.stdscr.addstr(sy, sx, "░░", curses.color_pair(4))
+                        except curses.error:
+                            pass
+                    elif v >= 0.4:
+                        # Medium vapor — faint
+                        try:
+                            self.stdscr.addstr(sy, sx, "··", curses.color_pair(4) | curses.A_DIM)
+                        except curses.error:
+                            pass
+                    # Low vapor: leave blank (dark background)
+
+        # Info bar
+        info_y = max_y - 2
+        if info_y > 1:
+            info = (f" Step {self.snowflake_generation}  |  α={self.snowflake_alpha:.2f}"
+                    f"  β={self.snowflake_beta:.2f}  γ={self.snowflake_gamma:.4f}"
+                    f"  |  frozen={self.snowflake_frozen_count}"
+                    f"  |  steps/f={self.snowflake_steps_per_frame}")
+            try:
+                self.stdscr.addstr(info_y, 0, info[:max_x - 1], curses.color_pair(6))
+            except curses.error:
+                pass
+
+        # Hint bar
+        hint_y = max_y - 1
+        if hint_y > 0:
+            now = time.monotonic()
+            if self.message and now - self.message_time < 3.0:
+                hint = f" {self.message}"
+            else:
+                hint = " [Space]=play [n]=step [a/A]=deposition-/+ [+/-]=speed [r]=reset [R]=menu [q]=exit"
             hint = hint[:max_x - 1]
             try:
                 self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
