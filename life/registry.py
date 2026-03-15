@@ -304,4 +304,7 @@ MODE_REGISTRY = [
     # ── Civilization & Cultural Evolution ──
     {"name": "Civilization & Cultural Evolution", "key": "Ctrl+Shift+V", "category": "Game Theory & Social",
      "desc": "Tribes emerge, develop tech, trade, and compete — civilizations rise and fall with cultural diffusion", "attr": "civ_mode", "enter": "_enter_civ_mode", "exit": "_exit_civ_mode"},
+    # ── Ecosystem Evolution & Speciation ──
+    {"name": "Ecosystem Evolution & Speciation", "key": "Ctrl+Shift+E", "category": "Chemical & Biological",
+     "desc": "Landscape-scale macro-evolution with speciation, phylogenetic trees, food webs & mass extinctions", "attr": "evoeco_mode", "enter": "_enter_evoeco_mode", "exit": "_exit_evoeco_mode"},
 ]

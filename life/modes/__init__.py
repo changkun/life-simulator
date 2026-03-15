@@ -244,6 +244,8 @@ def register_all_modes(App):
     reg_reef(App)
     from life.modes.civilization import register as reg_civ
     reg_civ(App)
+    from life.modes.ecosystem_evolution import register as reg_evoeco
+    reg_evoeco(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

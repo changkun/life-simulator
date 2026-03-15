@@ -4,6 +4,51 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Ecosystem Evolution & Speciation — Landscape-Scale Macro-Evolution Simulation
+
+Simulates landscape-scale macro-evolution where populations evolve across varied biomes,
+speciate through geographic isolation (allopatric) and niche divergence (sympatric), develop
+novel traits via mutation and recombination, compete for ecological niches, form emergent food
+webs, and go extinct under environmental pressure. A real-time phylogenetic tree is rendered
+alongside the spatial map showing species branching, radiation events, and mass extinctions.
+This fills the "macro-evolution" gap between the individual-scale Artificial Life Ecosystem
+and the human-scale Civilization mode, completing the biological hierarchy from chemistry
+(Artificial Chemistry) → cells (Morphogenesis) → immune systems → **species & speciation** →
+civilizations.
+
+**New file:** `life/modes/ecosystem_evolution.py` (~1300 lines)
+
+**Core mechanics:**
+
+| Concept | Implementation |
+|---------|---------------|
+| Terrain generation | Value-noise heightmap producing 10 biome types: ocean, grassland, forest, desert, tundra, mountain, river, swamp, reef, volcanic |
+| Trophic levels | 4 levels (producer, herbivore, predator, apex) with emergent food webs and trophic-level shifts |
+| Evolvable traits | 8 traits (size, speed, camouflage, cold/heat tolerance, aquatic, aggression, fertility) that mutate and drive natural selection |
+| Allopatric speciation | Geographically isolated populations diverge into new species when trait distance exceeds threshold |
+| Sympatric speciation | Niche divergence across biomes creates new species; occasional trophic-level shifts |
+| Population dynamics | Fitness-based reproduction and mortality varying by biome — competition and niche specialization emerge naturally |
+| Mass extinction events | Configurable cataclysms that wipe ~70% of populations, followed by adaptive radiation into empty niches |
+| Continental drift | Ocean barriers form mid-simulation, splitting populations and triggering allopatric speciation |
+| Phylogenetic tree | Real-time tree displayed alongside the spatial map showing branching, extinction markers (†), and trophic symbols |
+
+**6 presets:**
+
+| Preset | Description |
+|--------|-------------|
+| Continental Drift | Two landmasses drift apart — allopatric speciation accelerates |
+| Island Archipelago | Scattered islands each become evolutionary labs — Darwin's finches writ large |
+| Adaptive Radiation | Single ancestral species colonizes an empty world — explosive diversification |
+| Mass Extinction & Recovery | Rich ecosystem hit by cataclysm — survivors radiate into empty niches |
+| Pangaea Supercontinent | One vast landmass — species spread freely, competition fierce |
+| Random Landscape | Fully randomized terrain, species, and evolutionary parameters |
+
+**4 view modes:** species (trophic symbols colored by species), biome (terrain), fitness (heatmap), food web (trophic-level coloring with interaction highlights).
+
+**Controls:** `Space` play/pause, `n` step, `v` cycle views, `l` toggle event log, `+`/`-` steps per frame, `r` reset, `R` preset menu, `q` quit. Accessible via `Ctrl+Shift+E` from the main menu under "Chemical & Biological."
+
+---
+
 ### Added: Civilization & Cultural Evolution — Macro-Historical Simulation with Emergent Civilizations
 
 Simulates a procedurally-generated world where tribes emerge on varied terrain, develop

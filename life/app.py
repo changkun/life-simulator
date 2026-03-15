@@ -374,6 +374,19 @@ class App:
         self.civ_terrain = []
         self.civ_tribes = []
         self.civ_log = []
+        self.evoeco_mode = False
+        self.evoeco_menu = False
+        self.evoeco_menu_sel = 0
+        self.evoeco_running = False
+        self.evoeco_generation = 0
+        self.evoeco_rows = 0
+        self.evoeco_cols = 0
+        self.evoeco_steps_per_frame = 1
+        self.evoeco_biome = []
+        self.evoeco_species = []
+        self.evoeco_pops = []
+        self.evoeco_phylo = []
+        self.evoeco_log = []
         self.immune_cytokine = []
         self.immune_antigen_map = []
         self.immune_receptor_map = []
@@ -3657,6 +3670,18 @@ class App:
                             self._civ_step()
                     continue
 
+            if self.evoeco_menu:
+                if self._handle_evoeco_menu_key(key):
+                    continue
+            elif self.evoeco_mode:
+                if self._handle_evoeco_key(key):
+                    if self.evoeco_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        for _ in range(self.evoeco_steps_per_frame):
+                            self._evoeco_step()
+                    continue
+
             if self.hyp_menu:
                 if self._handle_hyp_menu_key(key):
                     continue
@@ -6102,6 +6127,16 @@ class App:
 
         if self.civ_mode:
             self._draw_civ(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.evoeco_menu:
+            self._draw_evoeco_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.evoeco_mode:
+            self._draw_evoeco(max_y, max_x)
             self.stdscr.refresh()
             return
 
