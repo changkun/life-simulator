@@ -4,6 +4,58 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Enhanced: Generative Soundscape — Multi-Voice Procedural Music Engine
+
+Complete rewrite of the sonification layer (`life/modes/sonification.py`) from a basic
+drone engine into a multi-voice generative music system. The Ctrl+S sonification toggle
+now produces layered compositions — bass, melody, harmony, and rhythm — derived entirely
+from each simulation frame's spatial state. Because it's a cross-cutting layer that reads
+grid state generically, all 130+ existing modes gain a unique musical character without
+any per-mode code changes.
+
+**Changed file:** `life/modes/sonification.py` (rewritten, +499/−134 lines)
+
+**Four simultaneous synthesis voices:**
+
+| Voice | Source metric | Musical behavior |
+|-------|-------------|-----------------|
+| Bass | Rate of change (delta) | Root note with portamento; large deltas trigger 4th/5th harmonic jumps, small deltas hold steady |
+| Melody | Column density profile | Spatial shape → arpeggiated sequence; highest-density columns become notes ordered left-to-right, with per-note envelopes and inter-note glide |
+| Harmony | Cell density | Sustained chord pad; voicing expands with density: open 5th → triad → 7th → 9th → extended |
+| Rhythm | Spatial entropy | Percussive noise bursts gated by 16-step patterns; 8 patterns from sparse 4-on-floor to dense syncopation |
+
+**Additional musical mappings:**
+
+| Metric | Maps to |
+|--------|---------|
+| Center-of-mass Y | Pitch register (higher mass → higher octave) |
+| Center-of-mass X | Stereo panning |
+| Symmetry | Pulse width modulation on waveforms |
+| Activity level | Number of melody notes (2–8) and overall brightness |
+| Delta | Root motion speed and volume surges |
+
+**Frame-to-frame musical memory:** Persistent `_sonify_state` dict tracks root semitone,
+bass frequency, melody notes, noise seed, and frame count across frames — enabling
+portamento, harmonic progressions, and smooth transitions instead of per-frame randomness.
+
+**Per-category audio profiles** extended with three new parameters (`melody_mode`,
+`rhythm_feel`, `swing`) across all 12 category profiles, enabling distinct musical
+character per simulation domain (e.g., Fluid Dynamics gets ambient legato glides;
+Particle & Swarm gets staccato scattered percussion with swing).
+
+**New musical data structures:**
+- 8 rhythm gate patterns (16-step sequences) from minimal to full density
+- 5 chord voicings (fifth → triad → seventh → ninth → extended) selected by density
+- Root motion interval table for harmonic progression driven by rate of change
+
+**Enhanced status indicator** shows current root note name, melody voice count, and
+frame counter in the SOUNDSCAPE bar.
+
+**Also changed:**
+- `life/app.py`: Added `_sonify_state` dict and `_sonify_prev_density` float initialization; updated toggle flash message to reflect new engine name
+
+---
+
 ### Added: Magnetism & Spin Glass — Continuous-Spin Lattice with Frustrated Interactions
 
 A new physics mode simulating magnetic domains on a 2D lattice where each cell carries a

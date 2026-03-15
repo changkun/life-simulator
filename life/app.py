@@ -145,6 +145,8 @@ class App:
         self.sonify_enabled = False
         self._sonify_thread = None
         self._sonify_stop = threading.Event()
+        self._sonify_state = {}  # persistent musical state across frames
+        self._sonify_prev_density = 0.0  # for rate-of-change tracking
         # Multiplayer mode state
         self.mp_mode = False
         self.mp_net: MultiplayerNet | None = None
@@ -5365,7 +5367,7 @@ class App:
                     self.sonify_enabled = False
                     self._flash("Sonification OFF — no audio player found")
                 else:
-                    self._flash("♫ Sonification ON (category-aware audio)")
+                    self._flash("♫ Generative Soundscape ON (bass+melody+harmony+rhythm)")
             else:
                 self._flash("Sonification OFF")
             return True
