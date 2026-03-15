@@ -7990,7 +7990,7 @@ register_all_modes(App)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Conway's Game of Life — terminal edition")
+    parser = argparse.ArgumentParser(description="Life Simulator — terminal edition")
     parser.add_argument(
         "-p", "--pattern",
         choices=sorted(PATTERNS.keys()),

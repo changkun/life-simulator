@@ -1,7 +1,7 @@
 [project]
-name = "null-claude"
+name = "life-simulator"
 version = "0.1.0"
-description = "A terminal-based life simulator and simulation sandbox"
+description = "A terminal-based life simulator"
 readme = "README.md"
 license = "MIT"
 authors = [
