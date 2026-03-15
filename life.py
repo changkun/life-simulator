@@ -8847,14 +8847,18 @@ class App:
     SAND_FIRE = 3
     SAND_STONE = 4
     SAND_PLANT = 5
+    SAND_OIL = 6
+    SAND_STEAM = 7
 
-    SAND_ELEM_NAMES = {0: "empty", 1: "sand", 2: "water", 3: "fire", 4: "stone", 5: "plant"}
+    SAND_ELEM_NAMES = {0: "empty", 1: "sand", 2: "water", 3: "fire", 4: "stone", 5: "plant", 6: "oil", 7: "steam"}
     SAND_ELEM_COLORS = {
         1: 3,   # sand = yellow
         2: 5,   # water = blue
         3: 2,   # fire = red
         4: 8,   # stone = white
         5: 4,   # plant = green
+        6: 6,   # oil = dark/brown (magenta pair used as brown-ish)
+        7: 8,   # steam = dim white
     }
     SAND_ELEM_CHARS = {
         1: "\u2591\u2591",  # sand: light shade
@@ -8862,6 +8866,8 @@ class App:
         3: "\u2588\u2588",  # fire: full block
         4: "\u2593\u2593",  # stone: dark shade
         5: "\u2588\u2588",  # plant: full block
+        6: "\u2592\u2592",  # oil: medium shade
+        7: "\u2591\u2591",  # steam: light shade
     }
 
     SAND_PRESETS = [
@@ -8870,6 +8876,9 @@ class App:
         ("Bonfire", "Fire burning through a plant forest", "bonfire"),
         ("Sandbox", "Empty grid — draw freely", "empty"),
         ("Lava Lamp", "Water and sand mixing", "lavalamp"),
+        ("Forest Fire", "Dense forest with fire ignition points", "forest"),
+        ("Oil Refinery", "Oil floating on water with fire hazards", "oilrig"),
+        ("Waterfall", "Water cascading over stone ledges", "waterfall"),
     ]
 
     def _sand_build_preset(self, name: str) -> dict[tuple[int, int], tuple[int, int]]:
@@ -8939,6 +8948,57 @@ class App:
                     else:
                         grid[(r, c)] = (self.SAND_WATER, 0)
 
+        elif name == "forest":
+            # Ground
+            for c in range(mid_c - 15, mid_c + 16):
+                grid[(self.sand_rows - 4, c)] = (self.SAND_STONE, 0)
+            # Dense plant growth
+            for r in range(mid_r, self.sand_rows - 4):
+                for c in range(mid_c - 12, mid_c + 13):
+                    if random.random() < 0.6:
+                        grid[(r, c)] = (self.SAND_PLANT, 0)
+            # Fire ignition points
+            for r in range(self.sand_rows - 7, self.sand_rows - 4):
+                for c in range(mid_c - 2, mid_c + 3):
+                    grid[(r, c)] = (self.SAND_FIRE, 0)
+
+        elif name == "oilrig":
+            # Container walls
+            for r in range(2, self.sand_rows - 2):
+                grid[(r, mid_c - 12)] = (self.SAND_STONE, 0)
+                grid[(r, mid_c + 12)] = (self.SAND_STONE, 0)
+            for c in range(mid_c - 12, mid_c + 13):
+                grid[(self.sand_rows - 3, c)] = (self.SAND_STONE, 0)
+            # Water layer at bottom
+            for r in range(self.sand_rows - 8, self.sand_rows - 3):
+                for c in range(mid_c - 11, mid_c + 12):
+                    grid[(r, c)] = (self.SAND_WATER, 0)
+            # Oil layer floating on water
+            for r in range(self.sand_rows - 12, self.sand_rows - 8):
+                for c in range(mid_c - 11, mid_c + 12):
+                    grid[(r, c)] = (self.SAND_OIL, 0)
+            # Fire source at one end
+            for r in range(self.sand_rows - 13, self.sand_rows - 11):
+                grid[(r, mid_c - 10)] = (self.SAND_FIRE, 0)
+
+        elif name == "waterfall":
+            # Stone cliff
+            for r in range(mid_r - 5, mid_r + 8):
+                for dc in range(3):
+                    grid[(r, mid_c - 3 + dc)] = (self.SAND_STONE, 0)
+            # Ledges
+            for c in range(mid_c, mid_c + 10):
+                grid[(mid_r - 5, c)] = (self.SAND_STONE, 0)
+            for c in range(mid_c - 10, mid_c - 3):
+                grid[(mid_r + 1, c)] = (self.SAND_STONE, 0)
+            # Pool bottom
+            for c in range(mid_c - 12, mid_c + 13):
+                grid[(mid_r + 8, c)] = (self.SAND_STONE, 0)
+            # Water source at top
+            for r in range(mid_r - 8, mid_r - 5):
+                for c in range(mid_c, mid_c + 5):
+                    grid[(r, c)] = (self.SAND_WATER, 0)
+
         return grid
 
     def _sand_init(self, preset: str | None = None):
@@ -8995,10 +9055,10 @@ class App:
                             new_grid[(nr, c)] = (elem, age + 1)
                             moved.add((nr, c))
                             continue
-                        # Swap with water below
-                        if below is not None and below[0] == self.SAND_WATER:
+                        # Swap with water/oil below (sand sinks through liquids)
+                        if below is not None and below[0] in (self.SAND_WATER, self.SAND_OIL):
                             new_grid[(nr, c)] = (elem, age + 1)
-                            new_grid[(r, c)] = (self.SAND_WATER, below[1])
+                            new_grid[(r, c)] = (below[0], below[1])
                             moved.add((nr, c))
                             moved.add((r, c))
                             continue
@@ -9023,7 +9083,7 @@ class App:
                     moved.add((r, c))
 
                 elif elem == self.SAND_WATER:
-                    # Water: fall down, then flow sideways
+                    # Water: fall down, sink below oil, then flow sideways
                     nr = r + 1
                     if nr < self.sand_rows:
                         below = new_grid.get((nr, c))
@@ -9031,6 +9091,13 @@ class App:
                         if below is None and (below_orig is None or (nr, c) in moved):
                             new_grid[(nr, c)] = (elem, age + 1)
                             moved.add((nr, c))
+                            continue
+                        # Water sinks below oil
+                        if below is not None and below[0] == self.SAND_OIL:
+                            new_grid[(nr, c)] = (elem, age + 1)
+                            new_grid[(r, c)] = (self.SAND_OIL, below[1])
+                            moved.add((nr, c))
+                            moved.add((r, c))
                             continue
                         # Try diagonal down
                         dirs = [-1, 1]
@@ -9071,9 +9138,12 @@ class App:
                 elif elem == self.SAND_FIRE:
                     # Fire: rises upward, has limited lifetime, random flicker
                     if age > 12 + random.randint(0, 8):
-                        # Fire dies out
+                        # Fire dies out — chance to produce steam
+                        if random.random() < 0.2:
+                            new_grid[(r, c)] = (self.SAND_STEAM, 0)
+                            moved.add((r, c))
                         continue
-                    # Ignite adjacent plants
+                    # Ignite adjacent plants and oil; evaporate water
                     for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]:
                         ar, ac = r + dr, c + dc
                         if 0 <= ar < self.sand_rows and 0 <= ac < self.sand_cols:
@@ -9081,6 +9151,14 @@ class App:
                             if adj and adj[0] == self.SAND_PLANT:
                                 if random.random() < 0.4:
                                     new_grid[(ar, ac)] = (self.SAND_FIRE, 0)
+                                    moved.add((ar, ac))
+                            elif adj and adj[0] == self.SAND_OIL:
+                                if random.random() < 0.5:
+                                    new_grid[(ar, ac)] = (self.SAND_FIRE, 0)
+                                    moved.add((ar, ac))
+                            elif adj and adj[0] == self.SAND_WATER:
+                                if random.random() < 0.08:
+                                    new_grid[(ar, ac)] = (self.SAND_STEAM, 0)
                                     moved.add((ar, ac))
                     # Try to rise
                     nr = r - 1
@@ -9126,6 +9204,87 @@ class App:
                         new_grid[(r, c)] = (elem, age + 1)
                         moved.add((r, c))
 
+                elif elem == self.SAND_OIL:
+                    # Oil: liquid that floats on water, flammable
+                    nr = r + 1
+                    if nr < self.sand_rows:
+                        below = new_grid.get((nr, c))
+                        below_orig = self.sand_grid.get((nr, c))
+                        if below is None and (below_orig is None or (nr, c) in moved):
+                            new_grid[(nr, c)] = (elem, age + 1)
+                            moved.add((nr, c))
+                            continue
+                        # Oil floats above water — swap if water is below
+                        # (water sinks, oil rises handled by water not displacing oil upward)
+                        # Try diagonal down
+                        dirs = [-1, 1]
+                        random.shuffle(dirs)
+                        fell = False
+                        for dc in dirs:
+                            nc = c + dc
+                            if 0 <= nc < self.sand_cols:
+                                diag = new_grid.get((nr, nc))
+                                diag_orig = self.sand_grid.get((nr, nc))
+                                if diag is None and (diag_orig is None or (nr, nc) in moved):
+                                    new_grid[(nr, nc)] = (elem, age + 1)
+                                    moved.add((nr, nc))
+                                    fell = True
+                                    break
+                        if fell:
+                            continue
+                    # Try flowing sideways
+                    dirs = [-1, 1]
+                    random.shuffle(dirs)
+                    flowed = False
+                    for dc in dirs:
+                        nc = c + dc
+                        if 0 <= nc < self.sand_cols:
+                            side = new_grid.get((r, nc))
+                            side_orig = self.sand_grid.get((r, nc))
+                            if side is None and (side_orig is None or (r, nc) in moved):
+                                new_grid[(r, nc)] = (elem, age + 1)
+                                moved.add((r, nc))
+                                flowed = True
+                                break
+                    if flowed:
+                        continue
+                    # Stay in place
+                    new_grid[(r, c)] = (elem, age)
+                    moved.add((r, c))
+
+                elif elem == self.SAND_STEAM:
+                    # Steam: rises upward, drifts, eventually condenses back to water
+                    if age > 15 + random.randint(0, 10):
+                        # Condense back to water or vanish
+                        if random.random() < 0.4:
+                            new_grid[(r, c)] = (self.SAND_WATER, 0)
+                            moved.add((r, c))
+                        continue
+                    # Try to rise
+                    nr = r - 1
+                    if nr >= 0:
+                        dc = random.choice([-1, 0, 0, 1])
+                        nc = c + dc
+                        if 0 <= nc < self.sand_cols:
+                            above = new_grid.get((nr, nc))
+                            above_orig = self.sand_grid.get((nr, nc))
+                            if above is None and (above_orig is None or (nr, nc) in moved):
+                                new_grid[(nr, nc)] = (elem, age + 1)
+                                moved.add((nr, nc))
+                                continue
+                    # Stay or drift sideways
+                    dc = random.choice([-1, 1])
+                    nc = c + dc
+                    if 0 <= nc < self.sand_cols:
+                        side = new_grid.get((r, nc))
+                        side_orig = self.sand_grid.get((r, nc))
+                        if side is None and (side_orig is None or (r, nc) in moved):
+                            new_grid[(r, nc)] = (elem, age + 1)
+                            moved.add((r, nc))
+                            continue
+                    new_grid[(r, c)] = (elem, age + 1)
+                    moved.add((r, c))
+
         self.sand_grid = new_grid
         self.sand_generation += 1
 
@@ -9164,7 +9323,7 @@ class App:
             self.sand_mode = True
             self.sand_running = False
             self._sand_init(preset_id)
-            self._flash(f"Falling Sand [{name}] — Space=play, arrows=move, 1-5=brush, Enter=place, q=exit")
+            self._flash(f"Falling Sand [{name}] — Space=play, arrows=move, 1-7=brush, Enter=place, q=exit")
             return True
         return True
 
@@ -9220,9 +9379,17 @@ class App:
             self.sand_brush = self.SAND_STONE
             self._flash("Brush: stone")
             return True
-        if key == ord("6"):
+        if key == ord("5"):
             self.sand_brush = self.SAND_PLANT
             self._flash("Brush: plant")
+            return True
+        if key == ord("6"):
+            self.sand_brush = self.SAND_OIL
+            self._flash("Brush: oil")
+            return True
+        if key == ord("7"):
+            self.sand_brush = self.SAND_STEAM
+            self._flash("Brush: steam")
             return True
         if key == ord("0"):
             self.sand_brush = self.SAND_EMPTY
@@ -9306,9 +9473,11 @@ class App:
         info_y = 5 + min(n, max_y - 15) + 1
         info_lines = [
             "Elements: sand (falls, piles), water (flows), fire (rises, burns),",
-            "          stone (static walls), plant (grows near water, burns)",
+            "          stone (static walls), plant (grows near water, burns),",
+            "          oil (floats on water, highly flammable), steam (rises, condenses)",
             "",
-            "Sand sinks through water. Fire ignites plants. Plants grow near water.",
+            "Sand sinks through water/oil. Fire ignites plants and oil.",
+            "Water evaporates to steam near fire. Oil floats above water.",
         ]
         for i, info in enumerate(info_lines):
             y = info_y + i
@@ -9389,8 +9558,14 @@ class App:
                         if random.random() < 0.3:
                             attr |= curses.A_BOLD
                     # Plant gets brighter with age
-                    if elem == self.SAND_PLANT and age > 5:
+                    elif elem == self.SAND_PLANT and age > 5:
                         attr |= curses.A_BOLD
+                    # Oil is dim
+                    elif elem == self.SAND_OIL:
+                        attr |= curses.A_DIM
+                    # Steam fades as it ages
+                    elif elem == self.SAND_STEAM:
+                        attr |= curses.A_DIM
                     try:
                         self.stdscr.addstr(screen_y, sx, ch, attr)
                     except curses.error:
@@ -9420,7 +9595,7 @@ class App:
             if self.message and now - self.message_time < 3.0:
                 hint = f" {self.message}"
             else:
-                hint = " [Space]=play [n]=step [1-4,6]=element [0]=erase [+/-]=size [Enter]=place [r]=clear [R]=menu [q]=exit"
+                hint = " [Space]=play [n]=step [1-7]=element [0]=erase [+/-]=size [Enter]=place [r]=clear [R]=menu [q]=exit"
             hint = hint[:max_x - 1]
             try:
                 self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
