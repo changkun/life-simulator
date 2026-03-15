@@ -281,4 +281,7 @@ MODE_REGISTRY = [
     # ── Hyperbolic Cellular Automata ──
     {"name": "Hyperbolic Cellular Automata", "key": "Ctrl+H", "category": "Classic CA",
      "desc": "Game of Life on hyperbolic tilings ({5,4}, {7,3}, etc.) rendered as a Poincaré disk", "attr": "hyp_mode", "enter": "_enter_hyp_mode", "exit": "_exit_hyp_mode"},
+    # ── Graph-Based Cellular Automata ──
+    {"name": "Graph Cellular Automata", "key": "G", "category": "Classic CA",
+     "desc": "Game of Life on arbitrary network topologies: small-world, scale-free, random & more", "attr": "gca_mode", "enter": "_enter_gca_mode", "exit": "_exit_gca_mode"},
 ]

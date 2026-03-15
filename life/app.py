@@ -280,6 +280,37 @@ class App:
         self.hyp_view_cy: float = 0.0
         self.hyp_speed_mult: int = 1
         self.anc_use_current = False
+        # Graph CA mode state
+        self.gca_mode = False
+        self.gca_menu = False
+        self.gca_menu_phase = "topology"
+        self.gca_menu_sel = 0
+        self.gca_rule_sel = 0
+        self.gca_running = False
+        self.gca_generation = 0
+        self.gca_population = 0
+        self.gca_n = 0
+        self.gca_adj: dict = {}
+        self.gca_states: list = []
+        self.gca_ages: list = []
+        self.gca_pos_x: list = []
+        self.gca_pos_y: list = []
+        self.gca_topo_name: str = ""
+        self.gca_topo_key: str = ""
+        self.gca_topo_idx: int = 0
+        self.gca_rule_name: str = ""
+        self.gca_rule_idx: int = 0
+        self.gca_birth: set = {3}
+        self.gca_survive: set = {2, 3}
+        self.gca_show_edges: bool = True
+        self.gca_show_metrics: bool = True
+        self.gca_speed_mult: int = 1
+        self.gca_node_count: int = 80
+        self.gca_clustering: float = 0.0
+        self.gca_avg_path: float = 0.0
+        self.gca_avg_deg: float = 0.0
+        self.gca_max_deg: int = 0
+        self.gca_pop_history: list = []
         # Neural CA mode state
         self.nca_mode = False
         self.nca_menu = False
@@ -3417,6 +3448,18 @@ class App:
                         self._anc_step()
                     continue
 
+            if self.gca_menu:
+                if self._handle_gca_menu_key(key):
+                    continue
+            elif self.gca_mode:
+                if self._handle_gca_key(key):
+                    if self.gca_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        for _ in range(self.gca_speed_mult):
+                            self._gca_step()
+                    continue
+
             if self.hyp_menu:
                 if self._handle_hyp_menu_key(key):
                     continue
@@ -5775,6 +5818,16 @@ class App:
 
         if self.anc_mode:
             self._draw_ancestor_search(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.gca_menu:
+            self._draw_gca_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.gca_mode:
+            self._draw_gca(max_y, max_x)
             self.stdscr.refresh()
             return
 

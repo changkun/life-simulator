@@ -228,6 +228,8 @@ def register_all_modes(App):
     reg_anc(App)
     from life.modes.hyperbolic_ca import register as reg_hyp
     reg_hyp(App)
+    from life.modes.graph_ca import register as reg_gca
+    reg_gca(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

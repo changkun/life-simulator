@@ -4,6 +4,73 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Graph-Based Cellular Automata — Game of Life on Arbitrary Network Topologies
+
+Runs CA rules on non-grid structures where neighbor counts and connectivity patterns create
+entirely new emergent dynamics. This is the natural generalization beyond flat grids and
+non-Euclidean tilings — arbitrary graph topologies where a "glider" on a scale-free network
+behaves nothing like one on a regular grid. Each topology produces fundamentally different
+dynamics: hub nodes in scale-free networks dominate evolution, small-world rewiring creates
+long-range correlations, and caveman graphs produce isolated cluster dynamics with rare
+inter-community signaling.
+
+**New file:** `life/modes/graph_ca.py` (~910 lines)
+
+**8 network topologies:**
+
+| Topology | Description |
+|----------|-------------|
+| Ring Lattice | Regular ring where each node connects to K nearest neighbors |
+| Small-World (WS) | Watts-Strogatz: ring lattice with random rewiring (p=0.3) |
+| Scale-Free (BA) | Barabási-Albert preferential attachment network |
+| Random (ER) | Erdős-Rényi random graph with edge probability p |
+| Star Graph | Central hub connected to all other nodes |
+| Binary Tree | Complete binary tree structure |
+| Grid 2D | Standard 2D lattice graph (for comparison with classic Life) |
+| Caveman Graph | Clusters of cliques connected in a ring |
+
+**8 CA rule presets:**
+
+| Rule | Description |
+|------|-------------|
+| B3/S23 (Life) | Classic Conway's Game of Life rules |
+| B2/S34 (Pulse) | Pulsing growth for high-degree nodes |
+| B3/S234 (Coral) | Slow coral-like growth |
+| B23/S3 (Sparse) | Sparse dynamics — hard to sustain |
+| B1/S12 (Dense) | Very active — suited for low-degree graphs |
+| B2/S23 (Spread) | Fast spreading with moderate survival |
+| B34/S345 (Hardy) | Tough survivors on high-connectivity nets |
+| B2/S∅ (Seeds) | Explosive — no survival, pure birth |
+
+**Force-directed ASCII visualization:**
+- Fruchterman-Reingold layout algorithm (O(n²) repulsion + edge attraction with temperature cooling)
+- Node characters scale with degree (`@` for hubs ≥8, `#` ≥5, `O` ≥3, `o` low-degree)
+- Age-based coloring (6 color tiers) for alive cells, dim structural markers for dead cells
+- Bresenham-style edge drawing between connected nodes (togglable)
+
+**Real-time metrics panel:**
+- Alive ratio and population count
+- Clustering coefficient (local, averaged)
+- Average path length (estimated via BFS from random sample of 50 nodes)
+- Average and max degree
+- Population sparkline history (last 100 generations)
+- Degree distribution mini-histogram
+
+**Interactive controls:**
+- Two-phase menu: topology selection → rule selection, with mini graph preview
+- Simulation: `space` pause, `s` single-step, `r` randomize, `c` clear
+- `n` cycle rules, `t` switch topology (rebuilds graph), `l` re-layout
+- `e` toggle edge drawing, `m` toggle metrics panel
+- `+`/`-` adjust node count (10–200), `q` quit
+- Registered under "Classic CA" category with `G` hotkey
+
+**Modified files:**
+- `life/app.py` — 31 state variables in `__init__`, key handler dispatch (menu + simulation), draw dispatch
+- `life/modes/__init__.py` — import and register `graph_ca`
+- `life/registry.py` — registry entry under "Classic CA" with `G`
+
+---
+
 ### Added: Hyperbolic Cellular Automata — Game of Life on the Poincaré Disk
 
 Runs cellular automata on hyperbolic tilings rendered as a Poincaré disk in the terminal.
