@@ -216,6 +216,8 @@ def register_all_modes(App):
     reg_comp(App)
     from life.modes.recording import register as reg_recording
     reg_recording(App)
+    from life.modes.scripting import register as reg_scripting
+    reg_scripting(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

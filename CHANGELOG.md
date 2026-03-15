@@ -4,6 +4,77 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Simulation Scripting & Choreography System — programmable show director for timed sequences of mode transitions, effects, and parameter sweeps
+
+A new meta-mode (`Ctrl+U`) that lets users write and play back simple scripts to orchestrate
+"shows" — timed sequences of mode transitions, parameter sweeps, effect toggles, and topology
+changes. Think of it as a programmable director for the entire simulation platform.
+
+The platform has 108+ modes, compositing, post-processing, portals, topology, and recording —
+but until now no way for a user to *compose* these into a reproducible, timed performance.
+The cinematic demo reel exists but is hardcoded; this gives users the same authoring power.
+Scripts become a shareable artifact (like genome codes, but for entire performances), turning
+the simulator from an exploration tool into a **creative authoring tool**.
+
+**New file:** `life/modes/scripting.py` (~980 lines)
+
+**Line-based DSL** supporting these commands:
+
+| Command | Syntax | Description |
+|---------|--------|-------------|
+| `mode` | `mode <name>` | Switch simulation engine (gol, wave, rd, fire, boids, ising, rps, physarum + aliases) |
+| `wait` | `wait <duration>` | Pause execution (e.g. `5s`, `500ms`) |
+| `effect` | `effect <name> on\|off\|toggle` | Toggle post-processing effects (scanlines, bloom, trails, edge_detect, color_cycle, crt) |
+| `topology` | `topology <name>` | Set grid topology (plane, torus, klein_bottle, mobius_strip, projective_plane) |
+| `set` | `set <param> <value> [...]` | Set parameters inline (supports key-value pairs) |
+| `sweep` | `sweep <param> <from> <to> over <dur>` | Animate a parameter over time with smooth hermite easing |
+| `transition` | `transition crossfade\|cut\|fade <dur>` | Transition style between mode switches |
+| `speed` | `speed <label>` | Set simulation speed (0.5x through 100x) |
+| `color` | `color <1-7>` | Set display color |
+| `label` | `label <text>` | Show a fading title card overlay (3s visible, 1s fade) |
+| `loop` | `loop` | Jump back to start for infinite playback |
+
+Comments (`#`) and blank lines are supported. Example `.show` script:
+
+```
+# Emergence — from simple rules to complex patterns
+mode game_of_life
+label Emergence
+speed 2x
+wait 5s
+transition crossfade 2s
+mode reaction_diffusion
+effect bloom on
+wait 6s
+```
+
+**5 built-in example scripts:** Emergence, Fluid Dreams, Life & Death, Speed Ramp, Full Tour
+
+**Playback controls:**
+- **Space** — pause/resume
+- **n** — skip current wait/sweep
+- **r** — restart from beginning
+- **s** — toggle source code overlay (shows script with current-line indicator)
+- **Esc** — exit scripting mode
+
+**Script menu:**
+- Arrow keys / j,k to navigate built-in scripts
+- Enter to launch selected script
+- "Load .show file from disk" option for user-authored scripts
+
+**Integration points:**
+- `life/app.py` — 28 state variables for script engine, draw dispatch (menu + playback + source overlay), run loop dispatch, `Ctrl+U` keybinding, help screen entry
+- `life/modes/__init__.py` — registration
+- `life/registry.py` — mode browser entry under "Meta Modes"
+
+**Design decisions:**
+- **Ctrl+U** keybinding (Ctrl+Y was already taken by 3D Terrain Flythrough)
+- Script engine uses a program counter (`script_pc`) with immediate execution of non-blocking commands and blocking on `wait`/`sweep` — simple, debuggable, no coroutines needed
+- Crossfade transitions blend density arrays from previous and current simulation for smooth visual handoffs
+- Sweep animations use smooth hermite interpolation (`t² × (3 - 2t)`) for natural-feeling parameter ramps
+- Reuses existing `_ENGINES` from mashup mode for simulation init/step/density, keeping the engine registry DRY
+- Label overlay uses a timed fade (3s hold + 1s fade) for cinematic title cards without blocking script execution
+
 ### Added: Simulation Recording & Export System — capture any simulation as asciinema `.cast` or plain-text flipbook
 
 A horizontal meta-feature that records terminal frames from any running simulation and exports them

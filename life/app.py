@@ -2104,6 +2104,33 @@ class App:
         self.cinem_act_duration: float = 10.0
         self.cinem_act = None
         self.cinem_generation: int = 0
+        # ── Scripting & Choreography state ──
+        self.script_mode: bool = False
+        self.script_menu: bool = False
+        self.script_menu_sel: int = 0
+        self.script_menu_phase: int = 0
+        self.script_running: bool = False
+        self.script_paused: bool = False
+        self.script_name: str = ""
+        self.script_commands: list = []
+        self.script_pc: int = 0
+        self.script_wait_until: float = 0.0
+        self.script_generation: int = 0
+        self.script_active_sweeps: list = []
+        self.script_label: str = ""
+        self.script_label_alpha: float = 0.0
+        self.script_label_time: float = 0.0
+        self.script_color: int = 6
+        self.script_source: str = ""
+        self.script_crossfade: float = 0.0
+        self.script_crossfade_duration: float = 0.0
+        self.script_prev_density = None
+        self.script_sim_rows: int = 30
+        self.script_sim_cols: int = 40
+        self.script_sim_state = None
+        self.script_sim_id: str = ""
+        self.script_density = None
+        self.script_show_source: bool = False
         # ── Screensaver / Demo Reel state ──
         self.screensaver_mode: bool = False
         self.screensaver_menu: bool = False
@@ -2202,7 +2229,7 @@ class App:
             'evo_menu', 'chladni_menu', 'cpm_menu', 'fdtd_menu',
             'magfield_menu', 'rbc_menu', 'sph_menu', 'tectonic_menu',
             'volcano_menu', 'ocean_menu', 'weather_menu', 'blackhole_menu',
-            'pexplorer_menu', 'ep_menu', 'cast_export_menu',
+            'pexplorer_menu', 'ep_menu', 'cast_export_menu', 'script_menu',
         ]
         for attr in _menu_attrs:
             if getattr(self, attr, False):
@@ -3025,6 +3052,17 @@ class App:
                         delay = SPEEDS[self.speed_idx]
                         time.sleep(delay)
                         self._cinematic_step()
+                    continue
+
+            if self.script_menu:
+                if self._handle_script_menu_key(key):
+                    continue
+            elif self.script_mode:
+                if self._handle_script_key(key):
+                    if self.script_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        self._script_step()
                     continue
 
             if self.screensaver_menu:
@@ -4560,6 +4598,12 @@ class App:
             else:
                 self._enter_sph_mode()
             return True
+        if key == 21:  # Ctrl+U — Scripting & Choreography
+            if self.script_mode:
+                self._exit_scripting_mode()
+            else:
+                self._enter_scripting_mode()
+            return True
         if key == 25:  # Ctrl+Y — 3D Terrain Flythrough
             if self.flythrough_mode:
                 self._exit_flythrough_mode()
@@ -5336,6 +5380,18 @@ class App:
 
         if self.cinem_mode:
             self._draw_cinematic(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.script_menu:
+            self._draw_script_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.script_mode:
+            self._draw_scripting(max_y, max_x)
+            if self.script_show_source:
+                self._draw_script_source(max_y, max_x)
             self.stdscr.refresh()
             return
 
@@ -6794,6 +6850,7 @@ class App:
             "║  Ctrl+N    Magnetic Field Lines (particles)  ║",
             "║  g         Genome: export/import sim config    ║",
             "║  G         Record/stop GIF (export frames)   ║",
+            "║  Ctrl+U    Scripting & Choreography (.show)  ║",
             "║  Ctrl+X    Record/export .cast or .txt file  ║",
             "║  i         Import RLE pattern file            ║",
             "║  r         Fill grid randomly                 ║",

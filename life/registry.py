@@ -263,4 +263,7 @@ MODE_REGISTRY = [
     # ── Simulation Recording & Export ──
     {"name": "Recording & Export", "key": "Ctrl+X", "category": "Meta Modes",
      "desc": "Record terminal frames and export as asciinema .cast or plain-text flipbook", "attr": "cast_recording", "enter": "_cast_rec_toggle", "exit": "_cast_rec_stop"},
+    # ── Simulation Scripting & Choreography ──
+    {"name": "Scripting & Choreography", "key": "Ctrl+U", "category": "Meta Modes",
+     "desc": "Programmable show director: timed mode transitions, parameter sweeps, effect toggles", "attr": "script_mode", "enter": "_enter_scripting_mode", "exit": "_exit_scripting_mode"},
 ]
