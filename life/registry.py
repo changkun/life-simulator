@@ -121,8 +121,8 @@ MODE_REGISTRY = [
      "desc": "Dielectric breakdown fractal branching", "attr": "erosion_mode", "enter": "_enter_erosion_mode", "exit": "_exit_erosion_mode"},
     {"name": "Chaos Game / IFS Fractals", "key": "Ctrl+G", "category": "Fractals & Chaos",
      "desc": "Iterated function system fractal generation", "attr": "ifs_mode", "enter": "_enter_ifs_mode", "exit": "_exit_ifs_mode"},
-    {"name": "L-System Plants", "key": "/", "category": "Fractals & Chaos",
-     "desc": "Lindenmayer system procedural plant growth", "attr": "lsystem_mode", "enter": "_enter_lsystem_mode", "exit": "_exit_lsystem_mode"},
+    {"name": "L-System Fractal Garden", "key": "/", "category": "Fractals & Chaos",
+     "desc": "Botanical morphogenesis with seasons, wind, mutation & light competition", "attr": "lsystem_mode", "enter": "_enter_lsystem_mode", "exit": "_exit_lsystem_mode"},
     # ── Procedural & Computational ──
     {"name": "Wave Function Collapse", "key": "X", "category": "Procedural & Computational",
      "desc": "Constraint-based procedural tile generation", "attr": "wfc_mode", "enter": "_enter_wfc_mode", "exit": "_exit_wfc_mode"},

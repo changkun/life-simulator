@@ -4,6 +4,59 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Upgraded: L-System Fractal Garden — Botanical Morphogenesis with Seasons, Wind, Mutation & Light Competition
+
+Massive overhaul of the L-System mode from a basic plant grower into a full botanical
+ecosystem simulator. Plants now grow from formal Lindenmayer system grammars through
+seasonal cycles (spring sprouting → summer bloom → autumn leaf-fall → winter dormancy),
+compete for light via canopy overlap, reproduce through wind-dispersed seeds with
+genetic mutation, and bend under sinusoidal wind forces. This bridges the gap between
+the project's fractal modes (`fractal_explorer.py`, `ifs_fractals.py`) and its biological
+simulations (`ecosystem_evolution.py`, `primordial_soup.py`) — modeling botanical
+morphogenesis via the formal grammar rewriting systems that are the canonical method
+for procedural plant generation in generative art.
+
+**Rewritten file:** `life/modes/lsystem.py` (~855 lines, up from ~478)
+
+**Core mechanics:**
+
+| Concept | Implementation |
+|---------|---------------|
+| L-system grammars | Lindenmayer rewriting rules with turtle graphics interpretation — `F` draw, `+`/`-` turn, `[`/`]` push/pop state |
+| 12 species library | Binary tree, fern, bush, seaweed, willow, pine, sakura, bonsai, alien tendril, coral, vine, cactus — each with unique grammar, branching angle, colors, and flowering/deciduous traits |
+| Seasonal cycles | 4 seasons auto-advance every 30 steps: spring sprouts seeds, summer triggers flowering, autumn drops leaves as animated particles, winter kills weak plants and shows bare branches |
+| Wind simulation | Sinusoidal bending force that scales with branch height, with natural fluctuation over time — adjustable from keyboard |
+| Genetic mutation | Randomizes branching angle, length scale, and occasionally rewrites grammar rules during seed reproduction — produces novel morphologies over generations |
+| Light competition | Per-column canopy overlap calculation; shaded plants lose health and grow slower, eventually dying — drives ecological dynamics |
+| Seed dispersal | Mature healthy plants drop seeds that queue for next spring, with proximity checks to prevent crowding |
+| Fallen leaf particles | Animated leaf-fall during autumn with wind-driven horizontal drift and time-to-live decay |
+
+**13 presets:**
+
+| Preset | Description |
+|--------|-------------|
+| Binary Tree | Symmetric branching tree structure |
+| Fern | Naturalistic fern with curving fronds |
+| Bush | Dense bushy shrub with many branches |
+| Seaweed | Swaying underwater kelp strands |
+| Willow | Drooping willow tree with long tendrils |
+| Pine | Coniferous tree with short angled branches |
+| Sakura | Cherry blossom tree with spring flowers |
+| Bonsai | Carefully shaped miniature tree |
+| Garden | Multiple species competing for light |
+| Alien Flora | Exotic extraterrestrial vegetation with mutation |
+| Competition | 7 species battle for light — survival of fittest |
+| Coral Reef | Underwater coral and seaweed colony |
+| Desert | Sparse cacti in arid landscape |
+
+**Interactive controls:** `Space` play/pause, `n` single step, `w`/`W` decrease/increase wind, `s` advance season, `S` toggle auto-seasons, `m` toggle mutation, `a`/`A` adjust angle, `g`/`G` adjust growth rate, `←`/`→` light direction, `<`/`>` speed, `r` reset, `R` preset menu, `q` quit. Accessible via `/` from the main menu under "Fractals & Chaos."
+
+**Also changed:**
+- `life/app.py`: Added `LSYSTEM_PRESETS` class constant and 8 new state variables for wind, seasons, mutation, seed queue, and fallen leaves
+- `life/registry.py`: Renamed mode to "L-System Fractal Garden" with updated description
+
+---
+
 ### Added: Quantum Circuit Simulator & Visualizer — Interactive Quantum Computing in ASCII
 
 A full quantum circuit simulator and visualizer where users build and simulate quantum

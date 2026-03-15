@@ -1542,14 +1542,22 @@ class App:
         self.lsystem_max_depth: int = 0
         self.lsystem_current_depth: int = 0
         self.lsystem_string: str = ""
-        self.lsystem_segments: list[tuple[float, float, float, float, int]] = []  # x1,y1,x2,y2,depth
-        self.lsystem_leaves: list[tuple[float, float]] = []
+        self.lsystem_segments: list = []  # (x1,y1,x2,y2,depth,color)
+        self.lsystem_leaves: list = []  # (x,y,is_flower,color,deciduous)
         self.lsystem_seeds: list[tuple[float, float]] = []
         self.lsystem_rows: int = 0
         self.lsystem_cols: int = 0
         self.lsystem_steps_per_frame: int = 1
         self.lsystem_num_plants: int = 1
         self.lsystem_plants: list[dict] = []  # list of plant state dicts
+        self.lsystem_wind: float = 0.0
+        self.lsystem_wind_time: float = 0.0
+        self.lsystem_season: int = 0  # 0=spring 1=summer 2=autumn 3=winter
+        self.lsystem_season_tick: int = 0
+        self.lsystem_seasons_auto: bool = True
+        self.lsystem_mutation: float = 0.0
+        self.lsystem_seed_queue: list = []
+        self.lsystem_fallen_leaves: list = []
 
         # ── Fractal Explorer mode ──
         self.fractal_mode: bool = False
@@ -7780,6 +7788,22 @@ class App:
         ("⌂⌂", 7),   # 7: house          (cyan)
         ("≈≈", 4),   # 8: deep water     (blue dim)
         ("··", 2),   # 9: path           (yellow dim)
+    ]
+
+    LSYSTEM_PRESETS = [
+        ("Binary Tree",    "Symmetric branching tree structure",               "binary_tree"),
+        ("Fern",           "Naturalistic fern with curving fronds",            "fern"),
+        ("Bush",           "Dense bushy shrub with many branches",             "bush"),
+        ("Seaweed",        "Swaying underwater kelp strands",                  "seaweed"),
+        ("Willow",         "Drooping willow tree with long tendrils",          "willow"),
+        ("Pine",           "Coniferous tree with short angled branches",       "pine"),
+        ("Sakura",         "Cherry blossom tree with spring flowers",          "sakura"),
+        ("Bonsai",         "Carefully shaped miniature tree",                  "bonsai"),
+        ("Garden",         "Multiple species competing for light",             "garden"),
+        ("Alien Flora",    "Exotic extraterrestrial vegetation with mutation", "alien_flora"),
+        ("Competition",    "7 species battle for light — survival of fittest", "competition"),
+        ("Coral Reef",     "Underwater coral and seaweed colony",              "coral_reef"),
+        ("Desert",         "Sparse cacti in arid landscape",                   "desert"),
     ]
 
     WFC_UNCOLLAPSED_CHAR = "??"
