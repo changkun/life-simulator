@@ -242,6 +242,8 @@ def register_all_modes(App):
     reg_immune(App)
     from life.modes.coral_reef import register as reg_reef
     reg_reef(App)
+    from life.modes.civilization import register as reg_civ
+    reg_civ(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

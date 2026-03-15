@@ -4,6 +4,50 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Civilization & Cultural Evolution — Macro-Historical Simulation with Emergent Civilizations
+
+Simulates a procedurally-generated world where tribes emerge on varied terrain, develop
+technologies, establish trade routes, wage wars, and compete for resources. Cultural traits
+diffuse across populations through settlement influence, civilizations rise and fall through
+conquest and famine, and diplomacy shifts dynamically between trade partnerships and warfare.
+This fills a clear gap at the macro-historical scale — the project had deep coverage of natural
+sciences (physics, biology, chemistry, ecology) and individual economic agents (stock market),
+but nothing where entire civilizations emerge, interact, and collapse over generational time.
+The mode synthesizes terrain generation, agent-based modeling, diffusion dynamics, and game
+theory into a single narratively rich simulation.
+
+**New file:** `life/modes/civilization.py` (~1050 lines)
+
+**Core mechanics:**
+
+| Concept | Implementation |
+|---------|---------------|
+| Terrain generation | Value-noise heightmap producing 10 terrain types: water, plains, forests, hills, mountains, deserts, rivers, coasts, tundra, jungle |
+| Agent-based tribes | Each tribe has population, resources (food/gold/production), cultural traits, tech tree progress, territory, and diplomacy state |
+| Tech tree | 20-node tree from Fire and Tool-Making through Agriculture, Bronze Working, Navigation, Gunpowder, and Printing Press — each with gameplay effects |
+| Cultural traits | 10 traits (Warlike, Peaceful, Nomadic, Agrarian, Mercantile, Religious, Artistic, Scientific, Expansionist, Isolationist) with diffusion from settlements |
+| Diplomacy | Trade partnerships form between adjacent peaceful/mercantile tribes; war declarations based on aggression, population ratio, and traits; peace treaties and conquest |
+| Resource economy | Per-tile food/gold/production yields modified by tech bonuses and cultural traits; trade income from partnerships |
+| Territory | Tribes expand into unclaimed adjacent land; border conflicts transfer cells between warring tribes |
+| Cultural diffusion | Trait influence radiates from settlements; tribes near strong foreign culture may adopt new traits |
+
+**6 presets:**
+
+| Preset | Description |
+|--------|-------------|
+| Pangaea | One large continent — early conflict and rapid tech diffusion |
+| Archipelago | Scattered islands — navigation key, isolated cultures diverge |
+| River Valleys | Fertile river basins — agriculture blooms, dense populations |
+| Tundra & Steppe | Harsh northern plains — nomadic herders, slow development |
+| Fertile Crescent | Central fertile zone ringed by desert & mountains — cradle of civilization |
+| Random World | Fully randomized terrain and starting conditions |
+
+**4 view modes:** political (territory ownership with settlement markers), terrain (raw heightmap-derived terrain), culture (dominant cultural trait influence), trade (active trade partnerships highlighted).
+
+**Controls:** `Space` play/pause, `n` step, `v` cycle views, `l` toggle event log, `+`/`-` steps per frame, `r` reset, `R` preset menu, `q` quit. Accessible via `Ctrl+Shift+V` from the main menu under "Game Theory & Social."
+
+---
+
 ### Added: Coral Reef Ecosystem — Multi-Species Marine Ecosystem with Bleaching Cascades
 
 Simulates a coral reef with multi-trophic interactions, habitat engineering, and environmental

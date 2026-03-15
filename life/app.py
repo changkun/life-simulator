@@ -363,6 +363,17 @@ class App:
         self.reef_steps_per_frame = 1
         self.reef_grid = []
         self.reef_entities = []
+        self.civ_mode = False
+        self.civ_menu = False
+        self.civ_menu_sel = 0
+        self.civ_running = False
+        self.civ_generation = 0
+        self.civ_rows = 0
+        self.civ_cols = 0
+        self.civ_steps_per_frame = 1
+        self.civ_terrain = []
+        self.civ_tribes = []
+        self.civ_log = []
         self.immune_cytokine = []
         self.immune_antigen_map = []
         self.immune_receptor_map = []
@@ -3634,6 +3645,18 @@ class App:
                             self._reef_step()
                     continue
 
+            if self.civ_menu:
+                if self._handle_civ_menu_key(key):
+                    continue
+            elif self.civ_mode:
+                if self._handle_civ_key(key):
+                    if self.civ_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        for _ in range(self.civ_steps_per_frame):
+                            self._civ_step()
+                    continue
+
             if self.hyp_menu:
                 if self._handle_hyp_menu_key(key):
                     continue
@@ -6069,6 +6092,16 @@ class App:
 
         if self.reef_mode:
             self._draw_reef(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.civ_menu:
+            self._draw_civ_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.civ_mode:
+            self._draw_civ(max_y, max_x)
             self.stdscr.refresh()
             return
 

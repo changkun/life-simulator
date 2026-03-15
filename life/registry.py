@@ -301,4 +301,7 @@ MODE_REGISTRY = [
     # ── Coral Reef Ecosystem ──
     {"name": "Coral Reef Ecosystem", "key": "Ctrl+Shift+R", "category": "Chemical & Biological",
      "desc": "Multi-species marine ecosystem with coral growth, bleaching cascades, trophic interactions & recovery dynamics", "attr": "reef_mode", "enter": "_enter_reef_mode", "exit": "_exit_reef_mode"},
+    # ── Civilization & Cultural Evolution ──
+    {"name": "Civilization & Cultural Evolution", "key": "Ctrl+Shift+V", "category": "Game Theory & Social",
+     "desc": "Tribes emerge, develop tech, trade, and compete — civilizations rise and fall with cultural diffusion", "attr": "civ_mode", "enter": "_enter_civ_mode", "exit": "_exit_civ_mode"},
 ]
