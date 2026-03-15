@@ -310,4 +310,7 @@ MODE_REGISTRY = [
     # ── Mycelium Network / Wood Wide Web ──
     {"name": "Mycelium Network / Wood Wide Web", "key": "Ctrl+Shift+W", "category": "Chemical & Biological",
      "desc": "Underground fungal networks connect trees — hyphae branch, shuttle nutrients, fruit mushrooms & respond to seasons", "attr": "mycelium_mode", "enter": "_enter_mycelium_mode", "exit": "_exit_mycelium_mode"},
+    # ── Neural Network Training Visualizer ──
+    {"name": "Neural Network Training Visualizer", "key": "Ctrl+Shift+N", "category": "Procedural & Computational",
+     "desc": "Watch a neural network learn XOR, spirals & more — live neurons, gradient flow, decision boundary & loss curves", "attr": "nntrain_mode", "enter": "_enter_nntrain_mode", "exit": "_exit_nntrain_mode"},
 ]

@@ -248,6 +248,8 @@ def register_all_modes(App):
     reg_evoeco(App)
     from life.modes.mycelium import register as reg_mycelium
     reg_mycelium(App)
+    from life.modes.nn_training import register as reg_nntrain
+    reg_nntrain(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

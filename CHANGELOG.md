@@ -4,6 +4,51 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Neural Network Training Visualizer — Watch a Neural Network Learn in Real Time
+
+A real-time ASCII visualization of a small neural network learning classification and
+regression tasks. A pure-Python feed-forward network (`_MiniNet`) implements forward
+pass, backpropagation, and SGD weight updates with no external dependencies. Three
+visualization panels show the learning process from complementary angles: a network
+diagram with color-coded neuron activations and animated gradient flow pulses along
+weight connections, a 2D decision boundary heatmap that reshapes in real time as the
+network learns, and loss/accuracy sparkline charts tracking training progress. This
+fills the gap between `neural_ca.py` (neural cellular automata) and
+`spiking_neural.py` (biological neurons) — visualizing the core machine-learning
+training loop itself as a living animation.
+
+**New file:** `life/modes/nn_training.py` (~790 lines)
+
+**Core mechanics:**
+
+| Concept | Implementation |
+|---------|---------------|
+| Neural network | Pure-Python `_MiniNet` class — feed-forward with backprop, Xavier init, configurable activations (sigmoid/relu/tanh) |
+| Forward pass | Layer-by-layer matrix multiply with activation; softmax on multi-class output layers |
+| Backpropagation | Output deltas (MSE for binary, cross-entropy for multi-class) propagated through hidden layers |
+| Gradient flow viz | Weight connections colored by sign (green=positive, red=negative), animated `»`/`«` pulses proportional to gradient magnitude |
+| Neuron rendering | Activation mapped to glyphs (`○◐◑●`) and colors (blue→cyan→green→yellow→red→white) |
+| Decision boundary | 2D heatmap sampled across input space, updated every frame, with training data points overlaid |
+| Loss/accuracy curves | Rolling sparkline bar charts showing training convergence over time |
+| Data generators | Six task generators: XOR, spiral (3-class), circle, two-moons, sine regression, Gaussian clusters |
+
+**6 presets:**
+
+| Preset | Description |
+|--------|-------------|
+| XOR Gate | 2-2-1 network learns exclusive-or with sigmoid activation |
+| Spiral Classification | 2-8-8-3 network separates three interleaved spirals (multi-class) |
+| Circle Decision | 2-4-1 network learns inside-vs-outside circle boundary |
+| Two Moons | 2-6-4-1 network separates crescent-shaped clusters |
+| Sine Regression | 2-8-4-1 network fits a sine curve |
+| Gaussian Clusters | 2-8-4-3 network classifies three Gaussian blobs (multi-class) |
+
+**4 view modes:** all panels (default), network only, decision boundary only, loss curve only.
+
+**Controls:** `Space` play/pause, `n` single step, `v` cycle views, `+`/`-` speed, `[`/`]` adjust learning rate, `r` reset, `R` preset menu, `q` quit. Accessible via `Ctrl+Shift+N` from the main menu under "Procedural & Computational."
+
+---
+
 ### Added: Mycelium Network / Wood Wide Web — Underground Fungal Network Simulation
 
 A side-view underground simulation of fungal mycorrhizal networks — the hidden
