@@ -4,6 +4,67 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Simulation Genome Sharing System — encode any simulation's config as a compact, shareable seed string
+
+A horizontal feature that lets users export any running simulation's complete configuration as a
+short code (e.g., `RD-eNqr...`) and share it with others. Anyone can paste a genome code to
+instantly reproduce that exact simulation setup — mode, parameters, rule set, speed, and (for
+small Game of Life patterns) cell positions.
+
+**New file:** `life/modes/genome.py` (~383 lines)
+
+**How it works:**
+1. Press `g` to open the genome menu
+2. **Export**: Captures the active mode's configuration → JSON → zlib compress → base64url encode → compact string with a human-readable mode prefix (e.g., `RD`, `BOI`, `WAV`, `GOL`)
+3. **Import**: Paste a genome code → decode → exit current mode → enter target mode → apply all saved parameters
+
+**Encoding pipeline:**
+- Scans all `self.<prefix>_*` attributes for the active mode (same pattern as time-travel snapshots)
+- Filters out runtime state (grids, particles, threads, buffers, caches) via suffix/exact blocklists
+- Keeps only serializable config values: numbers, short strings, booleans, small primitive lists
+- For base Game of Life, also stores cell positions (up to 500 cells) with grid-size-aware centering on import
+- Captures GoL birth/survival rule sets when a grid is present
+
+**60+ mode abbreviations** for human-readable prefixes:
+
+| Category | Examples |
+|----------|----------|
+| Classic CA | `GOL`, `WLF`, `ANT`, `HEX`, `WW`, `CYC` |
+| Particle & Swarm | `BOI`, `PLF`, `PHY`, `ACO`, `NBD` |
+| Physics & Waves | `WAV`, `ISG`, `KUR`, `QWK`, `LTN`, `CHL` |
+| Fluid Dynamics | `FLD`, `NS`, `RBC`, `SPH`, `MHD` |
+| Chemical & Bio | `RD`, `BZ`, `CHM`, `FIR`, `SIR`, `SNN` |
+| Fractals & Procedural | `ATR`, `FRC`, `SNW`, `IFS`, `LSY`, `WFC` |
+| Visual & Fun | `MTX`, `GAL`, `FRW`, `AQU`, `KAL`, `DNA` |
+| Meta Modes | `CMP`, `RAC`, `PZL`, `EVO`, `MSH`, `BR` |
+
+**Import handling:**
+- Looks up mode in `MODE_REGISTRY` by reconstructed attribute name
+- Exits current mode cleanly via `_exit_current_modes()`
+- Enters target mode via its registered enter function
+- Applies speed, rule sets, and all config parameters by attribute name
+- Closes any menu the enter function may have opened
+- Special-cases base GoL (no registry entry) with direct grid manipulation
+
+**Controls:**
+
+| Key | Action |
+|-----|--------|
+| `g` | Open genome menu (Export / Import) |
+| `E` | Export current simulation as genome code |
+| `I` | Import a genome code |
+
+**Integration points in `life/app.py`:**
+- `_genome_handle_key()` inserted in global key dispatch (before multiplayer)
+- Help text entry added for `g` key
+
+**Why:** The project has 100+ modes with deep parameter spaces, but discoveries are ephemeral —
+close the terminal and they're gone. Recent commits added meta-modes for *viewing* simulations
+(Observatory, Cinematic Demo, Sonification); this adds a way to *preserve and share* them. It
+transforms the tool from a solo explorer into something with community potential — "check out
+this code I found" becomes possible. As a horizontal feature, it works across all modes,
+maximizing value per line of code.
+
 ### Added: Cinematic Demo Reel — auto-playing director with crossfade transitions, camera moves, and curated playlists
 
 A new meta-mode that turns the terminal into an unattended screensaver showcase of the entire

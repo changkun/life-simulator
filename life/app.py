@@ -4476,6 +4476,8 @@ class App:
             else:
                 self._flash("Sonification OFF")
             return True
+        if self._genome_handle_key(key):
+            return True
         if key == ord("N"):
             # Multiplayer: prompt for host or connect
             choice = self._prompt_text("Multiplayer: [H]ost or [C]onnect?")
@@ -6656,6 +6658,7 @@ class App:
             "║  Ctrl+T    Cellular Potts Model (tissue sim)  ║",
             "║  Ctrl+G    Chaos Game / IFS Fractals          ║",
             "║  Ctrl+N    Magnetic Field Lines (particles)  ║",
+            "║  g         Genome: export/import sim config    ║",
             "║  G         Record/stop GIF (export frames)   ║",
             "║  i         Import RLE pattern file            ║",
             "║  r         Fill grid randomly                 ║",
