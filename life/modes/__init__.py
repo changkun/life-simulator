@@ -198,6 +198,8 @@ def register_all_modes(App):
     reg_mashup(App)
     from life.modes.time_travel import register as reg_tt
     reg_tt(App)
+    from life.modes.sonification import register as reg_sonify
+    reg_sonify(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

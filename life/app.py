@@ -11,6 +11,7 @@ import random
 import struct
 import sys
 import tempfile
+import threading
 import time
 
 from life.constants import (
@@ -135,6 +136,10 @@ class App:
         self.iso_mode = False
         # Sound/music mode
         self.sound_engine = SoundEngine()
+        # Sonification layer state (initialized properly per-instance)
+        self.sonify_enabled = False
+        self._sonify_thread = None
+        self._sonify_stop = threading.Event()
         # Multiplayer mode state
         self.mp_mode = False
         self.mp_net: MultiplayerNet | None = None
@@ -2811,6 +2816,7 @@ class App:
 
         while True:
             self._tt_auto_record()
+            self._sonify_frame()
             self._draw()
             # ── Screensaver overlay (drawn after sub-mode content) ──
             if self.screensaver_mode and self.screensaver_running and not self.screensaver_menu:
@@ -2827,6 +2833,12 @@ class App:
             if self.tt_history and not self._any_menu_open():
                 _my, _mx = self.stdscr.getmaxyx()
                 self._draw_tt_scrubber(_my, _mx)
+                self.stdscr.refresh()
+
+            # ── Sonification indicator overlay ──
+            if self.sonify_enabled and not self._any_menu_open():
+                _my, _mx = self.stdscr.getmaxyx()
+                self._draw_sonify_indicator(_my, _mx)
                 self.stdscr.refresh()
 
             key = self.stdscr.getch()
@@ -4393,6 +4405,17 @@ class App:
                     self._flash("♪ Sound ON (pentatonic synth)")
             else:
                 self._flash("Sound OFF")
+            return True
+        if key == 19:  # Ctrl+S — Simulation Sonification Layer
+            on = self._sonify_toggle()
+            if on:
+                if self.sonify_play_cmd is None:
+                    self.sonify_enabled = False
+                    self._flash("Sonification OFF — no audio player found")
+                else:
+                    self._flash("♫ Sonification ON (category-aware audio)")
+            else:
+                self._flash("Sonification OFF")
             return True
         if key == ord("N"):
             # Multiplayer: prompt for host or connect
@@ -6382,6 +6405,8 @@ class App:
                 mode += f"  │  ⏺ REC({len(self.recorded_frames)})"
             if self.sound_engine.enabled:
                 mode += "  │  ♪ SOUND"
+            if self.sonify_enabled:
+                mode += "  │  ♫ SONIFY"
             if self.hex_mode:
                 mode += "  │  ⬡ HEX"
             if self.iso_mode:

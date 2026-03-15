@@ -4,6 +4,80 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Simulation Sonification Layer — maps any running simulation's visual state to real-time procedural audio
+
+A horizontal feature (like the Time-Travel Scrubber) that turns all 99+ simulation modes into
+audiovisual experiences without modifying any individual mode. When enabled, each frame's visual
+state is analyzed and mapped to procedural audio parameters in real time.
+
+**New file:** `life/modes/sonification.py` (~624 lines)
+
+**Frame metrics extracted per tick:**
+- **Density** — cell population / total cells
+- **Activity** — velocity-based for particles, density-derived for grids
+- **Spatial entropy** — row distribution uniformity (normalized Shannon entropy)
+- **Center of mass (X, Y)** — normalized position of alive cells
+- **Horizontal symmetry** — left-right mirror match score
+
+**Audio parameter mapping:**
+
+| Metric | Controls |
+|--------|----------|
+| Vertical center of mass | Pitch (higher when action is near top) |
+| Entropy + density | Number of voices / harmonic richness |
+| Category profile | Waveform mix (sine/sawtooth/pulse) |
+| Horizontal center of mass | Stereo panning |
+| Category profile | Tempo multiplier |
+| Category profile | Drone layer level |
+| Density | Master volume |
+
+**12 category-specific audio profiles** — each simulation category gets a tailored sonic
+character:
+
+| Category | Character |
+|----------|-----------|
+| Fluid Dynamics | Flowing drones (low base, in-sen scale, heavy drone) |
+| Particle & Swarm | Percussive clicks (pulse wave, fast tempo) |
+| Fractals & Chaos | Evolving harmonics (mixed waveforms, whole-tone-ish) |
+| Physics & Waves | Major scale, moderate drone |
+| Chemical & Biological | Harmonic minor, organic feel |
+| Classic CA | Clean pentatonic sine tones |
+| Procedural & Computational | Whole tone scale, quick tempo |
+| Game Theory & Social | Balanced pentatonic blend |
+| Complex Simulations | Minor pentatonic, mixed waveforms |
+| Audio & Visual | Major 9th arpeggio with drone |
+| Physics & Math | Major scale, sawtooth-leaning |
+| Meta Modes | Pure pentatonic sine |
+
+**Synthesis pipeline:** Pure Python PCM generation (S16LE stereo at 22050 Hz) with soft
+attack/release envelopes, equal-power stereo panning, and polyphony up to 16 voices. Playback
+via `paplay`, `aplay`, or `afplay` (auto-detected). Audio runs in a daemon thread to avoid
+blocking the main loop.
+
+**Data extraction** handles three source types: standard Grid objects, 2D array state from
+mode-specific attributes, and particle lists with velocity-based activity calculation.
+
+**Integration points in `life/app.py`:**
+- `threading` import added
+- Instance state: `sonify_enabled`, `_sonify_thread`, `_sonify_stop`
+- `_sonify_frame()` called each main-loop iteration (after time-travel auto-record)
+- Sonification indicator overlay drawn after time-travel scrubber
+- `Ctrl+S` toggle (key code 19) with audio player availability check
+- Status bar shows `♫ SONIFY` when active
+
+**Controls:**
+
+| Key | Action |
+|-----|--------|
+| `Ctrl+S` | Toggle sonification on/off |
+
+**Why:** The project already has a `SoundEngine` for procedural audio and 99 visual simulation
+modes, but they aren't connected. This follows the proven "horizontal feature" pattern
+established by the Time-Travel Scrubber — one feature that enhances every mode simultaneously.
+It creates a synesthetic experience where fluid simulations produce flowing drones, particle
+swarms generate percussive clicks, and fractals evolve harmonic textures, all without any
+mode needing to know about audio.
+
 ### Added: Live Rule Editor — type Python expressions to define custom CA rules and watch them run in real time
 
 A new meta-mode that turns users from passive viewers into active creators. Instead of choosing
