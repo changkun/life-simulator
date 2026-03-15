@@ -4,6 +4,73 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Neural Cellular Automata — per-cell neural networks learn to self-organize into target patterns via evolutionary strategies
+
+A new mode where cell update rules are defined by small neural networks instead of lookup tables,
+enabling cells to *learn* to self-organize into target patterns. Inspired by Google's "Growing
+Neural Cellular Automata" (Mordvintsev et al. 2020), but implemented entirely in pure Python
+for the terminal — no NumPy or PyTorch dependency.
+
+This is the natural complement to Evolution Lab's genetic algorithm approach: where Evolution Lab
+uses random mutation to discover rules, Neural CA uses gradient-free optimization (evolutionary
+strategies) to train a neural network that controls cell behavior. The result: users can draw
+a target shape, press train, and watch cells learn to grow it from a single seed.
+
+**New file:** `life/modes/neural_ca.py` (~530 lines)
+
+**Neural network architecture (per cell):**
+
+| Layer | Description |
+|-------|-------------|
+| **Perception** | 3×3 Sobel convolution (identity + X/Y gradients) across 3 state channels → 9 perception inputs |
+| **Hidden** | 9→8 dense layer with ReLU activation |
+| **Output** | 8→3 dense layer producing residual state updates |
+| **Total** | 107 learnable parameters |
+
+**Training via Evolution Strategies (ES):**
+- Antithetic sampling for variance reduction (each perturbation paired with its negative)
+- Configurable population size (4–32), learning rate, and noise sigma
+- Each candidate grows from seed for N steps, then MSE loss against target is computed
+- Gradient estimated from loss-weighted perturbations; parameters updated via gradient descent
+- Best-ever parameters tracked and restorable mid-training
+
+**7 target presets:** circle, square, diamond, cross, ring, heart, custom (drawable)
+
+**Interactive drawing mode:** cursor-based target sketching with:
+- Arrow keys to move cursor, Space to toggle cells
+- Brush tool (f) for 3×3 painting, eraser mode (e), clear (c)
+
+**3 view modes:** NCA state, target pattern, side-by-side comparison
+
+**Live loss sparkline** reusing `_sparkline` from `life/analytics.py` — shows training
+progress as a Unicode chart inline with the simulation.
+
+**Key controls:**
+- **t** — toggle training; **Space** — toggle inference run; **s** — single step
+- **r** — reset state to seed (keep weights); **R** — full reinit (new random weights)
+- **d** — enter drawing mode; **g** — grow from seed; **b** — load best parameters
+- **p** — cycle target preset; **v** — cycle view mode; **+/-** — speed; **Esc** — exit
+
+**Configurable parameters** (via settings menu):
+- Target pattern (7 presets)
+- Grid dimensions (8–50 height, 8–60 width)
+- Grow steps per evaluation (5–100)
+- ES population size (4–32)
+- Learning rate (0.001–0.2)
+- Sigma / noise scale (0.005–0.1)
+
+**Integration points:**
+- `life/app.py` — 20 state variables for NCA engine, draw dispatch (menu + simulation view), key dispatch, simulation stepping in run loop
+- `life/modes/__init__.py` — module registration
+- `life/registry.py` — mode browser entry under "Meta Modes" (key: Ctrl+Shift+N)
+
+**Design decisions:**
+- Pure Python matrix operations (no NumPy) to maintain the project's zero-heavy-dependency philosophy — the 107-parameter network is small enough that nested-list arithmetic runs at interactive speed for typical grid sizes
+- Evolutionary strategies chosen over backpropagation because ES only needs forward passes, avoiding the complexity of implementing autodiff in pure Python
+- Stochastic cell update mask (50% per step) prevents synchronization artifacts and encourages robust learned behaviors, matching the original paper's approach
+- Alive masking ensures dead regions stay dead unless a neighbor is alive, preventing phantom growth
+- Torus wrapping on the grid enables seamless edge behavior consistent with the project's topology support
+
 ### Added: Evolution Lab — Interactive Rule Evolution System that breeds CA rules via genetic algorithm to discover novel emergent behaviors
 
 A new meta-mode that turns the simulator from a playground into a laboratory. A population of

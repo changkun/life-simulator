@@ -238,6 +238,38 @@ class App:
         self.elab_tile_w = 8
         self.elab_best_ever: dict | None = None
         self.elab_history: list = []
+        # Neural CA mode state
+        self.nca_mode = False
+        self.nca_menu = False
+        self.nca_menu_sel = 0
+        self.nca_target_idx = 0
+        self.nca_grid_h = 20
+        self.nca_grid_w = 24
+        self.nca_grid_h_actual = 20
+        self.nca_grid_w_actual = 24
+        self.nca_grow_steps = 20
+        self.nca_es_pop = 8
+        self.nca_es_lr = 0.05
+        self.nca_es_sigma = 0.03
+        self.nca_seed = -1
+        self.nca_state = None
+        self.nca_params = None
+        self.nca_target = None
+        self.nca_custom_target = None
+        self.nca_loss_history: list = []
+        self.nca_train_gen = 0
+        self.nca_best_loss = float("inf")
+        self.nca_best_params = None
+        self.nca_sim_step = 0
+        self.nca_running = False
+        self.nca_training = False
+        self.nca_drawing = False
+        self.nca_draw_val = 1
+        self.nca_draw_cursor_r = 0
+        self.nca_draw_cursor_c = 0
+        self.nca_phase = "idle"
+        self.nca_view = 0
+        self.nca_rng = None
         # Live Rule Editor mode state
         self.re_mode = False
         self.re_menu = False
@@ -3331,6 +3363,17 @@ class App:
                         self._elab_step()
                     continue
 
+            if self.nca_menu:
+                if self._handle_nca_menu_key(key):
+                    continue
+            elif self.nca_mode:
+                if self._handle_nca_key(key):
+                    if self.nca_training or self.nca_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        self._nca_step()
+                    continue
+
             if self.pexplorer_menu:
                 if self._handle_pexplorer_menu_key(key):
                     continue
@@ -5659,6 +5702,16 @@ class App:
 
         if self.ep_mode:
             self._draw_ep(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.nca_menu:
+            self._draw_nca_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.nca_mode:
+            self._draw_nca(max_y, max_x)
             self.stdscr.refresh()
             return
 

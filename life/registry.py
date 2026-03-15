@@ -269,4 +269,7 @@ MODE_REGISTRY = [
     # ── Simulation Scripting & Choreography ──
     {"name": "Scripting & Choreography", "key": "Ctrl+U", "category": "Meta Modes",
      "desc": "Programmable show director: timed mode transitions, parameter sweeps, effect toggles", "attr": "script_mode", "enter": "_enter_scripting_mode", "exit": "_exit_scripting_mode"},
+    # ── Neural Cellular Automata ──
+    {"name": "Neural Cellular Automata", "key": "Ctrl+Shift+N", "category": "Meta Modes",
+     "desc": "Per-cell neural networks learn to grow target patterns via evolutionary strategies", "attr": "nca_mode", "enter": "_enter_nca_mode", "exit": "_exit_nca_mode"},
 ]

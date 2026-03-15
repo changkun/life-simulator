@@ -220,6 +220,8 @@ def register_all_modes(App):
     reg_recording(App)
     from life.modes.scripting import register as reg_scripting
     reg_scripting(App)
+    from life.modes.neural_ca import register as reg_nca
+    reg_nca(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 
