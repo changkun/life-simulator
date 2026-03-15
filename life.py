@@ -1878,6 +1878,21 @@ class App:
         self.sandpile_cursor_r = 0
         self.sandpile_cursor_c = 0
 
+        # ── Forest Fire state ──
+        self.fire_mode = False
+        self.fire_menu = False
+        self.fire_menu_sel = 0
+        self.fire_running = False
+        self.fire_generation = 0
+        self.fire_rows = 0
+        self.fire_cols = 0
+        self.fire_grid: list[list[int]] = []  # 0=empty, 1=tree, 2=burning, 3=ash
+        self.fire_steps_per_frame = 1
+        self.fire_preset_name = ""
+        self.fire_p_grow = 0.05       # probability empty -> tree
+        self.fire_p_lightning = 0.001  # probability tree spontaneously ignites
+        self.fire_initial_density = 0.5  # initial tree density
+
         self._rebuild_pattern_list()
 
         if pattern:
@@ -2482,6 +2497,17 @@ class App:
                         for _ in range(self.sandpile_steps_per_frame):
                             self._sandpile_step()
                     continue
+            elif self.fire_menu:
+                if self._handle_fire_menu_key(key):
+                    continue
+            elif self.fire_mode:
+                if self._handle_fire_key(key):
+                    if self.fire_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        for _ in range(self.fire_steps_per_frame):
+                            self._fire_step()
+                    continue
             elif self.sir_menu:
                 if self._handle_sir_menu_key(key):
                     continue
@@ -2861,6 +2887,12 @@ class App:
                 self._exit_sandpile_mode()
             else:
                 self._enter_sandpile_mode()
+            return True
+        if key == ord("O"):
+            if self.fire_mode:
+                self._exit_fire_mode()
+            else:
+                self._enter_fire_mode()
             return True
         if key == ord("M"):
             on = self.sound_engine.toggle()
@@ -5850,6 +5882,16 @@ class App:
 
         if self.sandpile_mode:
             self._draw_sandpile(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.fire_menu:
+            self._draw_fire_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.fire_mode:
+            self._draw_fire(max_y, max_x)
             self.stdscr.refresh()
             return
 
@@ -11496,6 +11538,269 @@ class App:
                 hint = f" {self.message}"
             else:
                 hint = " [Space]=play [n]=step [d]=drop-mode [a/A]=+100/+1000 [e]=drop@cursor [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = hint[:max_x - 1]
+            try:
+                self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
+            except curses.error:
+                pass
+
+    # ══════════════════════════════════════════════════════════════════════
+    #  Forest Fire — Mode O
+    # ══════════════════════════════════════════════════════════════════════
+
+    FIRE_PRESETS = [
+        # (name, description, density, p_grow, p_lightning)
+        ("Classic", "Balanced growth and lightning", 0.55, 0.03, 0.0005),
+        ("Dense Forest", "Thick canopy, rare lightning", 0.85, 0.05, 0.0002),
+        ("Dry Season", "Sparse trees, frequent lightning", 0.3, 0.01, 0.003),
+        ("Regrowth", "Fast regrowth after fire", 0.4, 0.08, 0.001),
+        ("Tinderbox", "High density, high lightning", 0.7, 0.02, 0.005),
+        ("Savanna", "Very sparse, steady fires", 0.15, 0.02, 0.002),
+        ("Rainforest", "Very dense, very rare fire", 0.95, 0.06, 0.0001),
+        ("Firestorm", "Maximum chaos", 0.5, 0.04, 0.01),
+    ]
+
+    def _enter_fire_mode(self):
+        """Enter Forest Fire mode — show preset menu."""
+        self.fire_menu = True
+        self.fire_menu_sel = 0
+        self._flash("Forest Fire — select a scenario")
+
+    def _exit_fire_mode(self):
+        """Exit Forest Fire mode."""
+        self.fire_mode = False
+        self.fire_menu = False
+        self.fire_running = False
+        self.fire_grid = []
+        self._flash("Forest Fire mode OFF")
+
+    def _fire_init(self, preset_idx: int):
+        """Initialize forest fire simulation with the given preset."""
+        (name, _desc, density, p_grow, p_light) = self.FIRE_PRESETS[preset_idx]
+        self.fire_preset_name = name
+        self.fire_generation = 0
+        self.fire_running = False
+        self.fire_p_grow = p_grow
+        self.fire_p_lightning = p_light
+        self.fire_initial_density = density
+
+        max_y, max_x = self.stdscr.getmaxyx()
+        self.fire_rows = max(10, max_y - 4)
+        self.fire_cols = max(10, (max_x - 1) // 2)
+        rows, cols = self.fire_rows, self.fire_cols
+
+        # 0=empty, 1=tree
+        self.fire_grid = [
+            [1 if random.random() < density else 0 for _ in range(cols)]
+            for _ in range(rows)
+        ]
+
+        self.fire_menu = False
+        self.fire_mode = True
+        self._flash(f"Forest Fire: {name} — Space to start")
+
+    def _fire_step(self):
+        """Advance the forest fire CA by one generation."""
+        rows, cols = self.fire_rows, self.fire_cols
+        grid = self.fire_grid
+        p_grow = self.fire_p_grow
+        p_light = self.fire_p_lightning
+
+        new_grid = [[0] * cols for _ in range(rows)]
+
+        for r in range(rows):
+            for c in range(cols):
+                cell = grid[r][c]
+                if cell == 2:
+                    # Burning -> ash (empty)
+                    new_grid[r][c] = 0
+                elif cell == 1:
+                    # Tree: check if any neighbor is burning
+                    burning_neighbor = False
+                    for dr in (-1, 0, 1):
+                        for dc in (-1, 0, 1):
+                            if dr == 0 and dc == 0:
+                                continue
+                            nr, nc = r + dr, c + dc
+                            if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] == 2:
+                                burning_neighbor = True
+                                break
+                        if burning_neighbor:
+                            break
+                    if burning_neighbor:
+                        new_grid[r][c] = 2  # catch fire
+                    elif random.random() < p_light:
+                        new_grid[r][c] = 2  # lightning strike
+                    else:
+                        new_grid[r][c] = 1  # stay tree
+                else:
+                    # Empty: grow tree with probability p
+                    if random.random() < p_grow:
+                        new_grid[r][c] = 1
+                    else:
+                        new_grid[r][c] = 0
+
+        self.fire_grid = new_grid
+        self.fire_generation += 1
+
+    def _handle_fire_menu_key(self, key: int) -> bool:
+        """Handle input in Forest Fire preset menu."""
+        n = len(self.FIRE_PRESETS)
+        if key in (ord("j"), curses.KEY_DOWN):
+            self.fire_menu_sel = (self.fire_menu_sel + 1) % n
+        elif key in (ord("k"), curses.KEY_UP):
+            self.fire_menu_sel = (self.fire_menu_sel - 1) % n
+        elif key in (ord("\n"), ord("\r")):
+            self._fire_init(self.fire_menu_sel)
+        elif key in (ord("q"), 27):
+            self.fire_menu = False
+            self._flash("Forest Fire cancelled")
+        return True
+
+    def _handle_fire_key(self, key: int) -> bool:
+        """Handle input in active Forest Fire simulation."""
+        if key == ord(" "):
+            self.fire_running = not self.fire_running
+        elif key in (ord("n"), ord(".")):
+            for _ in range(self.fire_steps_per_frame):
+                self._fire_step()
+        elif key == ord("r"):
+            idx = next((i for i, p in enumerate(self.FIRE_PRESETS)
+                        if p[0] == self.fire_preset_name), 0)
+            self._fire_init(idx)
+        elif key in (ord("R"), ord("m")):
+            self.fire_mode = False
+            self.fire_menu = True
+        elif key == ord("p"):
+            self.fire_p_grow = min(1.0, self.fire_p_grow + 0.005)
+            self._flash(f"Growth prob: {self.fire_p_grow:.3f}")
+        elif key == ord("P"):
+            self.fire_p_grow = max(0.001, self.fire_p_grow - 0.005)
+            self._flash(f"Growth prob: {self.fire_p_grow:.3f}")
+        elif key == ord("l"):
+            self.fire_p_lightning = min(0.1, self.fire_p_lightning + 0.0005)
+            self._flash(f"Lightning prob: {self.fire_p_lightning:.4f}")
+        elif key == ord("L"):
+            self.fire_p_lightning = max(0.0001, self.fire_p_lightning - 0.0005)
+            self._flash(f"Lightning prob: {self.fire_p_lightning:.4f}")
+        elif key == ord("+") or key == ord("="):
+            self.fire_steps_per_frame = min(20, self.fire_steps_per_frame + 1)
+        elif key == ord("-"):
+            self.fire_steps_per_frame = max(1, self.fire_steps_per_frame - 1)
+        elif key in (ord("q"), 27):
+            self._exit_fire_mode()
+        else:
+            return True
+        return True
+
+    def _draw_fire_menu(self, max_y: int, max_x: int):
+        """Draw the Forest Fire preset selection menu."""
+        self.stdscr.erase()
+        title = "── Forest Fire ── Select Scenario ──"
+        try:
+            self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
+                               curses.color_pair(7) | curses.A_BOLD)
+        except curses.error:
+            pass
+
+        for i, (name, desc, *_rest) in enumerate(self.FIRE_PRESETS):
+            y = 3 + i
+            if y >= max_y - 2:
+                break
+            selected = "▶" if i == self.fire_menu_sel else " "
+            line = f" {selected} {name:20} {desc}"
+            attr = curses.color_pair(7) | curses.A_BOLD if i == self.fire_menu_sel else curses.color_pair(6)
+            try:
+                self.stdscr.addstr(y, 0, line[:max_x - 1], attr)
+            except curses.error:
+                pass
+
+        # Footer
+        foot_y = min(3 + len(self.FIRE_PRESETS) + 1, max_y - 1)
+        if foot_y < max_y:
+            try:
+                self.stdscr.addstr(foot_y, 2, "[j/k]=navigate  [Enter]=select  [q]=cancel",
+                                   curses.color_pair(6) | curses.A_DIM)
+            except curses.error:
+                pass
+
+    def _draw_fire(self, max_y: int, max_x: int):
+        """Draw the active Forest Fire simulation."""
+        self.stdscr.erase()
+        grid = self.fire_grid
+        rows, cols = self.fire_rows, self.fire_cols
+        state = "▶ RUNNING" if self.fire_running else "⏸ PAUSED"
+
+        # Count cells
+        n_tree = n_fire = n_empty = 0
+        for r in range(rows):
+            for c in range(cols):
+                v = grid[r][c]
+                if v == 1:
+                    n_tree += 1
+                elif v == 2:
+                    n_fire += 1
+                else:
+                    n_empty += 1
+
+        # Title bar
+        title = (f" Forest Fire: {self.fire_preset_name}  |  gen {self.fire_generation}"
+                 f"  |  trees={n_tree} fire={n_fire} empty={n_empty}"
+                 f"  |  {state}")
+        try:
+            self.stdscr.addstr(0, 0, title[:max_x - 1], curses.color_pair(7) | curses.A_BOLD)
+        except curses.error:
+            pass
+
+        view_rows = max_y - 4
+        view_cols = (max_x - 1) // 2
+
+        # Draw grid
+        for r in range(min(rows, view_rows)):
+            for c in range(min(cols, view_cols)):
+                val = grid[r][c]
+                sx = c * 2
+                sy = 1 + r
+                if val == 0:
+                    # Empty — dark
+                    continue
+                elif val == 1:
+                    # Tree — green
+                    ch = "██"
+                    attr = curses.color_pair(2)
+                elif val == 2:
+                    # Burning — red/yellow bold
+                    ch = "▓▓"
+                    attr = curses.color_pair(3) | curses.A_BOLD
+                else:
+                    continue
+                try:
+                    self.stdscr.addstr(sy, sx, ch, attr)
+                except curses.error:
+                    pass
+
+        # Info bar
+        info_y = max_y - 2
+        if info_y > 1:
+            total = rows * cols
+            pct_tree = 100.0 * n_tree / total if total else 0
+            info = (f" Gen {self.fire_generation}  |  grow={self.fire_p_grow:.3f}"
+                    f"  |  lightning={self.fire_p_lightning:.4f}"
+                    f"  |  density={pct_tree:.1f}%"
+                    f"  |  steps/f={self.fire_steps_per_frame}")
+            try:
+                self.stdscr.addstr(info_y, 0, info[:max_x - 1], curses.color_pair(6))
+            except curses.error:
+                pass
+
+        # Hint bar
+        hint_y = max_y - 1
+        if hint_y > 0:
+            now = time.monotonic()
+            if self.message and now - self.message_time < 3.0:
+                hint = f" {self.message}"
+            else:
+                hint = " [Space]=play [n]=step [p/P]=grow+/- [l/L]=lightning+/- [+/-]=speed [r]=reset [R]=menu [q]=exit"
             hint = hint[:max_x - 1]
             try:
                 self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
