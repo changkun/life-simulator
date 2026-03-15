@@ -203,6 +203,25 @@ class App:
         self.ep_grid_cols = 4
         self.ep_tile_h = 6
         self.ep_tile_w = 8
+        # Mashup mode state
+        self.mashup_mode = False
+        self.mashup_menu = False
+        self.mashup_menu_sel = 0
+        self.mashup_menu_phase = 0
+        self.mashup_pick_a = ""
+        self.mashup_running = False
+        self.mashup_generation = 0
+        self.mashup_sim_a = None
+        self.mashup_sim_b = None
+        self.mashup_sim_a_id = ""
+        self.mashup_sim_b_id = ""
+        self.mashup_sim_a_name = ""
+        self.mashup_sim_b_name = ""
+        self.mashup_coupling = 0.5
+        self.mashup_rows = 0
+        self.mashup_cols = 0
+        self.mashup_density_a: list[list[float]] = []
+        self.mashup_density_b: list[list[float]] = []
         # Wolfram 1D elementary cellular automaton mode
         self.wolfram_mode = False
         self.wolfram_rule = 30           # current rule number (0-255)
@@ -2847,6 +2866,17 @@ class App:
                         self._pexplorer_step()
                     continue
 
+            if self.mashup_menu:
+                if self._handle_mashup_menu_key(key):
+                    continue
+            elif self.mashup_mode:
+                if self._handle_mashup_key(key):
+                    if self.mashup_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        self._mashup_step()
+                    continue
+
             if self.dashboard:
                 if self._handle_dashboard_key(key):
                     continue
@@ -5062,6 +5092,16 @@ class App:
 
         if self.pexplorer_mode:
             self._draw_pexplorer(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.mashup_menu:
+            self._draw_mashup_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.mashup_mode:
+            self._draw_mashup(max_y, max_x)
             self.stdscr.refresh()
             return
 

@@ -233,4 +233,7 @@ MODE_REGISTRY = [
     # ── Evolutionary Playground ──
     {"name": "Evolutionary Playground", "key": "Ctrl+Shift+I", "category": "Meta Modes",
      "desc": "Breed novel CA rules through interactive natural selection with crossover & mutation", "attr": "ep_mode", "enter": "_enter_evo_playground", "exit": "_exit_evo_playground"},
+    # ── Simulation Mashup ──
+    {"name": "Simulation Mashup", "key": "Ctrl+M", "category": "Meta Modes",
+     "desc": "Layer two simulations on the same grid with coupling for emergent behavior", "attr": "mashup_mode", "enter": "_enter_mashup_mode", "exit": "_exit_mashup_mode"},
 ]

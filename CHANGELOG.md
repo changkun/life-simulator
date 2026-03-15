@@ -4,6 +4,71 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Simulation Mashup Mode — layer two simulations on the same grid for emergent cross-simulation behavior
+
+A new meta-mode that lets users pick any two of 8 built-in simulation engines and run them
+simultaneously on a shared grid, where each simulation's output density field influences the
+other's dynamics via a tunable coupling parameter. The project has 96 standalone simulations
+that never interact; Mashup mode turns 8 mini-engines into 28 unique pairings, creating a
+combinatorial explosion of novel emergent behaviors from existing simulation concepts.
+
+**New file:** `life/modes/mashup.py` (~530 lines)
+
+**8 self-contained mini-simulation engines**, each with `init`, `step` (with coupling input),
+and `density` functions:
+
+| Engine | Coupling mechanism |
+|--------|-------------------|
+| Game of Life | Other density triggers spontaneous births |
+| Wave Equation | Other density acts as a forcing/source term |
+| Reaction-Diffusion (Gray-Scott) | Other density locally boosts feed rate |
+| Forest Fire | Other density raises ignition probability |
+| Boids Flocking | Steers agents toward gradient of other density |
+| Ising Model | Other density acts as external magnetic field |
+| Rock-Paper-Scissors | Other density modulates invasion probability |
+| Physarum Slime Mold | Biases agents toward other density, adds to trail |
+
+**8 curated preset combos** with descriptions (e.g., "Boids + Wave Equation", "Fire + Game of
+Life", "Reaction-Diffusion + Ising") plus a custom picker for any arbitrary pairing.
+
+**Rendering:** Both simulations overlay on the same grid using density characters (`░▒▓█`)
+with color-coded dominance — cyan for Sim A, red for Sim B, magenta for overlap regions.
+Brightness scales with intensity (DIM/normal/BOLD).
+
+**Controls:**
+
+| Key | Action |
+|-----|--------|
+| `Space` | Play/pause |
+| `n` / `.` | Single step |
+| `+` / `-` | Adjust coupling strength (0.0–1.0) |
+| `0` | Decouple (independent simulations) |
+| `5` | Default coupling (0.50) |
+| `r` | Reset current mashup |
+| `R` | Return to combo selection menu |
+| `<` / `>` | Adjust speed |
+| `q` / `Esc` | Exit mashup mode |
+
+**Menu system:** Three-phase selection — preset list → (custom) pick Sim A → pick Sim B.
+Arrow keys + Enter to navigate; Esc to go back a phase.
+
+**Integration:**
+- Registry: category "Meta Modes", hotkey `Ctrl+M`
+- App: 20 state variables, menu/sim key dispatch, draw dispatch
+- Modes `__init__.py`: registered via `mashup.register(App)`
+
+**Architecture:** Each engine is a pure-Python mini-simulation with no external dependencies.
+The coupling is symmetric — Sim A receives Sim B's density map and vice versa — with a
+global coupling strength slider controlling influence magnitude. This keeps engines decoupled
+and composable: adding a 9th engine automatically enables 8 new mashup pairs.
+
+**Why:** The project has nearly 100 individual simulation modes, but they exist in isolation.
+Mashup mode creates emergent value by combining existing concepts rather than adding more
+standalone simulations. A single coupling slider lets users smoothly transition from
+independent side-by-side execution to fully interacting systems, making it easy to discover
+unexpected cross-domain phenomena like waves steering flocking boids or fire patterns
+modulated by spin lattice phase transitions.
+
 ### Added: Universal Time-Travel History Scrubber — rewind, fast-forward, and step through any simulation's timeline
 
 A horizontal feature that adds a 500-frame history buffer to all 80+ non-GoL simulation modes.
