@@ -4,6 +4,52 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Universal Time-Travel History Scrubber — rewind, fast-forward, and step through any simulation's timeline
+
+A horizontal feature that adds a 500-frame history buffer to all 80+ non-GoL simulation modes.
+Every mode previously ran forward-only; now users can pause any simulation and scrub backward
+and forward through its timeline frame-by-frame or in 10-frame jumps. A visual timeline bar
+at the bottom of the screen shows playback position and status. This turns passive watching
+into active exploration — users can catch fleeting patterns in chaos simulations, study exact
+moments of phase transitions, or replay the instant a flock splits.
+
+**New file:** `life/modes/time_travel.py` (~288 lines)
+
+**Core design:**
+- **Generic state snapshotting**: Automatically captures all `self.<prefix>_*` attributes for the active mode via `copy.deepcopy`, excluding UI state (`_mode`, `_menu`, `_running` suffixes)
+- **Active mode detection**: Scans `MODE_REGISTRY` to find which mode is active and derives its attribute prefix — no per-mode configuration needed
+- **History buffer**: Stores up to 500 frames with automatic oldest-frame trimming
+- **Auto-recording**: `_tt_auto_record()` runs each frame, captures state whenever the generation counter advances
+- **Mode-switch detection**: Clears history when the active mode changes
+
+**Controls:**
+
+| Key | Action |
+|-----|--------|
+| `u` | Rewind one frame |
+| `[` | Scrub back 10 frames |
+| `]` | Scrub forward 10 frames |
+| `n` | Step forward one frame (when scrubbing) |
+| `Space` | Resume simulation from scrubbed position (truncates future) |
+
+**Visual timeline bar:**
+- Rendered as an overlay on the bottom line of any active mode
+- `█░` progress bar indicating position in history
+- Displays frame count, LIVE/SCRUBBING status, and key hints
+
+**Integration in `app.py`:**
+- `_tt_auto_record()` called at the start of each main loop iteration
+- `_tt_handle_key()` intercepts time-travel keys before mode-specific dispatch
+- `_draw_tt_scrubber()` rendered as overlay after mode drawing
+- History cleared in `_exit_current_modes()` on mode switch
+- State variables (`tt_history`, `tt_max`, `tt_pos`, `_tt_last_gen`) added to `__init__`
+
+**Why:** This is a force-multiplier for every existing mode. Rather than adding value to one
+mode at a time, the history scrubber multiplies the value of all 80+ modes at once. It's
+especially powerful for simulations with rare transient phenomena — phase transitions in Ising
+models, sudden flocking splits in Boids, or emergent gliders in chaos CAs — where the
+interesting moment is gone before you can study it.
+
 ### Added: Evolutionary Playground — breed novel CA rules through interactive natural selection
 
 A new meta-mode that lets users discover novel cellular automata rules through an interactive

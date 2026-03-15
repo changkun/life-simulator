@@ -190,6 +190,8 @@ def register_all_modes(App):
     reg_wolfram(App)
     from life.modes.wireworld import register as reg_ww
     reg_ww(App)
+    from life.modes.time_travel import register as reg_tt
+    reg_tt(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

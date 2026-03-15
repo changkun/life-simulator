@@ -82,6 +82,11 @@ class App:
         self.timeline_pos: int | None = None
         # Bookmarks: list of (generation, grid_dict, pop_len) for notable moments
         self.bookmarks: list[tuple[int, dict, int]] = []
+        # Universal time-travel history (for all non-GoL modes)
+        self.tt_history: list[dict] = []
+        self.tt_max = 500
+        self.tt_pos: int | None = None
+        self._tt_last_gen = -1
         self.bookmark_menu = False
         self.bookmark_sel = 0
         # Rule editor state
@@ -2745,6 +2750,7 @@ class App:
         self.state_history[self.grid.state_hash()] = self.grid.generation
 
         while True:
+            self._tt_auto_record()
             self._draw()
             # ── Screensaver overlay (drawn after sub-mode content) ──
             if self.screensaver_mode and self.screensaver_running and not self.screensaver_menu:
@@ -2757,12 +2763,22 @@ class App:
                 self._draw_minimap(_my, _mx)
                 self.stdscr.refresh()
 
+            # ── Time-travel scrubber overlay ──
+            if self.tt_history and not self._any_menu_open():
+                _my, _mx = self.stdscr.getmaxyx()
+                self._draw_tt_scrubber(_my, _mx)
+                self.stdscr.refresh()
+
             key = self.stdscr.getch()
 
             # ── Minimap toggle (Tab key, global across all modes) ──
             if key == 9:  # Tab
                 self.show_minimap = not self.show_minimap
                 self._flash("Minimap ON" if self.show_minimap else "Minimap OFF")
+                continue
+
+            # ── Universal time-travel key handling ──
+            if self._tt_handle_key(key):
                 continue
 
             # ── Multiplayer network tick ──
@@ -4672,6 +4688,10 @@ class App:
                 exit_fn = getattr(self, entry["exit"], None)
                 if exit_fn:
                     exit_fn()
+        # Clear universal time-travel history on mode switch
+        self.tt_history.clear()
+        self.tt_pos = None
+        self._tt_last_gen = -1
 
 
     def _mode_browser_apply_filter(self):
