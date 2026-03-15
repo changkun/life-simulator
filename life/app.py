@@ -371,6 +371,31 @@ class App:
         self.moldyn_running = False
         self.moldyn_view = 0
         self.moldyn_preset_name = ""
+        # ── Spin Glass / Continuous Magnetism mode state ──
+        self.spinglass_mode = False
+        self.spinglass_menu = False
+        self.spinglass_menu_sel = 0
+        self.spinglass_running = False
+        self.spinglass_generation = 0
+        self.spinglass_rows = 0
+        self.spinglass_cols = 0
+        self.spinglass_grid = []
+        self.spinglass_coupling = []
+        self.spinglass_steps_per_frame = 1
+        self.spinglass_preset_name = ""
+        self.spinglass_coupling_type = "ferro"
+        self.spinglass_temperature = 1.0
+        self.spinglass_ext_field = 0.0
+        self.spinglass_magnetization = 0.0
+        self.spinglass_mx = 0.0
+        self.spinglass_my = 0.0
+        self.spinglass_energy = 0.0
+        self.spinglass_susceptibility = 0.0
+        self.spinglass_view = 0
+        self.spinglass_mag_history = []
+        self.spinglass_energy_history = []
+        self.spinglass_suscept_history = []
+        self.spinglass_mag_sq_history = []
         # ── Quantum Circuit Simulator mode state ──
         self.qcirc_mode = False
         self.qcirc_menu = False
@@ -3704,6 +3729,18 @@ class App:
                         self._moldyn_step()
                     continue
 
+            if self.spinglass_menu:
+                if self._handle_spinglass_menu_key(key):
+                    continue
+            elif self.spinglass_mode:
+                if self._handle_spinglass_key(key):
+                    if self.spinglass_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        for _ in range(self.spinglass_steps_per_frame):
+                            self._spinglass_step()
+                    continue
+
             if self.qcirc_menu:
                 if self._handle_qcirc_menu_key(key):
                     continue
@@ -6192,6 +6229,16 @@ class App:
 
         if self.moldyn_mode:
             self._draw_moldyn(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.spinglass_menu:
+            self._draw_spinglass_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.spinglass_mode:
+            self._draw_spinglass(max_y, max_x)
             self.stdscr.refresh()
             return
 

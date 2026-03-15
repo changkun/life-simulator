@@ -256,6 +256,8 @@ def register_all_modes(App):
     reg_qcirc(App)
     from life.modes.molecular_dynamics import register as reg_moldyn
     reg_moldyn(App)
+    from life.modes.spin_glass import register as reg_spinglass
+    reg_spinglass(App)
     from life.modes.tierra import register as reg_tierra
     reg_tierra(App)
     from life.dashboard import register as reg_dashboard

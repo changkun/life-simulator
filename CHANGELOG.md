@@ -4,6 +4,64 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-15
 
+### Added: Magnetism & Spin Glass — Continuous-Spin Lattice with Frustrated Interactions
+
+A new physics mode simulating magnetic domains on a 2D lattice where each cell carries a
+continuous XY-model spin angle (not just Ising ±1). Spins interact via configurable exchange
+coupling — ferromagnetic (J>0), antiferromagnetic (J<0), random Edwards-Anderson ±J, or
+frustrated (biased mix) — with thermal fluctuations governed by Metropolis-Hastings dynamics.
+This fills a clear gap: the project has an Ising model (`ising.py`) with binary spins, but
+nothing showing continuous-spin physics, frustrated magnetism, glassy dynamics, or aging
+effects — phenomena qualitatively different from anything in the existing modes.
+
+**New file:** `life/modes/spin_glass.py` (~600 lines)
+
+**Core mechanics:**
+
+| Concept | Implementation |
+|---------|---------------|
+| Spin model | XY model — continuous angle θ ∈ [0, 2π) per lattice site |
+| Interactions | Nearest-neighbor exchange: E = −J·cos(θᵢ − θⱼ), with per-bond coupling constants |
+| Coupling types | Ferromagnetic (J=+1), antiferromagnetic (J=−1), random ±1 (Edwards-Anderson), frustrated (60/40 mix) |
+| Dynamics | Metropolis-Hastings with adaptive trial step size (small at low T, large at high T) |
+| External field | Configurable field h coupling to cos(θ), adjustable at runtime |
+| Observables | Vector magnetization (mx, my, |m|), energy per spin E/N, susceptibility χ from fluctuation-dissipation theorem |
+| Domain walls | Detected via angular difference threshold (>0.6π) between neighboring spins |
+
+**12 presets:**
+
+| Preset | Description |
+|--------|-------------|
+| Ferromagnetic | Uniform J>0 — spins align, classic ordering |
+| Antiferromagnetic | Uniform J<0 — checkerboard Néel order |
+| Spin Glass (±J) | Random bonds — frustration, no long-range order |
+| Frustrated Lattice | Triangular frustration — competing interactions |
+| Critical FM | T near Tc — large fluctuating domains |
+| Hot Disorder | T=5.0 — paramagnetic chaos |
+| Quench to Glass | Start hot, T=0.05 — watch aging & frozen domains |
+| Field-Cooled Glass | Spin glass in external field — partial alignment |
+| Domain Coarsening | FM quench — watch domains grow via curvature |
+| All Aligned + Heat | Start ordered, heat to disorder |
+| Vortex Patterns | Low-T ferro — watch topological defects |
+| Glass Aging | Very low T glass — frozen but slowly evolving |
+
+**3 view modes:**
+
+| View | What it shows |
+|------|---------------|
+| Spin Arrows | Directional Unicode arrows (→ ↗ ↑ ↖ ← ↙ ↓ ↘) color-coded by local energy density (cyan=low → magenta=frustrated), domain walls highlighted in bright white |
+| Energy Density | Block-character heatmap of local energy (blue=low through red=high) |
+| Statistics | Real-time scrolling plots of magnetization |m|, energy E/N, and susceptibility χ |
+
+**Interactive controls:** `t`/`T` adjust temperature, `Q` instant quench to T=0.01, `a` anneal (+0.5), `f`/`F` adjust external field, `Space` pause/resume, `n` single step, `v` cycle views, `+`/`-` simulation speed, `r` reset, `R` back to menu, `q` quit. Accessible via `Ctrl+Shift+G` from the mode browser under "Physics & Waves."
+
+**Also changed:**
+- `life/modes/__init__.py`: Added import and registration call for spin_glass mode
+- `life/registry.py`: Added registry entry under "Physics & Waves" category with `Ctrl+Shift+G` shortcut
+- `life/app.py`: Added 24 state attributes, key dispatch block, and draw dispatch block for spinglass mode
+
+---
+
 ### Added: Molecular Dynamics / Phase Transitions — Lennard-Jones Particle Simulation
 
 A new physics mode that simulates classical molecular dynamics: particles interact via

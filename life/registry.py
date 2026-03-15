@@ -325,4 +325,7 @@ MODE_REGISTRY = [
     # ── Tierra Digital Organisms ──
     {"name": "Tierra Digital Organisms", "key": "Ctrl+Shift+T", "category": "Procedural & Computational",
      "desc": "Self-replicating assembly programs competing in shared memory — parasites, immunity & symbiosis evolve", "attr": "tierra_mode", "enter": "_enter_tierra_mode", "exit": "_exit_tierra_mode"},
+    # ── Magnetism & Spin Glass ──
+    {"name": "Magnetism & Spin Glass", "key": "Ctrl+Shift+G", "category": "Physics & Waves",
+     "desc": "Continuous-spin lattice with frustrated bonds, domain walls, glassy freezing & phase transitions", "attr": "spinglass_mode", "enter": "_enter_spinglass_mode", "exit": "_exit_spinglass_mode"},
 ]
