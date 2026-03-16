@@ -796,3 +796,69 @@ Zone placement probability:
 - Batty, M. "The Size, Scale, and Shape of Cities." *Science*, 319(5864), 769-771, 2008. https://doi.org/10.1126/science.1151419
 - Portugali, J. *Self-Organization and the City*. Springer, 2000. https://doi.org/10.1007/978-3-662-04099-7
 - Waddell, P. "UrbanSim: Modeling Urban Development for Land Use, Transportation, and Environmental Planning." *Journal of the American Planning Association*, 68(3), 297-314, 2002. https://doi.org/10.1080/01944360208976274
+
+---
+
+
+## Termite Mound Construction & Stigmergy
+
+**Background.** Termite mounds are among the most impressive examples of emergent architecture in biology. Individual termites are simple agents with no blueprint or central coordinator, yet colonies of *Macrotermes* and *Amitermes* construct elaborate mounds with ventilation shafts, brood chambers, fungus gardens, and royal chambers — structures that can reach several meters in height. The key mechanism is *stigmergy* (Grassé, 1959): indirect coordination where an agent's modification of the environment stimulates further work by other agents. A termite deposits a soil pellet laced with pheromone; the pheromone attracts other termites to deposit nearby, creating a positive feedback loop that bootstraps pillars, arches, and walls from purely local rules.
+
+**Formulation.** The simulation runs on a 2D grid with three pheromone layers (build, dig, trail) and eight material types. Each tick proceeds in two phases:
+
+**Phase 1 — Pheromone diffusion and evaporation:**
+
+```
+For each pheromone layer P ∈ {build, dig, trail}:
+  P'(r,c) = P(r,c) × (1 − evap_rate)
+           + diffuse_rate × (avg_neighbors(P, r, c) − P(r,c))
+  P'(r,c) = clamp(P'(r,c), 0, 1)
+```
+
+where `avg_neighbors` averages the 4-connected (von Neumann) neighbor values. Default evaporation rate is 0.02; diffusion rate is 0.15. Trail pheromone evaporates 1.5× faster to prevent long-term path saturation.
+
+**Phase 2 — Termite agent actions:** Each termite evaluates its 8-connected neighborhood and selects the cell with the highest weighted score based on its role:
+
+```
+score(nr, nc) = w_build × ph_build(nr, nc)   [if builder/worker]
+              + w_dig   × ph_dig(nr, nc)      [if digger/worker]
+              + w_trail × ph_trail(nr, nc)     [all roles]
+              + w_home  × home_bias(nr, nc)    [navigation]
+              + random_jitter
+```
+
+Builders deposit material (converting air → wall) when local build pheromone exceeds a threshold *and* at least one adjacent cell is already solid (structural support rule). Diggers remove material (wall/soil → air/chamber) when local dig pheromone exceeds its threshold. Workers perform both roles with lower efficiency. Soldiers patrol the perimeter, reinforcing walls. Fungus tenders maintain fungus garden cells below the surface. Queens remain stationary, continuously emitting build and dig pheromones to seed construction activity.
+
+**Structural support rule.** Material can only be deposited adjacent to existing structure (soil, wall, surface, or royal chamber), preventing floating construction and producing architecturally realistic buttressing patterns.
+
+**Ventilation shafts (cathedral preset).** Dig pheromone is seeded in vertical columns above chambers. As diggers excavate upward through the mound, they create passive ventilation channels — mimicking the chimney effect observed in *Macrotermes* cathedral mounds where warm air rises through internal channels and exits through porous upper walls.
+
+**Magnetic alignment (magnetic preset).** The magnetic preset constrains build pheromone to a narrow N-S band while spreading dig pheromone E-W, suppressing lateral growth and producing the thin, compass-aligned wedge shape characteristic of *Amitermes meridionalis* mounds that minimize solar heating at midday.
+
+**Mega-colony multi-queen structure.** The mega preset distributes 3–5 colony centers across the grid, each with its own queen and termite population. Independent mounds grow simultaneously and may eventually merge through tunnel connections.
+
+**Presets (6):**
+
+| Preset | Character | Initial Configuration |
+|--------|-----------|----------------------|
+| Cathedral Mound | Towering spire, ventilation shafts | Builders clustered at center, vertical build-pheromone column |
+| Magnetic Termite Mound | Flat N-S aligned wedge | Narrow build band, wide E-W dig zone |
+| Underground Network | Subsurface tunnels, foraging galleries | Mostly diggers below surface, radial dig-pheromone gradient |
+| Fungus Farming Colony | Humidity-controlled fungus chambers | Mixed roles with 30% fungus tenders, subsurface dig seeds |
+| Defensive Fortress | Thick outer walls, soldier patrols | Ring of build pheromone for walls, soldiers on perimeter |
+| Mega-Colony | Multi-queen, 3–5 interconnected mounds | Multiple colony centers with independent populations |
+
+**View modes (3, cycle with `v`):**
+1. **Mound** — full material rendering with termite agents overlaid as colored dots (yellow = worker, green = builder, red = digger, white = soldier, magenta = fungus tender, cyan = queen)
+2. **Pheromone** — build pheromone (yellow) vs dig pheromone (blue) concentration heatmap, showing the invisible chemical landscape guiding construction
+3. **Structure** — structural analysis highlighting exterior walls vs interior chamber walls vs tunnels
+
+**Controls:** `Space`=play/pause, `n`=step, `v`=cycle views, `+/-`=simulation speed, `r`=reset, `R`=menu, `q`=exit.
+
+**What to look for.** In Cathedral Mound, watch pillars emerge from the ground surface as builders follow build-pheromone gradients upward, then observe diggers carve ventilation shafts through the growing structure. The mound self-organizes into a layered architecture: royal chamber at the base, brood chambers above, and porous upper walls. Magnetic Termite Mound produces a strikingly flat, elongated shape — toggle to the pheromone view to see how the constrained build zone creates the compass alignment. Underground Network is fascinating from the structure view: watch tunnel branches radiate outward from the central nest as diggers follow pheromone gradients into virgin soil. Fungus Farming Colony shows specialized chamber formation — fungus tenders maintain garden cells that appear as distinct colored regions below the surface. Defensive Fortress demonstrates wall thickening as builders reinforce the perimeter ring while soldiers patrol. Mega-Colony is the most dramatic: independent mounds grow at separate centers and may eventually connect through subsurface tunnels. Switch between all three views frequently — the pheromone view reveals the invisible signaling landscape that drives all visible construction.
+
+**References.**
+- Grassé, P.-P. "La reconstruction du nid et les coordinations interindividuelles chez *Bellicositermes natalensis* et *Cubitermes* sp. La théorie de la stigmergie." *Insectes Sociaux*, 6(1), 41-80, 1959. https://doi.org/10.1007/BF02223791
+- Camazine, S. et al. *Self-Organization in Biological Systems*. Princeton University Press, 2001.
+- Bonabeau, E., Dorigo, M. & Theraulaz, G. *Swarm Intelligence: From Natural to Artificial Systems*. Oxford University Press, 1999.
+- Turner, J. S. *The Extended Organism: The Physiology of Animal-Built Structures*. Harvard University Press, 2000.

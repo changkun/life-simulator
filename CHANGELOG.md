@@ -4,6 +4,34 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Termite Mound Construction & Stigmergy Simulation — pheromone-guided collective building by thousands of termite agents producing emergent mound architecture from purely local rules
+
+A stigmergic construction simulation where thousands of simple termite agents build complex mound structures through pheromone-mediated material placement. Each termite follows purely local rules — pick up soil if nearby, deposit where pheromone concentration is high — yet the colony produces emergent ventilation shafts, brood chambers, fungus gardens, royal chambers, and tunnel networks. Demonstrates one of nature's most striking examples of emergent collective intelligence.
+
+**`life/modes/termite_mound.py`** (new, ~1218 lines):
+
+- **Stigmergic construction**: 3 pheromone layers (build, dig, trail) diffuse and evaporate each tick. Termites follow pheromone gradients to decide where to deposit or remove material, creating positive feedback loops that bootstrap structure from initial seeds.
+- **6 termite roles**: Worker (general labor), Builder (deposits material at build-pheromone peaks), Digger (excavates at dig-pheromone peaks), Soldier (patrols perimeter), Fungus Tender (maintains fungus gardens), Queen (stationary, emits pheromones, marks royal chamber).
+- **8 material types**: Air, Soil, Wall (hardened structural), Chamber, Fungus garden substrate, Royal chamber, Tunnel, Surface.
+- **Pheromone dynamics**: 4-neighbor diffusion with configurable diffusion rate and evaporation rate, clamped to [0, 1]. Build/dig pheromones guide construction; trail pheromone aids navigation.
+- **Structural support rules**: Material can only be deposited adjacent to existing structure (soil, wall, or surface), preventing floating construction.
+- **Ventilation shaft formation**: Cathedral preset uses chimney-effect erosion — diggers remove material from vertical columns above chambers, creating passive ventilation networks.
+- **Magnetic alignment**: Magnetic preset suppresses wide E-W building to produce compass-aligned wedge shapes for temperature regulation.
+- **Value noise terrain**: Multi-octave 2D value noise generates natural ground surface variation for each preset.
+- **3 visualization views** (cycle with `v`): Mound (material + termite overlay), Pheromone (build yellow vs dig blue heatmap), Structure (exterior vs interior wall analysis).
+- **6 presets**: Cathedral Mound (towering spire with ventilation shafts), Magnetic Termite Mound (flat compass-aligned wedge), Underground Network (subsurface tunnel galleries), Fungus Farming Colony (humidity-controlled fungus chambers), Defensive Fortress (thick walls with soldier patrols), Mega-Colony (3–5 interconnected multi-queen mounds).
+- **Controls**: Space=play/pause, n=step, v=cycle views, +/-=speed, r=reset, R=menu, q=exit.
+
+**`life/registry.py`**: Added "Termite Mound Construction & Stigmergy" entry in Complex Simulations category.
+
+**`life/modes/__init__.py`**: Added registration import for the termite_mound module.
+
+**`README.md`**: Added Termite Mound Construction & Stigmergy to the Complex Simulations category list.
+
+**`docs/complex-simulations.md`**: Added comprehensive documentation covering stigmergic construction mechanics, pheromone diffusion/evaporation formulation, termite role behaviors, material types, all six presets, three view modes, and references to Grassé (1959), Camazine et al. (2001), Bonabeau et al. (1999), and Turner (2000).
+
+---
+
 ### Feature: Add Geometric Optics & Light — ray tracing through mirrors, lenses & prisms with Snell's law, dispersion, caustics & interactive element placement
 
 A geometric optics simulation where rays of light propagate through a 2D scene containing mirrors, lenses, prisms, glass blocks, and diffraction gratings. Implements Snell's law refraction with wavelength-dependent refractive indices for chromatic dispersion, total internal reflection at critical angles, thin lens deflection via focal-length approximation, and first-order diffraction grating splitting — producing visually striking spectral color separation, caustic focusing patterns, and multi-bounce reflection paths in the terminal.

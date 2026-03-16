@@ -421,6 +421,9 @@ MODE_REGISTRY = [
     # ── City Growth & Urban Simulation ──
     {"name": "City Growth & Urban Simulation", "key": "—", "category": "Complex Simulations",
      "desc": "Emergent urban development — zones self-organize via land-value gradients, traffic congestion feedback, NIMBYism, gentrification waves & organic road growth", "attr": "city_mode", "enter": "_enter_city_mode", "exit": "_exit_city_mode"},
+    # ── Termite Mound Construction & Stigmergy ──
+    {"name": "Termite Mound Construction & Stigmergy", "key": "—", "category": "Complex Simulations",
+     "desc": "Stigmergic construction by thousands of termite agents — pheromone-guided building/digging produces emergent ventilation shafts, chambers, fungus gardens & tunnels from purely local rules", "attr": "tmound_mode", "enter": "_enter_tmound_mode", "exit": "_exit_tmound_mode"},
     # ── Geometric Optics & Light ──
     {"name": "Geometric Optics & Light", "key": "—", "category": "Physics & Waves",
      "desc": "Ray tracing through mirrors, lenses & prisms — Snell's law refraction, total internal reflection, chromatic dispersion, caustic focusing & interactive element placement", "attr": "optics_mode", "enter": "_enter_optics_mode", "exit": "_exit_optics_mode"},

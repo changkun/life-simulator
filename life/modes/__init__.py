@@ -176,6 +176,8 @@ def register_all_modes(App):
     reg_sph(App)
     from life.modes.tectonic import register as reg_tectonic
     reg_tectonic(App)
+    from life.modes.termite_mound import register as reg_tmound
+    reg_tmound(App)
     from life.modes.terrain import register as reg_terrain
     reg_terrain(App)
     from life.modes.tornado import register as reg_tornado
