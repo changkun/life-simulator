@@ -4,6 +4,49 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Tide Pool & Intertidal Ecosystem — sinusoidal tidal cycles drive vertical rocky-shore zonation with desiccation stress, predation fronts, algae grazing cycles & hermit crab vacancy-chain shell swaps
+
+An intertidal zone simulation where sinusoidal tidal cycles drive a vertical rocky-shore ecosystem — the rhythmic rise and fall of water creates alternating regimes of desiccation stress (at low tide) and predation pressure (at high tide), producing the classic vertical zonation pattern seen on real rocky shores worldwide. Fills the marine intertidal gap between the existing deep-sea hydrothermal vent mode and the terrestrial/freshwater ecological simulations.
+
+**`life/modes/tide_pool.py`** (new, ~1130 lines):
+
+- **Sinusoidal tidal cycle**: Configurable period (180–300 ticks) and amplitude (0.20–0.45 of vertical range), with small-amplitude wave surge noise from dual sine harmonics. Water line row computed each tick from tide level. Splash-zone spray particles rendered stochastically above the waterline.
+- **5 vertical zonation bands**: Spray (top 10%), High Intertidal (10–30%), Mid Intertidal (30–55%), Low Intertidal (55–80%), Subtidal (80–100%). Zone boundaries computed dynamically from terminal height.
+- **Terrain generation**: Rock substrate with randomly placed tide pools (depressions that retain water at low tide, concentrated in mid/low zones), sand patches in low/subtidal zones, and algae seeded on rocks in mid-low zones.
+- **Temperature & moisture fields**: Per-cell scalar fields updated each tick — exposed cells heat up and dry out (rate scales with elevation), submerged cells and tide pools stay cool and wet. Splash zone receives stochastic partial moisture.
+- **8 species** with distinct ecological roles:
+
+| Species | Type | Zone | Behavior |
+|---------|------|------|----------|
+| Barnacle | Sessile | High | Filter feeds when submerged; loses energy when exposed |
+| Mussel | Sessile | Mid | Filter feeds when submerged; grows in size over time; competes for rock space |
+| Anemone | Sessile | Mid-Low | Filter feeds when submerged; higher desiccation vulnerability |
+| Kelp | Sessile | Low-Subtidal | Photosynthesizes (light-dependent); rapid stress when exposed |
+| Limpet | Mobile | High-Mid | Grazes algae; tolerates exposure better than other mobile species |
+| Sea Star | Mobile | Mid-Low | Predates mussels and barnacles when submerged ("wave of death") |
+| Urchin | Mobile | Low-Subtidal | Grazes algae and kelp; maintains algae-free barrens |
+| Hermit Crab | Mobile | Mid-Low | Scavenges; swaps into larger empty shells (vacancy chains) |
+
+- **Desiccation & heat stress**: When exposed at low tide, organisms accumulate stress from low moisture and high temperature. Stress ≥ 1.0 kills. Limpets have elevated exposure tolerance. Recovery occurs when re-submerged.
+- **Predation**: Sea stars consume mussels and barnacles on contact when submerged, draining prey energy while gaining their own. Urchins graze algae (reducing algae density per cell) and kelp (draining kelp energy).
+- **Algae bloom/grazing cycles**: Algae grows on wet, lit rock surfaces (growth rate = 0.005 × light × moisture). Urchins and limpets graze it back. When algae density > 0.3, rock tiles become algae-covered; when < 0.1, they revert. This creates visible green/brown tidal banding.
+- **Hermit crab vacancy chains**: Empty shells are tracked as (row, col, size) tuples. When a hermit crab finds a nearby shell larger than its current one, it swaps — dropping its old shell for other crabs to find. Dead hermit crabs also release their shells. New crabs need shells to reproduce; without available shells, offspring get tiny makeshift ones.
+- **Mussel bed competition**: Sessile organisms reproduce via budding to adjacent rock cells when energy > 1.5. Cells can only hold one sessile organism, creating spatial competition. Mussels grow in size over time, increasing competitive dominance.
+- **Sea Star Wasting Event**: In the wasting preset, sea stars begin with elevated stress (0.4–0.7) and accumulate additional disease stress each tick. When stress > 0.7, they hemorrhage energy. This removes the keystone predator, allowing mussels to dominate mid-zone rock space — demonstrating trophic cascade dynamics.
+- **3 visualization views** (cycle with `v`): Shore (spatial ecosystem with animated water level, organism glyphs color-coded by species, zone labels on right edge, splash spray, tide pool rendering, algae density shading, water line indicator), Cross-Section (5 horizontal zonation bands showing zone name, characteristic species, submersion state, population count, and density bar chart), Graphs (tide level sparkline, per-species population time series with mini sparklines for top 4 species, average stress history).
+- **6 presets**: Pacific Rocky Shore (classic temperate intertidal, full zonation, balanced populations), Tropical Coral Flat (warm, low tidal range 0.20 amplitude, more urchins/anemones, long period), Mussel Bed Dominance (80 mussels dense-seeded in mid zone, fewer barnacles), Sea Star Wasting Event (30 disease-stressed stars, cascading trophic effects), Extreme Tidal Range (Bay of Fundy–scale 0.45 amplitude, 180-tick period, huge exposure/submersion swings), Hermit Crab Shell Economy (40 hermit crabs, 20 scattered empty shells, vacancy chain dynamics).
+- **Controls**: Space=play/pause, n=step, v=cycle views, +/-=speed, r=reset, R/m=menu, q=exit.
+
+**`life/registry.py`**: Added "Tide Pool & Intertidal Ecosystem" entry in Complex Simulations category.
+
+**`life/modes/__init__.py`**: Added registration import for the tide_pool module.
+
+**`README.md`**: Added Tide Pool & Intertidal Ecosystem to the Complex Simulations category list.
+
+**`docs/complex-simulations.md`**: Added comprehensive documentation covering tidal mechanics, zonation band formulation, species ecology table, desiccation/predation stress dynamics, algae bloom cycles, vacancy chain mechanics, all six presets, three view modes, and references to Connell (1972), Paine (1966, 1974), Menge (1976), Denny & Wethey (2001), and Lewis (1964).
+
+---
+
 ### Feature: Add Stellar Lifecycle & Supernova — stars from birth to death with gas cloud collapse, fusion ignition, HR diagram tracking, core cross-section visualization & supernova-triggered star formation
 
 A stellar evolution simulation where stars are born from collapsing gas clouds, burn through hydrogen on the main sequence, swell into red giants or supergiants, and end their lives as white dwarfs, neutron stars, or black holes — with massive stars exploding as core-collapse supernovae whose shockwaves trigger new generations of star formation. Fills the astrophysics gap between the existing black hole and galaxy formation modes by simulating the lifecycle of individual stars.

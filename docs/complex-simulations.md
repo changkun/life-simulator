@@ -1028,3 +1028,118 @@ This creates a self-sustaining cycle: supernovae compress gas → new stars form
 - Salpeter, E. E. "The luminosity function and stellar evolution." *Astrophysical Journal*, 121, 161–167, 1955. https://doi.org/10.1086/145971
 - Woosley, S. E. & Weaver, T. A. "The evolution and explosion of massive stars." *Reviews of Modern Physics*, 74(4), 1015–1071, 2002. https://doi.org/10.1103/RevModPhys.74.1015
 - Hertzsprung, E. "Über die Sterne der Unterabteilungen c und ac." *Astronomische Nachrichten*, 179(24), 373–380, 1909. https://doi.org/10.1002/asna.19091792402
+
+
+---
+
+
+## Tide Pool & Intertidal Ecosystem
+
+**Background.** The rocky intertidal zone — the narrow band of shore between high and low tide marks — is one of ecology's most studied natural laboratories. Twice daily, the tide transforms this strip from a wave-battered submarine habitat into a sun-baked, desiccating terrestrial one. Species survive by partitioning the shore into vertical zones based on their tolerance to exposure: barnacles and limpets cement themselves high where few competitors survive the drying, mussels dominate the mid-zone in dense beds, sea stars patrol below as keystone predators, and kelp forests anchor the permanently wet low zone. Paine's (1966) classic removal experiments showed that a single predator — the ochre sea star *Pisaster ochraceus* — prevents competitive exclusion by mussels, maintaining the species diversity of the entire community. Connell (1972) demonstrated that the upper limits of species distributions are set by physical stress (desiccation, heat), while lower limits are set by biotic interactions (predation, competition). This simulation models these dual gradients — physical stress from above, biological pressure from below — driven by the rhythmic pulse of a sinusoidal tide.
+
+**Formulation.** The simulation operates on a 2D grid representing a vertical rocky shore cross-section, with elevation increasing upward (row 0 = spray zone, row N = subtidal). The tide is modeled as a sinusoidal oscillation:
+
+```
+Tide level (0–1):
+  L(t) = 0.5 + A · sin(2πt / T)
+
+where:
+  A = tidal amplitude (fraction of vertical range, 0.20–0.45)
+  T = tidal period (180–300 ticks per full cycle)
+
+Water line row:
+  W(t) = (1 - L(t)) · N_rows
+
+Wave surge noise:
+  δ(t) = 0.03·sin(0.7t) + 0.02·sin(1.3t)
+
+Final level:
+  L_eff(t) = clamp(L(t) + δ(t), 0, 1)
+```
+
+The shore is divided into 5 zonation bands computed from terminal height:
+
+| Zone | Rows | Ecological Character |
+|------|------|---------------------|
+| Spray | 0–10% | Splashed but rarely submerged; lichens, cyanobacteria |
+| High Intertidal | 10–30% | Brief submersion at high tide; barnacles, limpets, periwinkles |
+| Mid Intertidal | 30–55% | Alternating exposure/submersion; mussels, anemones, sea stars |
+| Low Intertidal | 55–80% | Mostly submerged; kelp, urchins, hermit crabs |
+| Subtidal | 80–100% | Permanently submerged; full marine community |
+
+**Terrain.** The substrate is rock with two special features: **tide pools** (depressions that retain water at low tide, concentrated in mid/low zones) and **sand patches** (in low/subtidal, avoided by most mobile organisms except hermit crabs). Algae grows on wet, illuminated rock surfaces.
+
+**Physical stress fields.** Two scalar fields — temperature and moisture — are updated per cell each tick:
+
+```
+If submerged or in tide pool:
+  temp(r,c)  ← max(0, temp - 0.05)         (cooling)
+  moist(r,c) ← min(1, moist + 0.1)         (wetting)
+
+If exposed:
+  elev = 1 - r/N                            (higher = more exposed)
+  temp(r,c)  ← min(1, temp + 0.02·(1+elev)) (heating)
+  moist(r,c) ← max(0, moist - 0.03·(1+elev))(drying)
+
+Splash zone (up to 5% of rows above waterline):
+  30% chance per cell: moist += 0.05        (spray moisture)
+```
+
+**Algae dynamics.** Algae density (0–1 per cell) grows on rock and pool tiles:
+
+```
+growth = 0.005 · light(r) · moisture(r,c)
+  where light(r) = max(0.1, 1 - r/(2·N))
+
+Decay if moisture < 0.2: algae -= 0.01
+Rock becomes algae-covered at density > 0.3, reverts at < 0.1
+```
+
+Grazers (urchins eat 0.1/tick, limpets eat 0.05/tick) keep algae in check, creating visible grazing halos and bloom/crash cycles.
+
+**Species ecology.** Eight species in two categories — sessile (attached to rock) and mobile (free-moving):
+
+| Species | Type | Preferred Zone | Feeding | Stress Tolerance | Special Mechanic |
+|---------|------|---------------|---------|-----------------|-----------------|
+| Barnacle | Sessile | High | Filter feed when submerged (+0.01/tick) | Moderate desiccation tolerance | Cements to rock |
+| Mussel | Sessile | Mid | Filter feed when submerged (+0.012/tick) | Good desiccation tolerance | Grows in size; competes for rock space |
+| Anemone | Sessile | Mid-Low | Filter feed when submerged (+0.008/tick) | Poor desiccation tolerance | Anchors in pools |
+| Kelp | Sessile | Low-Subtidal | Photosynthesis (light-dependent, +0.015×light) | Very poor exposure tolerance | Grows in size; grazed by urchins |
+| Limpet | Mobile | High-Mid | Grazes algae (0.05/tick) | High exposure tolerance | Tolerates drying (stress +0.003 vs +0.015) |
+| Sea Star | Mobile | Mid-Low | Predates mussels/barnacles (-0.3 prey energy, +0.15 own) | Poor exposure tolerance | Keystone predator; "wave of death" fronts |
+| Urchin | Mobile | Low-Subtidal | Grazes algae (0.1/tick) and kelp (-0.1 kelp energy) | Poor exposure tolerance | Creates urchin barrens |
+| Hermit Crab | Mobile | Mid-Low | Scavenges (+0.003/tick) | Moderate exposure tolerance | Vacancy-chain shell swaps |
+
+**Organism lifecycle.** All organisms have energy (0–2.0+), age, and stress (0–1.0). Death occurs when energy ≤ 0, stress ≥ 1.0, or age exceeds lifespan (2000 for sessile, 3000 for mobile). Reproduction triggers when energy > 1.5 (sessile, 1% chance/tick) or > 1.6 (mobile, 0.8% chance/tick), budding/spawning a new individual in an adjacent cell. Sessile reproduction requires an unoccupied rock cell.
+
+**Hermit crab vacancy chains.** Empty shells are tracked as (row, col, size) tuples. Each tick, hermit crabs check adjacent cells for shells larger than their current one. On finding one, they swap — dropping their old shell at their current position. Dead crabs release their shells. New crab offspring need shells to reproduce; without available shells, they receive tiny (0.2) makeshift shells. In the Hermit Crab Shell Economy preset, 40 crabs and 20 initial shells create dense, observable vacancy chain dynamics — a single large shell dropped into the population can trigger a cascade of swaps.
+
+**Sea star wasting disease.** In the Sea Star Wasting Event preset, all sea stars begin with elevated stress (0.4–0.7) and accumulate additional disease stress (+0.005/tick). At stress > 0.7, they also hemorrhage energy (-0.02/tick). As stars die, their keystone predation is removed — mussels expand unchecked through the mid-zone, outcompeting barnacles and anemones for rock space. This reproduces the trophic cascade observed in the real 2013–2015 Sea Star Wasting Syndrome epidemic along the Pacific coast.
+
+**Presets (6):**
+
+| Preset | Character | Initial Configuration |
+|--------|-----------|----------------------|
+| Pacific Rocky Shore | Classic temperate intertidal with full zonation | Balanced populations (60 barnacles, 40 mussels, 25 anemones, 30 kelp, 20 limpets, 15 sea stars, 20 urchins, 15 hermit crabs), standard tidal range (A=0.35, T=240) |
+| Tropical Coral Flat | Warm shallow reef flat with low tidal range | Low amplitude (A=0.20), long period (T=300), more urchins (35) and anemones (40), fewer mussels (15) and kelp (15), more tide pools |
+| Mussel Bed Dominance | Dense mussel beds competing for rock space | 80 mussels dense-seeded in mid zone, 30 barnacles, standard tidal range |
+| Sea Star Wasting Event | Disease-stressed stars, cascading trophic effects | 30 sea stars with initial stress 0.4–0.7, ongoing disease stress accumulation, standard populations otherwise |
+| Extreme Tidal Range | Bay of Fundy–scale exposure/submersion | High amplitude (A=0.45), short period (T=180), dramatic water level swings exposing and drowning huge vertical range |
+| Hermit Crab Shell Economy | Dense hermit population with vacancy chain dynamics | 40 hermit crabs, 20 scattered empty shells of varying sizes, standard other populations |
+
+**View modes (3, cycle with `v`):**
+1. **Shore** — spatial ecosystem rendering: rock (#), sand (:), tide pools (~), algae (./%); organisms as colored glyphs (^ barnacle, M mussel, * anemone, X sea star, o urchin, | kelp, @ hermit crab, n limpet); animated water line with > indicator; splash spray dots above waterline; zone labels (SPRAY/HIGH/MID/LOW/SUBTIDAL) on right edge; info bar showing sessile/mobile counts, shell count, and tide state
+2. **Cross-Section** — 5 horizontal zonation bands showing zone name, characteristic species list, current population count, submersion state ([submerged]/[exposed]), and density bar chart; animated water level label moves vertically with tide
+3. **Graphs** — tide level sparkline (Unicode block elements ▁▂▃▄▅▆▇█), per-species population time series with mini sparklines for top 4 species by current count, average community stress history; all graphs show last 200 ticks
+
+**Controls:** `Space`=play/pause, `n`/`.`=step, `v`=cycle views, `+/-`=simulation speed, `r`=reset, `R`/`m`=menu, `q`=exit.
+
+**What to look for.** In Pacific Rocky Shore, watch the tide pulse up and down — as water recedes, the exposed mid-zone organisms begin accumulating desiccation stress (barnacle ^ and mussel M glyphs turn red when stressed). Sea stars (X) hunt only when submerged, creating "wave of death" fronts that sweep through mussel beds at high tide. Switch to Graphs view to see the tide sparkline drive anti-correlated stress peaks. Mussel Bed Dominance shows competitive exclusion in action — dense mussel beds spread through budding, outcompeting barnacles for rock attachment sites. Sea Star Wasting Event is the most dramatic ecological story: watch stars gradually die off (their X glyphs vanishing), then switch to Graphs to see mussel populations explode as predation pressure disappears — a textbook trophic cascade. Extreme Tidal Range creates the most visually dynamic water movement: the waterline sweeps across nearly half the screen each cycle, alternately drowning and exposing huge swaths of shore. Hermit Crab Shell Economy is best watched in Shore view — track the @ symbols as they encounter empty shells and swap, dropping their old shells for other crabs to find. In Tropical Coral Flat, the gentle tide (low amplitude, long period) creates a more stable, species-rich community with less stress oscillation.
+
+**References.**
+- Connell, J. H. "Community interactions on marine rocky intertidal shores." *Annual Review of Ecology and Systematics*, 3, 169–192, 1972. https://doi.org/10.1146/annurev.es.03.110172.001125
+- Paine, R. T. "Food web complexity and species diversity." *The American Naturalist*, 100(910), 65–75, 1966. https://doi.org/10.1086/282400
+- Paine, R. T. "Intertidal community structure: experimental studies on the relationship between a dominant competitor and its principal predator." *Oecologia*, 15, 93–120, 1974. https://doi.org/10.1007/BF00345739
+- Menge, B. A. "Organization of the New England rocky intertidal community: role of predation, competition, and environmental heterogeneity." *Ecological Monographs*, 46(4), 355–393, 1976. https://doi.org/10.2307/1942563
+- Denny, M. W. & Wethey, D. S. "Physical processes that generate patterns in marine communities." In *Marine Community Ecology* (eds. Bertness, M. D. et al.), 3–37, Sinauer, 2001.
+- Lewis, J. R. *The Ecology of Rocky Shores*. English Universities Press, 1964.

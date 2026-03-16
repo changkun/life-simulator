@@ -439,6 +439,9 @@ MODE_REGISTRY = [
     # ── Stellar Lifecycle & Supernova ──
     {"name": "Stellar Lifecycle & Supernova", "key": "—", "category": "Complex Simulations",
      "desc": "Stars from birth to death — gas cloud collapse, fusion ignition, main sequence evolution, red giant expansion, supernova core collapse, neutron star/black hole remnants, with HR diagram & core cross-section views", "attr": "stellar_mode", "enter": "_enter_stellar_mode", "exit": "_exit_stellar_mode"},
+    # ── Tide Pool & Intertidal Ecosystem ──
+    {"name": "Tide Pool & Intertidal Ecosystem", "key": "—", "category": "Complex Simulations",
+     "desc": "Sinusoidal tidal cycles drive vertical rocky-shore zonation — barnacles, mussels, sea stars, urchins, kelp & hermit crabs with desiccation stress, predation fronts & vacancy-chain shell swaps", "attr": "tpool_mode", "enter": "_enter_tpool_mode", "exit": "_exit_tpool_mode"},
 ]
 
 

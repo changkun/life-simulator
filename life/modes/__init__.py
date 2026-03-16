@@ -350,6 +350,8 @@ def register_all_modes(App):
     reg_firefly(App)
     from life.modes.stellar import register as reg_stellar
     reg_stellar(App)
+    from life.modes.tide_pool import register as reg_tpool
+    reg_tpool(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 
