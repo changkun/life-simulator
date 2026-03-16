@@ -1364,3 +1364,87 @@ Gene drive population dynamics:
 - Komor, A. C. et al. "Programmable editing of a target base in genomic DNA without double-stranded DNA cleavage." *Nature* 533 (2016): 420-424. https://doi.org/10.1038/nature17946
 - Anzalone, A. V. et al. "Search-and-replace genome editing without double-strand breaks or donor DNA." *Nature* 576 (2019): 149-157. https://doi.org/10.1038/s41586-019-1711-4
 - Kyrou, K. et al. "A CRISPR-Cas9 gene drive targeting doublesex causes complete population suppression in caged Anopheles gambiae mosquitoes." *Nature Biotechnology* 36 (2018): 1062-1066. https://doi.org/10.1038/nbt.4245
+
+---
+
+## Mitosis & Cell Division Cycle
+
+**Background** — The cell division cycle is the most fundamental process in any living organism. Every eukaryotic cell that divides must faithfully replicate its DNA, condense chromosomes, assemble a mitotic spindle, align chromosomes at the metaphase plate, separate sister chromatids, and physically divide into two daughter cells. This sequence is orchestrated by oscillating cyclin/CDK (cyclin-dependent kinase) complexes and enforced by checkpoints that halt progression when conditions are not met. Failure of these checkpoints — particularly loss of the G1/S restriction point (p53 pathway) and the spindle assembly checkpoint (SAC) — is a hallmark of cancer, leading to aneuploidy, genomic instability, and uncontrolled proliferation.
+
+This simulation models the complete eukaryotic cell cycle across a 2D tissue grid, where each cell independently maintains its phase state, cyclin levels, and checkpoint status. It bridges the molecular-scale simulations (protein folding, CRISPR) and the tissue-scale ones (embryogenesis, cardiac electrophysiology) at the single-cell mechanics level.
+
+**Formulation** — Each cell on the grid is an independent state machine progressing through the cell cycle:
+
+```
+Cell cycle phases and transitions:
+
+  G0 (Quiescent) ←→ G1 (Gap 1) → S (DNA Synthesis) → G2 (Gap 2) → M (Mitosis) → Cytokinesis
+                      │                                               │
+                  Restriction                                    Spindle Assembly
+                    Point                                        Checkpoint (SAC)
+                 (Cyclin D ≥ 0.6)                             (attachment ≥ 95%)
+
+Phase durations (baseline ticks):
+  G1 = 40, S = 30, G2 = 20
+  Prophase = 12, Metaphase = 10, Anaphase = 8, Telophase = 6, Cytokinesis = 4
+  Apoptosis = 15 (clearance timer)
+
+Cyclin/CDK oscillator dynamics:
+  G1:  Cyclin D accumulation rate = 0.025 + GF(r,c) × 0.5 × 0.02
+       Cyclin E = 0.04 × 0.3 × Cyclin_D (early ramp)
+  S:   Cyclin E rate = 0.04/tick, Cyclin A rate = 0.03 × 0.5/tick
+       DNA replication progress: +1/S_DURATION per tick (linear to completion)
+  G2:  Cyclin A rate = 0.03/tick, Cyclin B rate = 0.035/tick
+  M:   Cyclin B maintained → APC activation → Cyclin B × 0.85/tick (degradation)
+       Cyclin A × 0.8/tick in telophase
+
+Checkpoint logic:
+  G1/S:  Requires Cyclin_D ≥ 0.6 AND phase_tick ≥ G1_DURATION
+         Bypassed when checkpoint_g1 = False (tumor phenotype)
+  SAC:   Requires spindle_attached ≥ 0.95
+         Kinetochore attachment: P = 0.12/tick × (1 - poison × 0.9)
+         Bypassed when checkpoint_m = False → P(aneuploidy) = 0.6 if attachment < 0.95
+
+Contact inhibition:
+  Count 8-neighbors occupied; if ≥ 6 → enter G0
+  G0 → G1 re-entry requires: GF(r,c) > 0.3 AND neighbors < 6
+
+Growth factor field (diffusible):
+  dGF/dt = D_GF × laplacian(GF) - decay × GF + production
+  D_GF = 0.06, decay = 0.008, production = 0.02 (living cells only)
+  Threshold for G0→G1 re-entry: GF > 0.3
+
+Apoptosis signaling:
+  Spontaneous: P = 0.001/tick
+  Signal-induced: P = 0.04 × signal(r,c) when signal > 0.3
+  Apoptotic cells produce death ligand: +0.05/tick for 15 ticks
+  Signal diffusion: D = 0.10, decay = 0.012
+
+Cytokinesis:
+  After telophase, scan 8-neighbors for empty position
+  Daughter cell inherits: ploidy, aneuploid status, checkpoint states, generation+1
+  Mother cell resets all cyclins, replication, condensation to zero
+
+Spindle poison (drug field):
+  dP/dt = D_P × laplacian(P) - decay × P
+  D_P = 0.07, decay = 0.004
+  Effect: attachment_rate × (1 - poison × 0.9)
+  Prolonged arrest (> 5× metaphase duration) + poison > 0.3 → mitotic catastrophe → apoptosis
+```
+
+| Preset | Configuration | What to watch |
+|--------|--------------|---------------|
+| Normal Tissue Homeostasis | 40% density, all checkpoints active, balanced GF | Cells cycle through G1→S→G2→M with contact inhibition maintaining steady-state density |
+| Rapid Proliferation (Embryonic) | 65% density, G1 shortened to 1/3, high GF (0.6–0.95) | Fast cycling with minimal G1 gap — watch the high mitotic index and rapid tissue filling |
+| Checkpoint Bypass (Tumor) | Central cluster with checkpoint_g1=False, checkpoint_m=False | Tumor cells skip restriction point and SAC — aneuploidy accumulates (ploidy ±1), uncontrolled growth invades surrounding quiescent tissue |
+| Contact Inhibition Loss | 75% density, contact inhibition disabled | Cells ignore neighbor density and keep dividing — tissue piles up without growth arrest |
+| Apoptosis Cascade | 55% healthy tissue, corner seed of apoptotic cells + high death signal | Death ligand wave propagates from corner, recruiting neighbors into apoptosis — watch the cascade front advance |
+| Spindle Poison (Drug Treatment) | 50% density with drug field (0.3–0.8) | M-phase cells cannot attach kinetochores → SAC fires indefinitely → prolonged arrest → mitotic catastrophe → apoptosis wave |
+
+**What to look for** — In the Tissue Grid view, watch the mosaic of phase-colored glyphs: G1 cells (o) accumulating cyclin D, S-phase cells (O) replicating DNA, mitotic figures (\*/X/|/%) progressing through prophase→anaphase, and daughter cells (+) appearing adjacent to mothers after cytokinesis. Quiescent G0 cells (.) form at high-density regions where contact inhibition activates. In the Tumor preset, watch the central checkpoint-deficient cluster expand outward, displacing quiescent normal tissue. Switch to the Detail view (v) to see a single cell's cyclin oscillator bar charts — Cyclin D ramps through G1, Cyclin E spikes at S entry, Cyclin B peaks at M entry then crashes when APC activates. The sparkline graphs show population dynamics: total cell count, mitotic index, phase distribution fractions, and aneuploidy percentage rising in the tumor preset.
+
+**References**
+- Morgan, D. O. *The Cell Cycle: Principles of Control.* New Science Press (2007). — Comprehensive textbook on cyclin/CDK oscillators, checkpoint mechanisms, and cell cycle regulation.
+- Musacchio, A. & Salmon, E. D. "The spindle-assembly checkpoint in space and time." *Nature Reviews Molecular Cell Biology* 8 (2007): 379-393. https://doi.org/10.1038/nrm2163
+- Hanahan, D. & Weinberg, R. A. "Hallmarks of cancer: the next generation." *Cell* 144 (2011): 646-674. https://doi.org/10.1016/j.cell.2011.02.013
+- Hartwell, L. H. & Weinert, T. A. "Checkpoints: controls that ensure the order of cell cycle events." *Science* 246 (1989): 629-634. https://doi.org/10.1126/science.2683079

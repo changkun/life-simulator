@@ -481,6 +481,9 @@ MODE_REGISTRY = [
     # ── Nuclear Reactor Physics & Meltdown Dynamics ──
     {"name": "Nuclear Reactor Physics & Meltdown Dynamics", "key": "—", "category": "Physics & Waves",
      "desc": "PWR cross-section with neutron transport & fission chain reaction, control rod insertion/withdrawal, Xe-135 poisoning dynamics, thermal hydraulics with void coefficient feedback, LOCA/meltdown failure cascades, hydrogen generation & corium pooling", "attr": "nuclear_reactor_mode", "enter": "_enter_nuclear_reactor_mode", "exit": "_exit_nuclear_reactor_mode"},
+    # ── Mitosis & Cell Division Cycle ──
+    {"name": "Mitosis & Cell Division Cycle", "key": "—", "category": "Chemical & Biological",
+     "desc": "Eukaryotic cell cycle G1→S→G2→M with cyclin/CDK oscillators, spindle assembly checkpoint, DNA replication, chromosome condensation & separation, cytokinesis, contact inhibition, aneuploidy from checkpoint bypass & apoptosis signaling", "attr": "mitosis_mode", "enter": "_enter_mitosis_mode", "exit": "_exit_mitosis_mode"},
 ]
 
 

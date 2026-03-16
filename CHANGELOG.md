@@ -4,6 +4,32 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Mitosis & Cell Division Cycle — eukaryotic cell cycle G1→S→G2→M with cyclin/CDK oscillators, spindle assembly checkpoint, DNA replication & chromosome condensation/separation, cytokinesis, contact inhibition, growth factor signaling, checkpoint bypass → aneuploidy & tumor growth, apoptosis cascade, spindle poison drug treatment
+
+Bridges the gap between the project's molecular-scale simulations (protein folding, CRISPR gene editing) and tissue/organ-scale ones (embryogenesis, cardiac electrophysiology), completing the biological hierarchy at the single-cell mechanics level — the most fundamental process in any "life simulator."
+
+**`life/modes/mitosis.py`** (new, ~1195 lines):
+
+- **Cell cycle phases**: Full G1→S→G2→M progression with phase-specific durations (G1=40, S=30, G2=20 ticks). M-phase subdivided into Prophase (chromosome condensation, 12 ticks) → Metaphase (spindle assembly + kinetochore attachment, 10 ticks) → Anaphase (APC-driven chromatid separation + cyclin B degradation, 8 ticks) → Telophase (nuclear envelope reform + decondensation, 6 ticks) → Cytokinesis (daughter cell placement into adjacent empty neighbor, 4 ticks).
+- **Cyclin/CDK oscillator dynamics**: Cyclin D/CDK4,6 accumulates in G1 (rate 0.025 + growth factor boost). Cyclin E/CDK2 drives S-phase entry. Cyclin A/CDK2 sustains S/G2. Cyclin B/CDK1 triggers M-phase entry (threshold 0.7). APC/C activates in anaphase to degrade cyclin B (×0.85/tick), enabling mitotic exit. Base degradation rate 0.02.
+- **Checkpoints**: G1/S restriction point requires Cyclin D ≥ 0.6 (bypassed when checkpoint_g1=False in tumor preset). Spindle Assembly Checkpoint (SAC) requires ≥95% kinetochore attachment before anaphase (attachment rate 0.12/tick, reduced 90% by spindle poison). Prolonged SAC arrest (5× metaphase duration) with poison → mitotic catastrophe → apoptosis.
+- **Contact inhibition**: Cells with ≥6 of 8 neighbors occupied enter G0 quiescence. G0→G1 re-entry requires growth factor > 0.3 threshold AND neighbor count below inhibition threshold. Disabled in tumor and contact_loss presets.
+- **Growth factor field**: Diffusible signal (D=0.06, decay 0.008/tick) produced by living cells (rate 0.02). Required for G0→G1 re-entry. Creates spatial proliferation gradients.
+- **Apoptosis signaling**: Spontaneous apoptosis (P=0.001/tick) + death ligand-induced (P=0.04×signal_concentration when signal > 0.3). Apoptotic cells produce diffusible death signal (D=0.10, decay 0.012) for 15 ticks before removal — creates propagating death wave in apoptosis preset.
+- **Aneuploidy**: When SAC is bypassed and spindle attachment < 95%, P=0.6 of ploidy error (±1 from normal 2N). Inherited by daughter cells. Tracked as population-level metric.
+- **Spindle poison**: Diffusible drug field (D=0.07, decay 0.004) that reduces kinetochore attachment rate by 90%, causing indefinite M-phase arrest and eventual mitotic catastrophe.
+- **3 visualization views**: Tissue grid (phase-colored glyphs: o=G1, O=S, @=G2, \*=Prophase, X=Metaphase, |=Anaphase, %=Telophase, +=Cytokinesis, .=G0, x=Apoptotic, with arrow-key selection cursor), single-cell detail (cyclin D/E/A/B bar charts with threshold markers, progress bars for DNA replication/condensation/spindle attachment, chromosome state diagram), 10-metric sparkline time series (total cells, dividing, G1/S/G2M fractions, apoptotic, aneuploid%, mean cyclin B, growth factor, quiescent%).
+- **6 presets**: Normal Tissue Homeostasis (40% density, balanced proliferation/apoptosis), Rapid Proliferation Embryonic (65% density, shortened G1÷3, high growth factor), Checkpoint Bypass Tumor (central checkpoint-deficient cluster with p53 loss + SAC defect → aneuploidy), Contact Inhibition Loss (75% density, ignore neighbor density), Apoptosis Cascade (corner seed of death ligand wave), Spindle Poison Drug Treatment (drug field arrests M-phase cells → mitotic catastrophe).
+- **Controls**: Space (play/pause), v (cycle views), arrow keys (select cell in tissue view), n (single step), r (reset), R/m (menu), q (quit).
+
+**`life/registry.py`**: Added "Mitosis & Cell Division Cycle" entry in Chemical & Biological category.
+
+**`life/modes/__init__.py`**: Added registration import for the mitosis module.
+
+**`docs/chemical-and-biological.md`**: Added scientific documentation — cell cycle phases, cyclin/CDK oscillator formulation, checkpoint mechanics, contact inhibition, apoptosis signaling, aneuploidy, preset descriptions, observation guide, and references (Morgan 2007, Musacchio & Salmon 2007, Hanahan & Weinberg 2011).
+
+---
+
 ### Feature: Add Nuclear Reactor Physics & Meltdown Dynamics — PWR cross-section with neutron transport & fission chain reaction, control rod insertion/withdrawal, Xe-135 poisoning dynamics, thermal hydraulics with Doppler & void coefficient feedback, LOCA/meltdown failure cascades, hydrogen generation & corium pooling
 
 Nuclear fission counterpart to the existing Tokamak Fusion Plasma mode — models fission reactor physics from normal operation through accident scenarios, filling the gap between fusion plasma physics and the other energy/physics simulations. The six presets recreate the physics behind the three major nuclear accidents (Chernobyl, TMI, Fukushima) plus normal operation and a breeder reactor.
