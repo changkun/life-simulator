@@ -378,6 +378,9 @@ MODE_REGISTRY = [
     # ── Reverse Life ──
     {"name": "Reverse Life", "key": "—", "category": "Meta Modes",
      "desc": "Constraint solver that runs Game of Life backwards — finds predecessor states, detects Garden of Eden patterns", "attr": "reverse_life_mode", "enter": "_enter_reverse_life_mode", "exit": "_exit_reverse_life_mode"},
+    # ── Fluid of Life ──
+    {"name": "Fluid of Life", "key": "—", "category": "Fluid Dynamics",
+     "desc": "Hybrid CA+fluid — live cells generate buoyancy, fluid advects cells, two-way coupling with fans/heaters/walls", "attr": "fluidlife_mode", "enter": "_enter_fluidlife_mode", "exit": "_exit_fluidlife_mode"},
 ]
 
 
@@ -498,6 +501,7 @@ _DISPATCH_OVERRIDES = {
     'rbc_mode': {'use_delay': False},
     'symphony_mode': {'running_check': '_is_symphony_auto_stepping', 'use_delay': False},
     'reverse_life_mode': {'running_check': '_is_reverse_life_auto_stepping', 'use_delay': False},
+    'fluidlife_mode': {'running_check': '_is_fluidlife_auto_stepping', 'use_delay': False},
 }
 
 

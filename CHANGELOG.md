@@ -4,6 +4,28 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Fluid of Life — hybrid CA + fluid dynamics with two-way coupling
+
+Fuses Conway's Game of Life with a real-time Lattice Boltzmann fluid into a single coupled system where each physics layer feeds back into the other. Live cells inject buoyancy into the fluid; the fluid velocity field advects cells to new grid positions via semi-Lagrangian transport before the CA rule is applied. This creates qualitatively new behavior that exists only at the intersection of discrete life and continuous flow — gliders that curve along streamlines, blinkers that drift in currents, and guns that pump coherent fluid jets.
+
+**`life/modes/fluid_life.py`** (new, ~530 lines):
+
+- **D2Q9 Lattice Boltzmann fluid**: Full streaming, bounce-back boundary conditions, and BGK single-relaxation-time collision. Left-boundary equilibrium inflow, right-boundary zero-gradient outflow, toroidal wrapping on top/bottom.
+- **Conway's Game of Life (B3/S23)**: Standard Moore neighborhood with toroidal wrapping. Runs at a configurable independent rate (`ca_interval` controls how often CA ticks per fluid step), allowing the fluid to evolve faster than the automaton.
+- **Two-way coupling**: Live cells inject upward buoyancy force into the LBM collision step. Fluid velocity field advects cells to new grid positions each frame via semi-Lagrangian transport with collision resolution (cells that collide stay in place). Wall objects block both fluid flow (bounce-back) and cell movement.
+- **6 interactive tools** (cycle with `t`): cursor (toggle cells), wall, fan (4 directions), heater, cooler, eraser — letting users sculpt flow fields and watch how they reshape CA behavior.
+- **4 visualization modes** (cycle with `v`): Coupled (cells colored by age + velocity arrows), Fluid Speed (block density), CA Only (age-colored cells), Vorticity (curl magnitude with signed glyphs).
+- **6 presets**: Glider Stream (gentle wind carrying gliders), Blinker Vortices (oscillators stirring fluid into vortex streets), Gosper Gun Jet (gun pumping a coherent fluid jet), Thermal Soup (random soup with strong buoyancy), Wind Tunnel (strong horizontal advection), Convection Cells (bottom heaters driving Rayleigh-Bénard-like rolls through CA).
+- **Runtime controls**: buoyancy strength (`b/B`), inflow speed (`u/U`), CA interval (`c/C`), LBM steps per frame (`+/-`), velocity overlay toggle (`f`), reset (`r`), return to menu (`R`/`m`).
+
+**`life/registry.py`**: Added "Fluid of Life" entry in Fluid Dynamics category with `fluidlife_mode` attribute, custom running check (`_is_fluidlife_auto_stepping`), and no-delay dispatch.
+
+**`life/modes/__init__.py`**: Added registration import for the fluid_life module.
+
+**`life/app.py`**: Added initialization of `fluidlife_mode`, `fluidlife_menu`, `fluidlife_menu_sel`, and `fluidlife_running` state variables.
+
+---
+
 ### Feature: Add Reverse Life — constraint solver that runs the Game of Life backwards
 
 Tackles a genuinely hard problem in CA theory (predecessor-finding is NP-complete) by building an interactive constraint-propagation solver that reconstructs history that was never simulated. Unlike the existing timeline/rewind feature which replays *recorded* history, this mode **computes** predecessor states from scratch for any pattern. It also detects Garden of Eden patterns — configurations with no possible predecessor, one of the deepest results in cellular automaton theory.

@@ -306,6 +306,8 @@ def register_all_modes(App):
     reg_symphony(App)
     from life.modes.reverse_life import register as reg_revlife
     reg_revlife(App)
+    from life.modes.fluid_life import register as reg_fluidlife
+    reg_fluidlife(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

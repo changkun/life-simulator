@@ -2,7 +2,7 @@
 
 The motion of liquids, gases, and plasmas — from kitchen honey to interstellar magnetohydrodynamics.
 
-This document covers the eight fluid dynamics simulation modes in Life Simulator. Each mode implements a distinct physical model, discretized for real-time ASCII visualization in the terminal. The models range from kinetic theory (Lattice Boltzmann) to continuum mechanics (Navier-Stokes), from astrophysical plasmas (MHD) to everyday viscous threads (fluid rope coiling).
+This document covers the nine fluid dynamics simulation modes in Life Simulator. Each mode implements a distinct physical model, discretized for real-time ASCII visualization in the terminal. The models range from kinetic theory (Lattice Boltzmann) to continuum mechanics (Navier-Stokes), from astrophysical plasmas (MHD) to everyday viscous threads (fluid rope coiling).
 
 ---
 
@@ -385,3 +385,58 @@ dt = 0.02
 **References.**
 - Ribe, N.M. "Coiling of Viscous Jets." *Proceedings of the Royal Society A*, 460(2051), 2004. https://doi.org/10.1098/rspa.2004.1353
 - Habibi, M., Maleki, M., Golestanian, R., Ribe, N.M., and Bonn, D. "Dynamics of Liquid Rope Coiling." *Physical Review E*, 74(6), 2006. https://doi.org/10.1098/rspa.2004.1353
+
+---
+
+## Fluid of Life (CA + LBM Coupled)
+
+**Background.** Cellular automata and fluid dynamics are two of the most productive frameworks for studying emergent complexity, but they are almost always studied in isolation. The Game of Life operates on a discrete grid with discrete time; Navier-Stokes (or its kinetic surrogate, Lattice Boltzmann) operates on continuous fields. The Fluid of Life mode couples them into a single system: live cells are buoyant particles that inject momentum into a surrounding fluid, and the fluid velocity field advects cells to new grid positions before the next CA generation is applied. This two-way coupling produces qualitatively new phenomena — gliders that curve along streamlines, oscillators that generate vortex streets, and guns that pump coherent fluid jets — that exist only at the intersection of discrete life and continuous flow.
+
+The idea of coupling particle-like automata with continuum fluid has roots in the immersed boundary method (Peskin, 1972), where elastic structures interact with viscous flow. Here the "structure" is the CA itself: living cells exert force on the fluid (buoyancy), and the fluid exerts force on the cells (advection). The result is a hybrid system where neither layer alone predicts the emergent behavior.
+
+**Formulation.** The fluid uses the D2Q9 Lattice Boltzmann method (same formulation as the standalone LBM mode). The CA uses standard Conway B3/S23 rules. The coupling is:
+
+```
+Two-way coupling:
+
+  Cell → Fluid (buoyancy forcing during BGK collision):
+    If cell[r][c] is alive:
+      uy[r][c] -= buoyancy_strength    (upward force, negative y)
+
+  Fluid → Cell (semi-Lagrangian advection):
+    For each live cell at (r, c):
+      dx = ux[r][c] * advection_strength
+      dy = uy[r][c] * advection_strength
+      nr = r + round(dy * 20)    (scaled displacement)
+      nc = c + round(dx * 20)
+      Move cell to (nr, nc) if target is empty and not a wall
+      On collision: cell stays at original position
+
+  Interactive objects inject additional forces:
+    Fan (4 directions): constant force ±0.05 in chosen axis
+    Heater:  uy -= buoyancy * 3   (strong upward)
+    Cooler:  uy += buoyancy * 3   (strong downward)
+    Wall:    LBM bounce-back + blocks cell movement
+
+Timing:
+  LBM runs fluidlife_steps_per_frame sub-steps each frame (1–10)
+  Advection runs every frame
+  CA runs every ca_interval frames (1–20)
+
+LBM parameters per preset:
+  omega     = 1.4 – 1.8   (relaxation, controls viscosity via nu = (1/omega - 0.5)/3)
+  inflow    = 0.01 – 0.08  (left boundary equilibrium velocity)
+  buoyancy  = 0.0005 – 0.0020
+  advection = 0.10 – 0.25  (velocity-to-displacement scaling)
+```
+
+**What to look for.** The Glider Stream preset places five SE-traveling gliders in a gentle rightward wind. Watch them curve — the wind adds a rightward component to their natural diagonal trajectory, producing arcing paths. The Blinker Vortices preset arranges 24 blinkers in a grid; each oscillation cycle pulses buoyancy on and off, stirring the fluid into a lattice of counter-rotating vortices visible in the vorticity view. The Gosper Gun Jet preset fires a stream of gliders that collectively pump a coherent fluid jet across the domain. The Convection Cells preset seeds heaters along the bottom and coolers along the top, driving Rayleigh-Bénard-like convection rolls that carry CA cells in rising and falling streams.
+
+Use the interactive tools to experiment: place a wall to deflect a glider stream, add a heater beneath an oscillator to loft it upward, or create a fan tunnel to accelerate structures. Switch visualization modes to see the coupled view (age-colored cells + velocity arrows), fluid speed field, pure CA, or vorticity.
+
+**Presets:** Glider Stream (ω=1.6), Blinker Vortices (ω=1.5), Gosper Gun Jet (ω=1.7), Thermal Soup (ω=1.4), Wind Tunnel (ω=1.8), Convection Cells (ω=1.5).
+
+**References.**
+- Peskin, C.S. "Flow Patterns around Heart Valves: A Numerical Method." *Journal of Computational Physics*, 10(2), 1972. https://doi.org/10.1016/0021-9991(72)90065-4
+- Qian, Y.H., d'Humieres, D., and Lallemand, P. "Lattice BGK Models for Navier-Stokes Equation." *Europhysics Letters*, 17(6), 1992. https://doi.org/10.1209/0295-5075/17/6/001
+- Berlekamp, E.R., Conway, J.H., and Guy, R.K. *Winning Ways for Your Mathematical Plays*, Vol. 2. A K Peters, 2003.

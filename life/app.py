@@ -883,6 +883,12 @@ class App:
         self.fluid_preset_name = ""
         self.fluid_viz_mode = 0         # 0=speed, 1=vorticity, 2=density
 
+        # ── Fluid of Life (CA+LBM coupled) state ──
+        self.fluidlife_mode = False
+        self.fluidlife_menu = False
+        self.fluidlife_menu_sel = 0
+        self.fluidlife_running = False
+
         # ── Wave Function Collapse state ──
         self.wfc_mode = False
         self.wfc_menu = False
