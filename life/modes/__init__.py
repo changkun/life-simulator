@@ -268,6 +268,8 @@ def register_all_modes(App):
     reg_ghost_trail(App)
     from life.modes.morph_transition import register as reg_morph
     reg_morph(App)
+    from life.modes.sparkline_hud import register as reg_sparkline_hud
+    reg_sparkline_hud(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

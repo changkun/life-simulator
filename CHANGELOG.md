@@ -4,6 +4,36 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add braille-dot sparkline metrics HUD for real-time visualization
+
+Added a toggleable overlay that renders live sparkline charts using Unicode braille characters (U+2800–U+28FF) for high-resolution mini-charts in a small terminal footprint. Four metrics — population, entropy, energy, and diversity index — update in real time as the simulation runs, turning every mode into a visual science experiment.
+
+**`life/modes/sparkline_hud.py`** (new, ~340 lines):
+- **Braille sparkline renderer**: each character encodes a 2×4 dot matrix, giving 60 data points × 12 vertical dot rows of resolution per chart (30 chars wide × 3 chars tall).
+- **4 live charts**: Population (green), Entropy (magenta), Energy (yellow), Diversity Index (cyan) — each with auto-scaling axes and compact number formatting (k/M suffixes).
+- **`SparklineHUDState`** class: 120-point history deques, frame counter, per-chart visibility toggles.
+- **Energy metric**: sum of all cell values — equals population for binary grids, captures total excitation for multi-state grids.
+- **Diversity metric**: normalized Shannon diversity index (entropy / ln(n_states)), giving a [0,1] measure of how evenly cells are distributed across states.
+- Expensive metrics (energy, diversity) sampled every 2 frames with carry-forward to avoid per-frame grid scans.
+- Panel drawn with box-drawing border, per-metric color-coded headers showing current value and min–max range.
+
+**`life/app.py`** (+15 lines):
+- `SparklineHUDState` instantiated in `__init__`.
+- Sparkline HUD update + draw hook in the render loop, positioned before the analytics overlay.
+- **Ctrl+V** toggles the HUD globally across all modes.
+- Help screen updated with the new keybinding.
+
+**`life/modes/__init__.py`** (+2 lines):
+- Registered `sparkline_hud` module via the standard `register()` pattern.
+
+**Design:** Follows the same non-invasive overlay pattern as the parameter tuner — registers methods on `App`, hooks into the render loop, and reads grid state without modifying any mode logic. The braille encoding packs ~160× more resolution than simple character-based sparklines into the same terminal area. Panel renders at top-left (py=2), safely above the analytics overlay at bottom-left.
+
+**Controls:** `Ctrl+V` toggle on/off.
+
+**Files added:** `life/modes/sparkline_hud.py`, `.ralph/round-371-thinker.json`, `.ralph/round-371-worker.json`, `.ralph/round-372-thinker.json`, `.ralph/round-372-worker.json`
+
+---
+
 ### Feature: Add full simulation snapshot save/load system
 
 Added a complete state serialization system that lets users save, browse, and restore full simulation snapshots — grid cells, ages, generation count, active mode, mode-specific parameters, viewport position, cursor, zoom, speed, colormap, heatmap state, and running state — to versioned JSON files on disk. This turns ephemeral terminal sessions into a persistent exploration journal that works across all 130+ modes.

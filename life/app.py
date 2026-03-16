@@ -35,6 +35,7 @@ from life.sound import SoundEngine
 from life.multiplayer import MultiplayerNet, MP_DEFAULT_PORT, MP_SIM_GENS
 from life.registry import MODE_CATEGORIES, MODE_REGISTRY, MODE_DISPATCH
 from life.analytics import AnalyticsState, _sparkline as _analytics_sparkline
+from life.modes.sparkline_hud import SparklineHUDState
 
 
 class App:
@@ -188,6 +189,8 @@ class App:
         self.param_tuner_active = False
         self.param_tuner_sel = 0
         self.param_tuner_params: list[dict] = []
+        # Braille sparkline metrics HUD state
+        self.sparkline_hud = SparklineHUDState()
         # Genetic algorithm evolution mode state
         self.evo_mode = False
         self.evo_menu = False              # settings menu before starting
@@ -3639,6 +3642,12 @@ class App:
                 _my, _mx = self.stdscr.getmaxyx()
                 self._draw_param_tuner_overlay(_my, _mx)
                 self._tc_refresh()
+            # ── Braille sparkline metrics HUD ──
+            if self.sparkline_hud.active and not self._any_menu_open():
+                _my, _mx = self.stdscr.getmaxyx()
+                self._sparkline_hud_update()
+                self._draw_sparkline_hud(_my, _mx)
+                self._tc_refresh()
             # ── Analytics overlay (drawn after all other overlays) ──
             if self.analytics.enabled and not self._any_menu_open():
                 _my, _mx = self.stdscr.getmaxyx()
@@ -3680,6 +3689,11 @@ class App:
                 if self.analytics.enabled:
                     self.analytics.update(self.grid, self.pop_history)
                 self._flash("Analytics ON" if self.analytics.enabled else "Analytics OFF")
+                continue
+
+            # ── Sparkline HUD toggle (Ctrl+V, global across all modes) ──
+            if key == 22:  # Ctrl+V
+                self._toggle_sparkline_hud()
                 continue
 
             # ── Timeline branching key handling ──
@@ -6044,6 +6058,7 @@ class App:
             "║  g         Genome: export/import sim config    ║",
             "║  G         Record/stop GIF (export frames)   ║",
             "║  Ctrl+U    Scripting & Choreography (.show)  ║",
+            "║  Ctrl+V    Sparkline metrics HUD (braille)   ║",
             "║  Ctrl+X    Record/export .cast or .txt file  ║",
             "║  i         Import RLE pattern file            ║",
             "║  r         Fill grid randomly                 ║",
