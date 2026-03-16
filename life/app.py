@@ -454,6 +454,17 @@ class App:
         self.evoeco_pops = []
         self.evoeco_phylo = []
         self.evoeco_log = []
+        # ── Mycelium Network mode state ──
+        self.mycelium_mode = False
+        self.mycelium_menu = False
+        self.mycelium_menu_sel = 0
+        self.mycelium_running = False
+        self.mycelium_generation = 0
+        # ── Tierra Digital Organisms mode state ──
+        self.tierra_mode = False
+        self.tierra_menu = False
+        self.tierra_menu_sel = 0
+        self.tierra_running = False
         self.immune_cytokine = []
         self.immune_antigen_map = []
         self.immune_receptor_map = []
@@ -2761,6 +2772,20 @@ class App:
             'volcano_menu', 'ocean_menu', 'weather_menu', 'blackhole_menu',
             'pexplorer_menu', 'ep_menu', 'cast_export_menu', 'script_menu',
             'moldyn_menu', 'circuit_menu', 'nntrain_menu',
+            'elab_menu', 'anc_menu', 'hyp_menu', 'gca_menu', 'smr_menu',
+            'achem_menu', 'immune_menu', 'reef_menu', 'spinglass_menu',
+            'qcirc_menu', 'psoup_menu', 'civ_menu', 'evoeco_menu',
+            'morpho_menu', 'nca_menu', 're_menu', 'br_menu', 'obs_menu',
+            'portal_menu', 'mashup_menu', 'comp_menu', 'pp_menu',
+            'flythrough_menu', 'raymarch_menu', 'shadertoy_menu',
+            'musvis_menu', 'gol3d_menu', 'alife_menu', 'doomrc_menu',
+            'orrery_menu', 'aurora_menu', 'pwave_menu', 'tornado_menu',
+            'sortvis_menu', 'dnahelix_menu', 'fourier_menu',
+            'snowfall_menu', 'fluidrope_menu', 'lissajous_menu',
+            'mazesolver_menu', 'matrix_menu', 'antfarm_menu',
+            'kaleido_menu', 'aquarium_menu', 'collider_menu',
+            'cinem_menu', 'screensaver_menu', 'dpend_menu', 'ifs_menu',
+            'snn_menu', 'mycelium_menu', 'tierra_menu',
         ]
         for attr in _menu_attrs:
             if getattr(self, attr, False):
@@ -3820,6 +3845,28 @@ class App:
                         time.sleep(delay)
                         for _ in range(self.evoeco_steps_per_frame):
                             self._evoeco_step()
+                    continue
+
+            if self.mycelium_menu:
+                if self._handle_mycelium_menu_key(key):
+                    continue
+            elif self.mycelium_mode:
+                if self._handle_mycelium_key(key):
+                    if self.mycelium_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        self._mycelium_step()
+                    continue
+
+            if self.tierra_menu:
+                if self._handle_tierra_menu_key(key):
+                    continue
+            elif self.tierra_mode:
+                if self._handle_tierra_key(key):
+                    if self.tierra_running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        self._tierra_step()
                     continue
 
             if self.hyp_menu:
@@ -6337,6 +6384,26 @@ class App:
 
         if self.evoeco_mode:
             self._draw_evoeco(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.mycelium_menu:
+            self._draw_mycelium_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.mycelium_mode:
+            self._draw_mycelium(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.tierra_menu:
+            self._draw_tierra_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.tierra_mode:
+            self._draw_tierra(max_y, max_x)
             self.stdscr.refresh()
             return
 

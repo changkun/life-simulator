@@ -357,6 +357,7 @@ def _qcirc_init(self, preset_idx):
     self.qcirc_state[0] = complex(1)  # |00...0⟩
     self.qcirc_gate_idx = 0
     self.qcirc_step_count = 0
+    self.qcirc_mode = True
     self.qcirc_running = False
     self.qcirc_menu = False
     self.qcirc_histogram = {}
