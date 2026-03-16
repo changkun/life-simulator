@@ -381,6 +381,9 @@ MODE_REGISTRY = [
     # ── Fluid of Life ──
     {"name": "Fluid of Life", "key": "—", "category": "Fluid Dynamics",
      "desc": "Hybrid CA+fluid — live cells generate buoyancy, fluid advects cells, two-way coupling with fans/heaters/walls", "attr": "fluidlife_mode", "enter": "_enter_fluidlife_mode", "exit": "_exit_fluidlife_mode"},
+    # ── Spacetime Fabric ──
+    {"name": "Spacetime Fabric", "key": "—", "category": "Physics & Waves",
+     "desc": "General-relativistic CA — grid geometry warps with mass density, causing time dilation, geodesic motion, frame dragging & gravitational waves", "attr": "spacetime_mode", "enter": "_enter_spacetime_mode", "exit": "_exit_spacetime_mode"},
 ]
 
 
@@ -502,6 +505,7 @@ _DISPATCH_OVERRIDES = {
     'symphony_mode': {'running_check': '_is_symphony_auto_stepping', 'use_delay': False},
     'reverse_life_mode': {'running_check': '_is_reverse_life_auto_stepping', 'use_delay': False},
     'fluidlife_mode': {'running_check': '_is_fluidlife_auto_stepping', 'use_delay': False},
+    'spacetime_mode': {'running_check': '_is_spacetime_auto_stepping', 'use_delay': False},
 }
 
 

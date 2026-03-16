@@ -818,3 +818,62 @@ Preset energies:
 **References**
 - The ATLAS Collaboration. "Observation of a new particle in the search for the Standard Model Higgs boson," *Physics Letters B*, 2012. https://doi.org/10.1016/j.physletb.2012.08.020
 - Evans, L. and Bryant, P. "LHC Machine," *Journal of Instrumentation*, 2008. https://doi.org/10.1088/1748-0221/3/08/S08001
+
+
+---
+
+## Spacetime Fabric
+
+**Background** — In general relativity, spacetime is not a fixed stage on which physics plays out — it is a dynamic participant, curving and warping in response to the matter and energy it contains. Einstein's field equations couple the geometry of spacetime (the metric tensor) to the stress-energy tensor of matter. This mode brings that idea into the cellular automaton domain: the grid itself is no longer a passive substrate but a dynamical entity that curves around live cell clusters, producing gravitational lensing, time dilation, geodesic motion, frame dragging, and gravitational waves. Every other mode in the project treats the grid as flat and fixed; this is the first where the topology responds to the simulation state.
+
+**Formulation** — The simulation couples a standard Game of Life (B3/S23) cellular automaton to a scalar approximation of curved spacetime:
+
+```
+1. Mass density field (Gaussian-smoothed from live cells):
+   For each live cell at (r,c), accumulate mass to neighbors within radius 4:
+     mass[r+dr][c+dc] += 1 / (1 + dr² + dc²)
+
+2. Spacetime curvature (Poisson equation approximation):
+     curvature[r][c] = (mass[r][c] / max_mass) * G
+   where G is the adjustable gravity strength (0.1 to 2.0)
+
+3. Time dilation (Schwarzschild-like):
+     dilation[r][c] = sqrt(max(0.01, 1 - 1.5 * curvature[r][c]))
+   Cells near massive clusters accumulate time slower:
+     tick_accumulator[r][c] += dilation[r][c]
+   A cell only updates its CA rule when its accumulator reaches 1.0.
+
+4. Geodesic motion (curvature gradient):
+     displacement_r = (curv[r+1][c] - curv[r-1][c]) * 0.5 * G * 3.0
+     displacement_c = (curv[r][c+1] - curv[r][c-1]) * 0.5 * G * 3.0
+   Live cells advect toward regions of higher curvature.
+
+5. Frame dragging (angular momentum from neighbor asymmetry):
+     angular[r][c] = cross product of local neighbor gradient
+   Spread with 1/(1+d²) falloff within radius 3, scaled by drag coefficient.
+   Adds tangential displacement perpendicular to radial pull.
+
+6. Gravitational waves (2D wave equation on metric perturbation):
+     velocity[r][c] = (velocity[r][c] + c² * Laplacian(gwave) + source) * damping
+     gwave[r][c] += velocity[r][c]
+   where source = (mass - prev_mass) * wave_strength * 0.5
+   damping = 0.97, c² = 0.2
+
+Combined step order: mass → curvature → dilation → angular momentum →
+  gravitational waves → geodesic advection → CA update (every ca_interval steps)
+```
+
+Presets configure four parameters — gravity (G), lensing strength, frame drag coefficient, and gravitational wave amplitude — to highlight different GR phenomena:
+- **Binary Orbit**: Two dense clusters with strong gravity, moderate lensing
+- **Gravitational Lens**: Central mass with approaching gliders that curve around it
+- **Spacetime Soup**: Random fill with strong gravity — structure emerges from curvature
+- **Glider Geodesics**: Still-life masses with gliders following curved paths
+- **Frame Drag Vortex**: Rotating pattern that drags neighbors into co-rotation
+- **Gravitational Waves**: Collapsing clusters that emit metric ripples
+
+**What to look for** — In the Fabric visualization, watch for directional arrows (→↗↑ etc.) showing the gravitational pull field around dense clusters. Gravitational waves appear as blue/cyan ripples expanding from sudden mass changes (cell death events). In the Time Dilation view, cells near massive regions glow red (nearly frozen) while isolated cells remain cyan (full speed) — you can see the CA evolving at different rates across the grid. The Curvature heatmap reveals the gravitational potential wells. Try the Binary Orbit preset to watch two clusters warp the space between them, or Glider Geodesics to see gliders bend around massive still lifes.
+
+**References**
+- Misner, C.W., Thorne, K.S., and Wheeler, J.A. *Gravitation*. W.H. Freeman, 1973. ISBN 978-0-7167-0344-0
+- Hartle, J.B. *Gravity: An Introduction to Einstein's General Relativity*. Addison-Wesley, 2003. ISBN 978-0-8053-8662-2
+- Regge, T. "General Relativity Without Coordinates," *Il Nuovo Cimento*, 1961. https://doi.org/10.1007/BF02733251

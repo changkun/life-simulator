@@ -889,6 +889,12 @@ class App:
         self.fluidlife_menu_sel = 0
         self.fluidlife_running = False
 
+        # ── Spacetime Fabric (GR-coupled CA) state ──
+        self.spacetime_mode = False
+        self.spacetime_menu = False
+        self.spacetime_menu_sel = 0
+        self.spacetime_running = False
+
         # ── Wave Function Collapse state ──
         self.wfc_mode = False
         self.wfc_menu = False

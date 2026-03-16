@@ -4,6 +4,30 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Spacetime Fabric — general-relativistic cellular automaton
+
+Introduces the first mode where the grid geometry itself is dynamically coupled to the simulation state. Live cell clusters warp the surrounding spacetime, producing five GR phenomena: time dilation (cells near mass tick slower via accumulator-based updates), geodesic motion (cells advect along curvature gradients), frame dragging (rotating patterns drag neighbors tangentially), gravitational lensing (visual distortion near dense regions), and gravitational waves (sudden mass changes emit ripples via 2D wave equation on the metric). Every other mode treats the grid as a fixed flat stage — this one makes the stage respond to the actors.
+
+**`life/modes/spacetime_fabric.py`** (new, ~860 lines):
+
+- **Mass density computation**: Gaussian-smoothed field from live cells with radius-4 kernel and 1/(1+d²) weighting.
+- **Spacetime curvature**: Derived from mass density via Poisson equation approximation, scaled by adjustable gravity parameter G.
+- **Time dilation**: Schwarzschild-like formula `sqrt(1 - 1.5φ)` drives a per-cell tick accumulator — cells only apply their CA rule when the accumulator reaches 1.0, so cells deep in gravitational wells evolve visibly slower.
+- **Geodesic advection**: Cells move along curvature gradients (gravitational attraction), with collision resolution for overlapping destinations.
+- **Frame dragging**: Angular momentum computed from neighbor asymmetry, spread with inverse-square falloff, produces tangential displacement perpendicular to radial pull.
+- **Gravitational waves**: 2D wave equation on metric perturbation field, sourced by sudden mass changes, with 0.97 damping and c²=0.2 propagation speed.
+- **4 visualization modes**: Fabric (cells + curvature distortion + wave overlay + lensing arrows), Curvature (heatmap), Time Dilation (red=frozen to cyan=normal), CA Only (pure automaton).
+- **6 presets**: Binary Orbit, Gravitational Lens, Spacetime Soup, Glider Geodesics, Frame Drag Vortex, Gravitational Waves.
+- **Runtime controls**: gravity (`g/G`), lensing (`l/L`), frame drag (`f/F`), CA interval (`c/C`), visualization (`v`), metric overlay (`m`), cursor placement (arrow keys + Enter).
+
+**`life/registry.py`**: Added "Spacetime Fabric" entry in Physics & Waves category with `spacetime_mode` attribute, custom running check (`_is_spacetime_auto_stepping`), and no-delay dispatch.
+
+**`life/modes/__init__.py`**: Added registration import for the spacetime_fabric module.
+
+**`life/app.py`**: Added initialization of `spacetime_mode`, `spacetime_menu`, `spacetime_menu_sel`, and `spacetime_running` state variables.
+
+---
+
 ### Feature: Add Fluid of Life — hybrid CA + fluid dynamics with two-way coupling
 
 Fuses Conway's Game of Life with a real-time Lattice Boltzmann fluid into a single coupled system where each physics layer feeds back into the other. Live cells inject buoyancy into the fluid; the fluid velocity field advects cells to new grid positions via semi-Lagrangian transport before the CA rule is applied. This creates qualitatively new behavior that exists only at the intersection of discrete life and continuous flow — gliders that curve along streamlines, blinkers that drift in currents, and guns that pump coherent fluid jets.
