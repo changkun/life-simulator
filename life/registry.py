@@ -367,6 +367,9 @@ MODE_REGISTRY = [
     # ── Adaptive Adversary ──
     {"name": "Adaptive Adversary", "key": "—", "category": "Meta Modes",
      "desc": "Co-evolutionary roguelike — the dungeon evolves its CA rules in real-time to exploit your behavioral weaknesses, creating an emergent arms race", "attr": "adversary_mode", "enter": "_enter_adversary_mode", "exit": "_exit_adversary_mode"},
+    # ── Simulation Archaeology ──
+    {"name": "Simulation Archaeology", "key": "—", "category": "Meta Modes",
+     "desc": "Puzzle game — reverse-engineer unknown CA rules from their frozen artifacts using clues, hypothesis testing & deduction", "attr": "archaeo_mode", "enter": "_enter_archaeo_mode", "exit": "_exit_archaeo_mode"},
 ]
 
 
@@ -474,6 +477,7 @@ _DISPATCH_OVERRIDES = {
     'collider_mode': {'use_delay': False},
     'labyrinth_mode': {'running_check': '_is_labyrinth_auto_stepping', 'use_delay': False},
     'adversary_mode': {'running_check': '_is_adversary_auto_stepping', 'use_delay': False},
+    'archaeo_mode': {'running_check': '_is_archaeo_auto_stepping'},
     'dnahelix_mode|delay': {'use_delay': False},
     'ns_mode': {'use_delay': False},
     'dpend_mode': {'use_delay': False},

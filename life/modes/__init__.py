@@ -298,6 +298,8 @@ def register_all_modes(App):
     reg_labyrinth(App)
     from life.modes.adaptive_adversary import register as reg_adversary
     reg_adversary(App)
+    from life.modes.simulation_archaeology import register as reg_archaeo
+    reg_archaeo(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

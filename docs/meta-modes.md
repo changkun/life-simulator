@@ -1266,3 +1266,59 @@ The teleport feature launches a full-size simulation with the selected point's r
 - Teleport into points near the boundary between two behavioral regions — these transition zones often produce the most surprising dynamics.
 - Rescan with `r` to see how stochastic effects change the map — regions that remain stable across rescans are genuinely robust, while flickering regions indicate sensitivity to initial conditions.
 - Combine with other modes: find an interesting rule in Phase Space, adopt it with `a`, then analyze it with Butterfly Effect or the Computation Detector to understand its internal structure.
+
+---
+
+## Simulation Archaeology
+
+**Source:** `life/modes/simulation_archaeology.py`
+
+### Background
+
+Every other mode in the simulator asks "what does this rule produce?" Simulation Archaeology inverts that question: given a mysterious frozen end-state, what rules and initial conditions produced it? This turns rule-space exploration into a detective game — you're presented with an artifact (the final state of an unknown CA run) and must deduce the birth/survival rule that created it using analytical clues, hypothesis testing, and visual comparison.
+
+The mode leverages the analytical infrastructure built by Genesis Protocol, Phase Space Navigator, and Butterfly Effect (entropy, symmetry, periodicity, stability classification) to give those measurements a gameplay purpose: they're the clues you use to narrow down your hypothesis.
+
+### How it works
+
+**Puzzle generation:** The mode selects a CA rule (difficulty-dependent), seeds a grid using one of five seed styles (random, symmetric, clustered, sparse, central), runs it forward for N generations (40–200 depending on difficulty), and captures the end-state as a frozen "artifact." Timeline snapshots and analytical measurements (entropy, symmetry, stability, population, periodicity) are computed and stored as potential clues.
+
+**Deduction loop:** You edit birth/survival digit sets directly (number keys toggle individual digits 0–8, Tab switches between editing birth vs survival), adjust initial density (+/−), and cycle seed style guesses. Press Space to simulate your candidate rule forward the same number of generations, then visually compare the result against the artifact.
+
+**Clue system:** 11 clue types are available — entropy, symmetry scores (H/V/rotation), stability classification, population percentage, birth/survival digit counts, individual digit hints, timeline animation fragments, initial density, and periodicity. Higher difficulties start with fewer free clues; requesting additional clues with `c` costs 15 points each.
+
+**Scoring:** Each puzzle starts at 100 points maximum. Each clue costs 15 points. Wrong guesses don't cost points but provide partial-credit feedback via Jaccard similarity of the guessed vs actual digit sets, rated as "very close" (>80%), "getting warm" (>50%), "some overlap" (>20%), or "not quite."
+
+**Four difficulty levels:**
+- **Easy** — well-known rules (Conway's Life, HighLife, Day & Night, Seeds, Diamoeba, Morley, Anneal, 2×2) with 4 free clues and 40-generation runs
+- **Medium** — known rules with random single-digit mutations, or semi-random rules, 2 free clues, 80 generations
+- **Hard** — fully random birth/survival sets, 1 free clue, 120 generations
+- **Expert** — fully random rules, no free clues, 200 generations
+
+### Key controls
+
+| Key | Action |
+|-----|--------|
+| **0–8** | Toggle digit in current edit set (birth or survival) |
+| **Tab** | Switch between editing birth and survival sets |
+| **Space** | Simulate candidate rule forward and view result |
+| **Enter** | Submit guess and check answer |
+| **+/−** | Adjust initial density guess |
+| **s** | Cycle seed style guess |
+| **c** | Request a clue (costs 15 points) |
+| **v** | Cycle view mode: artifact → candidate → difference → side-by-side |
+| **t** | Toggle timeline fragment animation |
+| **d** | Cycle difficulty level |
+| **n** | Skip to next puzzle |
+| **r** | Reset candidate guess to defaults |
+| **a** | Give up and reveal answer |
+| **h** | Toggle hint overlay |
+| **q / Esc** | Exit mode |
+
+### What to explore
+
+- Start on Easy to learn the visual signatures of well-known rules. Conway's Life artifacts have characteristic still-life clusters; Seeds produces distinctive flash-and-die patterns; Day & Night creates dense symmetric blobs.
+- Use the entropy clue first — it's often the most discriminating. Very low entropy suggests a rule that converges to simple still lifes; high entropy suggests chaotic or space-filling behavior.
+- The difference view (red = mismatch) is your most powerful comparison tool. Even when the overall patterns look similar, the diff highlights subtle structural disagreements.
+- On harder difficulties, use the birth/survival count clues to constrain the search space before requesting individual digit hints.
+- Timeline fragments reveal the dynamics — a rule that oscillates vs one that slowly decays vs one that explodes all look different in motion, even if their final states are superficially similar.

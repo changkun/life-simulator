@@ -4,6 +4,26 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Simulation Archaeology — puzzle game to reverse-engineer unknown CA rules from artifacts
+
+Inverts the simulator's core paradigm: instead of picking rules and watching what emerges, you're presented with a mysterious frozen end-state and must deduce what birth/survival rules produced it. A detective game played in rule-space.
+
+**`life/modes/simulation_archaeology.py`** (new, ~620 lines):
+
+- **Puzzle generation**: Selects a CA rule (difficulty-dependent), seeds a grid using one of 5 seed styles (random, symmetric, clustered, sparse, central), runs forward 40–200 generations, captures end-state as a frozen "artifact" along with timeline snapshots and analytical measurements.
+- **Deduction interface**: Direct birth/survival digit-set editing (0–8 toggles, Tab to switch B/S), density adjustment (+/−), seed style cycling. Submit guesses to check against the true answer.
+- **11 clue types**: Entropy, symmetry (H/V/rotation), stability classification, population %, birth/survival digit counts, individual digit hints, timeline animation fragments, initial density, and periodicity. Higher difficulties start with fewer free clues; additional clues cost 15 points each.
+- **Scoring**: 100 points max per puzzle, −15 per clue used, minimum 10 points on correct solve. Wrong guesses give partial-credit feedback via Jaccard similarity of digit sets.
+- **4 view modes**: Artifact only, candidate only, difference overlay (red = mismatch cells), side-by-side comparison.
+- **4 difficulty levels**: Easy (8 well-known rules + 4 clues), medium (known rules with mutations, 2 clues), hard (random rules, 1 clue), expert (random rules, no clues, 200 generations).
+- **Splash/menu screen**: Difficulty selection with descriptions, persistent score tracking across puzzles.
+
+**`life/registry.py`**: Added "Simulation Archaeology" entry in Meta Modes category with `archaeo_mode` dispatch override and custom `running_check` via `_is_archaeo_auto_stepping`.
+
+**`life/modes/__init__.py`**: Added registration call for the simulation_archaeology module.
+
+---
+
 ### Feature: Add Adaptive Adversary — co-evolutionary roguelike where the dungeon learns from how you play
 
 Fuses the Living Labyrinth (playable CA dungeon) with the Genesis Protocol (evolutionary rule discovery) into a mode where the dungeon evolves its CA rules in real-time to exploit your behavioral weaknesses. A population of 8 adversary genomes competes via co-evolution to be "most challenging but still solvable."
