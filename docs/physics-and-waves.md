@@ -1196,3 +1196,75 @@ Parameters:
 - Omori, F. "On the after-shocks of earthquakes," *Journal of the College of Science, Imperial University of Tokyo*, 7, 1894.
 - Bak, P. and Tang, C. "Earthquakes as a self-organized critical phenomenon," *Journal of Geophysical Research*, 94(B11), 1989. https://doi.org/10.1029/JB094iB11p15635
 - King, G.C.P., Stein, R.S., and Lin, J. "Static stress changes and the triggering of earthquakes," *Bulletin of the Seismological Society of America*, 84(3), 1994. https://doi.org/10.1785/BSSA0840030935
+
+
+---
+
+## Geometric Optics & Light
+
+**Background** — Geometric optics, or ray optics, treats light as rays that travel in straight lines and bend at interfaces between media according to Snell's law (described by Ibn Sahl in 984 and formalized by Willebrord Snellius in 1621). This framework explains reflection, refraction, total internal reflection, chromatic dispersion, and lens focusing — phenomena that underpin telescopes, microscopes, fiber optics, and solar concentrators. While wave optics is needed for diffraction and interference at small scales, geometric optics remains the workhorse of optical system design.
+
+**Formulation** — The simulation traces rays through a 2D scene of optical elements using parametric ray-segment intersection:
+
+```
+Ray-segment intersection:
+  Ray: P(t) = (px, py) + t * (dx, dy),  t > 0
+  Segment: S(u) = (x1, y1) + u * (x2-x1, y2-y1),  u ∈ [0, 1]
+  Solve for t and u via Cramer's rule; accept if t > 0.01 and 0 ≤ u ≤ 1
+
+Reflection (mirrors):
+  d_reflected = d - 2(d · n̂) n̂
+
+Snell's law refraction (prisms, glass blocks):
+  n₁ sin θ_i = n₂ sin θ_t
+
+  Vector form:
+    cos θ_i = -(d · n̂)          [flip n̂ if cos θ_i < 0]
+    ratio = n₁ / n₂
+    sin²θ_t = ratio² (1 - cos²θ_i)
+    If sin²θ_t > 1: total internal reflection (reflect instead)
+    cos θ_t = √(1 - sin²θ_t)
+    d_refracted = ratio · d + (ratio · cos θ_i - cos θ_t) · n̂
+
+Chromatic dispersion:
+  n(λ) = n_base + Δn(λ)
+  Spectral offsets Δn: red(-0.008), orange(-0.004), yellow(0),
+                       green(+0.005), cyan(+0.010), blue(+0.016), violet(+0.024)
+  Approximates Cauchy's equation: n(λ) ≈ A + B/λ²
+
+Thin lens deflection:
+  h = perpendicular distance from ray hit to lens center
+  θ_deflection = -atan(h / f)     [f = focal length]
+  d_new = normalize(d + sign · sin(θ) · n̂)
+
+Diffraction grating (1st order):
+  Δθ = asin(λ / (d_slit × 1000))
+  Splits ray into ±1st order beams with wavelength-dependent angles
+
+Parameters:
+  n_air   = 1.00   (refractive index of air)
+  n_glass = 1.52   (crown glass)
+  n_fiber = 1.48   (fiber optic core)
+  max_bounces = 200
+  ray_step    = 0.3 cells
+```
+
+**Presets**
+
+| Preset | Configuration | What it demonstrates |
+|--------|--------------|---------------------|
+| **Rainbow Prism** | Single glass prism (n=1.52), white light source (7 spectral rays) | Chromatic dispersion — white light splits into rainbow spectrum |
+| **Telescope** | Two convex lenses (f=15, f=8) aligned on optical axis | Refracting telescope — parallel rays converge to eyepiece focus |
+| **Microscope** | Objective (f=6) + eyepiece (f=12), nearby point source | Compound magnification from diverging source through two lens stages |
+| **Fiber Optic Cable** | 12 mirror segments forming curved waveguide | Total internal reflection guiding light through bends |
+| **Hall of Mirrors** | 6 flat mirrors at various angles, omnidirectional source | Multiple specular reflections creating complex ray patterns |
+| **Solar Concentrator** | 14-segment parabolic mirror, parallel downward rays | Caustic focusing — all rays converge to a single focal point |
+
+**Controls**: `Tab`/`e` cycle element selection, `WASD`/arrows move selected element, `[`/`]` rotate, `f`/`F` adjust focal length, `h` toggle caustic heatmap, `Space` animate source wobble, `+`/`-` adjust speed, `r` reset current preset, `R` return to preset menu, `q` exit mode.
+
+**What to look for** — Start with Rainbow Prism and watch white light enter the prism as a single beam, then emerge as seven distinct spectral colors fanned out by wavelength-dependent refraction — violet bends most, red least. Rotate the prism with `[`/`]` to see total internal reflection kick in at steep angles. The Telescope preset shows how two properly spaced lenses can collimate diverging light. In Fiber Optic Cable, rays bounce off the waveguide walls via total internal reflection, demonstrating the principle behind optical fibers. The Solar Concentrator is best viewed with the caustic heatmap (`h`): the parabolic mirror focuses parallel rays to a bright focal point, with the heatmap revealing the intensity distribution. Hall of Mirrors produces the most complex ray patterns — move mirrors with arrow keys to create kaleidoscopic interference paths.
+
+**References**
+- Hecht, E. *Optics*, 5th ed., Pearson, 2017. ISBN 978-0133977226
+- Born, M. and Wolf, E. *Principles of Optics*, 7th ed., Cambridge University Press, 1999. https://doi.org/10.1017/CBO9781139644181
+- Saleh, B.E.A. and Teich, M.C. *Fundamentals of Photonics*, 3rd ed., Wiley, 2019. https://doi.org/10.1002/9781119506874

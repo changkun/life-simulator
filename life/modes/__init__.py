@@ -338,6 +338,8 @@ def register_all_modes(App):
     reg_wfire(App)
     from life.modes.city_growth import register as reg_city
     reg_city(App)
+    from life.modes.optics import register as reg_optics
+    reg_optics(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

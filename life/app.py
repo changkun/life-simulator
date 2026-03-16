@@ -2756,6 +2756,12 @@ class App:
         self.wfire_menu_sel = 0
         self.wfire_running = False
 
+        # ── Geometric Optics state ──
+        self.optics_mode = False
+        self.optics_menu = False
+        self.optics_menu_sel = 0
+        self.optics_running = False
+
         self._rebuild_pattern_list()
 
         if pattern:

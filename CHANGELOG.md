@@ -4,6 +4,33 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Geometric Optics & Light — ray tracing through mirrors, lenses & prisms with Snell's law, dispersion, caustics & interactive element placement
+
+A geometric optics simulation where rays of light propagate through a 2D scene containing mirrors, lenses, prisms, glass blocks, and diffraction gratings. Implements Snell's law refraction with wavelength-dependent refractive indices for chromatic dispersion, total internal reflection at critical angles, thin lens deflection via focal-length approximation, and first-order diffraction grating splitting — producing visually striking spectral color separation, caustic focusing patterns, and multi-bounce reflection paths in the terminal.
+
+**`life/modes/optics.py`** (new, ~990 lines):
+
+- **Ray tracing engine**: Rays step through the scene, testing intersection against all element edges (line segments for mirrors/lenses/gratings/blocks, triangle edges for prisms) via parametric ray-segment intersection. Configurable step size (0.3 cells) and max bounces (200).
+- **Snell's law refraction**: Full vector refraction computation with proper handling of entering vs exiting media (normal direction flipping based on dot product sign). Returns `None` for total internal reflection when `sin²θ_t > 1`.
+- **Chromatic dispersion**: 7 spectral colors (red 700nm → violet 400nm) with wavelength-dependent refractive index offsets (-0.008 to +0.024 added to base n), producing rainbow splitting through prisms and glass blocks.
+- **Thin lens model**: Deflects rays based on off-axis distance h and focal length f via `θ = -atan(h/f)`, applied along the surface normal direction.
+- **Diffraction grating**: First-order angular splitting `Δθ = asin(λ / (d × 1000))` produces wavelength-dependent diffraction angles.
+- **Caustic heatmap**: Intensity grid accumulates ray hit counts per cell, rendered as a density heatmap (toggled with `h`) to visualize focusing patterns.
+- **Optical elements**: Mirror (specular reflection), Lens (thin lens deflection), Prism (equilateral triangle with 3 refracting edges), Block (rectangular glass with entry/exit refraction), Grating (wavelength-dependent splitting). All elements have position, angle, and type-specific parameters (refractive index, focal length, slit spacing).
+- **6 presets**: Rainbow Prism (white light disperses through glass prism), Telescope (two convex lenses focus parallel rays), Microscope (objective + eyepiece with diverging point source), Fiber Optic Cable (mirror-segment waveguide demonstrating TIR), Hall of Mirrors (6 angled mirrors with omnidirectional source), Solar Concentrator (14-segment parabolic mirror focusing to focal point).
+- **Interactive controls**: Tab/e cycle element selection, WASD/arrows move selected element, [/] rotate, f/F adjust focal length, h toggle caustic heatmap, Space animate source wobble, +/- speed, r reset, R menu, q exit.
+- **Light sources**: Configurable position, direction (or omnidirectional with angular spread), number of rays, and spectral composition (white = all 7 colors, or single wavelength).
+
+**`life/registry.py`**: Added "Geometric Optics & Light" entry in Physics & Waves category.
+
+**`life/modes/__init__.py`**: Added registration import for the optics module.
+
+**`life/app.py`**: Added state flags (optics_mode, optics_menu, optics_menu_sel, optics_running).
+
+**`docs/physics-and-waves.md`**: Added comprehensive documentation covering Snell's law formulation, dispersion model, thin lens equation, element types, all six presets, and references to Hecht (2017), Born & Wolf (1999), and Saleh & Teich (2007).
+
+---
+
 ### Feature: Add City Growth & Urban Simulation — emergent urban development with land-value gradients, traffic congestion feedback, gentrification & organic road growth
 
 An urban morphology simulation where residential, commercial, and industrial zones self-organize around road networks through land-value gradients, population pressure, and zoning attraction/repulsion rules. The model captures emergent phenomena including organic road network growth, traffic-driven congestion feedback loops, NIMBYism, gentrification waves, infrastructure decay/renewal cycles, and population migration — drawing on Alonso's bid-rent theory and complex systems approaches to city formation.
