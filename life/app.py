@@ -4786,35 +4786,35 @@ class App:
                 continue
             else:
                 if self._handle_key(key):
+                    # Auto-step Game of Life when running
+                    if self.running:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        self._push_history()
+                        self.grid.step()
+                        self._update_heatmap()
+                        self._record_pop()
+                        self._check_cycle()
+                        if self.analytics.enabled:
+                            self.analytics.update(self.grid, self.pop_history)
+                        if self.pattern_search_mode:
+                            self._scan_patterns()
+                        # Step the second grid in comparison mode
+                        if self.compare_mode and self.grid2:
+                            self.grid2.step()
+                            self.pop_history2.append(self.grid2.population)
+                        # Step the branch grid in timeline-branch mode
+                        self._tbranch_step()
+                        # Step all race grids
+                        if self.race_mode and self.race_grids and not self.race_finished:
+                            self._step_race()
+                        # Capture frame for GIF recording
+                        if self.recording:
+                            self._capture_recording_frame()
+                        # Play sonification
+                        if self.sound_engine.enabled:
+                            self.sound_engine.play_grid(self.grid, delay)
                     continue
-
-            if self.running:
-                delay = SPEEDS[self.speed_idx]
-                time.sleep(delay)
-                self._push_history()
-                self.grid.step()
-                self._update_heatmap()
-                self._record_pop()
-                self._check_cycle()
-                if self.analytics.enabled:
-                    self.analytics.update(self.grid, self.pop_history)
-                if self.pattern_search_mode:
-                    self._scan_patterns()
-                # Step the second grid in comparison mode
-                if self.compare_mode and self.grid2:
-                    self.grid2.step()
-                    self.pop_history2.append(self.grid2.population)
-                # Step the branch grid in timeline-branch mode
-                self._tbranch_step()
-                # Step all race grids
-                if self.race_mode and self.race_grids and not self.race_finished:
-                    self._step_race()
-                # Capture frame for GIF recording
-                if self.recording:
-                    self._capture_recording_frame()
-                # Play sonification
-                if self.sound_engine.enabled:
-                    self.sound_engine.play_grid(self.grid, delay)
 
     # ── Key handling ──
 
