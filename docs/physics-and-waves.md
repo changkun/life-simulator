@@ -1077,3 +1077,52 @@ Vortex imprinting uses superposed atan2 phase profiles with toroidal wrapping. S
 - Kosterlitz, J.M. and Thouless, D.J. "Ordering, metastability and phase transitions in two-dimensional systems," *Journal of Physics C*, 6, 1973. https://doi.org/10.1088/0022-3719/6/7/010
 - Nagaosa, N. and Tokura, Y. "Topological properties and dynamics of magnetic skyrmions," *Nature Nanotechnology*, 8, 2013. https://doi.org/10.1038/nnano.2013.243
 - Fert, A., Reyren, N., and Cros, V. "Magnetic skyrmions: advances in physics and potential applications," *Nature Reviews Materials*, 2, 2017. https://doi.org/10.1038/natrevmat.2017.31
+
+
+---
+
+## Spin Ice & Emergent Magnetic Monopoles
+
+**Background** — Spin ice is a class of geometrically frustrated magnets in which local "ice rules" (analogous to Bernal-Fowler rules in water ice) constrain spin configurations. In a square-ice lattice, each vertex has four edges carrying arrow-spins, and the ground state requires exactly two arrows pointing in and two pointing out (2-in/2-out). Violations of this constraint behave as emergent magnetic monopole quasiparticles — fractionalized excitations that carry effective magnetic charge, are connected by observable Dirac strings, and interact via a Coulomb potential. First identified experimentally in pyrochlore materials like Dy₂Ti₂O₇ (Harris et al. 1997, Castelnovo et al. 2008), spin ice represents one of the most striking examples of emergent fractionalization in condensed matter physics.
+
+This mode is scientifically distinct from the existing Ising Model (which has no geometric frustration or emergent fractionalized excitations) and the Magnetic Field Lines mode (which visualizes classical dipole fields rather than lattice-based emergent phenomena).
+
+**Formulation** — The simulation uses a square-ice lattice where horizontal edges connect vertex (r,c) to (r,c+1) and vertical edges connect vertex (r,c) to (r+1,c). Each edge carries a spin σ = ±1 representing the arrow direction.
+
+```
+Vertex charge:
+  Q(r,c) = (number of out-arrows) − (number of in-arrows)
+  Q = 0  → ice rule satisfied (neutral vertex)
+  Q > 0  → positive monopole (more out than in)
+  Q < 0  → negative monopole / antimonopole (more in than out)
+
+Energy:
+  E = J * Σ_vertices Q(r,c)² − h * Σ_horizontal_edges σ(r,c)
+
+Parameters:
+  J     — ice-rule coupling strength (default 4.0), penalizes violations quadratically
+  T     — temperature (0.01 to 20.0), controls thermal fluctuation strength
+  h     — applied magnetic field (−5.0 to 5.0), favors horizontal arrow alignment
+```
+
+Dynamics proceed via Monte Carlo Metropolis sweeps: each sweep attempts to flip every edge once. A flip is accepted if it lowers the energy; otherwise it is accepted with probability exp(−ΔE/T). The energy change is computed locally from the two vertices sharing the flipped edge, giving O(1) cost per flip attempt.
+
+**Presets** — Six configurations explore different regimes of spin-ice physics:
+- **Equilibrium Ice**: Low temperature (T=0.5) starting from a perfect ice-rule ground state — watch rare thermal fluctuations create and quickly annihilate monopole pairs while the system maintains near-perfect 2-in/2-out order
+- **Monopole Gas**: High temperature (T=8.0) producing a dense Coulomb plasma of monopoles and antimonopoles — the lattice is heavily disordered with ice-rule satisfaction dropping well below 100%
+- **Field Quench**: Starts from an ordered ice state, then at sweep 20 a sudden field (h=3.0) is applied — watch the avalanche of monopole creation as the system reorders to align with the field
+- **Dirac Strings**: Moderate temperature (T=1.5) with 3 injected monopole-antimonopole pairs — Dirac string visualization enabled by default, showing dotted lines connecting paired monopoles
+- **Kagome Ice**: Triangular frustrated variant with random initial conditions — explores ice-rule physics on a different lattice geometry with 2-in/1-out constraints
+- **Pauling Entropy**: Very low temperature (T=0.01) in a perfect ice state — demonstrates the residual entropy of the ice manifold (S/kB ≈ ln(3/2)/ln(2) ≈ 0.585 per vertex), first calculated by Linus Pauling in 1935
+
+**Visualization** — The lattice is drawn with Unicode arrows (→←↑↓) on edges colored cyan. Vertices display their charge state: neutral vertices as dim dots (·), positive monopoles as bold red ⊕, and negative antimonopoles as bold blue ⊖. When Dirac string display is enabled, dotted magenta lines (∙) connect nearest monopole-antimonopole pairs via greedy distance matching.
+
+**Controls**: `Space` play/pause, `n`/`.` single step, `t`/`T` decrease/increase temperature, `f`/`F` decrease/increase applied field, `d` toggle Dirac string display, `c` toggle charge display, `+`/`-` adjust sweeps per frame, `r` reset current preset, `R` return to preset menu, `q` exit mode.
+
+**What to look for** — Start with Equilibrium Ice and watch the lattice maintain almost perfect ice-rule order at low temperature — the title bar shows ice-rule satisfaction near 100%. Increase temperature with `T` and watch monopoles proliferate as the system crosses over from the ice-rule regime to the monopole gas. In the Dirac Strings preset, enable string display with `d` and watch how the dotted lines connecting monopole-antimonopole pairs stretch and contract as the monopoles diffuse through the lattice. The Field Quench preset provides the most dramatic dynamics: after the field kicks in at sweep 20, a cascade of spin flips creates a wave of monopoles that propagates across the lattice before the system settles into a field-aligned state. In the Pauling Entropy preset, note how the energy remains very low but the system still has exponentially many ground states — this is the macroscopic degeneracy that gives water ice its anomalous residual entropy.
+
+**References**
+- Harris, M.J. et al. "Geometrical Frustration in the Ferromagnetic Pyrochlore Ho₂Ti₂O₇," *Physical Review Letters*, 79, 1997. https://doi.org/10.1103/PhysRevLett.79.2554
+- Castelnovo, C., Moessner, R., and Sondhi, S.L. "Magnetic monopoles in spin ice," *Nature*, 451, 2008. https://doi.org/10.1038/nature06433
+- Bramwell, S.T. and Gingras, M.J.P. "Spin Ice State in Frustrated Magnetic Pyrochlore Materials," *Science*, 294, 2001. https://doi.org/10.1126/science.1064761
+- Pauling, L. "The Structure and Entropy of Ice and of Other Crystals with Some Randomness of Atomic Arrangement," *Journal of the American Chemical Society*, 57, 1935. https://doi.org/10.1021/ja01315a102

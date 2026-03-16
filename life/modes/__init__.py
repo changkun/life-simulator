@@ -326,6 +326,8 @@ def register_all_modes(App):
     reg_superfluid(App)
     from life.modes.granular_dynamics import register as reg_granular
     reg_granular(App)
+    from life.modes.spin_ice import register as reg_spinice
+    reg_spinice(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

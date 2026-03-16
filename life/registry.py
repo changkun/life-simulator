@@ -405,6 +405,9 @@ MODE_REGISTRY = [
     # ── Topological Solitons ──
     {"name": "Topological Solitons", "key": "—", "category": "Physics & Waves",
      "desc": "2D order-parameter field with vortices, antivortices, skyrmions & domain walls — topological defect dynamics and BKT transition", "attr": "topo_soliton_mode", "enter": "_enter_topo_soliton_mode", "exit": "_exit_topo_soliton_mode"},
+    # ── Spin Ice & Emergent Magnetic Monopoles ──
+    {"name": "Spin Ice & Emergent Monopoles", "key": "—", "category": "Physics & Waves",
+     "desc": "Frustrated square-ice lattice with 2-in/2-out ice rules — emergent magnetic monopoles, Dirac strings & Coulomb gas dynamics", "attr": "spinice_mode", "enter": "_enter_spinice_mode", "exit": "_exit_spinice_mode"},
 ]
 
 

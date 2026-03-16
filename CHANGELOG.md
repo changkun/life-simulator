@@ -4,6 +4,25 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Spin Ice & Emergent Magnetic Monopoles — frustrated lattice with ice rules, monopole quasiparticles & Dirac strings
+
+A 2D frustrated magnet simulation on a square-ice lattice where arrow-spins on edges obey "2-in/2-out" ice rules at each vertex. Violations behave as emergent magnetic monopole quasiparticles — fractionalized excitations that nucleate as monopole-antimonopole pairs connected by Dirac strings, diffuse as a Coulomb gas, and annihilate on contact.
+
+**`life/modes/spin_ice.py`** (new, ~702 lines):
+
+- **Monte Carlo Metropolis dynamics**: Quadratic vertex-charge energy penalty (J·Q²) drives ice-rule satisfaction, with applied field coupling for horizontal edges. Local energy computation gives O(1) cost per flip attempt.
+- **6 presets**: Equilibrium Ice (low-T ground state fluctuations), Monopole Gas (high-T Coulomb plasma), Field Quench (sudden field drives monopole avalanche at sweep 20), Dirac Strings (injected pairs with string visualization), Kagome Ice (triangular frustrated variant), Pauling Entropy (residual entropy measurement at near-zero T).
+- **Visualization**: Unicode arrows (→←↑↓) on edges, colored vertex charges (⊕ red monopoles, ⊖ blue antimonopoles, · neutral), toggleable Dirac string display connecting monopole pairs via greedy nearest-neighbor matching.
+- **Interactive controls**: t/T temperature, f/F applied field, d Dirac strings, c charge display, +/- sweeps per frame, n single step, r reset, R menu.
+
+**`life/registry.py`**: Added "Spin Ice & Emergent Monopoles" entry in Physics & Waves category.
+
+**`life/modes/__init__.py`**: Added registration import for the spin_ice module.
+
+**`docs/physics-and-waves.md`**: Added comprehensive documentation covering square-ice formulation, vertex charge definition, Monte Carlo dynamics, all six presets, visualization guide, and references to Harris et al. (1997), Castelnovo et al. (2008), Bramwell & Gingras (2001), and Pauling (1935).
+
+---
+
 ### Feature: Upgrade Traffic Flow to multi-lane NaSch with lane-changing, scenarios & fundamental diagram
 
 Rewrites the Traffic Flow mode from a basic single-lane Nagel-Schreckenberg cellular automaton into a full multi-lane highway simulation with STCA symmetric lane-changing, scenario-based road features, and real-time diagnostic visualizations.
