@@ -4,6 +4,32 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Bacterial Quorum Sensing & Biofilm Formation — density-dependent autoinducer signaling triggers collective biofilm phenotype switch with EPS matrix, water channels, nutrient/O₂ gradients, persister cells, antibiotic resistance & quorum quenching
+
+A bacterial biofilm simulation modeling quorum sensing — the density-dependent signaling mechanism by which bacteria collectively switch from free-swimming planktonic individuals to surface-attached biofilm communities. Fills the microbial collective behavior gap: the project has no mode covering bacterial decision-making, biofilm physics, or antibiotic resistance mechanics. Visually dramatic: individual bacteria swimming freely, then collectively switching phenotype as autoinducer concentration crosses the quorum threshold, secreting EPS matrix and building structured biofilm towers with water channels.
+
+**`life/modes/biofilm.py`** (new, ~1135 lines):
+
+- **Planktonic phase**: Free-swimming bacteria with chemotaxis toward nutrient gradients (strength 0.7), random walk motion, speed-capped velocity (1.0). Nutrient consumption at 0.012/tick.
+- **Quorum sensing**: Each bacterium secretes diffusible autoinducer (AI) at 0.008/tick. AI diffuses through the domain (coefficient 0.15) and decays (0.003/tick). Intracellular AI accumulates from the environment (uptake 0.02 × local concentration, intracellular decay 0.98×/tick). When intracellular AI crosses the threshold (0.25), bacteria switch from planktonic to biofilm phenotype — stop swimming, begin secreting EPS.
+- **Biofilm architecture**: Attached bacteria secrete EPS matrix (0.015/tick, max 1.0). EPS rendered as ▓ (dense, >0.5) and ░ (moderate, >0.2). Water channels (~) form in gaps surrounded by EPS (≥3 EPS neighbors, P=0.004). Mushroom tower growth: biofilm cells at top of EPS columns push upward (P=0.02).
+- **Nutrient/oxygen gradients**: Bulk fluid at top replenishes nutrients (0.02/tick) and oxygen. Nutrients diffuse (0.10) with water channel boost (+0.015). Oxygen diffuses (0.12), consumed at 0.010/tick. Creates stratified microenvironments: aerobic surface vs. anaerobic interior.
+- **Persister cells**: Bacteria in low O₂ (<0.15) or low nutrient (<0.10) zones switch to persister phenotype (◆) at P=0.02/tick. Persisters are metabolically dormant (0.001 energy cost vs. 0.005 basal), nearly immune to antibiotics (kill rate 0.0002 vs. 0.15 planktonic). Revert to biofilm when conditions improve (O₂>0.4, nutrients>0.4, P=0.01).
+- **Cell division**: When energy > 0.8 and local nutrients > 0.3, bacteria divide (P=0.03) with daughter inheriting half energy and half intracellular AI. Population capped at 800.
+- **Antibiotic challenge** (toggle `a`): Antibiotic diffuses from top, but EPS barrier reduces penetration (effective coefficient = base × max(0.05, 1 − EPS×0.9)). Kill probabilities: planktonic 0.15×concentration, biofilm 0.001×concentration×(1−shield), persister 0.0002×concentration. Demonstrates 100–1000× biofilm resistance.
+- **Quorum quenching** (toggle `Q`): Enzyme degrades AI at 0.06/tick on top of natural decay, preventing intracellular AI from reaching threshold and blocking phenotype switch.
+- **Biofilm cell detachment**: Rare stochastic detachment (P=0.002) returns biofilm cells to planktonic state with upward drift, modeling dispersal.
+- **Field diffusion**: Two helpers — `_diffuse_field` (4-neighbor averaging with optional channel boost) and `_diffuse_field_with_eps` (EPS-attenuated diffusion for antibiotic penetration).
+- **3 visualization views** (cycle with `v`): Spatial Cross-Section (EPS ▓/░/· matrix, ~ water channels, o planktonic, ● biofilm, ◆ persister, × antibiotic overlay, substrate/fluid labels), AI/Nutrient Heatmap (split left autoinducer with QS threshold coloring green→yellow→red, right nutrient/O₂ blend blue→green→red), Time-Series Graphs (10 sparklines: population, planktonic, biofilm cells, persister cells, avg autoinducer, EPS coverage, avg nutrient, avg oxygen, avg antibiotic, biofilm height).
+- **6 presets**: Wound Infection (surface colonization + planktonic in fluid), Dental Plaque (clustered attachment on tooth surface with pre-seeded AI), Catheter Colonization (nutrient-rich 1.5×, heavy surface + fluid seeding), Quorum Quenching Therapy (wound-like + QQ enzyme active from start), Nutrient-Rich Bloom (nutrients at 1.0, sparse bacteria, explosive growth), Antibiotic Pulse (pre-established biofilm with EPS, antibiotic active from start).
+- **Controls**: Space=play/pause, v=cycle views, n=step, +/-=speed, a=toggle antibiotic, Q=toggle quorum quenching, r=restart, m=menu.
+
+**`life/registry.py`**: Added "Bacterial Quorum Sensing & Biofilm Formation" entry in Chemical & Biological category.
+
+**`life/modes/__init__.py`**: Added registration import for the biofilm module.
+
+---
+
 ### Feature: Add Blood Vessel Network & Angiogenesis — pulsatile vascular network with VEGF-driven sprouting, Murray's law remodeling, flowing RBCs, heartbeat pressure waves, oxygen perfusion & toggleable tumor angiogenesis
 
 A blood vessel simulation modeling angiogenesis — the growth of new blood vessels from existing vasculature. Fills the cardiovascular / medical-biology gap: the project has no circulatory system or vascular growth simulation. Visually striking: a beating vascular tree with flowing red blood cells growing in real time.

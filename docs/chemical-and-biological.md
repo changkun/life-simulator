@@ -898,3 +898,75 @@ The vascular network is a graph of `VesselNode` junctions (with pressure, oxygen
 - Murray, C. D. "The physiological principle of minimum work. I. The vascular system and the cost of blood volume." *Proceedings of the National Academy of Sciences* 12 (1926): 207-214. https://doi.org/10.1073/pnas.12.3.207
 - Gerhardt, H. et al. "VEGF guides angiogenic sprouting utilizing endothelial tip cell filopodia." *Journal of Cell Biology* 161 (2003): 1163-1177. https://doi.org/10.1083/jcb.200302047
 - Carmeliet, P. & Jain, R. K. "Angiogenesis in cancer and other diseases." *Nature* 407 (2000): 249-257. https://doi.org/10.1038/35025220
+
+---
+
+## Bacterial Quorum Sensing & Biofilm Formation
+
+**Background** — Biofilms are structured communities of bacteria enclosed in a self-produced extracellular polymeric substance (EPS) matrix. They are the dominant mode of bacterial life in nature — over 80% of bacterial infections involve biofilms. The transition from free-swimming (planktonic) to surface-attached (sessile) lifestyle is governed by quorum sensing: a cell-density-dependent signaling system where bacteria secrete small diffusible molecules called autoinducers. When the local autoinducer concentration crosses a threshold, bacteria collectively switch gene expression programs — halting flagellar motility, activating EPS secretion, and assembling into architecturally complex communities with water channels, nutrient gradients, and specialized cell types including metabolically dormant persister cells that tolerate antibiotics.
+
+**Formulation** — The simulation models a 2D cross-section of a fluid–surface interface. Bulk fluid (nutrient/oxygen reservoir) sits at the top; the substrate surface sits at the bottom. Bacteria exist as individual agents with position, velocity, phenotype (planktonic/biofilm/persister), intracellular autoinducer level, energy, and age. Five scalar fields cover the domain: nutrients, oxygen, autoinducer, EPS, and antibiotic — each subject to diffusion and decay.
+
+```
+Autoinducer dynamics:
+    Secretion: AI_local += 0.008 per bacterium per tick
+    Diffusion: 4-neighbor averaging, coefficient 0.15
+    Decay: AI -= 0.003/tick (+ 0.06/tick if quorum quenching active)
+    Intracellular uptake: ai_internal += 0.02 × AI_local
+    Intracellular decay: ai_internal *= 0.98/tick
+    Phenotype switch: if ai_internal ≥ 0.25 → biofilm
+
+Nutrient/oxygen:
+    Replenishment from bulk fluid (row 0): +0.02/tick nutrients, +0.03/tick O₂
+    Diffusion: nutrients 0.10, oxygen 0.12
+    Water channel boost: +0.015 effective diffusion coefficient
+    Consumption: planktonic 0.012/tick, biofilm 0.008/tick, O₂ 0.010/tick
+
+EPS matrix:
+    Biofilm cells secrete at 0.015/tick, max 1.0
+    Slow diffusion: coefficient 0.03 (spreading of matrix material)
+
+Antibiotic penetration:
+    Diffusion through EPS: effective_coeff = 0.02 × max(0.05, 1.0 − EPS × 0.9)
+    Kill probabilities per tick:
+        Planktonic: 0.15 × [antibiotic]
+        Biofilm:    0.001 × [antibiotic] × (1 − min(0.9, EPS × 0.8))
+        Persister:  0.0002 × [antibiotic]
+    Resistance ratio: ~100–1000× (biofilm/persister vs. planktonic)
+
+Persister transition:
+    If local O₂ < 0.15 or nutrients < 0.10: P(switch) = 0.02/tick
+    Reversion: if O₂ > 0.4 and nutrients > 0.4: P(revert) = 0.01/tick
+    Metabolic cost: 0.001/tick (vs. 0.005 basal for active cells)
+
+Chemotaxis (planktonic):
+    Sense nutrient gradient in 8-neighborhood
+    Velocity blend: v = v × (1 − 0.7) + gradient × 0.7
+    Speed cap: ||v|| ≤ 1.0
+
+Cell division:
+    Requires: energy > 0.8, local nutrients > 0.3
+    Probability: 0.03/tick, population cap 800
+    Daughter receives half energy and half intracellular AI
+```
+
+The simulation domain is oriented with bulk fluid at the top (row 0) and substrate at the bottom. Nutrients and oxygen are replenished at the top, creating natural gradients as biofilm grows upward from the surface. Water channels form stochastically in gaps within the EPS matrix (gaps surrounded by ≥3 EPS-rich neighbors at P=0.004/tick), enhancing nutrient delivery to interior cells. Mushroom-shaped towers grow as surface biofilm cells push upward (P=0.02/tick at EPS column tops).
+
+**Presets** — Six scenarios illustrate distinct biofilm dynamics:
+
+| Preset | Configuration | What to watch |
+|--------|--------------|---------------|
+| Wound Infection | 40 bacteria on wound surface + 20 planktonic in fluid | Gradual AI accumulation → sudden collective switch → biofilm expands from surface |
+| Dental Plaque | 5 clustered colonies on tooth surface, pre-seeded AI (0.1–0.2) | Multi-site biofilm nucleation, merging colonies, acid gradient formation |
+| Catheter Colonization | 1.5× nutrients, 50 surface + 30 fluid bacteria | Rapid colonization in nutrient-rich environment, thick EPS |
+| Quorum Quenching Therapy | Wound-like setup + QQ enzyme active (0.06/tick AI degradation) | Bacteria grow but never reach QS threshold — no biofilm forms |
+| Nutrient-Rich Bloom | All nutrients at 1.0, only 15 sparse bacteria | Explosive planktonic growth → sudden density-triggered biofilm transition |
+| Antibiotic Pulse | Pre-established biofilm (80 cells with EPS 0.3+), antibiotic from top | Planktonic cells die rapidly, biofilm/persister cells survive behind EPS barrier |
+
+**What to look for** — In the Spatial Cross-Section view, watch planktonic cells (green `o`) swim toward nutrients via chemotaxis, then collectively switch to biofilm cells (yellow `●`) as autoinducer builds up — the phenotype switch is sudden and coordinated, a hallmark of quorum sensing. The EPS matrix (amber `▓`/`░`) grows around attached cells, with water channels (`~` in blue) forming in gaps. Deep within the biofilm, persister cells (cyan `◆`) appear where oxygen and nutrients are depleted. Toggle antibiotic with `a` to see rapid planktonic death while the biofilm community persists — the EPS barrier attenuates antibiotic penetration by up to 95%. Toggle quorum quenching with `Q` to see bacteria that grow but can never coordinate their biofilm switch. In the Heatmap view, the left panel shows autoinducer concentration (green below threshold, yellow at threshold, red above) while the right panel shows nutrient/oxygen availability (blue=rich, red=depleted). The sparkline graphs track 10 metrics in real time: total population, planktonic count, biofilm cell count, persister count, average autoinducer, EPS coverage fraction, average nutrients, average oxygen, average antibiotic, and biofilm height.
+
+**References**
+- Bassler, B. L. & Losick, R. "Bacterially speaking." *Cell* 125 (2006): 237-246. https://doi.org/10.1016/j.cell.2006.04.001
+- Flemming, H.-C. et al. "Biofilms: an emergent form of bacterial life." *Nature Reviews Microbiology* 14 (2016): 563-575. https://doi.org/10.1038/nrmicro.2016.94
+- Stewart, P. S. & Costerton, J. W. "Antibiotic resistance of bacteria in biofilms." *The Lancet* 358 (2001): 135-138. https://doi.org/10.1016/S0140-6736(01)05321-1
+- Dong, Y.-H. et al. "Quenching quorum-sensing-dependent bacterial infection by an N-acyl homoserine lactonase." *Nature* 411 (2001): 813-817. https://doi.org/10.1038/35081101

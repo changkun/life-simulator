@@ -360,6 +360,8 @@ def register_all_modes(App):
     reg_myco(App)
     from life.modes.angiogenesis import register as reg_angio
     reg_angio(App)
+    from life.modes.biofilm import register as reg_biofilm
+    reg_biofilm(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

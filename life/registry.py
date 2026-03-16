@@ -454,6 +454,9 @@ MODE_REGISTRY = [
     # ── Blood Vessel Network & Angiogenesis ──
     {"name": "Blood Vessel Network & Angiogenesis", "key": "—", "category": "Chemical & Biological",
      "desc": "Pulsatile vascular network with angiogenic sprouting toward VEGF gradients, Murray's law remodeling, flowing RBCs, heartbeat pressure waves, oxygen perfusion & toggleable tumor hijacking the vasculature", "attr": "angio_mode", "enter": "_enter_angio_mode", "exit": "_exit_angio_mode"},
+    # ── Bacterial Quorum Sensing & Biofilm Formation ──
+    {"name": "Bacterial Quorum Sensing & Biofilm Formation", "key": "—", "category": "Chemical & Biological",
+     "desc": "Bacteria sense density via autoinducer signaling — cross threshold triggers collective biofilm phenotype switch with EPS matrix, water channels, nutrient/O₂ gradients, persister cells, antibiotic resistance & quorum quenching", "attr": "biofilm_mode", "enter": "_enter_biofilm_mode", "exit": "_exit_biofilm_mode"},
 ]
 
 
