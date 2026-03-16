@@ -4,6 +4,36 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add 2D spatial frequency spectrum overlay
+
+Added a real-time 2D Discrete Fourier Transform overlay that reveals hidden periodic structures, symmetry, and standing waves in any running simulation. The spectrum panel renders the log-magnitude frequency domain using the inferno colormap, DC-centered so symmetric patterns produce symmetric spectra. Works universally across all 130+ modes via the existing `_get_minimap_data()` sampling interface.
+
+**`life/modes/spectrum.py`** (new, ~310 lines):
+- **Pure-Python 2D DFT**: separable row-then-column approach with pre-computed twiddle factors for O(N³) efficiency. No external dependencies.
+- **DC-centered shift**: zero-frequency component placed at panel center, matching standard spectral analysis conventions.
+- **Log-magnitude scaling**: `log1p()` compression with normalisation to [0,1] for perceptual clarity across dynamic ranges.
+- **Adaptive caching**: recomputes every 3 draw frames to balance responsiveness with performance.
+- **Configurable resolution**: 8×8 to 64×64 DFT size, adjustable at runtime with `{`/`}`.
+- **Inferno colormap rendering**: uses truecolor `tc_buf` for smooth gradient display via `colormap_rgb()`.
+- **Panel layout**: bordered box in the bottom-left corner, sized to fit within 1/3 of the terminal.
+- **Status badge**: top-right indicator showing current DFT resolution when active.
+
+**`life/app.py`** (+11 lines):
+- State initialisation via `_spectrum_init()` in `__init__`.
+- Panel and indicator drawing after ghost trail overlay, with `_tc_refresh()` call for truecolor output.
+- Key dispatch to `_spectrum_handle_key()` in the overlay key chain.
+
+**`life/modes/__init__.py`** (+2 lines):
+- Registered `spectrum` module via the standard `register()` pattern.
+
+**Controls:**
+- `y` — toggle spectrum overlay on/off
+- `{` / `}` — decrease/increase DFT resolution (8→16→32→64)
+
+**Design:** Follows the same overlay architecture as ghost trail and long-exposure: a separate module that registers methods onto the App class, with state init, key handling, drawing, and indicator as independent hooks. The DFT is computed from scratch in pure Python using a separable 1D-along-rows then 1D-along-columns approach, consistent with the project's zero-dependency philosophy.
+
+---
+
 ### Feature: Add mouse interaction support for click-to-draw, scroll-zoom, and drag-to-pan
 
 Added full mouse support using curses' built-in `mousemask()`/`getmouse()` — zero new dependencies. Every existing mode benefits from the new input layer.

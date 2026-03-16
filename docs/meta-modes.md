@@ -687,3 +687,39 @@ Duration is configurable from 10 to 120 frames (default 45, roughly 1.5 seconds 
 - Use `[` / `]` to shorten or lengthen the transition duration — short (10 frames) feels snappy, long (90+ frames) feels dreamlike.
 - Cycle easing curves with `Ctrl+T` to compare linear (mechanical), smooth (natural), and ease-in-out (cinematic) fade profiles.
 - Enable morph transitions alongside the screensaver/demo-reel mode for an unattended visual showcase with seamless mode changes.
+
+---
+
+## 2D Spatial Frequency Spectrum
+
+**Source:** `life/modes/spectrum.py`
+
+### Background
+
+The 2D Spatial Frequency Spectrum overlay performs a Discrete Fourier Transform on any running simulation's grid and displays the frequency-domain magnitude as a colorful panel. It reveals hidden periodic structures — standing waves, lattice patterns, rotational symmetry, oscillation frequencies — that are invisible in the spatial domain. Like ghost trail and long-exposure, it works as a universal overlay on all 130+ modes without modifying any mode logic.
+
+### How it works
+
+The overlay samples the current simulation state into an N×N grid (default 32×32) via `_get_minimap_data()`, the same universal sampling interface used by the minimap. The 2D DFT is computed using a separable approach:
+
+```
+For each row:    X_row[k] = Σ_n x[n] · e^(-j2πkn/N)
+For each column: X[k_r, k_c] = Σ_n X_row[n, k_c] · e^(-j2πk_r·n/N)
+```
+
+Pre-computed twiddle factor tables (`cos_table`, `sin_table`) avoid redundant trigonometric calls, bringing the complexity to O(N³) for the full 2D transform. The second pass handles complex-valued input from the row transform using the identity `(a + bi)(cos θ - i sin θ) = (a cos θ + b sin θ) + i(b cos θ - a sin θ)`.
+
+The resulting magnitude spectrum is DC-centered by swapping quadrants (shifting by N/2 in both axes), so the zero-frequency component appears at the center of the panel. Log-magnitude scaling (`log1p`) compresses the wide dynamic range for perceptual clarity, and values are normalised to [0, 1] for colormap lookup.
+
+Rendering uses the inferno colormap via `colormap_rgb()` into the truecolor buffer (`tc_buf`), producing a smooth gradient from black (no energy) through purple and orange to yellow (peak energy). A bordered panel is drawn in the bottom-left corner, sized to at most 1/3 of the terminal in each dimension. A status badge in the top-right corner shows the current DFT resolution.
+
+Caching recomputes the spectrum every 3 draw frames to stay responsive without introducing lag on larger resolutions.
+
+### What to explore
+
+- Toggle the spectrum on Game of Life glider guns to see the directional frequency signature of repeating structures.
+- Run it on Wave Equation simulations to watch standing wave modes appear as bright spots in the frequency domain.
+- Compare Reaction-Diffusion spots vs. worms: spots produce ring-like spectra (isotropic), worms produce directional bands.
+- Increase resolution to 64×64 with `}` for finer frequency discrimination on large grids.
+- Decrease to 8×8 with `{` for a fast, coarse overview that updates with minimal lag.
+- Combine with ghost trail for simultaneous temporal and spectral analysis of any simulation.
