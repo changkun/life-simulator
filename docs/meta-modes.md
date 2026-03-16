@@ -1151,6 +1151,67 @@ The next round breeds from the best: crossover between hall-of-fame members and 
 
 ---
 
+## Adaptive Adversary
+
+**Source:** `life/modes/adaptive_adversary.py`
+
+### Background
+
+Adaptive Adversary is a co-evolutionary roguelike that fuses two prior modes: the Living Labyrinth (playable CA dungeon) and the Genesis Protocol (evolutionary rule-space search). The result is a dungeon that *learns from how you play* — tracking your movement patterns, item preferences, hesitancy, and path predictability, then evolving its CA ruleset between levels to exploit your specific behavioral weaknesses. A population of adversary genomes competes to be "most challenging but still solvable," creating an emergent arms race between human intuition and algorithmic evolution.
+
+The concept draws on competitive co-evolution (Hillis 1990, Sims 1994): rather than optimizing against a fixed objective, the adversary and player mutually adapt, producing escalating complexity. This is the project's core theme — emergence through interaction — made directly participatory.
+
+### How it works
+
+The player navigates the same roguelike structure as the Living Labyrinth: maze generation via recursive backtracker with 30% extra passage opening, turn-based movement, collectible items (Freeze/Reverse/Mutate), and a CA that evolves the dungeon walls each turn.
+
+The key addition is the adversary layer, which operates on three timescales:
+
+**Within a level** — a player behavior profile accumulates statistics:
+- Movement direction counts (up/down/left/right/wait)
+- Item usage by type (freeze, reverse, mutate)
+- Turns to exit, deaths, direction changes
+- Position trail for predictability analysis
+
+**Between levels** — the weakness analyzer examines the profile and produces targeted adaptations:
+- **Directional bias** (>35% in one direction) → evolve asymmetric corridor collapse from the favored direction
+- **Item dependency** (>50% usage of one type) → evolve counters (e.g., freeze-dependent → faster wall regrowth; reverse-dependent → more volatile dynamics)
+- **Hesitancy** (>20% wait moves) → evolve aggressive wall encroachment
+- **Path predictability** (low direction-change rate) → evolve corridor traps
+
+**Across generations** — a population of 8 adversary genomes evolves via:
+- **Genome representation**: birth set, survival set, asymmetry bias (0–1), wall aggression (0.1–1.5)
+- **Fitness function**: base score + weakness-targeting bonuses × solvability multiplier. The solvability sweet spot rewards 30–80 turn completions (×1.3), penalizes trivial (<15 turns, ×0.5) or tedious (>150 turns, ×0.7) levels, and slightly penalizes player death (×0.85)
+- **Selection**: elite preservation (top 3) + crossover from top half + point mutation (18% per gene) + one random genome for exploration
+- **Targeted mutation**: after standard evolution, the best genome receives additional mutations tuned to the player's detected weaknesses
+
+A BFS solvability check runs after each level generation; if no path exists from player to exit, a guaranteed corridor is carved.
+
+### Controls
+
+| Key | Action |
+|-----|--------|
+| **Arrows / WASD / hjkl** | Move player (`@`) |
+| **Space** | Wait one turn |
+| **f** | Use Freeze item (locks walls in radius for 10 turns) |
+| **v** | Use Reverse item (rewinds CA state locally) |
+| **m** | Use Mutate item (randomly flips cells nearby) |
+| **+/-** | Adjust CA ticks per player move |
+| **TAB** | Toggle Adversary Report overlay |
+| **?** | Toggle help overlay |
+| **Esc / q** | Exit Adaptive Adversary |
+
+### What to explore
+
+- Play several levels naturally, then press TAB to read the Adversary Report — it shows your movement bar chart, item usage, detected behavioral patterns, and exactly how the dungeon adapted. Try deliberately changing your strategy and watch the adversary re-adapt.
+- If you always go right, the dungeon will evolve asymmetric rules that collapse corridors from the right. Counter by varying your approach direction.
+- Heavy Freeze usage triggers faster wall regrowth — the dungeon learns to make your favorite tool less effective. Try rationing items or switching to Mutate.
+- Watch the evolution generation counter climb. Early levels feel random; by generation 5–10 the adversary has converged on rules tuned to your play style.
+- The solvability sweet spot means the dungeon *wants* to challenge you, not kill you. If you die too often, the adversary backs off slightly. If you breeze through, it escalates.
+- Compare the CA behavior across levels — you're watching natural selection in real time, with yourself as the selection pressure.
+
+---
+
 ## Phase Space Navigator
 
 **Source:** `life/modes/phase_space.py`

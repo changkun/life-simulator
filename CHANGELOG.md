@@ -4,6 +4,26 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Adaptive Adversary — co-evolutionary roguelike where the dungeon learns from how you play
+
+Fuses the Living Labyrinth (playable CA dungeon) with the Genesis Protocol (evolutionary rule discovery) into a mode where the dungeon evolves its CA rules in real-time to exploit your behavioral weaknesses. A population of 8 adversary genomes competes via co-evolution to be "most challenging but still solvable."
+
+**`life/modes/adaptive_adversary.py`** (new, ~930 lines):
+
+- **Player behavior tracking**: Records movement directions, item usage (freeze/reverse/mutate), turns-to-exit, deaths, direction changes, and path predictability into a persistent player profile.
+- **Weakness analysis engine**: Detects directional bias (>35%), item dependency (>50% single-type usage), hesitancy (high wait ratio), and path predictability (low direction-change rate). Generates human-readable adaptation descriptions.
+- **Adversary genome**: Birth/survival sets plus `asymmetry_bias` (corridor collapse direction, 0–1) and `wall_aggression` (regrowth speed, 0.1–1.5). Supports uniform crossover, point mutation (18%), and targeted mutation based on detected weaknesses.
+- **Fitness function**: Scores genomes by weakness-targeting effectiveness × solvability multiplier. Sweet spot: 30–80 turn completions (×1.3 bonus); penalizes trivial, tedious, or lethal levels.
+- **Population evolution**: Elite preservation (top 3) + crossover from top half + random exploration genome. After standard evolution, applies targeted mutations tuned to specific player patterns (e.g., freeze-dependent → add birth conditions for faster wall regrowth).
+- **Adversary Report** (TAB key): Overlay showing movement direction bar charts, item usage breakdown, detected patterns, evolution generation/population status, and adaptation history.
+- **Solvability guarantee**: BFS path check after generation; carves guaranteed corridor if none exists.
+
+**`life/registry.py`**: Added "Adaptive Adversary" entry in Meta Modes category with `adversary_mode` dispatch override (turn-based, no delay).
+
+**`life/modes/__init__.py`**: Added registration call for the adaptive_adversary module.
+
+---
+
 ### Feature: Add Living Labyrinth — playable roguelike where the dungeon IS a cellular automaton
 
 Added the project's first interactive/participant mode: a turn-based roguelike where the player navigates a maze that's alive. Walls grow and decay according to CA rules, corridors shift and close, and you must reach the exit portal before paths seal shut. Different CA rules create radically different gameplay — from hostile fast-collapsing mazes to stable drifting labyrinths.

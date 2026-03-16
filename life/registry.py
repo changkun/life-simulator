@@ -364,6 +364,9 @@ MODE_REGISTRY = [
     # ── Living Labyrinth ──
     {"name": "Living Labyrinth", "key": "—", "category": "Procedural & Computational",
      "desc": "Playable roguelike where the dungeon IS a cellular automaton — navigate shifting walls, collect items, reach the exit before paths seal shut", "attr": "labyrinth_mode", "enter": "_enter_labyrinth_mode", "exit": "_exit_labyrinth_mode"},
+    # ── Adaptive Adversary ──
+    {"name": "Adaptive Adversary", "key": "—", "category": "Meta Modes",
+     "desc": "Co-evolutionary roguelike — the dungeon evolves its CA rules in real-time to exploit your behavioral weaknesses, creating an emergent arms race", "attr": "adversary_mode", "enter": "_enter_adversary_mode", "exit": "_exit_adversary_mode"},
 ]
 
 
@@ -470,6 +473,7 @@ _DISPATCH_OVERRIDES = {
     'aquarium_mode': {'use_delay': False},
     'collider_mode': {'use_delay': False},
     'labyrinth_mode': {'running_check': '_is_labyrinth_auto_stepping', 'use_delay': False},
+    'adversary_mode': {'running_check': '_is_adversary_auto_stepping', 'use_delay': False},
     'dnahelix_mode|delay': {'use_delay': False},
     'ns_mode': {'use_delay': False},
     'dpend_mode': {'use_delay': False},
