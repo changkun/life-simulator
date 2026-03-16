@@ -659,6 +659,8 @@ class App:
         self.pp_frame_count = 0                # monotonic frame counter
         self.pp_trail_buf: list = []           # previous frames for motion trails
         self.pp_trail_depth = 3                # trail history length
+        # Ghost trail / temporal echo layer (initialised by _ghost_trail_init)
+        self._ghost_trail_init()
         # Wolfram 1D elementary cellular automaton mode
         self.wolfram_mode = False
         self.wolfram_rule = 30           # current rule number (0-255)
@@ -3586,6 +3588,9 @@ class App:
                 self._pp_draw_menu()
             elif self.pp_active and not self._any_menu_open():
                 self._pp_draw_indicator()
+            # ── Ghost trail indicator overlay ──
+            if self.ghost_trail_active and not self._any_menu_open():
+                self._ghost_trail_draw_indicator()
             # ── Screensaver overlay (drawn after sub-mode content) ──
             if self.screensaver_mode and self.screensaver_running and not self.screensaver_menu:
                 _my, _mx = self.stdscr.getmaxyx()
@@ -3681,6 +3686,10 @@ class App:
                 self._toggle_param_tuner()
                 continue
             if self.param_tuner_active and self._handle_param_tuner_key(key):
+                continue
+
+            # ── Ghost trail key handling ──
+            if self._ghost_trail_handle_key(key):
                 continue
 
             # ── Post-processing pipeline key handling ──
@@ -5166,6 +5175,10 @@ class App:
 
     def _tc_refresh(self):
         """Refresh curses screen then overlay any buffered truecolor cells."""
+        # Ghost trail: capture current content and inject faded echoes
+        # (only on the first _tc_refresh per draw cycle — the main mode content)
+        if self.ghost_trail_active and not self._ghost_frame_done:
+            self._ghost_trail_process()
         self.stdscr.refresh()
         if self.tc_buf.enabled and self.tc_buf.cells:
             self.tc_buf.render()
@@ -5173,6 +5186,7 @@ class App:
     def _draw(self):
         self.stdscr.erase()
         self.tc_buf.clear()
+        self._ghost_frame_done = False
         max_y, max_x = self.stdscr.getmaxyx()
 
         # ── Script mode: has extra overlay, handled explicitly ──
@@ -5576,6 +5590,8 @@ class App:
                 mode += f"  │  ⏺ CAST({len(self.cast_frames)})"
             if self.sound_engine.enabled:
                 mode += "  │  ♪ SOUND"
+            if self.ghost_trail_active:
+                mode += f"  │  GHOST({self.ghost_trail_depth})"
             if self.sonify_enabled:
                 mode += "  │  ♫ SONIFY"
             if self.hex_mode:

@@ -264,6 +264,8 @@ def register_all_modes(App):
     reg_spinglass(App)
     from life.modes.tierra import register as reg_tierra
     reg_tierra(App)
+    from life.modes.ghost_trail import register as reg_ghost_trail
+    reg_ghost_trail(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

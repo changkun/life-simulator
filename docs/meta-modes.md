@@ -505,6 +505,36 @@ Each cell's genome is a `(birth_bits, survival_bits)` pair. Alive cells check su
 
 ---
 
+## Ghost Trail / Temporal Echo
+
+**Source:** `life/modes/ghost_trail.py`
+
+### Background
+
+Ghost Trail adds a temporal echo rendering layer that overlays fading afterimages from previous frames onto any simulation mode. It makes motion visible: particles leave streaks, wavefronts show their propagation paths, cellular automata reveal their recent evolution, and flocking agents draw luminous trails. The feature enhances all 125+ modes at once without modifying any mode logic.
+
+### How it works
+
+Each draw cycle, the system captures a snapshot of every occupied cell on screen — both curses-rendered cells (via `inch()`) and truecolor cells (from `tc_buf`). Snapshots are stored in a ring buffer sized to `trail_depth + 1` frames.
+
+When rendering echoes, the system iterates from the most recent past frame to the oldest. For each cell that was occupied in a past frame but is *not* occupied in the current frame (and hasn't been claimed by a newer echo), a dimmed truecolor glyph is emitted into `tc_buf`. Echo glyphs progress from dense to sparse with age: `▓ → ▒ → ░ → ·`.
+
+Color dimming is RGB-aware: truecolor cells decay their original RGB values by the decay factor; curses-only cells derive a base color from the active colormap. Two decay curves are available:
+- **Exponential** (default): `factor = 0.65^age` — rapid falloff, sharp trails
+- **Linear**: `factor = 1 - age/(depth+1)` — even fade, longer visible tails
+
+The entire pipeline hooks into `_tc_refresh()`, running once per draw cycle before the truecolor buffer is rendered to the terminal.
+
+### What to explore
+
+- Toggle ghost trail on Boids or N-Body to see orbital paths and flocking trajectories materialize.
+- Use exponential decay on Physarum to highlight active growth fronts while old trails vanish quickly.
+- Switch to linear decay on slow simulations (Ising, Lenia) for a smoother, longer-lasting echo effect.
+- Increase trail depth to 15–20 frames on fast-moving simulations for dramatic light-painting effects.
+- Combine with the Visual FX Pipeline (bloom + ghost trail) for neon afterglow aesthetics.
+
+---
+
 ## Parameter Tuner
 
 **Source:** `life/modes/param_tuner.py`

@@ -4,6 +4,39 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Rendering: Add ghost trail / temporal echo layer for all simulation modes
+
+Added a rendering overlay that captures frame snapshots and composites fading afterimages from previous frames onto any active simulation mode. Particles leave streaks, wavefronts show propagation paths, cellular automata reveal their evolution — all without modifying any mode logic.
+
+**`life/modes/ghost_trail.py`** (new, ~190 lines):
+- Frame capture via `inch()` (curses cells) and `tc_buf.cells` (truecolor cells), stored as `(y, x) -> (char, r, g, b)` dicts in a ring buffer
+- Echo injection: iterates stored frames newest-to-oldest, rendering dimmed truecolor glyphs (`▓▒░·`) at positions occupied in past frames but empty in the current frame
+- Two decay curves: exponential (`0.65^age`, default) and linear; toggled with Ctrl+G
+- RGB-aware dimming: truecolor cells decay their original RGB; curses-only cells derive color from the active colormap via `colormap_rgb()`
+- Trail depth adjustable 1–20 frames with `<`/`>` keys
+- Status badge overlay and status bar indicator (`GHOST(N)`)
+
+**`life/app.py`** (+16 lines):
+- `_ghost_trail_init()` call in `__init__` to set up state variables
+- Ghost trail indicator drawn after post-processing indicator
+- Key handling hook before post-processing pipeline dispatch
+- Frame capture/inject hook in `_tc_refresh()` (runs once per draw cycle via `_ghost_frame_done` flag)
+- `_ghost_frame_done` reset at top of `_draw()`
+- Status bar shows `GHOST(depth)` when active
+
+**`life/modes/__init__.py`** (+2 lines):
+- Registered `ghost_trail` module in `register_all_modes()`
+
+**Design:** Non-invasive — hooks into the existing truecolor pipeline at the `_tc_refresh()` boundary, capturing whatever the active mode drew and injecting echo cells into `tc_buf` before the truecolor render pass. Works with all 125+ modes. The `g` key toggles the feature; no mode needs to know about it.
+
+**Controls:** `g` toggle on/off, `<`/`>` trail depth, Ctrl+G cycle decay curve.
+
+**Tests:** 5913 passed, 6 skipped — all green.
+
+**Files added:** `.ralph/round-369-thinker.json`, `.ralph/round-369-worker.json`
+
+---
+
 ### Feature: Add real-time parameter tuning overlay for all simulation modes
 
 Added an interactive HUD overlay (`P` key) that lets users adjust any mode's simulation constants in real-time while the simulation keeps running. This turns passive viewing into active exploration — sweep gravity, diffusion rates, coupling strengths, and temperatures with immediate visual feedback.
