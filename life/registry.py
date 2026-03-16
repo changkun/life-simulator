@@ -197,6 +197,9 @@ MODE_REGISTRY = [
     # ── Solar System Orrery ──
     {"name": "Solar System Orrery", "key": "Ctrl+Shift+Y", "category": "Physics & Waves",
      "desc": "Overhead solar system view with Keplerian orbits, all 8 planets & asteroid belt", "attr": "orrery_mode", "enter": "_enter_orrery_mode", "exit": "_exit_orrery_mode"},
+    # ── Planetary Accretion ──
+    {"name": "Planetary Accretion & Solar System Formation", "key": "—", "category": "Physics & Waves",
+     "desc": "Protoplanetary disk accretion — dust to planetesimals to planets with migration, impacts & resonances", "attr": "accretion_mode", "enter": "_enter_accretion_mode", "exit": "_exit_accretion_mode"},
     # ── Aurora Borealis ──
     {"name": "Aurora Borealis", "key": "Ctrl+Shift+N", "category": "Physics & Waves",
      "desc": "Northern Lights with solar wind, magnetic field lines & shimmering curtains of color", "attr": "aurora_mode", "enter": "_enter_aurora_mode", "exit": "_exit_aurora_mode"},
@@ -575,6 +578,7 @@ _DISPATCH_OVERRIDES = {
     'volcano_mode': {'use_delay': False},
     'blackhole_mode': {'use_delay': False},
     'orrery_mode': {'use_delay': False},
+    'accretion_mode': {'use_delay': False},
     'aurora_mode': {'use_delay': False},
     'pwave_mode': {'use_delay': False},
     'tornado_mode': {'use_delay': False},

@@ -122,6 +122,8 @@ def register_all_modes(App):
     reg_ocean(App)
     from life.modes.orrery import register as reg_orrery
     reg_orrery(App)
+    from life.modes.accretion import register as reg_accretion
+    reg_accretion(App)
     from life.modes.physarum import register as reg_physarum
     reg_physarum(App)
     from life.modes.param_explorer import register as reg_pexplorer

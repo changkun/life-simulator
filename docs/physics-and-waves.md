@@ -1471,3 +1471,50 @@ where:
 - Lamarsh, J.R. and Baratta, A.J. *Introduction to Nuclear Engineering*, 4th ed., Pearson, 2017.
 - Todreas, N.E. and Kazimi, M.S. *Nuclear Systems I: Thermal Hydraulic Fundamentals*, 2nd ed., CRC Press, 2011. https://doi.org/10.1201/b14887
 - GRS (Gesellschaft für Anlagen- und Reaktorsicherheit). "The Accident and the Safety of RBMK Reactors," GRS-121, 1996.
+
+
+---
+
+## Planetary Accretion & Solar System Formation
+
+**Background** — Every planetary system begins as a swirling disk of gas and dust around a young star. Over millions of years, micron-sized grains stick together into pebbles, pebbles into kilometer-scale planetesimals, and planetesimals into planetary embryos through gravitational accretion. The frost line — where water ice can condense — divides the disk into an inner rocky zone and an outer icy zone, explaining why gas giants form far from the star (their icy cores grow large enough to capture hydrogen/helium envelopes). This simulation bridges the gap between the Solar System Orrery (finished planets in stable orbits) and Galaxy Formation (galactic scale), showing the missing middle chapter of how planets actually form from chaos.
+
+**Formulation** — The simulation tracks individual bodies (dust particles, planetesimals, protoplanets) orbiting a central star with Keplerian dynamics:
+
+```
+Angular velocity:   ω = √(M_star / a³)     (Kepler's third law)
+Hill sphere radius: r_H = a × (m / 3M_star)^(1/3)
+Accretion:          merge when Δa < 1.5 × r_H and Δθ < threshold
+Gas accretion:      dm/dt = 0.08 × f_gas    (when m_core > 10, runaway accretion)
+Eccentricity damp:  e *= 0.998^(1/m)        (gas drag, stronger for small bodies)
+
+Type I migration:   da/dt = -0.0003         (small bodies in gas disk)
+Type II migration:  da/dt = -0.0006         (gap-opening giants, m > 50)
+Resonance lock:     period ratios 2:1, 3:2, 4:3, 5:3 within ±0.08 tolerance
+
+Disk dissipation:   f_gas *= 0.9997/tick    (photoevaporation)
+                    f_dust *= 0.9999/tick
+```
+
+Giant impacts between comparable-mass bodies produce debris (10% × mass ratio), eccentricity kicks, and probabilistic moon capture (P=0.3 for impacts with mass ratio > 0.1). Gravitational scattering between nearby bodies excites eccentricities and drives orbital repulsion. Bodies with e > 0.8 are ejected from the system.
+
+**Presets**
+
+| Preset | Configuration | What it demonstrates |
+|--------|--------------|---------------------|
+| **Calm Accretion** | Even disk, 400 dust + 60 planetesimals | Standard planet formation — watch rocky inner and icy outer bodies gradually coalesce, gas giants emerge beyond frost line |
+| **Jupiter Migration (Grand Tack)** | Pre-formed Proto-Jupiter at 5 AU, migrating | The Grand Tack hypothesis — Jupiter migrates inward scattering inner material, then reverses when Saturn catches up, truncating Mars's feeding zone |
+| **Giant Impact (Moon Formation)** | Proto-Earth + Theia on crossing orbits | The giant impact origin of the Moon — Theia (Mars-sized) collides with proto-Earth, producing a debris disk that accretes into a moon |
+| **Resonant Chain (TRAPPIST-1)** | 7 embryos migrating inward, compact system | Resonant chain formation — planets migrate through the disk and lock into mean-motion resonances (2:1, 3:2, etc.), producing a tightly packed system |
+| **Hot Jupiter Inward Spiral** | Massive gas giant at 8 AU, migrating fast | Type II migration — a gas giant spirals inward through the disk, gravitationally ejecting inner rocky planets as it passes |
+| **Late Heavy Bombardment** | Mature system + Kuiper belt destabilization | The Nice model — outer giant planet migration scatters Kuiper belt objects inward, bombarding the inner rocky planets ~700 Myr after formation |
+
+**What to look for** — In Calm Accretion, watch the disk thin over time as dust is swept up; note how bodies beyond the frost line (marked by the cyan circle) grow faster due to ice availability, eventually triggering runaway gas accretion to become gas giants. The Grand Tack preset shows dramatic clearing of the inner disk as Jupiter plows through. In the Giant Impact scenario, watch for the collision event — the sudden appearance of debris and a moon count incrementing. The Resonant Chain preset demonstrates how migration naturally produces the tightly packed multi-planet systems discovered by Kepler. The Hot Jupiter preset shows the destructive passage of a migrating giant. Switch to the cross-section view (`v`) to see the disk's vertical structure, temperature gradient (red→yellow→white→blue), and frost line position. The sparkline graphs view tracks planet count, largest body mass, disk depletion, eccentricity evolution, and collision rate over time.
+
+**Controls**: `Space` play/pause, `v` cycle views (disk/cross-section/graphs), `z`/`Z` zoom in/out, `o` toggle orbits, `l` toggle labels, `Tab` select body, `u` unselect, `+`/`-` speed, `n` step, `r` restart, `m` menu, `q` exit.
+
+**References**
+- Armitage, P.J. *Astrophysics of Planet Formation*, Cambridge University Press, 2010.
+- Morbidelli, A. et al. "Building Terrestrial Planets," *Annual Review of Earth and Planetary Sciences*, 40, 251–275, 2012.
+- Walsh, K.J. et al. "A low mass for Mars from Jupiter's early gas-driven migration," *Nature*, 475, 206–209, 2011.
+- Gillon, M. et al. "Seven temperate terrestrial planets around the nearby ultracool dwarf star TRAPPIST-1," *Nature*, 542, 456–460, 2017.

@@ -4,6 +4,25 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Planetary Accretion & Solar System Formation simulation mode — protoplanetary disk accretion with dust-to-planetesimal coalescing (Hill sphere merging, r_H=a×(m/3M*)^⅓, accretion radius 1.5×r_H), frost line composition bifurcation (rocky inner/icy outer at 2.7 AU), runaway gas accretion for cores >10 mass units (rate 0.08×f_gas, triggering gas giant formation), Keplerian orbital dynamics (ω=√(M*/a³)), eccentricity damping from gas drag (0.998^(1/m)/tick), Type I/II planetary migration (-0.0003/-0.0006 da/dt for small/gap-opening bodies), mean-motion resonance locking (2:1, 3:2, 4:3, 5:3 with 0.08 tolerance, P=0.02/tick capture), giant impacts producing debris (10%×mass ratio) and moon capture (P=0.3), gravitational scattering between nearby bodies driving eccentricity excitation and orbital repulsion, disk gas photoevaporation (×0.9997/tick) and dust depletion (×0.9999/tick), Late Heavy Bombardment outer-body scattering (P=0.01/tick, impulse 0.15), ejection of high-eccentricity bodies (e>0.8), and 3 visualization views (top-down orbital disk map with star/frost line circle/dust density/body glyphs scaled by mass + orbit ellipses + labels, disk cross-section with temperature-colored vertical structure red→yellow→white→blue + frost line marker + midplane bodies, 10-metric sparkline time series tracking planet count/largest mass/disk mass/mean eccentricity/collision rate/total mass/gas giants/rocky count/mean SMA/moon count), with six presets (Calm Accretion with standard even disk, Jupiter Migration Grand Tack with pre-formed migrating Proto-Jupiter, Giant Impact Moon Formation with Proto-Earth + Theia on crossing orbits, Resonant Chain TRAPPIST-1 analog with 7 migrating embryos, Hot Jupiter Inward Spiral with massive giant clearing inner system, Late Heavy Bombardment with mature system + Kuiper belt destabilization)
+
+**`life/modes/accretion.py`** (new, ~680 lines):
+
+- **Protoplanetary disk**: 400 dust particles + 60 planetesimals distributed from 0.3–40 AU, with icy particles (3× mass boost) beyond the 2.7 AU frost line. Gas and dust reservoirs deplete via photoevaporation.
+- **Gravitational accretion**: Bodies merge when separation < 1.5× Hill sphere radius with angular proximity check. Mass-ratio-dependent debris generation and eccentricity kicks from impacts.
+- **Runaway gas accretion**: Rocky/icy cores exceeding 10 mass units begin capturing gas envelope, transitioning to gas giant composition at 30 mass units. Capped at 300 mass units.
+- **Planetary migration**: Type I migration for small bodies in gas disk, Type II for gap-opening giants (>50 mass units). Migration ceases when gas depletes below 5%.
+- **Orbital resonances**: Bodies near mean-motion resonance ratios (2:1, 3:2, 4:3, 5:3) probabilistically lock, adjusting semi-major axis and damping eccentricity.
+- **Giant impacts & moons**: Collisions between comparable-mass bodies (ratio >0.1) have 30% chance of producing captured moons. Debris scattered ±0.5 AU from impact site.
+- **Late Heavy Bombardment**: Timer-delayed destabilization scatters outer Kuiper belt objects inward with velocity kicks, simulating the Nice model.
+- **Three views**: Top-down disk map (frost line, dust density, body size/composition glyphs), disk cross-section (temperature gradient, vertical structure, frost line), sparkline graphs (10 metrics over 200-tick window).
+
+**`life/registry.py`**: Added "Planetary Accretion & Solar System Formation" to MODE_REGISTRY under Physics & Waves category, with `accretion_mode` attribute and `use_delay: False`.
+
+**`life/modes/__init__.py`**: Added accretion module import and registration.
+
+**`docs/physics-and-waves.md`**: Added full documentation section covering background (protoplanetary disk physics), mathematical formulation, all six presets with descriptions, observation guide, controls reference, and academic references (Armitage 2010, Morbidelli et al. 2012, Walsh et al. 2011, Gillon et al. 2017).
+
 ### Feature: Rewrite Plate Tectonics & Mantle Convection — Rayleigh-Bénard mantle convection cells driving plate drift, divergent mid-ocean ridges, convergent subduction zones with volcanic arcs & orogenesis, transform fault earthquake stress/rupture, hotspot volcanism (Hawaiian chain analog), oceanic crust aging, Wilson Cycle supercontinent assembly & breakup
 
 Complete rewrite of the former basic "Tectonic Plates" mode (~560 lines) into a full Plate Tectonics & Mantle Convection simulation (~1200 lines) that couples mantle convection physics with surface plate dynamics. Pairs with the existing Planetary Atmosphere & Weather System mode to provide complementary solid-Earth and atmospheric views of planetary dynamics.
