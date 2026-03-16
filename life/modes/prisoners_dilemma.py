@@ -33,6 +33,7 @@ def _spd_init(self, preset_idx: int):
     self.spd_preset_name = name
     self.spd_generation = 0
     self.spd_running = False
+    self.spd_steps_per_frame = 1
     self.spd_temptation = T
     self.spd_reward = R
     self.spd_punishment = P
@@ -390,6 +391,8 @@ TURMITE_COLORS = [1, 2, 3, 4, 5, 6, 7, 8]
 
 def register(App):
     """Register spd mode methods on the App class."""
+    from life.modes.schelling import SPD_PRESETS
+    App.SPD_PRESETS = SPD_PRESETS
     App._enter_spd_mode = _enter_spd_mode
     App._exit_spd_mode = _exit_spd_mode
     App._spd_init = _spd_init

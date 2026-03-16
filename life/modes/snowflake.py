@@ -467,6 +467,8 @@ LV_PRESETS = [
 
 def register(App):
     """Register snowflake mode methods on the App class."""
+    from life.modes.ising import SNOWFLAKE_PRESETS
+    App.SNOWFLAKE_PRESETS = SNOWFLAKE_PRESETS
     App._enter_snowflake_mode = _enter_snowflake_mode
     App._exit_snowflake_mode = _exit_snowflake_mode
     App._snowflake_hex_neighbors = _snowflake_hex_neighbors

@@ -349,6 +349,8 @@ FLUID_PRESETS = [
 
 def register(App):
     """Register traffic mode methods on the App class."""
+    from life.modes.turmites import TRAFFIC_PRESETS
+    App.TRAFFIC_PRESETS = TRAFFIC_PRESETS
     App._enter_traffic_mode = _enter_traffic_mode
     App._exit_traffic_mode = _exit_traffic_mode
     App._traffic_init = _traffic_init

@@ -4,6 +4,19 @@ import math
 import random
 import time
 
+OCEAN_PRESETS = [
+    ("Gulf Stream", "Warm western boundary current with eddies and meanders", "gulfstream"),
+    ("Pacific Gyre", "Large-scale subtropical gyre with Kuroshio Current", "pacificgyre"),
+    ("Antarctic Circumpolar", "Strongest current on Earth circling Antarctica", "antarctic"),
+    ("El Nino", "Weakened trade winds with warm water spreading east", "elnino"),
+    ("Thermohaline Conveyor", "Global deep water formation driving the great ocean conveyor", "thermohaline"),
+    ("Random Ocean", "Randomly generated ocean basin with currents and blooms", "random"),
+]
+
+OCEAN_CHARS = ' ·~≈≋∿⌇█'
+CURRENT_ARROWS = '·←↙↓↘→↗↑↖'
+PLANKTON_CHARS = ' .,:;+*#@'
+
 
 def _enter_ocean_mode(self):
     """Enter Ocean Currents mode — show preset menu."""

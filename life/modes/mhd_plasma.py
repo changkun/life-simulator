@@ -634,6 +634,8 @@ ATTRACTOR_PRESETS = [
 
 def register(App):
     """Register mhd mode methods on the App class."""
+    from life.modes.chemotaxis import MHD_PRESETS
+    App.MHD_PRESETS = MHD_PRESETS
     App._enter_mhd_mode = _enter_mhd_mode
     App._exit_mhd_mode = _exit_mhd_mode
     App._mhd_init = _mhd_init

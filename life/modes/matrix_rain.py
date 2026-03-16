@@ -4,6 +4,20 @@ import math
 import random
 import time
 
+MATRIX_PRESETS = [
+    ("Classic Green", "The iconic green Matrix rain with mixed characters", "classic"),
+    ("Dense Rain", "Heavy downpour of characters — maximum density", "dense"),
+    ("Sparse Drizzle", "Light, sparse streams for a subtle effect", "sparse"),
+    ("Katakana Only", "Pure half-width Katakana characters", "katakana"),
+    ("Binary", "Pure 0s and 1s — digital rain", "binary"),
+    ("Rainbow", "Multi-colored character streams", "rainbow"),
+]
+
+_MATRIX_KATAKANA = "ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ"
+_MATRIX_DIGITS = "0123456789"
+_MATRIX_LATIN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+_MATRIX_SYMBOLS = "+-*/<>=$#@&!?~^%"
+
 
 def _enter_matrix_mode(self):
     """Enter Matrix Digital Rain mode — show preset menu."""

@@ -4,6 +4,17 @@ import math
 import random
 import time
 
+FLUIDROPE_PRESETS = [
+    ("Honey", "Thick golden honey coiling on a surface", "honey"),
+    ("Chocolate", "Smooth melted chocolate with medium viscosity", "chocolate"),
+    ("Shampoo", "Thin, fast-flowing shampoo with rapid coiling", "shampoo"),
+    ("Lava", "Extremely viscous molten lava with slow, heavy coils", "lava"),
+]
+
+_FLUIDROPE_POOL_CHARS = "░▒▓█▓▒░█"
+_FLUIDROPE_COIL_CHARS = "·∘○◎●◉"
+_FLUIDROPE_SPLASH_CHARS = "·∘°~≈"
+
 
 def _enter_fluidrope_mode(self):
     self.fluidrope_mode = True

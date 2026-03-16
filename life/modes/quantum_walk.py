@@ -461,6 +461,8 @@ def _qwalk_signed_char(self, val: float, max_p: float) -> tuple:
 
 def register(App):
     """Register qwalk mode methods on the App class."""
+    from life.modes.strange_attractors import QWALK_PRESETS
+    App.QWALK_PRESETS = QWALK_PRESETS
     App._enter_qwalk_mode = _enter_qwalk_mode
     App._exit_qwalk_mode = _exit_qwalk_mode
     App._qwalk_init = _qwalk_init

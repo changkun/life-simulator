@@ -1,8 +1,20 @@
 """Mode: mazesolver — simulation mode for the life package."""
 import curses
+import heapq
 import math
 import random
 import time
+
+MAZESOLVER_PRESETS = [
+    ("A* Search (Medium)", "Optimal pathfinding with heuristic — medium maze", "astar", "medium"),
+    ("BFS (Medium)", "Breadth-first search — guaranteed shortest path", "bfs", "medium"),
+    ("DFS (Medium)", "Depth-first search — fast but not optimal", "dfs", "medium"),
+    ("Wall Follower (Medium)", "Right-hand rule wall following — classic algorithm", "wall_follower", "medium"),
+    ("A* (Small)", "A* on a small maze — quick solve", "astar", "small"),
+    ("A* (Large)", "A* on a large maze — watch it explore", "astar", "large"),
+    ("BFS (Large)", "BFS flood-fill on a large maze", "bfs", "large"),
+    ("DFS (Large)", "DFS deep exploration on a large maze", "dfs", "large"),
+]
 
 
 def _enter_mazesolver_mode(self):

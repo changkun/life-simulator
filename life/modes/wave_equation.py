@@ -452,6 +452,8 @@ KURAMOTO_PRESETS = [
 
 def register(App):
     """Register wave mode methods on the App class."""
+    from life.modes.rock_paper_scissors import WAVE_PRESETS
+    App.WAVE_PRESETS = WAVE_PRESETS
     App._enter_wave_mode = _enter_wave_mode
     App._exit_wave_mode = _exit_wave_mode
     App._wave_init = _wave_init

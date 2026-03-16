@@ -295,10 +295,12 @@ def _cpm_step(self):
     dr, dc = _rnd.choice([(-1, 0), (1, 0), (0, -1), (0, 1)])
     nr, nc = r + dr, c + dc
     if nr < 0 or nr >= rows or nc < 0 or nc >= cols:
+        self.cpm_generation += 1
         return  # boundary — skip
     neighbor = grid[nr][nc]
 
     if current == neighbor:
+        self.cpm_generation += 1
         return  # same cell — no change possible
 
     # Propose copying neighbor's ID into (r, c)

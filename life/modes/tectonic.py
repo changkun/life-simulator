@@ -5,6 +5,13 @@ import random
 import time
 
 
+def _enter_tectonic_mode(self):
+    """Enter Tectonic Plates mode — show preset menu."""
+    self.tectonic_menu = True
+    self.tectonic_menu_sel = 0
+    self._flash("Tectonic Plates — select a scenario")
+
+
 def _exit_tectonic_mode(self):
     """Exit Tectonic Plates mode."""
     self.tectonic_mode = False
@@ -20,7 +27,7 @@ def _tectonic_init(self, preset_idx: int):
     import random as _rand
     import math as _math
 
-    preset = TECTONIC_PRESETS[preset_idx]
+    preset = self.TECTONIC_PRESETS[preset_idx]
     self.tectonic_preset_name = preset[0]
     kind = preset[2]
 
@@ -304,8 +311,8 @@ def _tectonic_step(self):
 
 def _tectonic_elev_char(self, e: float) -> str:
     """Return ASCII character for elevation value."""
-    chars = TECTONIC_ELEV_CHARS
-    thresholds = TECTONIC_ELEV_THRESHOLDS
+    chars = self.TECTONIC_ELEV_CHARS
+    thresholds = self.TECTONIC_ELEV_THRESHOLDS
     for i, t in enumerate(thresholds):
         if e < t:
             return chars[i]
@@ -340,7 +347,7 @@ def _tectonic_elev_color(self, e: float) -> int:
 def _handle_tectonic_menu_key(self, key: int) -> bool:
     """Handle input in tectonic preset menu."""
     import curses
-    n = len(TECTONIC_PRESETS)
+    n = len(self.TECTONIC_PRESETS)
     if key == curses.KEY_DOWN or key == ord('j'):
         self.tectonic_menu_sel = (self.tectonic_menu_sel + 1) % n
     elif key == curses.KEY_UP or key == ord('k'):
@@ -404,7 +411,7 @@ def _draw_tectonic_menu(self, max_y: int, max_x: int):
                            curses.A_BOLD | curses.color_pair(4))
         self.stdscr.addstr(3, 2, "Select a tectonic scenario:",
                            curses.color_pair(3))
-        for i, (name, desc, _) in enumerate(TECTONIC_PRESETS):
+        for i, (name, desc, _) in enumerate(self.TECTONIC_PRESETS):
             y = 5 + i * 2
             if y >= max_y - 2:
                 break
@@ -412,7 +419,7 @@ def _draw_tectonic_menu(self, max_y: int, max_x: int):
             attr = curses.A_BOLD | curses.color_pair(4) if i == self.tectonic_menu_sel else curses.color_pair(3)
             self.stdscr.addstr(y, 3, f"{marker}{name}", attr)
             self.stdscr.addstr(y + 1, 6, desc[:max_x - 8], curses.A_DIM)
-        foot_y = min(5 + len(TECTONIC_PRESETS) * 2 + 1, max_y - 2)
+        foot_y = min(5 + len(self.TECTONIC_PRESETS) * 2 + 1, max_y - 2)
         self.stdscr.addstr(foot_y, 3, "Enter=Select  Esc=Cancel",
                            curses.A_DIM | curses.color_pair(6))
     except curses.error:
@@ -519,6 +526,7 @@ def _draw_tectonic(self, max_y: int, max_x: int):
 
 def register(App):
     """Register tectonic mode methods on the App class."""
+    App._enter_tectonic_mode = _enter_tectonic_mode
     App._exit_tectonic_mode = _exit_tectonic_mode
     App._tectonic_init = _tectonic_init
     App._tectonic_step = _tectonic_step

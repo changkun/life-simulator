@@ -68,6 +68,7 @@ def _rps_init(self, preset_idx: int):
             for _ in range(rows)
         ]
 
+    self.rps_steps_per_frame = getattr(self, 'rps_steps_per_frame', 1)
     self.rps_menu = False
     self.rps_mode = True
     self.rps_running = True
@@ -311,8 +312,30 @@ WAVE_PRESETS = [
 
 
 
+RPS_PRESETS = [
+    # (name, description, num_species, swap_rate, layout)
+    ("Classic RPS", "3 species — random initial distribution",
+     3, 0.3, "random"),
+    ("Block Start", "3 species in vertical stripes — watch invasion",
+     3, 0.3, "blocks"),
+    ("Seeded Invasion", "Species 0 dominant, small clusters of 1 & 2",
+     3, 0.3, "seeds"),
+    ("Fast Turnover", "High swap rate — rapid dynamics",
+     3, 0.6, "random"),
+    ("Slow Coexistence", "Low swap rate — large stable domains",
+     3, 0.1, "random"),
+    ("RPSLS (5 species)", "Rock-Paper-Scissors-Lizard-Spock — 5-species cycle",
+     5, 0.3, "random"),
+    ("RPSLS Blocks", "5 species starting in vertical stripes",
+     5, 0.3, "blocks"),
+    ("RPSLS Seeded", "5 species — dominant species with small invasions",
+     5, 0.25, "seeds"),
+]
+
+
 def register(App):
     """Register rps mode methods on the App class."""
+    App.RPS_PRESETS = RPS_PRESETS
     App._enter_rps_mode = _enter_rps_mode
     App._exit_rps_mode = _exit_rps_mode
     App._rps_init = _rps_init

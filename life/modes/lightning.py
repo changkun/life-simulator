@@ -33,6 +33,7 @@ def _lightning_init(self, preset_idx: int):
     self.lightning_preset_name = name
     self.lightning_generation = 0
     self.lightning_running = False
+    self.lightning_steps_per_frame = 1
     self.lightning_eta = eta
     self.lightning_source = source
 
@@ -433,6 +434,8 @@ EROSION_PRESETS = [
 
 def register(App):
     """Register lightning mode methods on the App class."""
+    from life.modes.wave_function_collapse import LIGHTNING_PRESETS
+    App.LIGHTNING_PRESETS = LIGHTNING_PRESETS
     App._enter_lightning_mode = _enter_lightning_mode
     App._exit_lightning_mode = _exit_lightning_mode
     App._lightning_init = _lightning_init

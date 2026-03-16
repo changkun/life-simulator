@@ -4,6 +4,15 @@ import math
 import random
 import time
 
+DNAHELIX_PRESETS = [
+    ("Classic Binary GA", "Evolve a 32-bit genome to match a random target — standard genetic algorithm", "classic"),
+    ("OneMax Challenge", "Maximize the number of 1-bits in a 64-bit genome — classic GA benchmark", "onemax"),
+    ("Long Strand", "128-bit genome with low mutation — watch slow convergence on a tall helix", "long"),
+    ("Hyper-Mutation", "High mutation rate (10%) causes chaotic exploration before convergence", "hyper"),
+    ("Minimal Pop", "Tiny population of 10 with a 48-bit target — strong genetic drift", "minimal"),
+    ("Royal Road", "64-bit genome with 8-bit schema blocks — fitness jumps when full blocks match", "royal"),
+]
+
 
 def _enter_dnahelix_mode(self):
     """Enter DNA Helix & Genetic Algorithm — show preset menu."""

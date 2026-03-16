@@ -4,6 +4,15 @@ import math
 import random
 import time
 
+SORTVIS_PRESETS = [
+    ("Bubble Sort", "Simple O(n^2) comparison sort — watch elements bubble up", "bubble"),
+    ("Quicksort", "Efficient O(n log n) divide-and-conquer with pivot partitioning", "quick"),
+    ("Merge Sort", "Stable O(n log n) sort that merges sorted sub-arrays", "merge"),
+    ("Heap Sort", "In-place O(n log n) using a binary heap structure", "heap"),
+    ("Radix Sort (LSD)", "Non-comparison O(nk) sort processing digits from least to most significant", "radix"),
+    ("Shell Sort", "Improved insertion sort with diminishing gap sequences", "shell"),
+]
+
 
 def _sortvis_generate_steps_bubble(arr: list[int]) -> list[tuple]:
     """Generate all steps for bubble sort."""

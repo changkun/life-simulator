@@ -4,6 +4,15 @@ import math
 import random
 import time
 
+BLACKHOLE_PRESETS = [
+    ("Stellar Mass", "10-30 solar mass black hole with accretion disk", "stellar"),
+    ("Supermassive", "Millions of solar masses — galactic center monster", "supermassive"),
+    ("Kerr (Spinning)", "Rapidly spinning black hole with frame dragging", "kerr"),
+    ("Quasar", "Actively feeding supermassive BH with powerful jets", "quasar"),
+    ("Micro Black Hole", "Tiny primordial remnant with strong Hawking radiation", "micro"),
+    ("Binary Merger", "Two black holes spiraling toward merger", "binary"),
+]
+
 
 def _enter_blackhole_mode(self):
     """Enter Black Hole mode — show preset menu."""

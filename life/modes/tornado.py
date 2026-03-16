@@ -4,6 +4,20 @@ import math
 import random
 import time
 
+TORNADO_PRESETS = [
+    ("EF3 Tornado", "Violent tornado with debris cloud and destruction path", "ef3"),
+    ("Rope Tornado", "Thin, sinuous funnel with rapid rotation", "rope"),
+    ("Outbreak", "Multiple vortices in a severe supercell storm", "outbreak"),
+    ("Rain-wrapped", "Tornado hidden in heavy rain curtains", "rainwrap"),
+    ("Night Storm", "Tornado at night — visible only by lightning flashes", "night"),
+    ("Dust Devil", "Small, harmless whirlwind in dry conditions", "dustdevil"),
+]
+
+_TORNADO_DEBRIS_CHARS = "·∘°*×+#@%&"
+_TORNADO_CLOUD_CHARS = "░▒▓█"
+_TORNADO_FUNNEL_CHARS = "░▒▓█"
+_TORNADO_RAIN_CHARS = "·:│║"
+
 
 def _enter_tornado_mode(self):
     """Enter Tornado & Supercell Storm mode — show preset menu."""

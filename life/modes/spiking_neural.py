@@ -497,12 +497,24 @@ BZ_PRESETS = [
 
 
 
+def _snn_fire_rate(self) -> float:
+    """Compute the fraction of neurons that fired this step."""
+    total = self.snn_rows * self.snn_cols
+    if total == 0:
+        return 0.0
+    count = sum(1 for r in range(self.snn_rows) for c in range(self.snn_cols) if self.snn_fired[r][c])
+    return count / total
+
+
 def register(App):
     """Register snn mode methods on the App class."""
+    from life.modes.kuramoto import SNN_PRESETS
+    App.SNN_PRESETS = SNN_PRESETS
     App._enter_snn_mode = _enter_snn_mode
     App._exit_snn_mode = _exit_snn_mode
     App._snn_init = _snn_init
     App._snn_step = _snn_step
+    App._snn_fire_rate = _snn_fire_rate
     App._handle_snn_menu_key = _handle_snn_menu_key
     App._handle_snn_key = _handle_snn_key
     App._draw_snn_menu = _draw_snn_menu

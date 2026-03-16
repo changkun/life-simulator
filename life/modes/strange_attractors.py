@@ -549,6 +549,8 @@ QWALK_PRESETS = [
 
 def register(App):
     """Register attractor mode methods on the App class."""
+    from life.modes.mhd_plasma import ATTRACTOR_PRESETS
+    App.ATTRACTOR_PRESETS = ATTRACTOR_PRESETS
     App._enter_attractor_mode = _enter_attractor_mode
     App._exit_attractor_mode = _exit_attractor_mode
     App._attractor_init = _attractor_init

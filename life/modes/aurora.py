@@ -4,6 +4,20 @@ import math
 import random
 import time
 
+AURORA_PRESETS = [
+    ("Quiet Arc", "Gentle green arc across the sky — calm geomagnetic conditions", "quiet"),
+    ("Substorm Breakup", "Explosive brightening with rapid curtain movement and folds", "substorm"),
+    ("Pulsating Aurora", "Rhythmic patches of light flickering on and off", "pulsating"),
+    ("Coronal Mass Ejection", "Intense multi-color display from a major solar storm", "cme"),
+]
+
+_AURORA_BANDS = [
+    ("N2_purple", 0.05, 0.20, 5, "░▒"),
+    ("O_green",   0.15, 0.55, 2, "░▒▓█"),
+    ("O_red",     0.08, 0.25, 1, "░▒"),
+    ("N2_blue",   0.40, 0.70, 4, "░▒▓"),
+]
+
 
 def _enter_aurora_mode(self):
     """Enter Aurora Borealis mode — show preset menu."""

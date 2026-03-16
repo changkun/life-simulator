@@ -1,8 +1,22 @@
 """Mode: lissajous — simulation mode for the life package."""
 import curses
 import math
+import math as _math
 import random
 import time
+
+LISSAJOUS_PRESETS = [
+    ("Classic 3:2", "Classic Lissajous figure with frequency ratio 3:2", "classic_3_2"),
+    ("Figure Eight", "Simple 2:1 figure-eight pattern", "figure_eight"),
+    ("Star", "Five-lobed star with 5:4 ratio", "star"),
+    ("Harmonograph", "Damped pendulum harmonograph with near-integer ratios", "harmonograph"),
+    ("Lateral", "Two-pendulum lateral harmonograph with secondary oscillators", "lateral"),
+    ("Rose Curve", "Rose-petal pattern with 7:4 ratio", "rose"),
+    ("Decay Spiral", "High-frequency spiral with strong damping", "decay_spiral"),
+    ("Knot", "Complex knot pattern with 5:3 ratio and light damping", "knot"),
+]
+
+LISSAJOUS_CHARS = " ·.,:;+=*#@"
 
 
 def _enter_lissajous_mode(self):

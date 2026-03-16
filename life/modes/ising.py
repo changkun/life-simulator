@@ -321,6 +321,8 @@ SNOWFLAKE_PRESETS = [
 
 def register(App):
     """Register ising mode methods on the App class."""
+    from life.modes.hodgepodge import ISING_PRESETS
+    App.ISING_PRESETS = ISING_PRESETS
     App._enter_ising_mode = _enter_ising_mode
     App._exit_ising_mode = _exit_ising_mode
     App._ising_init = _ising_init

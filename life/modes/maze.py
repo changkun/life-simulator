@@ -1,5 +1,6 @@
 """Mode: maze — simulation mode for the life package."""
 import curses
+import heapq
 import math
 import random
 import time

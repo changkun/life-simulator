@@ -4,6 +4,15 @@ import math
 import random
 import time
 
+SNOWFALL_PRESETS = [
+    ("Gentle Snowfall", "Light, peaceful snow drifting down on a calm winter night", "gentle"),
+    ("Steady Winter Storm", "Moderate snowfall with consistent wind and steady accumulation", "steady"),
+    ("Heavy Blizzard", "Intense whiteout conditions with powerful wind gusts and rapid drifting", "blizzard"),
+    ("Arctic Whiteout", "Extreme polar storm — near-zero visibility, fierce horizontal snow", "whiteout"),
+    ("Wet Spring Snow", "Large, heavy flakes falling slowly in mild temperatures", "wet"),
+    ("Mountain Squall", "Sudden intense burst of fine snow with swirling updrafts", "squall"),
+]
+
 
 def _enter_snowfall_mode(self):
     """Enter Snowfall & Blizzard mode — show preset menu."""

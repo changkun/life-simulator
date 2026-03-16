@@ -4,6 +4,23 @@ import math
 import random
 import time
 
+ANTFARM_PRESETS = [
+    ("Classic Colony", "Standard ant colony with balanced terrain", "classic"),
+    ("Sandy Soil", "Loose sand — ants dig faster but tunnels are fragile", "sandy"),
+    ("Rocky Ground", "Dense rocky soil — slow digging with obstacles", "rocky"),
+    ("Deep Nest", "Extra-deep colony with multiple chamber layers", "deep"),
+    ("Rainy Day", "Colony with rain that brings surface food and moisture", "rainy"),
+]
+
+# Cell type constants
+_AF_AIR = 0
+_AF_DIRT = 1
+_AF_ROCK = 2
+_AF_CLAY = 3
+_AF_CHAMBER = 4
+_AF_FOOD_STORE = 5
+_AF_QUEEN_CELL = 6
+
 
 def _enter_antfarm_mode(self):
     """Enter Ant Farm Simulation mode — show preset menu."""
@@ -324,7 +341,7 @@ def _handle_antfarm_menu_key(self, key: int) -> bool:
     """Handle key presses in the ant farm preset selection menu."""
     if key == 27:  # Escape
         self.antfarm_menu = False
-        self._exit_mode()
+        self._exit_antfarm_mode()
         return True
     elif key == curses.KEY_UP:
         self.antfarm_menu_sel = (self.antfarm_menu_sel - 1) % len(ANTFARM_PRESETS)
@@ -344,7 +361,7 @@ def _handle_antfarm_menu_key(self, key: int) -> bool:
 def _handle_antfarm_key(self, key: int) -> bool:
     """Handle key presses during ant farm simulation."""
     if key == 27:  # Escape
-        self._exit_mode()
+        self._exit_antfarm_mode()
         return True
     elif key == ord(" "):
         self.antfarm_running = not self.antfarm_running

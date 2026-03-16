@@ -520,6 +520,8 @@ MHD_PRESETS = [
 
 def register(App):
     """Register chemo mode methods on the App class."""
+    from life.modes.bz_reaction import CHEMOTAXIS_PRESETS
+    App.CHEMOTAXIS_PRESETS = CHEMOTAXIS_PRESETS
     App._enter_chemo_mode = _enter_chemo_mode
     App._exit_chemo_mode = _exit_chemo_mode
     App._chemo_init = _chemo_init

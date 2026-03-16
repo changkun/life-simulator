@@ -44,6 +44,7 @@ def _lv_init(self, preset_idx: int):
     self.lv_prey_initial_energy = prey_init_e
     self.lv_pred_initial_energy = pred_init_e
     self.lv_counts = []
+    self.lv_steps_per_frame = 1
 
     max_y, max_x = self.stdscr.getmaxyx()
     self.lv_rows = max(10, max_y - 4)
@@ -479,6 +480,8 @@ SCHELLING_PRESETS = [
 
 def register(App):
     """Register lv mode methods on the App class."""
+    from life.modes.snowflake import LV_PRESETS
+    App.LV_PRESETS = LV_PRESETS
     App._enter_lv_mode = _enter_lv_mode
     App._exit_lv_mode = _exit_lv_mode
     App._lv_init = _lv_init

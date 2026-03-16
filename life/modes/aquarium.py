@@ -4,6 +4,26 @@ import math
 import random
 import time
 
+AQUARIUM_PRESETS = [
+    ("Goldfish Bowl", "Classic goldfish in a small bowl", "goldfish"),
+    ("Tropical Reef", "Colorful tropical fish in a reef tank", "tropical"),
+    ("Koi Pond", "Elegant koi swimming in a garden pond", "koi"),
+    ("Deep Sea", "Mysterious deep-sea creatures in darkness", "deep"),
+]
+
+BUBBLE_CHARS = "·∘○◯"
+
+FISH_SPECIES = [
+    {"name": "Neon Tetra", "left": ["><>"], "right": ["<><"], "speed": (0.2, 0.5)},
+    {"name": "Goldfish", "left": ["><))'>"], "right": ["<'((<>"], "speed": (0.15, 0.35)},
+    {"name": "Angelfish", "left": [">{>"], "right": ["<}<"], "speed": (0.1, 0.3)},
+    {"name": "Koi", "left": [">===>"], "right": ["<===<"], "speed": (0.1, 0.25)},
+    {"name": "Guppy", "left": ["><>"], "right": ["<><"], "speed": (0.25, 0.6)},
+    {"name": "Clownfish", "left": [">({>"], "right": ["<})>"], "speed": (0.15, 0.4)},
+    {"name": "Pufferfish", "left": [">(O)>"], "right": ["<(O)<"], "speed": (0.1, 0.2)},
+    {"name": "Anglerfish", "left": [">*-=>"], "right": ["<=--*<"], "speed": (0.05, 0.15)},
+]
+
 
 def _enter_aquarium_mode(self):
     """Enter Aquarium mode — show preset menu."""

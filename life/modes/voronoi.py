@@ -93,6 +93,7 @@ def _voronoi_init(self, preset_idx: int):
                     self.voronoi_frontier.append((nr, nc, gid))
 
     self.voronoi_grain_count = len(self.voronoi_seeds)
+    self.voronoi_steps_per_frame = getattr(self, 'voronoi_steps_per_frame', 8)
     self.voronoi_menu = False
     self.voronoi_mode = True
     self.voronoi_running = True
@@ -332,8 +333,30 @@ def _draw_voronoi(self, max_y: int, max_x: int):
             pass
 
 
+VORONOI_PRESETS = [
+    # (name, description, num_seeds, anisotropy, seed_mode)
+    ("Random Grains", "Random seed placement — classic polycrystal",
+     20, 0.3, "random"),
+    ("Edge Growth", "Seeds along left edge — directional solidification",
+     8, 0.5, "edge"),
+    ("Bicrystal", "Two grains — single grain boundary study",
+     2, 0.0, "bicrystal"),
+    ("Many Grains", "Dense polycrystal with many small grains",
+     50, 0.2, "random"),
+    ("Anisotropic", "Strong anisotropy — faceted crystal shapes",
+     15, 0.7, "random"),
+    ("Center Cluster", "Seeds clustered in center — outward growth",
+     12, 0.4, "center"),
+    ("Isotropic", "Zero anisotropy — circular grains",
+     20, 0.0, "random"),
+    ("Few Large", "Few seeds — large grains with clear boundaries",
+     5, 0.3, "random"),
+]
+
+
 def register(App):
     """Register voronoi mode methods on the App class."""
+    App.VORONOI_PRESETS = VORONOI_PRESETS
     App._enter_voronoi_mode = _enter_voronoi_mode
     App._exit_voronoi_mode = _exit_voronoi_mode
     App._voronoi_init = _voronoi_init

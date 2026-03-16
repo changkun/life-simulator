@@ -4,6 +4,28 @@ import math
 import random
 import time
 
+COLLIDER_PRESETS = [
+    ("LHC (Proton-Proton)", "13.6 TeV proton collisions — Higgs hunting", "lhc"),
+    ("Heavy Ion (Pb-Pb)", "Quark-gluon plasma from lead-ion collisions", "heavy_ion"),
+    ("Lepton Collider", "Clean electron-positron annihilation events", "lepton"),
+    ("Discovery Mode", "High luminosity with boosted rare particle rate", "discovery"),
+]
+
+_COLLIDER_DETECTOR_LABELS = ["ATLAS", "CMS", "ALICE", "LHCb"]
+_COLLIDER_SHOWER_CHARS = "·∘○◎●★✦⚡"
+_COLLIDER_PARTICLES = [
+    {"name": "Photon", "symbol": "γ", "mass": 0, "color": 7, "rare": False},
+    {"name": "Electron", "symbol": "e⁻", "mass": 0.000511, "color": 4, "rare": False},
+    {"name": "Muon", "symbol": "μ⁻", "mass": 0.1057, "color": 5, "rare": False},
+    {"name": "Pion", "symbol": "π", "mass": 0.1396, "color": 3, "rare": False},
+    {"name": "Kaon", "symbol": "K", "mass": 0.4937, "color": 6, "rare": False},
+    {"name": "Proton", "symbol": "p", "mass": 0.9383, "color": 2, "rare": False},
+    {"name": "W Boson", "symbol": "W±", "mass": 80.379, "color": 4, "rare": True},
+    {"name": "Z Boson", "symbol": "Z⁰", "mass": 91.188, "color": 5, "rare": True},
+    {"name": "Higgs Boson", "symbol": "H⁰", "mass": 125.1, "color": 7, "rare": True},
+    {"name": "Top Quark", "symbol": "t", "mass": 173.1, "color": 2, "rare": True},
+]
+
 
 def _enter_collider_mode(self):
     """Enter Particle Collider mode — show preset menu."""

@@ -54,6 +54,11 @@ def _enter_turmite_mode(self):
     """Enter Turmites mode — show preset menu."""
     self.turmite_menu = True
     self.turmite_menu_sel = 0
+    self.turmite_steps_per_frame = 1
+    self.turmite_table = []
+    self.turmite_preset_name = ""
+    self.turmite_num_colors = 2
+    self.turmite_num_states = 1
     self._flash("Turmites (2D Turing Machine) — select a preset")
 
 
@@ -355,6 +360,9 @@ TRAFFIC_PRESETS = [
 
 def register(App):
     """Register turmite mode methods on the App class."""
+    from life.modes.prisoners_dilemma import TURMITE_PRESETS, TURMITE_COLORS
+    App.TURMITE_PRESETS = TURMITE_PRESETS
+    App.TURMITE_COLORS = TURMITE_COLORS
     App._turmite_step = _turmite_step
     App._turmite_init = _turmite_init
     App._enter_turmite_mode = _enter_turmite_mode

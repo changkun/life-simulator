@@ -1,11 +1,34 @@
 """Mode: kaleido — simulation mode for the life package."""
 import curses
 import math
+import math as _math
 import random
 import time
 
 
 from life.patterns import PATTERNS
+
+KALEIDO_PRESETS = [
+    ("Snowflake", "6-fold crystal symmetry with ice-blue palette", "snowflake"),
+    ("Mandala", "8-fold sacred geometry patterns", "mandala"),
+    ("Diamond", "4-fold diamond/square symmetry", "diamond"),
+    ("Starburst", "12-fold radial burst patterns", "starburst"),
+    ("Flower", "6-fold floral petal patterns", "flower"),
+    ("Vortex", "8-fold spiral vortex animation", "vortex"),
+    ("Hypnotic", "4-fold concentric pulsing rings", "hypnotic"),
+    ("Paint Mode", "6-fold interactive painting canvas", "paint"),
+]
+
+KALEIDO_PALETTES = [
+    ("Jewel Tones", [1, 2, 3, 4, 5, 6]),
+    ("Ice", [4, 5, 6, 7, 5, 4]),
+    ("Fire", [1, 2, 3, 2, 1, 3]),
+    ("Forest", [2, 3, 6, 3, 2, 6]),
+    ("Neon", [1, 4, 5, 6, 4, 1]),
+    ("Monochrome", [7, 7, 7, 7, 7, 7]),
+]
+
+KALEIDO_CHARS = " ·.:;+=*#%@"
 
 def _enter_kaleido_mode(self):
     """Enter Kaleidoscope mode — show preset menu."""

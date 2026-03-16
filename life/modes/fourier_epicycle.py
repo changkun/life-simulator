@@ -1,8 +1,47 @@
 """Mode: fourier — simulation mode for the life package."""
 import curses
 import math
+import math as _math
 import random
 import time
+
+FOURIER_PRESETS = [
+    ("Circle", "Perfect circle — single epicycle", "circle"),
+    ("Square Wave", "Square path — odd harmonics only", "square"),
+    ("Star", "Five-pointed star pattern", "star"),
+    ("Figure 8", "Lemniscate / figure-eight curve", "figure8"),
+    ("Heart", "Cardioid heart shape", "heart"),
+    ("Spiral Square", "Rounded-square spiral pattern", "spiralsquare"),
+    ("Free Draw", "Draw your own shape with the cursor", "freedraw"),
+]
+
+
+def _draw_line_ascii(self, x0, y0, x1, y1, max_y, max_x):
+    """Draw a simple line between two points using Bresenham's algorithm."""
+    dx = abs(x1 - x0)
+    dy = abs(y1 - y0)
+    sx = 1 if x1 > x0 else -1
+    sy = 1 if y1 > y0 else -1
+    err = dx - dy
+    cx, cy = x0, y0
+    steps = 0
+    max_steps = dx + dy + 1
+    while steps < max_steps:
+        if 0 <= cy < max_y and 0 <= cx < max_x - 1:
+            try:
+                self.stdscr.addch(cy, cx, ord('·'), curses.A_DIM)
+            except curses.error:
+                pass
+        if cx == x1 and cy == y1:
+            break
+        e2 = 2 * err
+        if e2 > -dy:
+            err -= dy
+            cx += sx
+        if e2 < dx:
+            err += dx
+            cy += sy
+        steps += 1
 
 
 def _fourier_dft(points):

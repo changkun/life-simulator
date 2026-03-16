@@ -4,6 +4,26 @@ import math
 import random
 import time
 
+_ORRERY_PLANETS = [
+    {"name": "Mercury", "sym": "☿", "a": 0.387, "e": 0.2056, "T": 0.241, "color": 7, "char": "m"},
+    {"name": "Venus",   "sym": "♀", "a": 0.723, "e": 0.0068, "T": 0.615, "color": 3, "char": "v"},
+    {"name": "Earth",   "sym": "⊕", "a": 1.000, "e": 0.0167, "T": 1.000, "color": 6, "char": "E"},
+    {"name": "Mars",    "sym": "♂", "a": 1.524, "e": 0.0934, "T": 1.881, "color": 1, "char": "M"},
+    {"name": "Jupiter", "sym": "♃", "a": 5.203, "e": 0.0484, "T": 11.86, "color": 3, "char": "J"},
+    {"name": "Saturn",  "sym": "♄", "a": 9.537, "e": 0.0539, "T": 29.46, "color": 3, "char": "S"},
+    {"name": "Uranus",  "sym": "⛢", "a": 19.19, "e": 0.0473, "T": 84.01, "color": 6, "char": "U"},
+    {"name": "Neptune", "sym": "♆", "a": 30.07, "e": 0.0086, "T": 164.8, "color": 4, "char": "N"},
+]
+
+ORRERY_PRESETS = [
+    ("Full Solar System", "All 8 planets with asteroid belt and comets", "full"),
+    ("Inner Planets", "Mercury through Mars — zoomed in view", "inner"),
+    ("Outer Planets", "Jupiter through Neptune — zoomed out view", "outer"),
+    ("Earth & Neighbors", "Venus, Earth, Mars with detailed orbital info", "neighbors"),
+    ("Comet Flyby", "Long-period comet passing through inner solar system", "comet"),
+    ("Grand Alignment", "All planets starting near alignment", "alignment"),
+]
+
 
 def _enter_orrery_mode(self):
     """Enter Solar System Orrery mode — show preset menu."""

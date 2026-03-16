@@ -41,6 +41,10 @@ def _nbody_init(self, preset_idx: int):
     cr, cc = rows / 2.0, cols / 2.0
 
     self.nbody_bodies = []
+    # Set defaults (may be overridden by preset)
+    self.nbody_grav_const = 1.0
+    self.nbody_dt = 0.02
+    self.nbody_softening = 0.5
 
     if setup_key == "solar":
         # Central star

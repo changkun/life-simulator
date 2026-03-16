@@ -29,6 +29,7 @@ def _hodge_init(self, preset_idx: int):
     self.hodge_preset_name = name
     self.hodge_generation = 0
     self.hodge_running = False
+    self.hodge_steps_per_frame = 1
     self.hodge_n_states = n_states
     self.hodge_k1 = k1
     self.hodge_k2 = k2
@@ -294,6 +295,9 @@ ISING_PRESETS = [
 
 def register(App):
     """Register hodge mode methods on the App class."""
+    from life.modes.cyclic_ca import HODGE_PRESETS, HODGE_COLORS
+    App.HODGE_PRESETS = HODGE_PRESETS
+    App.HODGE_COLORS = HODGE_COLORS
     App._enter_hodge_mode = _enter_hodge_mode
     App._exit_hodge_mode = _exit_hodge_mode
     App._hodge_init = _hodge_init

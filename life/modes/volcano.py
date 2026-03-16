@@ -4,6 +4,20 @@ import math
 import random
 import time
 
+VOLCANO_PRESETS = [
+    ("Strombolian", "Mild, rhythmic eruptions with lava fountains and slow flows", "strombolian"),
+    ("Plinian", "Catastrophic explosive eruption with massive ash column", "plinian"),
+    ("Hawaiian", "Effusive shield volcano with fluid lava rivers", "hawaiian"),
+    ("Vulcanian", "Viscous magma with violent bursts and pyroclastic surges", "vulcanian"),
+    ("Caldera Collapse", "Mega-eruption draining a magma chamber into caldera", "caldera"),
+    ("Fissure Eruption", "Curtain of fire along a rift with lava flooding a plain", "fissure"),
+]
+
+LAVA_CHARS = ' .·:;+*#@█'
+TERRAIN_CHARS = ' ░▒▓█'
+ASH_CHARS = ' .,:;░▒▓█'
+ROCK_CHARS = ' .:;oO0@#'
+
 
 def _enter_volcano_mode(self):
     """Enter Volcanic Eruption mode — show preset menu."""

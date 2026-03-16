@@ -413,6 +413,8 @@ SNN_PRESETS = [
 
 def register(App):
     """Register kuramoto mode methods on the App class."""
+    from life.modes.wave_equation import KURAMOTO_PRESETS
+    App.KURAMOTO_PRESETS = KURAMOTO_PRESETS
     App._enter_kuramoto_mode = _enter_kuramoto_mode
     App._exit_kuramoto_mode = _exit_kuramoto_mode
     App._kuramoto_init = _kuramoto_init

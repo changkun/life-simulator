@@ -129,6 +129,7 @@ def _erosion_init(self, preset_idx: int):
     self.erosion_preset_name = name
     self.erosion_generation = 0
     self.erosion_running = False
+    self.erosion_steps_per_frame = 1
     self.erosion_rain_rate = rain
     self.erosion_evap_rate = evap
     self.erosion_solubility = sol
@@ -451,6 +452,8 @@ def _draw_erosion(self, max_y: int, max_x: int):
 
 def register(App):
     """Register erosion mode methods on the App class."""
+    from life.modes.lightning import EROSION_PRESETS
+    App.EROSION_PRESETS = EROSION_PRESETS
     App._enter_erosion_mode = _enter_erosion_mode
     App._exit_erosion_mode = _exit_erosion_mode
     App._erosion_generate_terrain = _erosion_generate_terrain

@@ -451,6 +451,8 @@ CHEMOTAXIS_PRESETS = [
 
 def register(App):
     """Register bz mode methods on the App class."""
+    from life.modes.spiking_neural import BZ_PRESETS
+    App.BZ_PRESETS = BZ_PRESETS
     App._enter_bz_mode = _enter_bz_mode
     App._exit_bz_mode = _exit_bz_mode
     App._bz_init = _bz_init

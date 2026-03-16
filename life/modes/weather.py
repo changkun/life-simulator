@@ -4,6 +4,17 @@ import math
 import random
 import time
 
+WEATHER_PRESETS = [
+    ("Tropical Cyclone", "Intense low-pressure system with spiral rain bands", "cyclone"),
+    ("Cold Front Clash", "Cold and warm air masses collide along a frontal boundary", "fronts"),
+    ("High Pressure Dome", "Clear skies under a strong high-pressure ridge", "highpressure"),
+    ("Monsoon Season", "Moisture-laden winds sweep inland from warm oceans", "monsoon"),
+    ("Arctic Outbreak", "Polar high pushes frigid air southward with a sharp cold front", "arctic"),
+    ("Random Weather", "Randomly generated pressure systems and fronts", "random"),
+]
+
+CLOUD_CHARS = " ░▒▓█▓▒░"
+
 
 def _enter_weather_mode(self):
     """Enter Atmospheric Weather mode — show preset menu."""

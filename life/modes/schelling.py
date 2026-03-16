@@ -37,6 +37,7 @@ def _schelling_init(self, preset_idx: int):
     self.schelling_density = density
     self.schelling_n_groups = n_groups
     self.schelling_counts = []
+    self.schelling_steps_per_frame = 1
 
     max_y, max_x = self.stdscr.getmaxyx()
     self.schelling_rows = max(10, max_y - 4)
@@ -360,6 +361,8 @@ SPD_PRESETS = [
 
 def register(App):
     """Register schelling mode methods on the App class."""
+    from life.modes.lotka_volterra import SCHELLING_PRESETS
+    App.SCHELLING_PRESETS = SCHELLING_PRESETS
     App._enter_schelling_mode = _enter_schelling_mode
     App._exit_schelling_mode = _exit_schelling_mode
     App._schelling_init = _schelling_init
