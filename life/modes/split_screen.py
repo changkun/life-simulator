@@ -97,6 +97,7 @@ def _split_init(self, left_id, right_id):
     self.split_generation = 0
     self.split_running = False
     self.split_focus = 0       # 0=left, 1=right
+    self.split_coupling = 0.0  # 0.0=independent … 1.0=full coupling
     self.split_menu = False
     self.split_mode = True
     self._flash(f"Split: {self.split_left['name']}  vs  {self.split_right['name']} — Tab to swap focus, Space to start")
@@ -107,14 +108,32 @@ def _split_init(self, left_id, right_id):
 # ════════════════════════════════════════════════════════════════════
 
 def _split_step(self):
-    """Advance both panes by one generation (independent, no coupling)."""
-    for pane in (self.split_left, self.split_right):
-        if pane is None:
-            continue
-        _, step_fn, dens_fn = _ENGINES[pane["sim_id"]]
-        step_fn(pane["state"], None, 0.0)
-        pane["density"] = dens_fn(pane["state"])
-        pane["generation"] += 1
+    """Advance both panes by one generation with optional bidirectional coupling."""
+    left = self.split_left
+    right = self.split_right
+    if left is None or right is None:
+        return
+
+    coupling = getattr(self, "split_coupling", 0.0)
+
+    # Snapshot densities from previous frame *before* stepping,
+    # so each sim reacts to the other's last state (Jacobi-style).
+    density_l = left["density"]   # feed to right sim
+    density_r = right["density"]  # feed to left sim
+
+    _, step_l, dens_l = _ENGINES[left["sim_id"]]
+    _, step_r, dens_r = _ENGINES[right["sim_id"]]
+
+    # Each simulation receives the OTHER pane's density as input.
+    step_l(left["state"], density_r, coupling)
+    step_r(right["state"], density_l, coupling)
+
+    # Refresh density maps after stepping.
+    left["density"] = dens_l(left["state"])
+    right["density"] = dens_r(right["state"])
+
+    left["generation"] += 1
+    right["generation"] += 1
     self.split_generation += 1
 
 
@@ -279,10 +298,16 @@ def _draw_split(self, max_y, max_x):
     # ── Title bar ──
     state = "\u25b6 RUNNING" if self.split_running else "\u23f8 PAUSED"
     focus_label = "LEFT" if self.split_focus == 0 else "RIGHT"
+    coupling = getattr(self, "split_coupling", 0.0)
+    if coupling > 0.01:
+        coupling_label = f"coupling: {int(coupling * 100)}%"
+    else:
+        coupling_label = "coupling: OFF"
     title = (f" SPLIT-SCREEN"
              f"  |  gen {self.split_generation}"
              f"  |  {state}"
-             f"  |  focus: {focus_label}")
+             f"  |  focus: {focus_label}"
+             f"  |  {coupling_label}")
     try:
         self.stdscr.addstr(0, 0, title[:max_x - 1],
                            curses.color_pair(7) | curses.A_BOLD)
@@ -293,11 +318,24 @@ def _draw_split(self, max_y, max_x):
     divider_x = max_x // 2
     pane_h = max(5, max_y - 3)  # -1 title, -1 hint, -1 padding
 
-    # Draw the vertical divider
+    # Draw the vertical divider with coupling indicators
+    coupling = getattr(self, "split_coupling", 0.0)
+    mid_y = 1 + pane_h // 2
     for y in range(1, min(1 + pane_h, max_y - 1)):
         try:
-            self.stdscr.addstr(y, divider_x, "\u2502",
-                               curses.color_pair(7) | curses.A_DIM)
+            if coupling > 0.01 and abs(y - mid_y) <= 1:
+                # Show bidirectional arrows at the center of the divider
+                if y == mid_y:
+                    sym = "\u21c4"  # ⇄ rightwards arrow over leftwards arrow
+                elif y == mid_y - 1:
+                    sym = "\u2561"  # ╡
+                else:
+                    sym = "\u255e"  # ╞
+                self.stdscr.addstr(y, divider_x, sym,
+                                   curses.color_pair(7) | curses.A_BOLD)
+            else:
+                self.stdscr.addstr(y, divider_x, "\u2502",
+                                   curses.color_pair(7) | curses.A_DIM)
         except curses.error:
             pass
 
@@ -320,7 +358,7 @@ def _draw_split(self, max_y, max_x):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [Tab]=swap focus [r]=reset pane [R]=menu [s]=swap sims [q]=exit [>/<]=speed"
+            hint = " [Space]=play [n]=step [Tab]=focus [c]=coupling [+/-]=adjust [r]=reset [s]=swap [R]=menu [q]=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -445,6 +483,34 @@ def _handle_split_key(self, key):
     if key == ord("<"):
         if self.speed_idx > 0:
             self.speed_idx -= 1
+        return True
+    # c: cycle coupling through preset levels
+    if key == ord("c"):
+        levels = [0.0, 0.2, 0.5, 0.8, 1.0]
+        cur = getattr(self, "split_coupling", 0.0)
+        # Find next level above current (with tolerance)
+        nxt = levels[0]
+        for lv in levels:
+            if lv > cur + 0.01:
+                nxt = lv
+                break
+        self.split_coupling = nxt
+        if nxt == 0.0:
+            self._flash("Coupling OFF — simulations independent")
+        else:
+            pct = int(nxt * 100)
+            self._flash(f"Coupling {pct}% — simulations influence each other")
+        return True
+    # +/-: fine-adjust coupling strength by 5%
+    if key == ord("+") or key == ord("="):
+        self.split_coupling = min(1.0, getattr(self, "split_coupling", 0.0) + 0.05)
+        self._flash(f"Coupling {int(self.split_coupling * 100)}%")
+        return True
+    if key == ord("-") or key == ord("_"):
+        self.split_coupling = max(0.0, getattr(self, "split_coupling", 0.0) - 0.05)
+        if self.split_coupling < 0.01:
+            self.split_coupling = 0.0
+        self._flash(f"Coupling {int(self.split_coupling * 100)}%")
         return True
     return True
 

@@ -4,6 +4,27 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add bidirectional simulation coupling to split-screen mode
+
+Split-screen mode now supports real-time bidirectional coupling between its two simulation panes, turning it from a comparison tool into a cross-domain emergence laboratory. Each simulation can feed its density field into the other at a configurable coupling strength, enabling phenomena that exist in neither simulation alone.
+
+**`life/modes/split_screen.py`** (~60 lines changed):
+
+- **Jacobi-style coupling in `_split_step()`**: Both panes' density maps are snapshotted before either steps, then each simulation receives the *other* pane's density and the current coupling strength. This eliminates temporal bias — neither pane has update priority.
+- **Coupling state**: `split_coupling` (0.0–1.0) initialized to 0.0, so existing behavior is fully backwards compatible.
+- **Key bindings**:
+  - `c` — cycle through preset coupling levels: 0% → 20% → 50% → 80% → 100% → 0%
+  - `+`/`-` — fine-adjust coupling by 5% increments
+- **Title bar**: displays current coupling percentage or "OFF".
+- **Visual divider**: shows a `⇄` bidirectional arrow at the center of the vertical divider when coupling is active.
+- **Hint bar**: updated to include `[c]=coupling [+/-]=adjust` controls.
+
+**`docs/meta-modes.md`**: Updated Split-Screen section to document coupling mechanics, Jacobi stepping, and exploration suggestions for cross-domain emergence.
+
+**Design:** Leverages the existing `(state, other_density, coupling_strength)` step function signature that all eight simulation engines already support. No engine code was modified — the change is entirely in the split-screen orchestration layer.
+
+---
+
 ### Feature: Add 2D spatial frequency spectrum overlay
 
 Added a real-time 2D Discrete Fourier Transform overlay that reveals hidden periodic structures, symmetry, and standing waves in any running simulation. The spectrum panel renders the log-magnitude frequency domain using the inferno colormap, DC-centered so symmetric patterns produce symmetric spectra. Works universally across all 130+ modes via the existing `_get_minimap_data()` sampling interface.

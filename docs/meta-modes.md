@@ -269,11 +269,13 @@ Boundary influence is computed by extracting the edge columns (or rows) of one s
 
 ### Background
 
-Split-Screen Dual Simulation runs any two of the eight mini-simulation engines side by side in independent panes, each with its own state, generation counter, and density grid. Unlike Observatory (which tiles 2–9 viewports) or Mashup (which couples two engines on the same grid), Split-Screen focuses on clean, uncoupled pairwise comparison with per-pane control: reset one side, swap the two panes, or toggle input focus with Tab.
+Split-Screen Dual Simulation runs any two of the eight mini-simulation engines side by side with optional bidirectional coupling. Each pane has its own state, generation counter, and density grid. Unlike Observatory (which tiles 2–9 viewports with no coupling) or Mashup (which couples two engines on the same grid), Split-Screen offers a spectrum from clean uncoupled comparison to full cross-domain emergence — a fluid simulation's density can drive a cellular automaton's birth threshold, a particle swarm's positions can seed a reaction-diffusion pattern, or an Ising model's magnetization can modulate a wave equation's damping.
 
 ### How it works
 
-The terminal is divided vertically at the midpoint. A single-character `│` divider separates the panes. Each pane wraps one of the eight engines from the mashup module (Game of Life, Wave, Reaction-Diffusion, Forest Fire, Boids, Ising, Rock-Paper-Scissors, Physarum) via the shared `_ENGINES` registry, reusing `init`, `step`, and `density` functions. The two panes step in lockstep each frame with zero coupling — neither pane's density influences the other.
+The terminal is divided vertically at the midpoint. A single-character `│` divider separates the panes. Each pane wraps one of the eight engines from the mashup module (Game of Life, Wave, Reaction-Diffusion, Forest Fire, Boids, Ising, Rock-Paper-Scissors, Physarum) via the shared `_ENGINES` registry, reusing `init`, `step`, and `density` functions.
+
+Coupling is controlled by a `split_coupling` parameter (0.0–1.0). At 0.0 the panes are fully independent. At higher values, each simulation receives the *other* pane's density map as input before stepping (Jacobi-style: both densities are snapshotted before either steps, so neither has temporal priority). All eight engines already accept `(state, other_density, coupling_strength)` in their step functions — Split-Screen simply wires the cross-pane density exchange. When coupling is active, the vertical divider shows a `⇄` bidirectional arrow at its center, and the title bar displays the current coupling percentage.
 
 A preset menu offers 8 curated pairings (e.g., "Game of Life vs Lenia-style RD", "Boids vs Physarum") for quick launch, plus a two-step custom picker that lets you choose any left and right engine independently. Focus state (`split_focus`) determines which pane's title bar is highlighted with a reverse-video diamond marker; Tab swaps focus. The `r` key resets only the focused pane, reinitializing its engine state and zeroing its generation counter while the other pane continues undisturbed.
 
@@ -283,6 +285,9 @@ A preset menu offers 8 curated pairings (e.g., "Game of Life vs Lenia-style RD",
 - Use `s` to swap panes and see how visual placement affects your perception of the two simulations.
 - Reset one pane with `r` while the other runs to compare fresh vs. evolved states of the same engine.
 - Use the custom picker to pair any two engines — try "Ising vs Rock-Paper-Scissors" for two spatial competition models.
+- Press `c` to cycle coupling (0% → 20% → 50% → 80% → 100% → off) and watch cross-domain patterns emerge — a Wave/Ising pairing at 50% coupling produces magnetization waves that don't exist in either simulation alone.
+- Fine-tune coupling with `+`/`-` (5% increments) to find the critical threshold where one simulation begins to entrain the other.
+- Try "Reaction-Diffusion vs Physarum" with high coupling — the RD spots become food sources for the slime mold network.
 
 ---
 
