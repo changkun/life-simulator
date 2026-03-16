@@ -107,30 +107,28 @@ def _dpend_derivs(self, state: list[float]) -> list[float]:
     l1, l2 = self.dpend_l1, self.dpend_l2
     g = self.dpend_g
 
-    delta = t2 - t1
+    delta = t1 - t2
     sin_d = math.sin(delta)
     cos_d = math.cos(delta)
     M = m1 + m2
 
-    den1 = l1 * (M - m2 * cos_d * cos_d)
-    den2 = l2 * (M - m2 * cos_d * cos_d)
+    # Denominator: l1 * (2*m1 + m2 - m2*cos(2*delta))
+    # which equals l1 * (2*M - m2*(1 + cos(2*delta)))
+    # Guard against division by zero
+    denom_factor = 2.0 * M - m2 * (1.0 + math.cos(2.0 * delta))
+    if abs(denom_factor) < 1e-12:
+        denom_factor = 1e-12 if denom_factor >= 0 else -1e-12
 
-    # Prevent division by zero
-    if abs(den1) < 1e-12:
-        den1 = 1e-12
-    if abs(den2) < 1e-12:
-        den2 = 1e-12
-
-    dw1 = (-g * M * math.sin(t1)
+    dw1 = (-g * (2.0 * m1 + m2) * math.sin(t1)
            - m2 * g * math.sin(t1 - 2.0 * t2)
            - 2.0 * sin_d * m2 * (w2 * w2 * l2 + w1 * w1 * l1 * cos_d)
-           ) / (l1 * (2.0 * M - m2 * (1.0 + math.cos(2.0 * delta))))
+           ) / (l1 * denom_factor)
 
     dw2 = (2.0 * sin_d * (
         w1 * w1 * l1 * M
         + g * M * math.cos(t1)
         + w2 * w2 * l2 * m2 * cos_d)
-           ) / (l2 * (2.0 * M - m2 * (1.0 + math.cos(2.0 * delta))))
+           ) / (l2 * denom_factor)
 
     return [w1, w2, dw1, dw2]
 

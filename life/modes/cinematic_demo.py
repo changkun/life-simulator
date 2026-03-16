@@ -222,8 +222,9 @@ def _cinematic_launch_act(self):
     act = DEMO_ACTS[act_id]
 
     # Capture previous density for crossfade
-    if hasattr(self, 'cinem_density') and self.cinem_density is not None:
-        self.cinem_prev_density = [row[:] for row in self.cinem_density]
+    prev = getattr(self, 'cinem_density', None)
+    if isinstance(prev, list) and prev:
+        self.cinem_prev_density = [row[:] for row in prev]
     else:
         self.cinem_prev_density = None
 

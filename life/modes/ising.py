@@ -295,33 +295,25 @@ def _draw_ising(self, max_y: int, max_x: int):
             pass
 
 # ══════════════════════════════════════════════════════════════════════
-#  Snowflake Growth (Reiter Crystal) — Mode *
+#  Ising Model Presets
 # ══════════════════════════════════════════════════════════════════════
 
-SNOWFLAKE_PRESETS = [
-    # (name, description, alpha, beta, gamma, mu, symmetric)
-    # alpha = deposition rate, beta = initial vapor (supersaturation),
-    # gamma = noise amplitude, mu = diffusion rate (0-1), symmetric = enforce 6-fold
-    ("Classic Dendrite", "Balanced growth — six-fold branching arms", 0.40, 0.40, 0.0001, 0.8, True),
-    ("Thin Needles", "Low vapor — long thin branches", 0.30, 0.30, 0.0001, 0.9, True),
-    ("Broad Plates", "High vapor — wide faceted plates", 0.50, 0.55, 0.0001, 0.5, True),
-    ("Fernlike", "Fast deposition — highly branched fern shapes", 0.65, 0.35, 0.0001, 0.7, True),
-    ("Stellar Dendrite", "Moderate vapor — classic star snowflake", 0.45, 0.45, 0.0001, 0.85, True),
-    ("Sectored Plate", "High vapor, low deposition — sector plates", 0.20, 0.60, 0.0001, 0.6, True),
-    ("Simple Hexagon", "Very high vapor — compact hexagonal prism", 0.15, 0.70, 0.0, 0.4, True),
-    ("Hollow Columns", "Medium vapor — hollow column morphology", 0.35, 0.50, 0.0, 0.75, True),
-    ("Noisy Crystal", "High noise — irregular natural look", 0.40, 0.40, 0.005, 0.8, False),
-    ("Asymmetric Growth", "No symmetry — naturalistic random crystal", 0.40, 0.40, 0.001, 0.8, False),
-    ("Fast Dendrite", "Rapid low-diffusion — dense fractal arms", 0.55, 0.35, 0.0001, 0.5, True),
-    ("Sparse Frost", "Very low vapor — slow sparse crystal", 0.25, 0.25, 0.0001, 0.9, True),
+ISING_PRESETS = [
+    # (name, description, temperature, ext_field, init_style)
+    # init_style: "random", "all_up", "all_down", "half"
+    ("Critical Point", "T~2.27 -- phase transition with fractal domains", 2.269, 0.0, "random"),
+    ("Low Temperature", "T=1.0 -- ordered, large aligned domains", 1.0, 0.0, "random"),
+    ("Very Cold", "T=0.5 -- near ground state, almost uniform", 0.5, 0.0, "random"),
+    ("High Temperature", "T=4.0 -- disordered, random-looking spins", 4.0, 0.0, "random"),
+    ("Quench to Cold", "Start random, T=0.1 -- watch domains coarsen", 0.1, 0.0, "random"),
+    ("External Field", "T=2.0 with field h=0.5 -- biased alignment", 2.0, 0.5, "random"),
+    ("Domain Wall", "T=1.5 -- half up / half down, watch boundary evolve", 1.5, 0.0, "half"),
+    ("All Up + Heat", "Start aligned, T=3.0 -- watch order melt", 3.0, 0.0, "all_up"),
 ]
-
-
 
 
 def register(App):
     """Register ising mode methods on the App class."""
-    from life.modes.hodgepodge import ISING_PRESETS
     App.ISING_PRESETS = ISING_PRESETS
     App._enter_ising_mode = _enter_ising_mode
     App._exit_ising_mode = _exit_ising_mode

@@ -4,6 +4,26 @@ import math
 import random
 import time
 
+ATTRACTOR_PRESETS = [
+    # (name, description, attractor_type, params_dict)
+    ("Lorenz — Classic Butterfly", "The iconic σ=10, ρ=28, β=8/3 chaotic attractor",
+     "lorenz", {"sigma": 10.0, "rho": 28.0, "beta": 8.0 / 3.0}),
+    ("Lorenz — High Rho", "More chaotic regime with ρ=99.96",
+     "lorenz", {"sigma": 10.0, "rho": 99.96, "beta": 8.0 / 3.0}),
+    ("Rössler — Spiral", "Gentle spiral with occasional folds",
+     "rossler", {"a": 0.2, "b": 0.2, "c": 5.7}),
+    ("Rössler — Funnel", "Wide funnel regime a=0.5",
+     "rossler", {"a": 0.5, "b": 1.0, "c": 3.0}),
+    ("Thomas — Cyclically Symmetric", "Smooth 3D helical chaos, b=0.208186",
+     "thomas", {"b": 0.208186}),
+    ("Aizawa — Torus Knot", "Toroidal attractor with complex structure",
+     "aizawa", {"a": 0.95, "b": 0.7, "c": 0.6, "d": 3.5, "e": 0.25, "f": 0.1}),
+    ("Halvorsen — Symmetric", "Three-fold rotational symmetry, a=1.89",
+     "halvorsen", {"a": 1.89}),
+    ("Chen — Double Scroll", "Similar to Lorenz with different topology",
+     "chen", {"a": 35.0, "b": 3.0, "c": 28.0}),
+]
+
 
 def _enter_attractor_mode(self):
     """Enter Strange Attractor mode — show preset menu."""
@@ -549,7 +569,6 @@ QWALK_PRESETS = [
 
 def register(App):
     """Register attractor mode methods on the App class."""
-    from life.modes.mhd_plasma import ATTRACTOR_PRESETS
     App.ATTRACTOR_PRESETS = ATTRACTOR_PRESETS
     App._enter_attractor_mode = _enter_attractor_mode
     App._exit_attractor_mode = _exit_attractor_mode

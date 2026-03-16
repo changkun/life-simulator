@@ -1,6 +1,5 @@
 """Mode: lv — simulation mode for the life package."""
 import curses
-import math
 import random
 import time
 
@@ -201,8 +200,6 @@ def _lv_step(self):
                     timers[r][c] = self.lv_grass_regrow
                     energy[r][c] = 0
                 continue
-
-        was_grass = (grid[nr][nc] == 0)
 
         # Move predator
         grid[r][c] = -1

@@ -4,6 +4,22 @@ import math
 import random
 import time
 
+# ══════════════════════════════════════════════════════════════════════
+#  Traffic Flow (Nagel-Schreckenberg model) — Presets
+# ══════════════════════════════════════════════════════════════════════
+
+TRAFFIC_PRESETS = [
+    # (name, description, vmax, p_slow, density, lanes)
+    ("Light Traffic", "Low density — free flow, cars cruise at vmax", 5, 0.3, 0.10, 4),
+    ("Moderate Traffic", "Medium density — occasional slowdowns appear", 5, 0.3, 0.25, 4),
+    ("Heavy Traffic", "High density — phantom jams emerge spontaneously", 5, 0.3, 0.40, 4),
+    ("Congested", "Very high density — stop-and-go waves dominate", 5, 0.3, 0.55, 4),
+    ("Slow Road", "Low speed limit (vmax=2) — tighter packing", 2, 0.3, 0.35, 4),
+    ("Cautious Drivers", "High random braking — frequent disruptions", 5, 0.5, 0.25, 4),
+    ("Aggressive Drivers", "Low random braking — smooth until it isn't", 5, 0.1, 0.30, 4),
+    ("Highway (8 lanes)", "Wide highway with moderate traffic", 5, 0.3, 0.25, 8),
+]
+
 
 def _enter_traffic_mode(self):
     """Enter Traffic Flow mode — show preset menu."""
@@ -349,7 +365,6 @@ FLUID_PRESETS = [
 
 def register(App):
     """Register traffic mode methods on the App class."""
-    from life.modes.turmites import TRAFFIC_PRESETS
     App.TRAFFIC_PRESETS = TRAFFIC_PRESETS
     App._enter_traffic_mode = _enter_traffic_mode
     App._exit_traffic_mode = _exit_traffic_mode

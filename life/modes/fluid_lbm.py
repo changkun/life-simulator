@@ -7,6 +7,35 @@ import time
 
 from life.constants import SPEEDS
 
+# ══════════════════════════════════════════════════════════════════════
+#  Fluid Dynamics (Lattice Boltzmann Method) — Mode F
+# ══════════════════════════════════════════════════════════════════════
+
+# D2Q9 lattice velocities: (ex, ey) for each of 9 directions
+#   6 2 5
+#   3 0 1
+#   7 4 8
+FLUID_EX = [0, 1, 0, -1,  0, 1, -1, -1,  1]
+FLUID_EY = [0, 0, 1,  0, -1, 1,  1, -1, -1]
+FLUID_W  = [4.0/9, 1.0/9, 1.0/9, 1.0/9, 1.0/9,
+            1.0/36, 1.0/36, 1.0/36, 1.0/36]
+FLUID_OPP = [0, 3, 4, 1, 2, 7, 8, 5, 6]  # opposite direction index
+
+FLUID_SPEED_CHARS = [" ", "░", "▒", "▓", "█"]
+FLUID_VORT_POS = ["·", "∘", "○", "◎", "◉"]   # counterclockwise
+FLUID_VORT_NEG = ["·", "∙", "•", "●", "⬤"]    # clockwise
+
+FLUID_PRESETS = [
+    # (name, description, omega, inflow_speed, obstacle_type)
+    ("Wind Tunnel", "Uniform flow past a cylindrical obstacle", 1.4, 0.10, "cylinder"),
+    ("Von Kármán Street", "Vortex shedding behind a cylinder (low viscosity)", 1.85, 0.12, "cylinder_small"),
+    ("Lid-Driven Cavity", "Enclosed box with moving top wall", 1.5, 0.10, "cavity"),
+    ("Channel Flow", "Poiseuille flow between parallel walls", 1.6, 0.08, "channel"),
+    ("Obstacle Course", "Flow weaving through multiple obstacles", 1.5, 0.10, "obstacles"),
+    ("Turbulence", "High-speed chaotic flow with perturbations", 1.9, 0.15, "turbulence"),
+]
+
+
 def _enter_fluid_mode(self):
     """Enter Fluid Dynamics mode — show preset menu."""
     self.fluid_menu = True
@@ -523,6 +552,14 @@ def _draw_fluid(self, max_y: int, max_x: int):
 
 def register(App):
     """Register fluid mode methods on the App class."""
+    App.FLUID_EX = FLUID_EX
+    App.FLUID_EY = FLUID_EY
+    App.FLUID_W = FLUID_W
+    App.FLUID_OPP = FLUID_OPP
+    App.FLUID_SPEED_CHARS = FLUID_SPEED_CHARS
+    App.FLUID_VORT_POS = FLUID_VORT_POS
+    App.FLUID_VORT_NEG = FLUID_VORT_NEG
+    App.FLUID_PRESETS = FLUID_PRESETS
     App._enter_fluid_mode = _enter_fluid_mode
     App._exit_fluid_mode = _exit_fluid_mode
     App._fluid_init = _fluid_init

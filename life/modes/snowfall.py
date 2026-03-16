@@ -106,6 +106,7 @@ def _snowfall_init(self, preset: str):
             random.uniform(0, math.pi * 2),
         ])
 
+    self.snowfall_dt = 0.03
     self.snowfall_running = True
 
 
@@ -388,6 +389,105 @@ def _draw_snowfall(self, max_y: int, max_x: int):
     t = self.snowfall_time
     ground_base = rows - 2
     vis = self.snowfall_visibility
+
+    _SNOWFLAKE_CHARS_SMALL = "..,:;'"
+    _SNOWFLAKE_CHARS_MED = "o*+~^%&"
+    _SNOWFLAKE_CHARS_LARGE = "*#@OQ0"
+    _SNOW_GROUND_CHARS = "_.=-~+#@"
+
+    try:
+        has_color = curses.has_colors()
+    except curses.error:
+        has_color = False
+
+    # ── Draw snowflakes ──
+    for f in self.snowfall_flakes:
+        sx = int(f[0])
+        sy = int(f[1])
+        if 0 <= sy < rows - 1 and 0 <= sx < cols - 1:
+            size = int(f[4])
+            wobble_phase = f[5]
+            try:
+                if size == 0:
+                    ci = int(wobble_phase * 2) % len(_SNOWFLAKE_CHARS_SMALL)
+                    ch = _SNOWFLAKE_CHARS_SMALL[ci]
+                    attr = curses.A_DIM
+                elif size == 1:
+                    ci = int(wobble_phase * 1.5) % len(_SNOWFLAKE_CHARS_MED)
+                    ch = _SNOWFLAKE_CHARS_MED[ci]
+                    attr = 0
+                else:
+                    ci = int(wobble_phase) % len(_SNOWFLAKE_CHARS_LARGE)
+                    ch = _SNOWFLAKE_CHARS_LARGE[ci]
+                    attr = curses.A_BOLD
+                # Visibility fade: dimmer flakes at low visibility
+                if vis < 0.5 and random.random() > vis * 2:
+                    attr = curses.A_DIM
+                self.stdscr.addstr(sy, sx, ch, attr)
+            except curses.error:
+                pass
+
+    # ── Draw snow accumulation ──
+    for c in range(cols):
+        accum = self.snowfall_accumulation[c] if c < len(self.snowfall_accumulation) else 0
+        if accum > 0.1:
+            height = int(accum)
+            for h in range(height + 1):
+                y = ground_base - h
+                if 0 <= y < rows - 1 and 0 <= c < cols - 1:
+                    ci = min(h, len(_SNOW_GROUND_CHARS) - 1)
+                    try:
+                        self.stdscr.addstr(y, c, _SNOW_GROUND_CHARS[ci], curses.A_BOLD)
+                    except curses.error:
+                        pass
+
+    # ── Draw drift particles ──
+    for d in self.snowfall_drift_particles:
+        dx, dy = int(d[0]), int(d[1])
+        if 0 <= dy < rows - 1 and 0 <= dx < cols - 1:
+            try:
+                self.stdscr.addstr(dy, dx, '~', curses.A_DIM)
+            except curses.error:
+                pass
+
+    # ── Info panel ──
+    if getattr(self, 'snowfall_show_info', False):
+        total_accum = sum(self.snowfall_accumulation)
+        info_lines = [
+            f"Flakes: {len(self.snowfall_flakes)}",
+            f"Wind: {self.snowfall_wind_speed:.1f} {'>' if self.snowfall_wind_dir > 0 else '<'}",
+            f"Temp: {self.snowfall_temperature:.0f}C",
+            f"Accum: {total_accum:.0f}",
+            f"Vis: {self.snowfall_visibility:.0%}",
+            f"Speed: {self.snowfall_speed}x",
+        ]
+        for il, line in enumerate(info_lines):
+            iy = 1 + il
+            if iy < rows - 2 and cols > len(line) + 4:
+                try:
+                    self.stdscr.addstr(iy, cols - len(line) - 3, f" {line} ", curses.A_REVERSE)
+                except curses.error:
+                    pass
+
+    # ── Status bar ──
+    gen_str = f"Gen {self.snowfall_generation}"
+    state = "RUN" if self.snowfall_running else "PAUSED"
+    status = f" {gen_str}  {state}  t={self.snowfall_time:.1f}s  spd={self.snowfall_speed}x"
+    status_y = rows - 2
+    try:
+        self.stdscr.addstr(status_y, 0, status[:cols - 1], curses.A_REVERSE)
+        pad = cols - 1 - len(status)
+        if pad > 0:
+            self.stdscr.addstr(status_y, len(status), " " * pad, curses.A_REVERSE)
+    except curses.error:
+        pass
+
+    hint = " SPC=play n=step +/-=spd w/W=wind d=flip f/F=density t/T=temp i=info r=reset m=menu q=exit"
+    if status_y + 1 < rows:
+        try:
+            self.stdscr.addstr(status_y + 1, 0, hint[:cols - 1], curses.A_DIM)
+        except curses.error:
+            pass
 
 
 def register(App):

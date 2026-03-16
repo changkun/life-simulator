@@ -125,9 +125,9 @@ def _aco_step(self):
             for food in food_list:
                 fdr = food[0] - ar
                 fdc = food[1] - ac
-                if abs(fdr) < 2.5 and abs(fdc) < 2.5 and food[2] > 0:
+                if abs(fdr) < 2.5 and abs(fdc) < 2.5 and food[2] > 0.5:
                     ant[3] = 1.0  # pick up food
-                    food[2] -= 1.0
+                    food[2] = max(0.0, food[2] - 1.0)
                     heading = math.atan2(nr - ar, nc - ac) + random.uniform(-0.3, 0.3)
                     break
 

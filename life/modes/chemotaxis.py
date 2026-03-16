@@ -4,6 +4,27 @@ import math
 import random
 import time
 
+CHEMOTAXIS_PRESETS = [
+    # (name, description, growth_rate, nutrient_diff, motility, chemotaxis,
+    #  signal_prod, signal_decay, consumption, init_type)
+    ("Eden Cluster", "Dense compact colony — nutrient-rich, low motility",
+     0.8, 0.05, 0.01, 0.0, 0.0, 0.1, 0.3, "center_seed"),
+    ("DLA Tendrils", "Diffusion-limited branching — starved environment",
+     0.5, 0.08, 0.005, 0.3, 0.2, 0.05, 0.6, "center_seed"),
+    ("Dense Branching", "Branchy morphology with moderate nutrients",
+     0.6, 0.06, 0.02, 0.15, 0.1, 0.08, 0.4, "center_seed"),
+    ("Concentric Rings", "Ring formation via chemotactic waves",
+     0.4, 0.04, 0.03, 0.5, 0.4, 0.02, 0.5, "center_seed"),
+    ("Swarming Colony", "Highly motile — rapid spreading",
+     0.7, 0.05, 0.08, 0.4, 0.3, 0.06, 0.3, "center_seed"),
+    ("Multi-Colony", "Multiple competing colonies",
+     0.6, 0.05, 0.02, 0.2, 0.15, 0.08, 0.4, "multi_seed"),
+    ("Nutrient Gradient", "Colony expanding along nutrient gradient",
+     0.5, 0.06, 0.015, 0.25, 0.2, 0.06, 0.4, "gradient_seed"),
+    ("Quorum Sensing", "Density-dependent collective behavior",
+     0.5, 0.05, 0.01, 0.6, 0.5, 0.03, 0.35, "center_seed"),
+]
+
 
 def _enter_chemo_mode(self):
     """Enter Chemotaxis & Bacterial Colony Growth mode — show preset menu."""
@@ -491,36 +512,8 @@ def _draw_chemo(self, max_y: int, max_x: int):
             pass
 
 
-# ══════════════════════════════════════════════════════════════════════
-#  Magnetohydrodynamics (MHD) Plasma — Mode }
-# ══════════════════════════════════════════════════════════════════════
-
-MHD_PRESETS = [
-    # (name, description, resistivity, viscosity, pressure, init_type)
-    ("Harris Current Sheet", "Classic reconnection setup — anti-parallel B fields",
-     0.008, 0.005, 1.0, "harris"),
-    ("Orszag-Tang Vortex", "MHD turbulence from colliding vortices",
-     0.005, 0.005, 0.8, "orszag_tang"),
-    ("Magnetic Island", "Tearing-mode instability in a pinch",
-     0.01, 0.008, 1.0, "island"),
-    ("Blast Wave", "Explosion in a magnetized medium",
-     0.005, 0.005, 1.2, "blast"),
-    ("Kelvin-Helmholtz", "Shear flow instability with magnetic field",
-     0.008, 0.01, 1.0, "kh"),
-    ("Double Current Sheet", "Two reconnection sites — complex dynamics",
-     0.01, 0.005, 1.0, "double_harris"),
-    ("Magnetic Flux Rope", "Twisted magnetic structure relaxation",
-     0.006, 0.006, 0.9, "flux_rope"),
-    ("Random Turbulence", "Decaying MHD turbulence from random fields",
-     0.008, 0.008, 1.0, "random"),
-]
-
-
-
-
 def register(App):
     """Register chemo mode methods on the App class."""
-    from life.modes.bz_reaction import CHEMOTAXIS_PRESETS
     App.CHEMOTAXIS_PRESETS = CHEMOTAXIS_PRESETS
     App._enter_chemo_mode = _enter_chemo_mode
     App._exit_chemo_mode = _exit_chemo_mode

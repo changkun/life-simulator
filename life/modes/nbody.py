@@ -7,6 +7,19 @@ import time
 
 from life.constants import SPEEDS
 
+NBODY_CHARS = ["☉", "●", "◉", "◆", "★", "■", "▲", "♦"]
+NBODY_COLORS = [3, 4, 2, 1, 5, 6, 7, 3]  # color pair indices (yellow, blue, green, red, etc.)
+
+NBODY_PRESETS = [
+    # (name, description, setup_key)
+    ("Solar System", "Central star with orbiting planets", "solar"),
+    ("Binary Star", "Two massive stars in mutual orbit", "binary"),
+    ("Galaxy Collision", "Two rotating disk galaxies merging", "galaxy"),
+    ("Random Cluster", "Random masses in gravitational collapse", "random"),
+    ("Figure-Eight", "Three equal masses in a figure-8 orbit", "figure8"),
+    ("Lagrange Points", "Large mass with small bodies at L4/L5", "lagrange"),
+]
+
 def _enter_nbody_mode(self):
     """Enter N-Body Gravity mode — show preset menu."""
     self.nbody_menu = True
@@ -529,27 +542,6 @@ def _draw_nbody(self, max_y: int, max_x: int):
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
         except curses.error:
             pass
-
-# ══════════════════════════════════════════════════════════════════════
-#  Diffusion-Limited Aggregation (DLA) — Mode D
-# ══════════════════════════════════════════════════════════════════════
-
-DLA_PRESETS = [
-    # (name, description, setup_key)
-    ("Crystal Growth", "Single seed — classic dendritic fractal", "single"),
-    ("Multi-Seed", "Several seeds grow and merge", "multi"),
-    ("Snowflake", "6-fold symmetry from center seed", "snowflake"),
-    ("Electrodeposition", "Bottom-edge cathode with downward drift", "electro"),
-    ("Line Seed", "Horizontal line seed — forest-like growth", "line"),
-    ("Ring Seed", "Circular ring seed — inward/outward growth", "ring"),
-]
-
-# Characters for crystal age visualization (oldest -> newest)
-DLA_CRYSTAL_CHARS = ["█", "▓", "▒", "░", "∙"]
-DLA_WALKER_CHAR = "·"
-
-
-
 
 def register(App):
     """Register nbody mode methods on the App class."""

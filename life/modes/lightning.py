@@ -7,6 +7,18 @@ import time
 
 from life.constants import SPEEDS
 
+LIGHTNING_PRESETS = [
+    ("Classic Lightning", "Natural branching bolt", 2.0, "top"),
+    ("Sparse Bolt", "Few branches, straighter", 4.0, "top"),
+    ("Dense Branching", "Heavily branched", 1.0, "top"),
+    ("Lichtenberg Figure", "Radial fractal", 1.5, "center"),
+    ("Point Discharge", "Star-like from single point", 2.0, "point"),
+    ("Feathery Discharge", "Maximum branching", 0.5, "center"),
+    ("Minimal Tree", "Moderate branching", 3.0, "top"),
+    ("Ball Lightning", "Sparse radial discharge", 3.5, "center"),
+]
+
+
 def _enter_lightning_mode(self):
     """Enter Lightning / Dielectric Breakdown mode — show preset menu."""
     self.lightning_menu = True
@@ -434,7 +446,6 @@ EROSION_PRESETS = [
 
 def register(App):
     """Register lightning mode methods on the App class."""
-    from life.modes.wave_function_collapse import LIGHTNING_PRESETS
     App.LIGHTNING_PRESETS = LIGHTNING_PRESETS
     App._enter_lightning_mode = _enter_lightning_mode
     App._exit_lightning_mode = _exit_lightning_mode

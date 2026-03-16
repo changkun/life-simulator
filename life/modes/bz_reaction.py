@@ -4,6 +4,30 @@ import math
 import random
 import time
 
+BZ_PRESETS = [
+    # (name, description, alpha, beta, gamma, diffusion, init_type)
+    # alpha: activator self-amplification
+    # beta: inhibitor feedback strength
+    # gamma: recovery/decay rate
+    # diffusion: spatial diffusion coefficient
+    ("Classic Spirals", "Self-organizing spiral wavefronts",
+     1.0, 1.0, 1.0, 0.2, "spiral_seed"),
+    ("Dense Spirals", "Many small tightly-wound spirals",
+     1.2, 1.0, 0.8, 0.15, "random_seeds"),
+    ("Slow Waves", "Large slow-moving circular waves",
+     0.7, 0.8, 0.6, 0.3, "center_seed"),
+    ("Turbulent", "Chaotic spiral breakup and turbulence",
+     1.4, 1.2, 1.0, 0.1, "random_noise"),
+    ("Target Waves", "Concentric ring patterns from center",
+     0.9, 1.0, 0.9, 0.25, "center_seed"),
+    ("Multi-Spiral", "Multiple competing spiral centers",
+     1.0, 1.0, 1.0, 0.2, "multi_spiral"),
+    ("Gentle Ripples", "Soft low-contrast undulations",
+     0.6, 0.7, 0.5, 0.35, "random_noise"),
+    ("Fast Chaos", "Rapid evolution with spiral fragments",
+     1.3, 0.9, 1.2, 0.12, "random_seeds"),
+]
+
 
 def _enter_bz_mode(self):
     """Enter BZ Reaction mode — show preset menu."""
@@ -421,37 +445,8 @@ def _draw_bz(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-# ══════════════════════════════════════════════════════════════════════
-#  Chemotaxis & Bacterial Colony Growth — Mode {
-# ══════════════════════════════════════════════════════════════════════
-
-CHEMOTAXIS_PRESETS = [
-    # (name, description, growth_rate, nutrient_diff, motility, chemotaxis,
-    #  signal_prod, signal_decay, consumption, init_type)
-    ("Eden Cluster", "Dense compact colony — nutrient-rich, low motility",
-     0.8, 0.05, 0.01, 0.0, 0.0, 0.1, 0.3, "center_seed"),
-    ("DLA Tendrils", "Diffusion-limited branching — starved environment",
-     0.5, 0.08, 0.005, 0.3, 0.2, 0.05, 0.6, "center_seed"),
-    ("Dense Branching", "Branchy morphology with moderate nutrients",
-     0.6, 0.06, 0.02, 0.15, 0.1, 0.08, 0.4, "center_seed"),
-    ("Concentric Rings", "Ring formation via chemotactic waves",
-     0.4, 0.04, 0.03, 0.5, 0.4, 0.02, 0.5, "center_seed"),
-    ("Swarming Colony", "Highly motile — rapid spreading",
-     0.7, 0.05, 0.08, 0.4, 0.3, 0.06, 0.3, "center_seed"),
-    ("Multi-Colony", "Multiple competing colonies",
-     0.6, 0.05, 0.02, 0.2, 0.15, 0.08, 0.4, "multi_seed"),
-    ("Nutrient Gradient", "Colony expanding along nutrient gradient",
-     0.5, 0.06, 0.015, 0.25, 0.2, 0.06, 0.4, "gradient_seed"),
-    ("Quorum Sensing", "Density-dependent collective behavior",
-     0.5, 0.05, 0.01, 0.6, 0.5, 0.03, 0.35, "center_seed"),
-]
-
-
-
-
 def register(App):
     """Register bz mode methods on the App class."""
-    from life.modes.spiking_neural import BZ_PRESETS
     App.BZ_PRESETS = BZ_PRESETS
     App._enter_bz_mode = _enter_bz_mode
     App._exit_bz_mode = _exit_bz_mode

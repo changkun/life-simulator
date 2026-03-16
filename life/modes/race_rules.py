@@ -7,6 +7,7 @@ import time
 
 from life.colors import color_for_age
 from life.constants import CELL_CHAR
+from life.grid import Grid
 from life.rules import RULE_PRESETS, parse_rule_string, rule_string
 
 def _enter_race_mode(self):
@@ -342,10 +343,103 @@ def _draw_race(self, max_y: int, max_x: int):
             pass
 
 
+def _start_race(self):
+    """Clone current grid into N grids with different rules and start the race."""
+    self.race_grids = []
+    self.race_pop_histories = []
+    self.race_stats = []
+    self.race_state_hashes = []
+    for name, birth, survival in self.race_selected_rules:
+        g = Grid(self.grid.rows, self.grid.cols)
+        for r in range(self.grid.rows):
+            for c in range(self.grid.cols):
+                g.cells[r][c] = self.grid.cells[r][c]
+        g.generation = self.grid.generation
+        g.population = self.grid.population
+        g.birth = birth
+        g.survival = survival
+        self.race_grids.append(g)
+        self.race_pop_histories.append([g.population])
+        self.race_stats.append({
+            "extinction_gen": None,
+            "osc_period": None,
+            "peak_pop": g.population,
+        })
+        self.race_state_hashes.append({g.state_hash(): g.generation})
+    self.race_start_gen = self.grid.generation
+    self.race_mode = True
+    self.race_rule_menu = False
+    self.race_finished = False
+    self.race_winner = None
+    n = len(self.race_selected_rules)
+    self._flash(f"Race started! {n} rules competing for {self.race_max_gens} generations (Space=play, Z=exit)")
+
+
+def _step_race(self):
+    """Advance all race grids by one generation and update stats."""
+    gens_elapsed = 0
+    for i, g in enumerate(self.race_grids):
+        if self.race_stats[i]["extinction_gen"] is not None:
+            # Already extinct — keep stepping but population stays 0
+            self.race_pop_histories[i].append(0)
+            continue
+        g.step()
+        pop = g.population
+        self.race_pop_histories[i].append(pop)
+        stats = self.race_stats[i]
+        if pop > stats["peak_pop"]:
+            stats["peak_pop"] = pop
+        # Check extinction
+        if pop == 0 and stats["extinction_gen"] is None:
+            stats["extinction_gen"] = g.generation
+        # Check oscillation via cycle detection
+        if stats["osc_period"] is None:
+            h = g.state_hash()
+            hashes = self.race_state_hashes[i]
+            if h in hashes:
+                stats["osc_period"] = g.generation - hashes[h]
+            else:
+                hashes[h] = g.generation
+        gens_elapsed = g.generation - self.race_start_gen
+    # Check if race is over
+    if gens_elapsed >= self.race_max_gens and not self.race_finished:
+        self._finish_race()
+
+
+def _finish_race(self):
+    """Determine winner based on scoring: population + survival + oscillation bonus."""
+    self.race_finished = True
+    self.running = False
+    best_score = -1
+    best_name = ""
+    for i, (name, birth, survival) in enumerate(self.race_selected_rules):
+        stats = self.race_stats[i]
+        g = self.race_grids[i]
+        # Scoring: weighted combination
+        pop_score = g.population
+        # Survival bonus: full marks if never went extinct
+        survival_bonus = self.race_max_gens if stats["extinction_gen"] is None else stats["extinction_gen"] - self.race_start_gen
+        # Oscillation bonus: detecting a cycle is interesting
+        osc_bonus = 50 if stats["osc_period"] is not None and stats["osc_period"] > 1 else 0
+        # Peak population bonus
+        peak_bonus = stats["peak_pop"] // 2
+        score = pop_score + survival_bonus + osc_bonus + peak_bonus
+        stats["final_score"] = score
+        rs = rule_string(birth, survival)
+        if score > best_score:
+            best_score = score
+            best_name = f"{name} ({rs})"
+    self.race_winner = best_name
+    self._flash(f"Race complete! Winner: {best_name}")
+
+
 def register(App):
     """Register race mode methods on the App class."""
     App._enter_race_mode = _enter_race_mode
     App._exit_race_mode = _exit_race_mode
+    App._start_race = _start_race
+    App._step_race = _step_race
+    App._finish_race = _finish_race
     App._handle_race_rule_menu_key = _handle_race_rule_menu_key
     App._draw_race_rule_menu = _draw_race_rule_menu
     App._draw_race = _draw_race

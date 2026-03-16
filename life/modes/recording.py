@@ -423,3 +423,4 @@ def register(App):
     App._draw_cast_export_menu = _draw_cast_export_menu
     App._draw_cast_indicator = _draw_cast_indicator
     App._cast_handle_key = _cast_handle_key
+    App._cast_rec_handle_fps_key = _cast_rec_handle_fps_key

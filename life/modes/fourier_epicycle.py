@@ -560,31 +560,11 @@ def _draw_fourier_drawing(self, max_y: int, max_x: int):
             pass
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-#  Snowfall & Blizzard
-# ═══════════════════════════════════════════════════════════════════════════════
-
-SNOWFALL_PRESETS = [
-    ("Gentle Snowfall", "Light, peaceful snow drifting down on a calm winter night", "gentle"),
-    ("Steady Winter Storm", "Moderate snowfall with consistent wind and steady accumulation", "steady"),
-    ("Heavy Blizzard", "Intense whiteout conditions with powerful wind gusts and rapid drifting", "blizzard"),
-    ("Arctic Whiteout", "Extreme polar storm — near-zero visibility, fierce horizontal snow", "whiteout"),
-    ("Wet Spring Snow", "Large, heavy flakes falling slowly in mild temperatures", "wet"),
-    ("Mountain Squall", "Sudden intense burst of fine snow with swirling updrafts", "squall"),
-]
-
-_SNOWFLAKE_CHARS_SMALL = "·.,:;'"
-_SNOWFLAKE_CHARS_MED = "°∘○◦*+~"
-_SNOWFLAKE_CHARS_LARGE = "❄❅❆✻✼◎"
-_SNOW_GROUND_CHARS = "▁▂▃▄▅▆▇█"
-_SNOW_DRIFT_CHARS = "·∘°~≈"
-
-
-
 
 
 def register(App):
     """Register fourier mode methods on the App class."""
+    App._draw_line_ascii = _draw_line_ascii
     App._fourier_dft = _fourier_dft
     App._fourier_generate_preset_path = _fourier_generate_preset_path
     App._enter_fourier_mode = _enter_fourier_mode

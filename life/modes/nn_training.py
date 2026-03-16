@@ -325,6 +325,8 @@ def _handle_nntrain_menu_key(self, key):
         self.nntrain_menu_sel = (self.nntrain_menu_sel - 1) % n
         return True
     if key in (curses.KEY_ENTER, 10, 13):
+        self.nntrain_menu = False
+        self.nntrain_mode = True
         _nntrain_init(self, self.nntrain_menu_sel)
         return True
     if key in (27, ord('q')):

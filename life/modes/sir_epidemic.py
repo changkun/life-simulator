@@ -7,6 +7,22 @@ import time
 
 from life.constants import SPEEDS
 
+SIR_PRESETS = [
+    # (name, description, density, n_infected, radius, trans_prob, recovery, mortality, reinfection)
+    ("Seasonal Flu", "Moderate spread, no deaths, full grid", 1.0, 3, 1.5, 0.25, 25, 0.0, False),
+    ("COVID-like", "High transmission, low mortality", 0.8, 5, 2.0, 0.35, 30, 0.02, False),
+    ("Deadly Plague", "High mortality, slow recovery", 0.7, 2, 1.5, 0.4, 40, 0.15, False),
+    ("Measles", "Very high transmission, fast recovery", 1.0, 1, 3.0, 0.6, 15, 0.01, False),
+    ("Reinfection Wave", "Recovered lose immunity over time", 0.9, 4, 1.5, 0.3, 20, 0.0, True),
+    ("Sparse Rural", "Low density, slow spread", 0.3, 2, 2.0, 0.2, 25, 0.05, False),
+    ("Superspreader", "Few initial cases, huge radius", 0.8, 1, 5.0, 0.15, 20, 0.01, False),
+    ("Fast Burn", "Rapid infection and recovery", 1.0, 10, 2.0, 0.5, 8, 0.0, False),
+]
+
+# S=susceptible(green), I=infected(red), R=recovered(blue), D=dead(dim)
+SIR_CHARS = {0: "██", 1: "██", 2: "██", 3: "░░"}
+
+
 def _enter_sir_mode(self):
     """Enter SIR epidemic mode — show preset menu."""
     self.sir_menu = True
@@ -362,47 +378,9 @@ def _draw_sir(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-# ══════════════════════════════════════════════════════════════════════
-#  Cyclic Cellular Automaton — Mode U
-# ══════════════════════════════════════════════════════════════════════
-
-CYCLIC_PRESETS = [
-    # (name, description, n_states, threshold, neighborhood)
-    ("Classic Spirals", "8 states, threshold 1, Moore — classic rotating spirals", 8, 1, "moore"),
-    ("Fine Spirals", "14 states, threshold 1, Moore — thin delicate spirals", 14, 1, "moore"),
-    ("Turbulent", "5 states, threshold 1, Moore — fast chaotic waves", 5, 1, "moore"),
-    ("Slow Waves", "16 states, threshold 1, Moore — slow majestic spirals", 16, 1, "moore"),
-    ("Von Neumann", "8 states, threshold 1, VN — diamond-shaped waves", 8, 1, "von_neumann"),
-    ("High Threshold", "8 states, threshold 3, Moore — requires more neighbors", 8, 3, "moore"),
-    ("Minimal", "4 states, threshold 1, Moore — simple fast cycling", 4, 1, "moore"),
-    ("Crystalline", "6 states, threshold 2, VN — geometric crystal growth", 6, 2, "von_neumann"),
-]
-
-# Color cycling: map state index to (color_pair, character) for visual variety
-CYCLIC_COLORS = [
-    (1, "██"),  # Red
-    (3, "██"),  # Yellow
-    (2, "██"),  # Green
-    (6, "██"),  # Cyan
-    (4, "██"),  # Blue
-    (5, "██"),  # Magenta
-    (1, "▓▓"),  # Red dim
-    (3, "▓▓"),  # Yellow dim
-    (2, "▓▓"),  # Green dim
-    (6, "▓▓"),  # Cyan dim
-    (4, "▓▓"),  # Blue dim
-    (5, "▓▓"),  # Magenta dim
-    (1, "░░"),  # Red light
-    (3, "░░"),  # Yellow light
-    (2, "░░"),  # Green light
-    (6, "░░"),  # Cyan light
-]
-
-
-
-
 def register(App):
     """Register sir mode methods on the App class."""
+    App.SIR_PRESETS = SIR_PRESETS
     App._enter_sir_mode = _enter_sir_mode
     App._exit_sir_mode = _exit_sir_mode
     App._sir_init = _sir_init

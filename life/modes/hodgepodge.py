@@ -95,7 +95,7 @@ def _hodge_step(self):
                             b += 1
                         elif nv > 0:
                             a += 1
-                new_val = a // k1 + b // k2
+                new_val = int(a / k1 + b / k2)
                 new_grid[r][c] = min(new_val, ill)
             else:
                 # Infected: average of infected/ill neighbor states + g
@@ -272,26 +272,6 @@ def _draw_hodge(self, max_y: int, max_x: int):
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
         except curses.error:
             pass
-
-# ══════════════════════════════════════════════════════════════════════
-#  Ising Model (magnetic spin lattice) — Mode #
-# ══════════════════════════════════════════════════════════════════════
-
-ISING_PRESETS = [
-    # (name, description, temperature, ext_field, init_style)
-    # init_style: "random", "all_up", "all_down", "half"
-    ("Critical Point", "T≈2.27 — phase transition with fractal domains", 2.269, 0.0, "random"),
-    ("Low Temperature", "T=1.0 — ordered, large aligned domains", 1.0, 0.0, "random"),
-    ("Very Cold", "T=0.5 — near ground state, almost uniform", 0.5, 0.0, "random"),
-    ("High Temperature", "T=4.0 — disordered, random-looking spins", 4.0, 0.0, "random"),
-    ("Quench to Cold", "Start random, T=0.1 — watch domains coarsen", 0.1, 0.0, "random"),
-    ("External Field", "T=2.0 with field h=0.5 — biased alignment", 2.0, 0.5, "random"),
-    ("Domain Wall", "T=1.5 — half up / half down, watch boundary evolve", 1.5, 0.0, "half"),
-    ("All Up + Heat", "Start aligned, T=3.0 — watch order melt", 3.0, 0.0, "all_up"),
-]
-
-
-
 
 def register(App):
     """Register hodge mode methods on the App class."""

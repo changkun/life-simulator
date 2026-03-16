@@ -336,38 +336,6 @@ def _draw_fire(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-# ══════════════════════════════════════════════════════════════════════
-#  Epidemic / SIR Disease Spread — Mode E
-# ══════════════════════════════════════════════════════════════════════
-
-SIR_PRESETS = [
-    # (name, description, density, n_infected, radius, trans_prob, recovery, mortality, reinfection)
-    ("Seasonal Flu", "Moderate spread, no deaths, full grid", 1.0, 3, 1.5, 0.25, 25, 0.0, False),
-    ("COVID-like", "High transmission, low mortality", 0.8, 5, 2.0, 0.35, 30, 0.02, False),
-    ("Deadly Plague", "High mortality, slow recovery", 0.7, 2, 1.5, 0.4, 40, 0.15, False),
-    ("Measles", "Very high transmission, fast recovery", 1.0, 1, 3.0, 0.6, 15, 0.01, False),
-    ("Reinfection Wave", "Recovered lose immunity over time", 0.9, 4, 1.5, 0.3, 20, 0.0, True),
-    ("Sparse Rural", "Low density, slow spread", 0.3, 2, 2.0, 0.2, 25, 0.05, False),
-    ("Superspreader", "Few initial cases, huge radius", 0.8, 1, 5.0, 0.15, 20, 0.01, False),
-    ("Fast Burn", "Rapid infection and recovery", 1.0, 10, 2.0, 0.5, 8, 0.0, False),
-]
-
-# S=susceptible(green), I=infected(red), R=recovered(blue), D=dead(dim)
-SIR_CHARS = {0: "██", 1: "██", 2: "██", 3: "░░"}
-
-
-
-def _snn_fire_rate(self) -> float:
-    """Compute the fraction of neurons that fired this step."""
-    total = self.snn_rows * self.snn_cols
-    if total == 0:
-        return 0.0
-    count = sum(1 for r in range(self.snn_rows) for c in range(self.snn_cols) if self.snn_fired[r][c])
-    return count / total
-
-
-
-
 def register(App):
     """Register fire mode methods on the App class."""
     App._enter_fire_mode = _enter_fire_mode
@@ -378,5 +346,4 @@ def register(App):
     App._handle_fire_key = _handle_fire_key
     App._draw_fire_menu = _draw_fire_menu
     App._draw_fire = _draw_fire
-    App._snn_fire_rate = _snn_fire_rate
 

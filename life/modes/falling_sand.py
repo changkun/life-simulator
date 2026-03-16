@@ -345,8 +345,8 @@ def _sand_step(self):
                         new_grid[(nr, c)] = (elem, age + 1)
                         moved.add((nr, c))
                         continue
-                    # Oil floats above water — swap if water is below
-                    # (water sinks, oil rises handled by water not displacing oil upward)
+                    # Oil does NOT sink through water — it floats.
+                    # If water is below, do not fall; try diagonal or sideways.
                     # Try diagonal down
                     dirs = [-1, 1]
                     random.shuffle(dirs)

@@ -52,7 +52,7 @@ def _kuramoto_init(self, preset_idx: int):
     if init_type == "gradient":
         # Linear phase gradient across the grid
         self.kuramoto_phases = [
-            [(c / max(cols - 1, 1)) * TWO_PI for c in range(cols)]
+            [((c / max(cols - 1, 1)) * TWO_PI) % TWO_PI for c in range(cols)]
             for r in range(rows)
         ]
     elif init_type == "spiral":

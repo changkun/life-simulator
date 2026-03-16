@@ -467,32 +467,6 @@ def _draw_snn(self, max_y: int, max_x: int):
 
 
 # ══════════════════════════════════════════════════════════════════════
-#  Belousov-Zhabotinsky (BZ) Reaction — Mode `
-# ══════════════════════════════════════════════════════════════════════
-
-BZ_PRESETS = [
-    # (name, description, alpha, beta, gamma, diffusion, init_type)
-    # alpha: activator self-amplification
-    # beta: inhibitor feedback strength
-    # gamma: recovery/decay rate
-    # diffusion: spatial diffusion coefficient
-    ("Classic Spirals", "Self-organizing spiral wavefronts",
-     1.0, 1.0, 1.0, 0.2, "spiral_seed"),
-    ("Dense Spirals", "Many small tightly-wound spirals",
-     1.2, 1.0, 0.8, 0.15, "random_seeds"),
-    ("Slow Waves", "Large slow-moving circular waves",
-     0.7, 0.8, 0.6, 0.3, "center_seed"),
-    ("Turbulent", "Chaotic spiral breakup and turbulence",
-     1.4, 1.2, 1.0, 0.1, "random_noise"),
-    ("Target Waves", "Concentric ring patterns from center",
-     0.9, 1.0, 0.9, 0.25, "center_seed"),
-    ("Multi-Spiral", "Multiple competing spiral centers",
-     1.0, 1.0, 1.0, 0.2, "multi_spiral"),
-    ("Gentle Ripples", "Soft low-contrast undulations",
-     0.6, 0.7, 0.5, 0.35, "random_noise"),
-    ("Fast Chaos", "Rapid evolution with spiral fragments",
-     1.3, 0.9, 1.2, 0.12, "random_seeds"),
-]
 
 
 

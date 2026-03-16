@@ -1,8 +1,6 @@
 """Mode: wfc — simulation mode for the life package."""
 import curses
-import math
 import random
-import time
 
 
 def _enter_wfc_mode(self):
@@ -131,8 +129,6 @@ def _wfc_propagate(self, start_r: int, start_c: int):
 
     # Direction offsets: (dr, dc, direction_name)
     dirs = [(-1, 0, "N"), (1, 0, "S"), (0, 1, "E"), (0, -1, "W")]
-    opposites = {"N": "S", "S": "N", "E": "W", "W": "E"}
-
     stack = [(start_r, start_c)]
 
     while stack:
@@ -322,41 +318,6 @@ def _draw_wfc(self, max_y: int, max_x: int):
                            curses.color_pair(6) | curses.A_DIM)
     except curses.error:
         pass
-
-
-# ══════════════════════════════════════════════════════════════════════
-#  Lightning / Dielectric Breakdown — Mode ^
-# ══════════════════════════════════════════════════════════════════════
-
-# Each preset: (name, description, eta, source)
-# eta = field exponent controlling branching (lower = more branching)
-# source = where discharge originates: "top", "center", "point"
-LIGHTNING_PRESETS = [
-    ("Classic Lightning",
-     "Top-to-bottom bolt — natural branching",
-     2.0, "top"),
-    ("Sparse Bolt",
-     "High eta — fewer branches, straighter path",
-     4.0, "top"),
-    ("Dense Branching",
-     "Low eta — heavily branched discharge",
-     1.0, "top"),
-    ("Lichtenberg Figure",
-     "Center-outward — radial fractal pattern",
-     1.5, "center"),
-    ("Point Discharge",
-     "Single point source — star-like pattern",
-     2.0, "point"),
-    ("Feathery Discharge",
-     "Very low eta — maximum branching",
-     0.5, "center"),
-    ("Minimal Tree",
-     "Moderate branching from top edge",
-     3.0, "top"),
-    ("Ball Lightning",
-     "Center discharge — sparse and radial",
-     3.5, "center"),
-]
 
 
 

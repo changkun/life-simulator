@@ -744,7 +744,7 @@ def _draw_nca(self, max_y, max_x):
 
     # Color helper
     def color_fn(v):
-        if not self.colors_enabled:
+        if not getattr(self, 'colors_enabled', True):
             return curses.A_NORMAL
         if v > 0.7:
             return curses.color_pair(3) | curses.A_BOLD
@@ -754,7 +754,7 @@ def _draw_nca(self, max_y, max_x):
             return curses.color_pair(4)
 
     def target_color_fn(v):
-        if not self.colors_enabled:
+        if not getattr(self, 'colors_enabled', True):
             return curses.A_NORMAL
         return curses.color_pair(1)
 

@@ -206,10 +206,3 @@ class Grid:
         self.generation += 1
         self.population = pop
 
-
-# ── Sound engine ─────────────────────────────────────────────────────────────
-
-# Pentatonic scale intervals (semitones from root): C D E G A
-_PENTATONIC = [0, 2, 4, 7, 9]
-
-

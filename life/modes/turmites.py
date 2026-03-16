@@ -58,7 +58,7 @@ def _enter_turmite_mode(self):
     self.turmite_table = []
     self.turmite_preset_name = ""
     self.turmite_num_colors = 2
-    self.turmite_num_states = 1
+    self.turmite_num_states = 2
     self._flash("Turmites (2D Turing Machine) — select a preset")
 
 
@@ -340,27 +340,52 @@ def _draw_turmite(self, max_y: int, max_x: int):
             pass
 
 # ══════════════════════════════════════════════════════════════════════
-#  Traffic Flow (Nagel-Schreckenberg model) — Mode T
+#  Turmites (2D Turing Machine) — Presets & Constants
 # ══════════════════════════════════════════════════════════════════════
 
-TRAFFIC_PRESETS = [
-    # (name, description, vmax, p_slow, density, lanes)
-    ("Light Traffic", "Low density — free flow, cars cruise at vmax", 5, 0.3, 0.10, 4),
-    ("Moderate Traffic", "Medium density — occasional slowdowns appear", 5, 0.3, 0.25, 4),
-    ("Heavy Traffic", "High density — phantom jams emerge spontaneously", 5, 0.3, 0.40, 4),
-    ("Congested", "Very high density — stop-and-go waves dominate", 5, 0.3, 0.55, 4),
-    ("Slow Road", "Low speed limit (vmax=2) — tighter packing", 2, 0.3, 0.35, 4),
-    ("Cautious Drivers", "High random braking — frequent disruptions", 5, 0.5, 0.25, 4),
-    ("Aggressive Drivers", "Low random braking — smooth until it isn't", 5, 0.1, 0.30, 4),
-    ("Highway (8 lanes)", "Wide highway with moderate traffic", 5, 0.3, 0.25, 8),
+# Each preset: (name, description, num_colors, num_states, table)
+# table[state][color] = (write_color, turn, new_state)
+# turn: 0=no turn, 1=right, 2=u-turn, 3=left
+TURMITE_PRESETS = [
+    ("Langton's Ant", "Classic RL ant — highway after ~10k steps", 2, 1,
+     [[(1, 1, 0), (0, 3, 0)]]),
+    ("Fibonacci Spiral", "Produces a Fibonacci-like spiral pattern", 2, 2,
+     [[(1, 1, 1), (1, 1, 0)],
+      [(1, 0, 0), (0, 0, 1)]]),
+    ("Square Builder", "Builds a growing filled square", 2, 2,
+     [[(1, 1, 0), (0, 1, 1)],
+      [(1, 3, 1), (0, 3, 0)]]),
+    ("Snowflake", "Symmetric crystal-like growth", 2, 3,
+     [[(1, 1, 1), (1, 3, 2)],
+      [(1, 1, 0), (0, 0, 2)],
+      [(1, 3, 0), (0, 3, 1)]]),
+    ("Chaos", "Complex chaotic behavior", 2, 2,
+     [[(1, 1, 1), (1, 3, 0)],
+      [(0, 3, 0), (0, 1, 1)]]),
+    ("Highway Builder", "Builds a long highway quickly", 2, 2,
+     [[(1, 1, 1), (1, 1, 0)],
+      [(1, 3, 0), (0, 1, 1)]]),
+    ("Spiral Growth", "Expanding spiral with internal structure", 2, 3,
+     [[(1, 1, 1), (1, 3, 0)],
+      [(0, 1, 2), (1, 3, 1)],
+      [(1, 3, 0), (0, 1, 2)]]),
+    ("Diamond", "Grows a diamond-shaped region", 2, 2,
+     [[(1, 1, 1), (0, 3, 0)],
+      [(1, 3, 0), (1, 1, 1)]]),
+    ("Worm Trail", "Leaves a distinctive worm-like trail", 2, 3,
+     [[(1, 1, 1), (1, 1, 0)],
+      [(0, 3, 2), (0, 0, 0)],
+      [(1, 1, 0), (0, 3, 1)]]),
+    ("3-Color Spiral", "3-color turmite with spiral behavior", 3, 2,
+     [[(1, 1, 1), (2, 3, 0), (0, 1, 0)],
+      [(2, 1, 0), (0, 3, 1), (1, 3, 1)]]),
 ]
 
-
+TURMITE_COLORS = [1, 2, 3, 4, 5, 6, 7, 8]
 
 
 def register(App):
     """Register turmite mode methods on the App class."""
-    from life.modes.prisoners_dilemma import TURMITE_PRESETS, TURMITE_COLORS
     App.TURMITE_PRESETS = TURMITE_PRESETS
     App.TURMITE_COLORS = TURMITE_COLORS
     App._turmite_step = _turmite_step

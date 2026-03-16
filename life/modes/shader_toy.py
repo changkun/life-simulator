@@ -5,7 +5,23 @@ import random
 import time
 
 
-from life.grid import Grid
+SHADERTOY_SHADE_CHARS = " .,:;=+*#%@\u2588"
+
+SHADERTOY_PRESETS = [
+    ("Plasma Waves", "Overlapping sine waves create flowing plasma"),
+    ("Tunnel Zoom", "Infinite tunnel zoom with angular patterns"),
+    ("Metaballs", "Soft organic blob shapes merging and splitting"),
+    ("Moir\u00e9 Rings", "Interference rings creating moir\u00e9 patterns"),
+    ("Fractal Flame", "Iterated function system fractal art"),
+    ("Warp Grid", "Warped checkerboard grid"),
+    ("Lava Lamp", "Floating blobs with smooth contours"),
+    ("Matrix Rain", "Digital rain columns"),
+    ("Kaleidoscope", "Mirror-symmetry kaleidoscope"),
+    ("Spiral Galaxy", "Rotating spiral arms"),
+]
+
+SHADERTOY_COLOR_NAMES = ["Rainbow", "Fire", "Ocean", "Mono"]
+
 
 def _shadertoy_eval(self, nx: float, ny: float, t: float) -> float:
     """Evaluate the current shader preset at normalized coords (nx, ny) and time t.
@@ -378,7 +394,10 @@ def _draw_shadertoy(self, max_y: int, max_x: int):
 
 
 def register(App):
-    """Register shadertoy mode methods on the App class."""
+    """Register shadertoy mode methods and constants on the App class."""
+    App.SHADERTOY_SHADE_CHARS = SHADERTOY_SHADE_CHARS
+    App.SHADERTOY_PRESETS = SHADERTOY_PRESETS
+    App.SHADERTOY_COLOR_NAMES = SHADERTOY_COLOR_NAMES
     App._shadertoy_eval = _shadertoy_eval
     App._shadertoy_color = _shadertoy_color
     App._enter_shadertoy_mode = _enter_shadertoy_mode

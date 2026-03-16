@@ -7,6 +7,24 @@ import time
 
 from life.constants import SPEEDS
 
+# ══════════════════════════════════════════════════════════════════════
+#  Diffusion-Limited Aggregation (DLA) — Mode D
+# ══════════════════════════════════════════════════════════════════════
+
+DLA_PRESETS = [
+    # (name, description, setup_key)
+    ("Crystal Growth", "Single seed — classic dendritic fractal", "single"),
+    ("Multi-Seed", "Several seeds grow and merge", "multi"),
+    ("Snowflake", "6-fold symmetry from center seed", "snowflake"),
+    ("Electrodeposition", "Bottom-edge cathode with downward drift", "electro"),
+    ("Line Seed", "Horizontal line seed — forest-like growth", "line"),
+    ("Ring Seed", "Circular ring seed — inward/outward growth", "ring"),
+]
+
+# Characters for crystal age visualization (oldest -> newest)
+DLA_CRYSTAL_CHARS = ["█", "▓", "▒", "░", "∙"]
+DLA_WALKER_CHAR = "·"
+
 def _enter_dla_mode(self):
     """Enter DLA mode — show preset menu."""
     self.dla_menu = True
@@ -89,7 +107,7 @@ def _dla_init(self, preset_idx: int):
             self.dla_grid[rows - 1][c] = 1
             self.dla_seeds.append((rows - 1, c))
             self.dla_crystal_count += 1
-        self.dla_bias_r = -0.15  # drift downward toward cathode
+        self.dla_bias_r = 0.15  # drift downward toward cathode (positive = increasing row)
         self.dla_num_walkers = 500
         self.dla_steps_per_frame = 8
         self.dla_max_radius = float(rows)
@@ -265,6 +283,9 @@ def _dla_attach_symmetric(self, r: int, c: int, gen: int):
             if 0 <= rr2 < rows and 0 <= rc2 < cols and grid[rr2][rc2] == 0:
                 grid[rr2][rc2] = gen
                 self.dla_crystal_count += 1
+                dist2 = math.sqrt((rr2 - cr) ** 2 + (rc2 - cc) ** 2)
+                if dist2 > self.dla_max_radius:
+                    self.dla_max_radius = dist2
 
 
 

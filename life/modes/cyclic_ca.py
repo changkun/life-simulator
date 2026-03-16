@@ -244,7 +244,44 @@ def _draw_cyclic(self, max_y: int, max_x: int):
             pass
 
 # ══════════════════════════════════════════════════════════════════════
+#  Cyclic CA constants
+# ══════════════════════════════════════════════════════════════════════
+
+CYCLIC_PRESETS = [
+    # (name, description, n_states, threshold, neighborhood)
+    ("Classic Spirals", "8 states, threshold 1, Moore — classic rotating spirals", 8, 1, "moore"),
+    ("Fine Spirals", "14 states, threshold 1, Moore — thin delicate spirals", 14, 1, "moore"),
+    ("Turbulent", "5 states, threshold 1, Moore — fast chaotic waves", 5, 1, "moore"),
+    ("Slow Waves", "16 states, threshold 1, Moore — slow majestic spirals", 16, 1, "moore"),
+    ("Von Neumann", "8 states, threshold 1, VN — diamond-shaped waves", 8, 1, "von_neumann"),
+    ("High Threshold", "8 states, threshold 3, Moore — requires more neighbors", 8, 3, "moore"),
+    ("Minimal", "4 states, threshold 1, Moore — simple fast cycling", 4, 1, "moore"),
+    ("Crystalline", "6 states, threshold 2, VN — geometric crystal growth", 6, 2, "von_neumann"),
+]
+
+# Color cycling: map state index to (color_pair, character) for visual variety
+CYCLIC_COLORS = [
+    (1, "██"),  # Red
+    (3, "██"),  # Yellow
+    (2, "██"),  # Green
+    (6, "██"),  # Cyan
+    (4, "██"),  # Blue
+    (5, "██"),  # Magenta
+    (1, "▓▓"),  # Red dim
+    (3, "▓▓"),  # Yellow dim
+    (2, "▓▓"),  # Green dim
+    (6, "▓▓"),  # Cyan dim
+    (4, "▓▓"),  # Blue dim
+    (5, "▓▓"),  # Magenta dim
+    (1, "░░"),  # Red light
+    (3, "░░"),  # Yellow light
+    (2, "░░"),  # Green light
+    (6, "░░"),  # Cyan light
+]
+
+# ══════════════════════════════════════════════════════════════════════
 #  Hodgepodge Machine (Belousov-Zhabotinsky reaction) — Mode ~
+#  (Constants kept here for backward-compatible import by hodgepodge.py)
 # ══════════════════════════════════════════════════════════════════════
 
 HODGE_PRESETS = [
@@ -272,10 +309,10 @@ HODGE_COLORS = [
 ]
 
 
-
-
 def register(App):
     """Register cyclic mode methods on the App class."""
+    App.CYCLIC_PRESETS = CYCLIC_PRESETS
+    App.CYCLIC_COLORS = CYCLIC_COLORS
     App._enter_cyclic_mode = _enter_cyclic_mode
     App._exit_cyclic_mode = _exit_cyclic_mode
     App._cyclic_init = _cyclic_init

@@ -412,6 +412,12 @@ class App:
         self.qcirc_menu_sel = 0
         self.qcirc_running = False
         self.qcirc_state = None
+        # ── Neural Network Training Visualizer mode state ──
+        self.nntrain_mode = False
+        self.nntrain_menu = False
+        self.nntrain_menu_sel = 0
+        self.nntrain_running = False
+        self.nntrain_paused = False
         # ── Primordial Soup / Origin of Life mode state ──
         self.psoup_mode = False
         self.psoup_menu = False
@@ -2754,7 +2760,7 @@ class App:
             'magfield_menu', 'rbc_menu', 'sph_menu', 'tectonic_menu',
             'volcano_menu', 'ocean_menu', 'weather_menu', 'blackhole_menu',
             'pexplorer_menu', 'ep_menu', 'cast_export_menu', 'script_menu',
-            'moldyn_menu', 'circuit_menu',
+            'moldyn_menu', 'circuit_menu', 'nntrain_menu',
         ]
         for attr in _menu_attrs:
             if getattr(self, attr, False):
@@ -3767,6 +3773,17 @@ class App:
                     continue
             elif self.qcirc_mode:
                 if self._handle_qcirc_key(key):
+                    continue
+
+            if self.nntrain_menu:
+                if self._handle_nntrain_menu_key(key):
+                    continue
+            elif self.nntrain_mode:
+                if self._handle_nntrain_key(key):
+                    if self.nntrain_running and not self.nntrain_paused:
+                        delay = SPEEDS[self.speed_idx]
+                        time.sleep(delay)
+                        self._nntrain_step()
                     continue
 
             if self.psoup_menu:
@@ -6280,6 +6297,16 @@ class App:
 
         if self.qcirc_mode:
             self._draw_qcirc(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.nntrain_menu:
+            self._draw_nntrain_menu(max_y, max_x)
+            self.stdscr.refresh()
+            return
+
+        if self.nntrain_mode:
+            self._draw_nntrain(max_y, max_x)
             self.stdscr.refresh()
             return
 

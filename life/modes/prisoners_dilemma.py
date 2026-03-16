@@ -342,53 +342,6 @@ def _draw_spd(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-# ══════════════════════════════════════════════════════════════════════
-#  Turmites (2D Turing Machine) — Mode Q
-# ══════════════════════════════════════════════════════════════════════
-
-# Each preset: (name, description, num_colors, num_states, table)
-# table[state][color] = (write_color, turn, new_state)
-# turn: 0=no turn, 1=right, 2=u-turn, 3=left
-TURMITE_PRESETS = [
-    ("Langton's Ant", "Classic RL ant — highway after ~10k steps", 2, 1,
-     [[(1, 1, 0), (1, 3, 0)]]),
-    ("Fibonacci Spiral", "Produces a Fibonacci-like spiral pattern", 2, 2,
-     [[(1, 1, 1), (1, 1, 0)],
-      [(1, 0, 0), (0, 0, 1)]]),
-    ("Square Builder", "Builds a growing filled square", 2, 2,
-     [[(1, 1, 0), (0, 1, 1)],
-      [(1, 3, 1), (0, 3, 0)]]),
-    ("Snowflake", "Symmetric crystal-like growth", 2, 3,
-     [[(1, 1, 1), (1, 3, 2)],
-      [(1, 1, 0), (0, 0, 2)],
-      [(1, 3, 0), (0, 3, 1)]]),
-    ("Chaos", "Complex chaotic behavior", 2, 2,
-     [[(1, 1, 1), (1, 3, 0)],
-      [(0, 3, 0), (0, 1, 1)]]),
-    ("Highway Builder", "Builds a long highway quickly", 2, 2,
-     [[(1, 1, 1), (1, 1, 0)],
-      [(1, 3, 0), (0, 1, 1)]]),
-    ("Spiral Growth", "Expanding spiral with internal structure", 2, 3,
-     [[(1, 1, 1), (1, 3, 0)],
-      [(0, 1, 2), (1, 3, 1)],
-      [(1, 3, 0), (0, 1, 2)]]),
-    ("Diamond", "Grows a diamond-shaped region", 2, 2,
-     [[(1, 1, 1), (0, 3, 0)],
-      [(1, 3, 0), (1, 1, 1)]]),
-    ("Worm Trail", "Leaves a distinctive worm-like trail", 2, 3,
-     [[(1, 1, 1), (1, 1, 0)],
-      [(0, 3, 2), (0, 0, 0)],
-      [(1, 1, 0), (0, 3, 1)]]),
-    ("3-Color Spiral", "3-color turmite with spiral behavior", 3, 2,
-     [[(1, 1, 1), (2, 3, 0), (0, 1, 0)],
-      [(2, 1, 0), (0, 3, 1), (1, 3, 1)]]),
-]
-
-TURMITE_COLORS = [1, 2, 3, 4, 5, 6, 7, 8]
-
-
-
-
 def register(App):
     """Register spd mode methods on the App class."""
     from life.modes.schelling import SPD_PRESETS

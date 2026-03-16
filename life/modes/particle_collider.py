@@ -70,6 +70,7 @@ def _collider_init(self, preset_key):
     self.collider_total_collisions = 0
     self.collider_detector_log = []
     self.collider_show_info = False
+    self.collider_speed = 1
 
     # Ring geometry — elliptical to fit terminal aspect ratio
     self.collider_ring_cx = cols / 2.0
@@ -528,6 +529,93 @@ def _draw_collider(self, max_y: int, max_x: int):
                 try:
                     self.stdscr.addstr(py, px, char,
                                        curses.color_pair(p["color"]) | attr)
+                except curses.error:
+                    pass
+
+    # ── Energy readout / beam status (top-left) ──
+    status_lines = [
+        f"╔═══ BEAM STATUS ═══╗",
+        f"║ Energy: {self.collider_energy:.1f} TeV   ║",
+        f"║ Events: {self.collider_total_collisions:<10d}║",
+        f"║ Gen: {self.collider_generation:<13d}║",
+        f"╚═══════════════════╝",
+    ]
+    for i, line in enumerate(status_lines):
+        if i < rows - 1 and len(line) < cols - 1:
+            try:
+                self.stdscr.addstr(i, 0, line, curses.color_pair(4))
+            except curses.error:
+                pass
+
+    # ── Detector event log (right side) ──
+    log_x = cols - 42
+    if log_x > 25:
+        log_header = "┌─── DETECTOR LOG ───────────────────────┐"
+        if len(log_header) + log_x < cols:
+            try:
+                self.stdscr.addstr(0, log_x, log_header, curses.color_pair(6))
+            except curses.error:
+                pass
+
+        visible_log = self.collider_detector_log[-(rows - 4):]
+        for i, entry in enumerate(visible_log):
+            if i + 1 < rows - 2 and log_x + len(entry) < cols:
+                try:
+                    self.stdscr.addstr(i + 1, log_x, entry, curses.color_pair(7))
+                except curses.error:
+                    pass
+
+    # ── Recent detection flash (center bottom) ──
+    if self.collider_detections:
+        latest = self.collider_detections[-1]
+        if latest["flash"] > 0:
+            det_str = f"  ✦ DETECTED: {latest['symbol']} ({latest['name']}) — {latest['mass']:.2f} GeV  ✦  "
+            det_x = max(0, (cols - len(det_str)) // 2)
+            det_y = rows - 3
+            if 0 <= det_y < rows - 1 and det_x + len(det_str) < cols:
+                flash_attr = curses.A_BOLD | curses.A_REVERSE if latest["flash"] > 0.5 else curses.A_BOLD
+                try:
+                    self.stdscr.addstr(det_y, det_x, det_str,
+                                       curses.color_pair(latest["color"]) | flash_attr)
+                except curses.error:
+                    pass
+
+    # ── Status bar ──
+    paused = " [PAUSED]" if not self.collider_running else ""
+    status = f" Collider: {self.collider_preset_name}{paused}  Speed:{self.collider_speed}x  |  Space:pause  c:collide  r:reset  R:menu  i:info  q:quit "
+    try:
+        self.stdscr.addstr(rows - 1, 0, status[:cols - 1], curses.A_REVERSE)
+    except curses.error:
+        pass
+
+    # ── Optional info overlay ──
+    if self.collider_show_info:
+        info_lines = [
+            "╔═══════════════════════════════════════════════╗",
+            "║   Particle Collider Simulation                ║",
+            "║                                               ║",
+            f"║   Preset: {self.collider_preset_name:<20s}            ║",
+            f"║   Beam Energy: {self.collider_energy:.1f} TeV                    ║",
+            f"║   Total Collisions: {self.collider_total_collisions:<10d}             ║",
+            f"║   Active Showers: {len(self.collider_showers):<10d}               ║",
+            f"║   Particles Detected: {len(self.collider_detections):<10d}           ║",
+            f"║   Ring Size: {self.collider_ring_rx:.0f}×{self.collider_ring_ry:.0f}                       ║",
+            "║                                               ║",
+            "║   Controls:                                   ║",
+            "║   Space — Pause/Resume    c — Force collision  ║",
+            "║   +/- — Speed             r — Reset            ║",
+            "║   R — Preset menu         i — Toggle info      ║",
+            "║   q — Quit                                     ║",
+            "╚═══════════════════════════════════════════════╝",
+        ]
+        info_y = max(0, (rows - len(info_lines)) // 2)
+        for i, line in enumerate(info_lines):
+            iy = info_y + i
+            ix = max(0, (cols - len(line)) // 2)
+            if 0 <= iy < rows - 1 and ix + len(line) < cols:
+                try:
+                    self.stdscr.addstr(iy, ix, line,
+                                       curses.color_pair(6) | curses.A_BOLD)
                 except curses.error:
                     pass
 

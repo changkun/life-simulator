@@ -850,28 +850,6 @@ def _draw_ocean(self, max_y: int, max_x: int):
             pass
 
 
-# Bind ocean methods to App class
-# ══════════════════════════════════════════════════════════════════════════════
-# Volcanic Eruption & Lava Flow Simulation
-# ══════════════════════════════════════════════════════════════════════════════
-
-VOLCANO_PRESETS = [
-    ("Strombolian", "Mild, rhythmic eruptions with lava fountains and slow flows", "strombolian"),
-    ("Plinian", "Catastrophic explosive eruption with massive ash column", "plinian"),
-    ("Hawaiian", "Effusive shield volcano with fluid lava rivers", "hawaiian"),
-    ("Vulcanian", "Viscous magma with violent bursts and pyroclastic surges", "vulcanian"),
-    ("Caldera Collapse", "Mega-eruption draining a magma chamber into caldera", "caldera"),
-    ("Fissure Eruption", "Curtain of fire along a rift with lava flooding a plain", "fissure"),
-]
-
-# ASCII characters for volcanic visualization
-LAVA_CHARS = ' .·:;+*#@█'         # cool to incandescent
-TERRAIN_CHARS = ' ░▒▓█'            # flat to peak
-ASH_CHARS = ' .,:;░▒▓█'            # thin to thick ash
-ROCK_CHARS = ' .:;oO0@#'           # thin deposit to thick cooled rock
-
-
-
 
 
 def register(App):

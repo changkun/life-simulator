@@ -781,27 +781,6 @@ def _draw_weather(self, max_y: int, max_x: int):
             pass
 
 
-# Bind weather methods to App class
-# ══════════════════════════════════════════════════════════════════════════════
-# Ocean Currents & Thermohaline Circulation
-# ══════════════════════════════════════════════════════════════════════════════
-
-OCEAN_PRESETS = [
-    ("Gulf Stream", "Warm western boundary current with eddies and meanders", "gulfstream"),
-    ("Pacific Gyre", "Large-scale subtropical gyre with Kuroshio Current", "pacificgyre"),
-    ("Antarctic Circumpolar", "Strongest current on Earth circling Antarctica", "antarctic"),
-    ("El Niño", "Weakened trade winds with warm water spreading east", "elnino"),
-    ("Thermohaline Conveyor", "Global deep water formation driving the great ocean conveyor", "thermohaline"),
-    ("Random Ocean", "Randomly generated ocean basin with currents and blooms", "random"),
-]
-
-# ASCII characters for ocean visualization
-OCEAN_CHARS = ' ·~≈≋∿⌇█'         # calm to turbulent
-CURRENT_ARROWS = '·←↙↓↘→↗↑↖'      # indexed by 8-direction + calm
-PLANKTON_CHARS = ' .,:;+*#@'       # sparse to dense bloom
-
-
-
 
 
 def register(App):

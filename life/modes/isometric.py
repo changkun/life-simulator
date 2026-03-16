@@ -173,7 +173,18 @@ def _draw_iso(self, max_y: int, max_x: int):
 
 
 def register(App):
-    """Register iso mode methods on the App class."""
+    """Register iso mode methods and constants on the App class."""
+    # Class-level constants for isometric rendering
+    App._ISO_HEIGHT_TIERS = [
+        (1,  ["█"]),                              # newborn: 1 row
+        (3,  ["█", "▓"]),                         # young: 2 rows
+        (8,  ["█", "▓", "▒"]),                    # mature: 3 rows
+        (20, ["█", "▓", "▒", "░"]),               # old: 4 rows
+    ]
+    App._ISO_MAX_HEIGHT = 5  # ancient: 5 rows
+    App._ISO_ANCIENT = ["█", "▓", "▒", "░", "·"]
+    App._ISO_SHADE_MAP = {"█": "▓", "▓": "▒", "▒": "░", "░": " ", "·": " "}
+    # Methods
     App._iso_pillar = _iso_pillar
     App._draw_iso = _draw_iso
 

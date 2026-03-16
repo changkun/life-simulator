@@ -57,6 +57,9 @@ def _mazesolver_init(self, preset_idx: int):
     self.mazesolver_running = False
     self.mazesolver_solve_done = False
     self.mazesolver_solve_steps = 0
+    _speed = getattr(self, 'mazesolver_speed', None)
+    if not isinstance(_speed, int) or isinstance(_speed, bool):
+        self.mazesolver_speed = 3
 
     max_y, max_x = self.stdscr.getmaxyx()
     # Compute grid dimensions based on size preset
@@ -116,6 +119,10 @@ def _mazesolver_init(self, preset_idx: int):
     self.mazesolver_solve_path = []
     self.mazesolver_solve_done = False
     self.mazesolver_frontier_set = set()
+    # Always initialize wall-follower state so draw code doesn't crash
+    self.mazesolver_wf_pos = (sr, sc)
+    self.mazesolver_wf_dir = 0
+    self.mazesolver_wf_trail = []
 
     if algo == "astar":
         h = abs(er - sr) + abs(ec - sc)
@@ -292,7 +299,7 @@ def _handle_mazesolver_key(self, key: int) -> bool:
         self._mazesolver_init(idx)
         self.mazesolver_running = False
     elif key == ord("R"):
-        self.mazesolver_mode = False
+        self.mazesolver_mode = True
         self.mazesolver_running = False
         self.mazesolver_menu = True
         self.mazesolver_menu_sel = 0
@@ -309,19 +316,27 @@ def _handle_mazesolver_key(self, key: int) -> bool:
 
 
 
+def _safe_color_pair(n):
+    """Return curses.color_pair(n) or 0 if curses is not initialized."""
+    try:
+        return curses.color_pair(n)
+    except curses.error:
+        return 0
+
+
 def _draw_mazesolver_menu(self, max_y: int, max_x: int):
     """Draw the Maze Solver preset selection menu."""
     self.stdscr.erase()
     title = "── Maze Solver Visualizer — Select Preset ──"
     try:
         self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
-                           curses.color_pair(7) | curses.A_BOLD)
+                           _safe_color_pair(7) | curses.A_BOLD)
     except curses.error:
         pass
     subtitle = "Watch pathfinding algorithms explore and solve mazes in real-time"
     try:
         self.stdscr.addstr(2, max(0, (max_x - len(subtitle)) // 2), subtitle,
-                           curses.color_pair(6))
+                           _safe_color_pair(6))
     except curses.error:
         pass
     for i, (name, desc, *_) in enumerate(MAZESOLVER_PRESETS):
@@ -329,7 +344,7 @@ def _draw_mazesolver_menu(self, max_y: int, max_x: int):
         if y >= max_y - 2:
             break
         marker = "▶ " if i == self.mazesolver_menu_sel else "  "
-        attr = curses.color_pair(7) | curses.A_BOLD if i == self.mazesolver_menu_sel else curses.color_pair(6)
+        attr = _safe_color_pair(7) | curses.A_BOLD if i == self.mazesolver_menu_sel else _safe_color_pair(6)
         line = f"{marker}{name:30s} — {desc}"
         try:
             self.stdscr.addstr(y, 4, line[:max_x - 5], attr)
@@ -340,13 +355,13 @@ def _draw_mazesolver_menu(self, max_y: int, max_x: int):
     if legend_y > 4 + len(MAZESOLVER_PRESETS):
         legend = " Legend:  ██=wall  SS=start  EE=end  ░░=explored  ▓▓=frontier  ██=path"
         try:
-            self.stdscr.addstr(legend_y, 2, legend[:max_x - 3], curses.color_pair(6) | curses.A_DIM)
+            self.stdscr.addstr(legend_y, 2, legend[:max_x - 3], _safe_color_pair(6) | curses.A_DIM)
         except curses.error:
             pass
     hint = " [j/k]=navigate  [Enter]=select  [q]=cancel"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
-                           curses.color_pair(6) | curses.A_DIM)
+                           _safe_color_pair(6) | curses.A_DIM)
     except curses.error:
         pass
 
@@ -367,7 +382,7 @@ def _draw_mazesolver(self, max_y: int, max_x: int):
              f"  |  explored={len(self.mazesolver_solve_visited)}"
              f"  |  {state}")
     try:
-        self.stdscr.addstr(0, 0, title[:max_x - 1], curses.color_pair(7) | curses.A_BOLD)
+        self.stdscr.addstr(0, 0, title[:max_x - 1], _safe_color_pair(7) | curses.A_BOLD)
     except curses.error:
         pass
 
@@ -402,7 +417,7 @@ def _draw_mazesolver(self, max_y: int, max_x: int):
             if (r, c) == (sr, sc):
                 try:
                     self.stdscr.addstr(1 + r, c * 2, "SS",
-                                       curses.color_pair(2) | curses.A_BOLD)
+                                       _safe_color_pair(2) | curses.A_BOLD)
                 except curses.error:
                     pass
                 continue
@@ -410,7 +425,7 @@ def _draw_mazesolver(self, max_y: int, max_x: int):
             if (r, c) == (er, ec):
                 try:
                     self.stdscr.addstr(1 + r, c * 2, "EE",
-                                       curses.color_pair(1) | curses.A_BOLD)
+                                       _safe_color_pair(1) | curses.A_BOLD)
                 except curses.error:
                     pass
                 continue
@@ -418,7 +433,7 @@ def _draw_mazesolver(self, max_y: int, max_x: int):
             if (r, c) in solve_path_set:
                 try:
                     self.stdscr.addstr(1 + r, c * 2, "██",
-                                       curses.color_pair(2) | curses.A_BOLD)
+                                       _safe_color_pair(2) | curses.A_BOLD)
                 except curses.error:
                     pass
                 continue
@@ -426,7 +441,7 @@ def _draw_mazesolver(self, max_y: int, max_x: int):
             if wf_pos and (r, c) == wf_pos:
                 try:
                     self.stdscr.addstr(1 + r, c * 2, "@@",
-                                       curses.color_pair(1) | curses.A_BOLD)
+                                       _safe_color_pair(1) | curses.A_BOLD)
                 except curses.error:
                     pass
                 continue
@@ -434,7 +449,7 @@ def _draw_mazesolver(self, max_y: int, max_x: int):
             if (r, c) in wf_trail_set:
                 try:
                     self.stdscr.addstr(1 + r, c * 2, "▓▓",
-                                       curses.color_pair(3) | curses.A_BOLD)
+                                       _safe_color_pair(3) | curses.A_BOLD)
                 except curses.error:
                     pass
                 continue
@@ -442,7 +457,7 @@ def _draw_mazesolver(self, max_y: int, max_x: int):
             if (r, c) in frontier:
                 try:
                     self.stdscr.addstr(1 + r, c * 2, "▓▓",
-                                       curses.color_pair(3))
+                                       _safe_color_pair(3))
                 except curses.error:
                     pass
                 continue
@@ -450,7 +465,7 @@ def _draw_mazesolver(self, max_y: int, max_x: int):
             if (r, c) in solve_visited:
                 try:
                     self.stdscr.addstr(1 + r, c * 2, "░░",
-                                       curses.color_pair(4))
+                                       _safe_color_pair(4))
                 except curses.error:
                     pass
                 continue
@@ -458,12 +473,12 @@ def _draw_mazesolver(self, max_y: int, max_x: int):
             if grid[r][c] == 0:
                 try:
                     self.stdscr.addstr(1 + r, c * 2, "██",
-                                       curses.color_pair(7) | curses.A_DIM)
+                                       _safe_color_pair(7) | curses.A_DIM)
                 except curses.error:
                     pass
             else:
                 try:
-                    self.stdscr.addstr(1 + r, c * 2, "  ", curses.color_pair(0))
+                    self.stdscr.addstr(1 + r, c * 2, "  ", _safe_color_pair(0))
                 except curses.error:
                     pass
 
@@ -478,7 +493,7 @@ def _draw_mazesolver(self, max_y: int, max_x: int):
                 f"  queue={q_len}  path={path_len}"
                 f"  |  speed={self.mazesolver_speed}")
         try:
-            self.stdscr.addstr(status_y, 0, info[:max_x - 1], curses.color_pair(6))
+            self.stdscr.addstr(status_y, 0, info[:max_x - 1], _safe_color_pair(6))
         except curses.error:
             pass
 
@@ -491,7 +506,7 @@ def _draw_mazesolver(self, max_y: int, max_x: int):
         else:
             hint = " [Space]=play [n]=step [s/S]=speed+/- [r]=new maze [R]=menu [q]=exit"
         try:
-            self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
+            self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], _safe_color_pair(6) | curses.A_DIM)
         except curses.error:
             pass
 

@@ -7,6 +7,20 @@ import time
 
 from life.utils import sparkline
 
+ALIFE_PRESETS = [
+    ("Grassland", "Abundant food, herbivores only", "grassland"),
+    ("Predator-Prey", "Classic Lotka-Volterra dynamics", "predprey"),
+    ("Desert", "Scarce resources, high mutation", "desert"),
+    ("Coral Reef", "Dense ecosystem with all diet types", "reef"),
+    ("Evolution Lab", "High mutation for rapid evolution", "evolab"),
+    ("Primordial Soup", "Sparse start, life finds a way", "soup"),
+]
+
+ALIFE_HERB_CHARS = ["\u00b7", "o", "O", "0", "@"]   # tiny to large herbivores
+ALIFE_PRED_CHARS = [":", "x", "X", "%", "&"]   # tiny to large predators
+ALIFE_OMNI_CHARS = [",", "s", "S", "$", "#"]   # tiny to large omnivores
+
+
 def _enter_alife_mode(self):
     """Enter Artificial Life Ecosystem — show preset menu."""
     self.alife_menu = True
@@ -619,7 +633,11 @@ def _draw_alife(self, max_y: int, max_x: int):
 
 
 def register(App):
-    """Register alife mode methods on the App class."""
+    """Register alife mode methods and constants on the App class."""
+    App.ALIFE_PRESETS = ALIFE_PRESETS
+    App.ALIFE_HERB_CHARS = ALIFE_HERB_CHARS
+    App.ALIFE_PRED_CHARS = ALIFE_PRED_CHARS
+    App.ALIFE_OMNI_CHARS = ALIFE_OMNI_CHARS
     App._enter_alife_mode = _enter_alife_mode
     App._exit_alife_mode = _exit_alife_mode
     App._alife_make_creature = _alife_make_creature

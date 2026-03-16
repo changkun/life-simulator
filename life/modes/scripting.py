@@ -383,6 +383,7 @@ def _enter_scripting_mode(self):
     self.script_menu = True
     self.script_menu_sel = 0
     self.script_menu_phase = 0  # 0=main menu, 1=load file prompt
+    self.script_show_source = False
     self._flash("Scripting & Choreography — Ctrl+U")
 
 

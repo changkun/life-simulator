@@ -76,6 +76,8 @@ def _raymarch_sdf(self, px: float, py: float, pz: float) -> float:
             r = math.sqrt(zx * zx + zy * zy + zz * zz)
             if r > 2.0:
                 break
+            if r < 1e-21:
+                r = 1e-21
             theta = math.acos(max(-1.0, min(1.0, zz / r))) * power
             phi = math.atan2(zy, zx) * power
             zr = r ** power

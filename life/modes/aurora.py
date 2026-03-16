@@ -483,21 +483,6 @@ def _draw_aurora(self, max_y: int, max_x: int):
         pass
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# Pendulum Wave simulation
-# ═══════════════════════════════════════════════════════════════════════════════
-
-PWAVE_PRESETS = [
-    ("Classic Wave", "15 pendulums — elegant snake and convergence patterns", "classic"),
-    ("Dense Array", "24 pendulums — rich interference and fine wave structure", "dense"),
-    ("Wide Spread", "12 pendulums with large length differences — dramatic phase shifts", "wide"),
-    ("Quick Cycle", "Fast realignment — watch the full cycle in seconds", "quick"),
-    ("Slow Meditation", "Gentle, slow-evolving patterns for contemplation", "slow"),
-    ("Grand Ensemble", "32 pendulums — maximum complexity and beauty", "grand"),
-]
-
-
-
 
 
 def register(App):

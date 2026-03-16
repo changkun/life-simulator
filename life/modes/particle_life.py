@@ -341,25 +341,6 @@ def _draw_plife(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-# ══════════════════════════════════════════════════════════════════════
-#  N-Body Gravity Simulation — Mode Y
-# ══════════════════════════════════════════════════════════════════════
-
-NBODY_CHARS = ["☉", "●", "◉", "◆", "★", "■", "▲", "♦"]
-NBODY_COLORS = [3, 4, 2, 1, 5, 6, 7, 3]  # color pair indices (yellow, blue, green, red, etc.)
-
-NBODY_PRESETS = [
-    # (name, description, setup_key)
-    ("Solar System", "Central star with orbiting planets", "solar"),
-    ("Binary Star", "Two massive stars in mutual orbit", "binary"),
-    ("Galaxy Collision", "Two rotating disk galaxies merging", "galaxy"),
-    ("Random Cluster", "Random masses in gravitational collapse", "random"),
-    ("Figure-Eight", "Three equal masses in a figure-8 orbit", "figure8"),
-    ("Lagrange Points", "Large mass with small bodies at L4/L5", "lagrange"),
-]
-
-
-
 
 def register(App):
     """Register plife mode methods on the App class."""

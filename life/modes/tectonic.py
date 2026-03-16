@@ -4,6 +4,21 @@ import math
 import random
 import time
 
+TECTONIC_PRESETS = [
+    ("Pangaea Breakup", "Single supercontinent rifting apart", "pangaea"),
+    ("Island Arcs", "Oceanic plates with subduction zones", "arcs"),
+    ("Continental Collision", "Two large landmasses converging head-on", "collision"),
+    ("Mid-Ocean Ridges", "Divergent boundaries creating new crust", "ridges"),
+    ("Ring of Fire", "Subduction-driven volcanic ring around a central ocean", "ring"),
+    ("Random Drift", "Random plate configuration with varied velocities", "random"),
+]
+
+TECTONIC_ELEV_CHARS = " .\u00b7~-=\u2248:;+*#%\u2592\u2593\u2588\u25b2"
+TECTONIC_ELEV_THRESHOLDS = [
+    -8000, -5000, -3000, -1500, -500, -100, 0, 100, 300, 600,
+    1200, 2000, 3000, 4500, 6000, 7500, 9000,
+]
+
 
 def _enter_tectonic_mode(self):
     """Enter Tectonic Plates mode — show preset menu."""
@@ -525,7 +540,14 @@ def _draw_tectonic(self, max_y: int, max_x: int):
 
 
 def register(App):
-    """Register tectonic mode methods on the App class."""
+    """Register tectonic mode methods and constants on the App class."""
+    # Class-level constants (from original monolith)
+    if not hasattr(App, 'TECTONIC_PRESETS'):
+        App.TECTONIC_PRESETS = TECTONIC_PRESETS
+    if not hasattr(App, 'TECTONIC_ELEV_CHARS'):
+        App.TECTONIC_ELEV_CHARS = TECTONIC_ELEV_CHARS
+    if not hasattr(App, 'TECTONIC_ELEV_THRESHOLDS'):
+        App.TECTONIC_ELEV_THRESHOLDS = TECTONIC_ELEV_THRESHOLDS
     App._enter_tectonic_mode = _enter_tectonic_mode
     App._exit_tectonic_mode = _exit_tectonic_mode
     App._tectonic_init = _tectonic_init

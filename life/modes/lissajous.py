@@ -441,6 +441,6 @@ def register(App):
     App._handle_lissajous_menu_key = _handle_lissajous_menu_key
     App._handle_lissajous_key = _handle_lissajous_key
     App._draw_lissajous_menu = _draw_lissajous_menu
-    App._lissajous_preview_art = _lissajous_preview_art
+    App._lissajous_preview_art = staticmethod(_lissajous_preview_art)
     App._draw_lissajous = _draw_lissajous
 

@@ -259,6 +259,9 @@ def _lsystem_init(self, preset: str) -> None:
     self.lsystem_mutation = 0.0
     self.lsystem_seed_queue = []  # seeds waiting to sprout
     self.lsystem_fallen_leaves = []  # (x, y, char, color, ttl)
+    # Light direction (degrees) — used by _lsystem_interpret for phototropism
+    if not hasattr(self, 'lsystem_light_dir'):
+        self.lsystem_light_dir = 0
     self._lsystem_build_preset(preset)
 
 
@@ -836,8 +839,26 @@ def _draw_lsystem(self, max_y: int, max_x: int) -> None:
 
 # ── Registration ──────────────────────────────────────────────────────────────
 
+LSYSTEM_PRESETS = [
+    ("Binary Tree",    "Symmetric branching tree structure",               "binary_tree"),
+    ("Fern",           "Naturalistic fern with curving fronds",            "fern"),
+    ("Bush",           "Dense bushy shrub with many branches",             "bush"),
+    ("Seaweed",        "Swaying underwater kelp strands",                  "seaweed"),
+    ("Willow",         "Drooping willow tree with long tendrils",          "willow"),
+    ("Pine",           "Coniferous tree with short angled branches",       "pine"),
+    ("Sakura",         "Cherry blossom tree with spring flowers",          "sakura"),
+    ("Bonsai",         "Carefully shaped miniature tree",                  "bonsai"),
+    ("Garden",         "Multiple species competing for light",             "garden"),
+    ("Alien Flora",    "Exotic extraterrestrial vegetation with mutation", "alien_flora"),
+    ("Competition",    "7 species battle for light — survival of fittest", "competition"),
+    ("Coral Reef",     "Underwater coral and seaweed colony",              "coral_reef"),
+    ("Desert",         "Sparse cacti in arid landscape",                   "desert"),
+]
+
+
 def register(App):
     """Register L-System Fractal Garden mode methods on the App class."""
+    App.LSYSTEM_PRESETS = LSYSTEM_PRESETS
     App._enter_lsystem_mode = _enter_lsystem_mode
     App._exit_lsystem_mode = _exit_lsystem_mode
     App._handle_lsystem_menu_key = _handle_lsystem_menu_key

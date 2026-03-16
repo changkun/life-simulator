@@ -45,6 +45,7 @@ def _fluidrope_init(self, preset_key):
     self.fluidrope_running = True
     self.fluidrope_generation = 0
     self.fluidrope_time = 0.0
+    self.fluidrope_dt = 0.02
     self.fluidrope_show_info = False
     self.fluidrope_speed = 3
     self.fluidrope_coil_angle = 0.0

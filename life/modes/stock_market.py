@@ -145,6 +145,8 @@ def _mkt_init(self, preset_idx):
     self.mkt_view_idx = 0
     self.mkt_view = VIEW_MODES[0]
 
+    self.mkt_steps_per_frame = 1
+
     self.mkt_menu = False
     self.mkt_mode = True
     self._flash(f"Stock Market: {name} — Space to start")

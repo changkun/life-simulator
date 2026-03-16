@@ -279,46 +279,6 @@ _GIF_PALETTE = [
 ]
 
 
-
-_MP_P1_PAIRS = [50, 51, 52, 53]  # newborn → old
-_MP_P2_PAIRS = [54, 55, 56, 57]
-
-
-def color_for_mp(age: int, owner: int) -> int:
-    """Return a curses colour pair for a multiplayer cell based on owner (1 or 2) and age."""
-    if owner == 1:
-        pairs = _MP_P1_PAIRS
-    elif owner == 2:
-        pairs = _MP_P2_PAIRS
-    else:
-        return curses.color_pair(58)
-    if age <= 1:
-        return curses.color_pair(pairs[0])
-    if age <= 5:
-        return curses.color_pair(pairs[1])
-    if age <= 15:
-        return curses.color_pair(pairs[2])
-    return curses.color_pair(pairs[3])
-
-
-# Heatmap 256-color tiers (pair indices 10–17) and 8-color fallback (18–22)
-HEAT_PAIRS_256 = [10, 11, 12, 13, 14, 15, 16, 17]
-HEAT_PAIRS_8 = [18, 18, 19, 19, 20, 20, 21, 22]
-
-
-
-_GIF_PALETTE = [
-    (18, 18, 24),     # 0: background (dark)
-    (0, 200, 0),      # 1: newborn (green)
-    (0, 200, 200),    # 2: young (cyan)
-    (200, 200, 0),    # 3: mature (yellow)
-    (200, 0, 200),    # 4: old (magenta)
-    (200, 0, 0),      # 5: ancient (red)
-    (100, 100, 100),  # 6: grid lines (subtle)
-    (255, 255, 255),  # 7: spare (white)
-]
-
-
 def _gif_age_index(age: int) -> int:
     """Map cell age to palette index (mirrors color_for_age tiers)."""
     if age <= 0:

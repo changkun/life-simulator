@@ -5,9 +5,6 @@ import math as _math
 import random
 import time
 
-
-from life.patterns import PATTERNS
-
 KALEIDO_PRESETS = [
     ("Snowflake", "6-fold crystal symmetry with ice-blue palette", "snowflake"),
     ("Mandala", "8-fold sacred geometry patterns", "mandala"),

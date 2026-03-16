@@ -5,6 +5,27 @@ import random
 import time
 
 
+MUSVIS_PRESETS = [
+    ("Spectrum Bars", "FFT frequency spectrum as vertical bars"),
+    ("Waveform", "Oscilloscope-style audio waveform"),
+    ("Particles", "Beat-reactive particle explosions"),
+    ("Combined", "Spectrum + waveform + particles"),
+    ("Bass Tunnel", "Bass-reactive tunnel zoom effect"),
+    ("Frequency Rain", "Spectrum as falling rain columns"),
+]
+
+MUSVIS_COLOR_NAMES = ["spectrum", "fire", "ocean", "neon"]
+
+MUSVIS_BAR_CHARS = " \u2581\u2582\u2583\u2584\u2585\u2586\u2587\u2588"
+
+MUSVIS_TONE_PATTERNS = [
+    [261, 329, 392, 523],
+    [220, 277, 330, 440],
+    [196, 247, 294, 392],
+    [0, 0, 330, 330],
+]
+
+
 def _enter_musvis_mode(self):
     """Enter Music Visualizer mode — show preset menu."""
     self.musvis_menu = True
@@ -697,7 +718,11 @@ def _draw_musvis_rain(self, view_h: int, view_w: int):
 
 
 def register(App):
-    """Register musvis mode methods on the App class."""
+    """Register musvis mode methods and constants on the App class."""
+    App.MUSVIS_PRESETS = MUSVIS_PRESETS
+    App.MUSVIS_COLOR_NAMES = MUSVIS_COLOR_NAMES
+    App.MUSVIS_BAR_CHARS = MUSVIS_BAR_CHARS
+    App.MUSVIS_TONE_PATTERNS = MUSVIS_TONE_PATTERNS
     App._enter_musvis_mode = _enter_musvis_mode
     App._exit_musvis_mode = _exit_musvis_mode
     App._musvis_init = _musvis_init

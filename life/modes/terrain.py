@@ -548,8 +548,20 @@ def _draw_terrain(self, max_y: int, max_x: int):
             pass
 
 
+TERRAIN_PRESETS = [
+    # (name, description, uplift_rate, thermal_rate, veg_growth, sea_level, terrain_type)
+    ("Continental", "Large landmass with continental shelf", 0.001, 0.02, 0.005, 0.25, "continental"),
+    ("Archipelago", "Scattered island chain", 0.0008, 0.015, 0.008, 0.35, "archipelago"),
+    ("Alpine Peaks", "Towering mountains with deep valleys", 0.0015, 0.03, 0.003, 0.15, "alpine"),
+    ("Rolling Plains", "Gentle grasslands with lazy rivers", 0.0005, 0.01, 0.01, 0.20, "plains"),
+    ("Great Rift", "Rift valley with raised escarpments", 0.0012, 0.025, 0.006, 0.22, "rift"),
+    ("Coastal Erosion", "Land-sea gradient with active erosion", 0.0008, 0.02, 0.007, 0.30, "coastal"),
+]
+
+
 def register(App):
     """Register terrain mode methods on the App class."""
+    App.TERRAIN_PRESETS = TERRAIN_PRESETS
     App._enter_terrain_mode = _enter_terrain_mode
     App._exit_terrain_mode = _exit_terrain_mode
     App._terrain_generate = _terrain_generate

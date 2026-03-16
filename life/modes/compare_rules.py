@@ -7,6 +7,7 @@ import time
 
 from life.colors import color_for_age
 from life.constants import CELL_CHAR, SPEED_LABELS
+from life.grid import Grid
 from life.rules import RULE_PRESETS, parse_rule_string, rule_string
 from life.utils import sparkline
 
@@ -95,6 +96,26 @@ def _draw_compare_rule_menu(self, max_y: int, max_x: int):
                                curses.color_pair(6) | curses.A_DIM)
         except curses.error:
             pass
+
+def _start_compare(self, birth2: set, survival2: set):
+    """Clone the current grid into a second grid with different rules and start comparison."""
+    self.grid2 = Grid(self.grid.rows, self.grid.cols)
+    # Copy cell state from the primary grid
+    for r in range(self.grid.rows):
+        for c in range(self.grid.cols):
+            self.grid2.cells[r][c] = self.grid.cells[r][c]
+    self.grid2.generation = self.grid.generation
+    self.grid2.population = self.grid.population
+    # Apply the chosen rule to the second grid
+    self.grid2.birth = birth2
+    self.grid2.survival = survival2
+    self.pop_history2 = list(self.pop_history)
+    self.compare_mode = True
+    self.compare_rule_menu = False
+    r1 = rule_string(self.grid.birth, self.grid.survival)
+    r2 = rule_string(birth2, survival2)
+    self._flash(f"Comparing: {r1} vs {r2}  (V to exit)")
+
 
 # ── Race mode ──
 
@@ -225,6 +246,7 @@ def register(App):
     """Register compare mode methods on the App class."""
     App._enter_compare_mode = _enter_compare_mode
     App._exit_compare_mode = _exit_compare_mode
+    App._start_compare = _start_compare
     App._handle_compare_rule_menu_key = _handle_compare_rule_menu_key
     App._draw_compare_rule_menu = _draw_compare_rule_menu
     App._draw_compare = _draw_compare

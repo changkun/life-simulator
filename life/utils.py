@@ -6,6 +6,7 @@ import os
 import struct
 
 from life.constants import SAVE_DIR, BLUEPRINT_FILE, SPARKLINE_CHARS
+from life.colors import _GIF_PALETTE
 from life.patterns import PATTERNS
 
 def _load_blueprints() -> dict:

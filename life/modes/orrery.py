@@ -547,28 +547,6 @@ def _draw_orrery(self, max_y: int, max_x: int):
         pass
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# Aurora Borealis (Northern Lights) simulation
-# ═══════════════════════════════════════════════════════════════════════════════
-
-AURORA_PRESETS = [
-    ("Quiet Arc", "Gentle green arc across the sky — calm geomagnetic conditions", "quiet"),
-    ("Substorm Breakup", "Explosive brightening with rapid curtain movement and folds", "substorm"),
-    ("Pulsating Aurora", "Rhythmic patches of light flickering on and off", "pulsating"),
-    ("Coronal Mass Ejection", "Intense multi-color display from a major solar storm", "cme"),
-]
-
-# Altitude bands: each gas emits different colors at different heights
-# (name, row_fraction_top, row_fraction_bottom, primary_color_pair, chars)
-_AURORA_BANDS = [
-    ("N2_purple", 0.05, 0.20, 5, "░▒"),      # purple/magenta — high altitude nitrogen
-    ("O_green",   0.15, 0.55, 2, "░▒▓█"),     # green — oxygen at ~100-200 km
-    ("O_red",     0.08, 0.25, 1, "░▒"),        # red — oxygen at high altitude (faint)
-    ("N2_blue",   0.40, 0.70, 4, "░▒▓"),       # blue/violet — low altitude nitrogen
-]
-
-
-
 
 
 def register(App):

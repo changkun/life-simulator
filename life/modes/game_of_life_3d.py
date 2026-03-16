@@ -5,8 +5,6 @@ import random
 import time
 
 
-from life.grid import Grid
-
 def _enter_gol3d_mode(self):
     """Enter 3D Game of Life mode — show preset menu."""
     self.gol3d_menu = True

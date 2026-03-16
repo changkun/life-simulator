@@ -5,18 +5,18 @@ import random
 import time
 
 TORNADO_PRESETS = [
-    ("EF3 Tornado", "Violent tornado with debris cloud and destruction path", "ef3"),
-    ("Rope Tornado", "Thin, sinuous funnel with rapid rotation", "rope"),
-    ("Outbreak", "Multiple vortices in a severe supercell storm", "outbreak"),
-    ("Rain-wrapped", "Tornado hidden in heavy rain curtains", "rainwrap"),
-    ("Night Storm", "Tornado at night — visible only by lightning flashes", "night"),
-    ("Dust Devil", "Small, harmless whirlwind in dry conditions", "dustdevil"),
+    ("EF3 Wedge Tornado", "Wide, powerful wedge tornado with heavy debris field", "ef3"),
+    ("Rope Tornado", "Thin, sinuous rope funnel — graceful but dangerous", "rope"),
+    ("Supercell Outbreak", "Multiple vortices in a massive supercell complex", "outbreak"),
+    ("Rain-Wrapped", "Tornado hidden inside dense rain curtains — low visibility", "rainwrap"),
+    ("Nighttime Storm", "Lightning-illuminated tornado in darkness", "night"),
+    ("Dust Devil", "Small, fast-spinning vortex on dry ground — gentle but mesmerizing", "dustdevil"),
 ]
 
 _TORNADO_DEBRIS_CHARS = "·∘°*×+#@%&"
 _TORNADO_CLOUD_CHARS = "░▒▓█"
 _TORNADO_FUNNEL_CHARS = "░▒▓█"
-_TORNADO_RAIN_CHARS = "·:│║"
+_TORNADO_RAIN_CHARS = "│┃╽╿"
 
 
 def _enter_tornado_mode(self):
@@ -556,6 +556,114 @@ def _draw_tornado(self, max_y: int, max_x: int):
                 self.stdscr.addch(dy, dx, ch, attr | color)
             except curses.error:
                 pass
+
+    # ── Lightning bolts ──
+    if self.tornado_lightning_active and self.tornado_lightning_segments:
+        for (x1, y1, x2, y2) in self.tornado_lightning_segments:
+            # Draw line using Bresenham
+            ldx = abs(x2 - x1)
+            ldy = abs(y2 - y1)
+            sx = 1 if x1 < x2 else -1
+            sy = 1 if y1 < y2 else -1
+            err = ldx - ldy
+            cx, cy = x1, y1
+            steps = 0
+            while steps < 100:
+                steps += 1
+                if 0 <= cx < cols and 0 <= cy < rows:
+                    bolt_ch = '|' if abs(y2 - y1) > abs(x2 - x1) else '-'
+                    if random.random() < 0.3:
+                        bolt_ch = random.choice(['\\', '/', '+', '+', '+', '+'])
+                    try:
+                        self.stdscr.addch(cy, cx, bolt_ch,
+                                          curses.A_BOLD | curses.color_pair(5))
+                    except curses.error:
+                        pass
+                if cx == x2 and cy == y2:
+                    break
+                e2 = 2 * err
+                if e2 > -ldy:
+                    err -= ldy
+                    cx += sx
+                if e2 < ldx:
+                    err += ldx
+                    cy += sy
+
+    # ── Ground / destruction path ──
+    ground_chars = "___" if not is_dustdevil else ".,,"
+    for x in range(cols):
+        if ground_y < rows:
+            is_destroyed = (x, ground_y) in self.tornado_destruction
+            if is_destroyed:
+                ch = random.choice("_.,") if random.random() < 0.1 else '_'
+                try:
+                    self.stdscr.addch(ground_y, x, ch, curses.color_pair(1))
+                except curses.error:
+                    pass
+            else:
+                ci = int(math.sin(x * 0.3) + 1) % len(ground_chars)
+                try:
+                    self.stdscr.addch(ground_y, x, ground_chars[ci],
+                                      curses.color_pair(2) if not is_dustdevil else curses.A_DIM)
+                except curses.error:
+                    pass
+
+    # ── Ground-level dust/debris swirl ──
+    if self.tornado_touch_ground and ground_y + 1 < rows:
+        swirl_r = self.tornado_vortex_radius * 3
+        for i in range(int(swirl_r * 2)):
+            angle = t * self.tornado_rotation_speed + i * 0.5
+            r = random.uniform(1, swirl_r)
+            sx = int(vx + math.cos(angle) * r)
+            sy = ground_y + 1
+            if 0 <= sx < cols and sy < rows:
+                ch = random.choice("..o~")
+                try:
+                    self.stdscr.addch(sy, sx, ch, curses.A_DIM | curses.color_pair(3))
+                except curses.error:
+                    pass
+
+    # ── Info panel ──
+    if self.tornado_show_info:
+        info_lines = [
+            f"Preset: {self.tornado_preset_name}",
+            f"Time: {self.tornado_time:.1f}s",
+            f"Vortex pos: ({self.tornado_vortex_x:.1f}, {self.tornado_vortex_y:.1f})",
+            f"Radius: {self.tornado_vortex_radius:.1f}",
+            f"Rotation: {self.tornado_rotation_speed:.1f} rad/s",
+            f"Debris: {len(self.tornado_debris)}",
+            f"Rain: {len(self.tornado_rain_particles)}",
+            f"Speed: {self.tornado_speed}x",
+        ]
+        panel_w = max(len(l) for l in info_lines) + 4
+        panel_x = max(0, cols - panel_w - 1)
+        panel_y = 1
+        for i, line in enumerate(info_lines):
+            y = panel_y + i
+            if y < rows - 2:
+                try:
+                    self.stdscr.addstr(y, panel_x, f" {line:<{panel_w - 2}} ",
+                                       curses.A_REVERSE)
+                except curses.error:
+                    pass
+
+    # ── Status bar ──
+    status_y = rows - 1
+    gen_str = f" Gen {self.tornado_generation}"
+    state = "RUNNING" if self.tornado_running else "PAUSED"
+    status = f"{gen_str}  {state}  t={self.tornado_time:.1f}s  spd={self.tornado_speed}x"
+    try:
+        self.stdscr.addstr(status_y, 0, status[:cols - 1], curses.A_REVERSE)
+    except curses.error:
+        pass
+
+    # ── Hint bar ──
+    hint = " Space=play n=step +/-=speed i=info l=lightning r=reset R=menu q=exit"
+    if status_y + 1 < max_y:
+        try:
+            self.stdscr.addstr(status_y + 1, 0, hint[:cols - 1], curses.A_DIM)
+        except curses.error:
+            pass
 
 
 def register(App):

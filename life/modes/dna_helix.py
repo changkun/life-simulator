@@ -331,7 +331,10 @@ def _draw_dnahelix(self, max_y: int, max_x: int):
             pass
         return
 
-    has_color = curses.has_colors()
+    try:
+        has_color = curses.has_colors()
+    except curses.error:
+        has_color = False
     genome = self.dnahelix_best_genome
     gl = self.dnahelix_genome_len
     target = self.dnahelix_target
@@ -339,6 +342,113 @@ def _draw_dnahelix(self, max_y: int, max_x: int):
     # Layout: left side = helix, right side = GA stats & population
     helix_width = min(cols // 2, 40)
     stats_x = helix_width + 2
+
+    # ── Draw rotating double helix ──
+    helix_top = 2
+    helix_bottom = rows - 3
+    helix_h = helix_bottom - helix_top
+    if helix_h < 4:
+        return
+
+    helix_cx = helix_width // 2
+    amplitude = max(3, helix_width // 3)
+    phase = self.dnahelix_phase
+
+    base_pair_chars = "ATCG"
+    for row_i in range(helix_h):
+        y = helix_top + row_i
+        t = phase + row_i * 0.3
+        # Two strands offset by pi
+        x1 = helix_cx + int(amplitude * math.sin(t))
+        x2 = helix_cx + int(amplitude * math.sin(t + math.pi))
+
+        # Draw backbone strands
+        for sx in (x1, x2):
+            if 0 <= y < rows and 0 <= sx < cols - 1:
+                try:
+                    ch = '(' if sx == x1 else ')'
+                    self.stdscr.addstr(y, sx, ch, curses.A_BOLD)
+                except curses.error:
+                    pass
+
+        # Draw base pair rungs when strands are near-horizontal crossing
+        depth = math.cos(t)
+        if abs(depth) < 0.5 and abs(x1 - x2) > 2:
+            lx, rx = min(x1, x2), max(x1, x2)
+            gene_idx = row_i % gl
+            bp_char = base_pair_chars[genome[gene_idx] * 2 + target[gene_idx]] if gene_idx < gl else '-'
+            for bx in range(lx + 1, rx):
+                if 0 <= y < rows and 0 <= bx < cols - 1:
+                    try:
+                        ch = bp_char if bx == (lx + rx) // 2 else '-'
+                        attr = curses.A_DIM
+                        if gene_idx < gl and genome[gene_idx] == target[gene_idx]:
+                            attr = curses.A_BOLD
+                        self.stdscr.addstr(y, bx, ch, attr)
+                    except curses.error:
+                        pass
+
+    # ── Title ──
+    title = "DNA Helix & Genetic Algorithm"
+    if self.dnahelix_solved:
+        title += " — SOLVED"
+    try:
+        self.stdscr.addstr(0, (cols - len(title)) // 2, title, curses.A_BOLD)
+    except curses.error:
+        pass
+
+    # ── GA stats on right side ──
+    if stats_x < cols - 10:
+        info_lines = [
+            f"Generation: {self.dnahelix_generation}",
+            f"Genome len: {gl}",
+            f"Population: {self.dnahelix_pop_size}",
+            f"Best fit:   {self.dnahelix_best_fitness:.3f}",
+            f"Avg fit:    {self.dnahelix_avg_fitness:.3f}",
+            f"Mutation:   {self.dnahelix_mutation_rate:.3f}",
+            f"Crossover:  {self.dnahelix_crossover_rate:.2f}",
+        ]
+        for il, line in enumerate(info_lines):
+            iy = 2 + il
+            if iy < rows - 2 and stats_x + len(line) < cols:
+                try:
+                    self.stdscr.addstr(iy, stats_x, line, curses.A_DIM)
+                except curses.error:
+                    pass
+
+        # Fitness sparkline
+        hist = self.dnahelix_fitness_history[-min(30, cols - stats_x - 2):]
+        if hist:
+            spark_y = 2 + len(info_lines) + 1
+            spark_chars = " ▁▂▃▄▅▆▇█"
+            if spark_y < rows - 2:
+                spark = ""
+                for fv in hist:
+                    idx = min(int(fv * (len(spark_chars) - 1)), len(spark_chars) - 1)
+                    spark += spark_chars[idx]
+                try:
+                    self.stdscr.addstr(spark_y, stats_x, f"Fit: {spark}", curses.A_DIM)
+                except curses.error:
+                    pass
+
+    # ── Status bar ──
+    state = "SOLVED" if self.dnahelix_solved else ("▶ RUN" if self.dnahelix_running else "⏸ PAUSED")
+    status = f" Gen {self.dnahelix_generation}  {state}  best={self.dnahelix_best_fitness:.3f}"
+    status_y = rows - 2
+    try:
+        self.stdscr.addstr(status_y, 0, status[:cols - 1], curses.A_REVERSE)
+        pad = cols - 1 - len(status)
+        if pad > 0:
+            self.stdscr.addstr(status_y, len(status), " " * pad, curses.A_REVERSE)
+    except curses.error:
+        pass
+
+    hint = " Space=play n=step +/-=speed i=info r=reset R=menu q=exit"
+    if status_y + 1 < rows:
+        try:
+            self.stdscr.addstr(status_y + 1, 0, hint[:cols - 1], curses.A_DIM)
+        except curses.error:
+            pass
 
 
 def register(App):

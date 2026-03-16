@@ -4,6 +4,28 @@ import math
 import random
 import time
 
+# ══════════════════════════════════════════════════════════════════════
+#  Snowflake Growth (Reiter Crystal) Presets
+# ══════════════════════════════════════════════════════════════════════
+
+SNOWFLAKE_PRESETS = [
+    # (name, description, alpha, beta, gamma, mu, symmetric)
+    # alpha = deposition rate, beta = initial vapor (supersaturation),
+    # gamma = noise amplitude, mu = diffusion rate (0-1), symmetric = enforce 6-fold
+    ("Classic Dendrite", "Balanced growth -- six-fold branching arms", 0.40, 0.40, 0.0001, 0.8, True),
+    ("Thin Needles", "Low vapor -- long thin branches", 0.30, 0.30, 0.0001, 0.9, True),
+    ("Broad Plates", "High vapor -- wide faceted plates", 0.50, 0.55, 0.0001, 0.5, True),
+    ("Fernlike", "Fast deposition -- highly branched fern shapes", 0.65, 0.35, 0.0001, 0.7, True),
+    ("Stellar Dendrite", "Moderate vapor -- classic star snowflake", 0.45, 0.45, 0.0001, 0.85, True),
+    ("Sectored Plate", "High vapor, low deposition -- sector plates", 0.20, 0.60, 0.0001, 0.6, True),
+    ("Simple Hexagon", "Very high vapor -- compact hexagonal prism", 0.15, 0.70, 0.0, 0.4, True),
+    ("Hollow Columns", "Medium vapor -- hollow column morphology", 0.35, 0.50, 0.0, 0.75, True),
+    ("Noisy Crystal", "High noise -- irregular natural look", 0.40, 0.40, 0.005, 0.8, False),
+    ("Asymmetric Growth", "No symmetry -- naturalistic random crystal", 0.40, 0.40, 0.001, 0.8, False),
+    ("Fast Dendrite", "Rapid low-diffusion -- dense fractal arms", 0.55, 0.35, 0.0001, 0.5, True),
+    ("Sparse Frost", "Very low vapor -- slow sparse crystal", 0.25, 0.25, 0.0001, 0.9, True),
+]
+
 
 def _enter_snowflake_mode(self):
     """Enter Snowflake Growth mode — show preset menu."""
@@ -467,7 +489,6 @@ LV_PRESETS = [
 
 def register(App):
     """Register snowflake mode methods on the App class."""
-    from life.modes.ising import SNOWFLAKE_PRESETS
     App.SNOWFLAKE_PRESETS = SNOWFLAKE_PRESETS
     App._enter_snowflake_mode = _enter_snowflake_mode
     App._exit_snowflake_mode = _exit_snowflake_mode

@@ -8,6 +8,23 @@ import threading
 import time
 import wave
 
+# Pentatonic scale intervals (semitones from root): C D E G A
+_PENTATONIC = [0, 2, 4, 7, 9]
+
+
+def _row_to_freq(row: int, total_rows: int, base_freq: float = 220.0) -> float:
+    """Map a grid row to a frequency using a pentatonic scale.
+
+    Row 0 (top) is the highest pitch, row (total_rows-1) is the lowest.
+    The mapping wraps through multiple octaves of the pentatonic scale.
+    """
+    # Invert so top rows are high-pitched
+    idx = total_rows - 1 - row
+    octave, degree = divmod(idx, len(_PENTATONIC))
+    semitones = octave * 12 + _PENTATONIC[degree]
+    return base_freq * (2.0 ** (semitones / 12.0))
+
+
 class SoundEngine:
     """Procedural audio synthesizer that turns grid state into music.
 

@@ -12,6 +12,8 @@ AQUARIUM_PRESETS = [
 ]
 
 BUBBLE_CHARS = "·∘○◯"
+SEAWEED_CHARS = ["}", "{", ")", "(", "]", "[", "|"]
+SAND_CHARS = ["~", "≈", ".", ",", "'", "`", "·"]
 
 FISH_SPECIES = [
     {"name": "Neon Tetra", "left": ["><>"], "right": ["<><"], "speed": (0.2, 0.5)},
@@ -396,6 +398,131 @@ def _draw_aquarium(self, max_y: int, max_x: int):
     cols = max_x
     sand_row = rows - 2
     t = self.aquarium_time
+
+    # ── Surface light ripples ──
+    for c in range(min(cols - 1, self.aquarium_cols)):
+        ripple = math.sin(c * 0.3 + t * 2.0) * 0.5 + math.sin(c * 0.7 + t * 1.3) * 0.3
+        ch = "~" if ripple > 0.2 else "≈" if ripple > -0.2 else "~"
+        try:
+            color = curses.color_pair(4) if ripple > 0 else curses.color_pair(12)
+            self.stdscr.addstr(1, c, ch, color)
+        except curses.error:
+            pass
+
+    # ── Caustic light patterns on water ──
+    for r in range(2, min(sand_row, rows - 1)):
+        for c in range(0, min(cols - 1, self.aquarium_cols), 3):
+            caustic = math.sin(c * 0.4 + r * 0.6 + self.aquarium_caustic_phase * 3) * \
+                      math.cos(c * 0.3 - r * 0.4 + self.aquarium_caustic_phase * 2)
+            if caustic > 0.7:
+                try:
+                    depth_fade = max(0, min(7, int((r - 2) / (sand_row - 2) * 6)))
+                    if depth_fade < 3:
+                        self.stdscr.addstr(r, c, "·", curses.color_pair(12) | curses.A_DIM)
+                except curses.error:
+                    pass
+
+    # ── Draw sandy bottom ──
+    for c in range(min(cols - 1, len(self.aquarium_sand))):
+        h = self.aquarium_sand[c]
+        for dh in range(h + 1):
+            sr = sand_row - dh
+            if 0 < sr < rows - 1:
+                ch = SAND_CHARS[c % len(SAND_CHARS)]
+                try:
+                    self.stdscr.addstr(sr, c, ch, curses.color_pair(3) | curses.A_DIM)
+                except curses.error:
+                    pass
+
+    # ── Draw seaweed ──
+    for sw in self.aquarium_seaweed:
+        bx = sw["x"]
+        for seg in range(sw["height"]):
+            sway = math.sin(t * sw["speed"] + sw["phase"] + seg * 0.5) * (1.0 + seg * 0.3)
+            sx = int(bx + sway)
+            sy = sand_row - seg - 1
+            if 0 < sy < rows - 1 and 0 <= sx < cols - 1:
+                ch = SEAWEED_CHARS[seg % len(SEAWEED_CHARS)]
+                try:
+                    self.stdscr.addstr(sy, sx, ch, curses.color_pair(sw["color"]))
+                except curses.error:
+                    pass
+
+    # ── Draw bubbles ──
+    for b in self.aquarium_bubbles:
+        bx, by = int(b["x"]), int(b["y"])
+        if 0 < by < rows - 1 and 0 <= bx < cols - 1:
+            ch = BUBBLE_CHARS[min(b["char_idx"], len(BUBBLE_CHARS) - 1)]
+            try:
+                self.stdscr.addstr(by, bx, ch, curses.color_pair(12))
+            except curses.error:
+                pass
+
+    # ── Draw food ──
+    for food in self.aquarium_food:
+        fx, fy = int(food["x"]), int(food["y"])
+        if 0 < fy < rows - 1 and 0 <= fx < cols - 1:
+            try:
+                self.stdscr.addstr(fy, fx, "*", curses.color_pair(3))
+            except curses.error:
+                pass
+
+    # ── Draw fish ──
+    for fish in self.aquarium_fish:
+        sp = FISH_SPECIES[fish["species"]]
+        body = sp["left"] if fish["vx"] < 0 else sp["right"]
+        body_str = body[0] if body else "><>"
+        fx = int(fish["x"])
+        fy = int(fish["y"])
+        if 0 < fy < rows - 1:
+            for ci, ch in enumerate(body_str):
+                cx = fx + ci
+                if 0 <= cx < cols - 1:
+                    try:
+                        attr = curses.color_pair(fish["color"]) | curses.A_BOLD
+                        self.stdscr.addstr(fy, cx, ch, attr)
+                    except curses.error:
+                        pass
+
+    # ── Title bar ──
+    title = f" ASCII Aquarium — {self.aquarium_preset_name.title()} "
+    if len(title) < cols:
+        try:
+            self.stdscr.addstr(0, 0, title.center(cols - 1), curses.A_REVERSE | curses.color_pair(4))
+        except curses.error:
+            pass
+
+    # ── Bottom status ──
+    status = f" Fish: {len(self.aquarium_fish)}  Speed: {self.aquarium_speed}x  Gen: {self.aquarium_generation} "
+    controls = " f=feed  t=tap  a/d=add/remove fish  b=bubbles  +/-=speed  i=info  Space=pause  R=menu  q=quit "
+    try:
+        if len(status) < cols:
+            self.stdscr.addstr(rows - 1, 0, status, curses.color_pair(7))
+        remaining = cols - len(status) - 1
+        if remaining > 10:
+            self.stdscr.addstr(rows - 1, len(status), controls[:remaining], curses.color_pair(8))
+    except curses.error:
+        pass
+
+    # ── Info overlay ──
+    if self.aquarium_show_info:
+        info_lines = [
+            f"Preset: {self.aquarium_preset_name}",
+            f"Fish: {len(self.aquarium_fish)}",
+            f"Bubbles: {len(self.aquarium_bubbles)}",
+            f"Seaweed: {len(self.aquarium_seaweed)}",
+            f"Food: {len(self.aquarium_food)}",
+            f"Generation: {self.aquarium_generation}",
+            "",
+            "f feed  t tap glass  a/d +/- fish",
+            "b add bubbles  +/- speed  ESC menu",
+        ]
+        for i, line in enumerate(info_lines):
+            if i + 1 < rows - 1 and len(line) + 2 < cols:
+                try:
+                    self.stdscr.addstr(i + 1, 1, line, curses.color_pair(7))
+                except curses.error:
+                    pass
 
 
 def register(App):
