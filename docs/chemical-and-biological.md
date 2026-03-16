@@ -480,11 +480,11 @@ Autocatalytic cycle detection (every 20 steps):
 
 ---
 
-## Immune System Simulation
+## Immune System Response & Pathogen Defense
 
-**Background** — This mode simulates the vertebrate immune response as a spatial agent-based model. Pathogens (bacteria or viruses) invade, replicate, and mutate. Innate immune cells (macrophages, neutrophils) rush to infection sites via chemotaxis on a cytokine gradient. Adaptive immune cells (T-cells, B-cells) recognize specific antigen shapes, proliferate when activated, and form long-lived memory cells for faster secondary responses. Pathogen mutation drives an evolutionary arms race. The model captures key immunological concepts: clonal selection, affinity maturation, vaccination, autoimmunity, and cytokine storms.
+**Background** — This mode simulates the vertebrate immune response as a 2D tissue cross-section with both innate and adaptive immunity. Pathogen particles invade through a wound breach in the tissue barrier. Innate immune cells (neutrophils, macrophages, dendritic cells) rush to infection sites via chemotaxis on cytokine gradients. Adaptive immune cells undergo a full activation cascade: dendritic cells capture antigen and present it to naive T cells, which differentiate into helper T cells (CD4+ orchestrators secreting cytokines and activating B cells) and killer T cells (CD8+ cytotoxic effectors). B cells produce diffusible antibody fields that opsonize pathogens. The complement system provides a second diffusible defense layer with membrane attack killing. Two inflammatory cytokine species (TNF-α and IL-6) drive positive feedback loops, with IL-6 levels controlling a fever mechanic that boosts immune kinetics but damages tissue at high temperatures. Memory cells (T and B lineage) form for dramatically faster secondary responses. The model captures clonal selection, clonal expansion, affinity maturation, opsonization, complement activation, fever pathophysiology, mast cell degranulation, and cytokine storm dynamics.
 
-**Formulation** — Entities interact on a 2D grid with a diffusible cytokine field:
+**Formulation** — 15 entity types interact on a 2D grid with 4 diffusible fields (TNF-α cytokine, IL-6 cytokine, antibody, complement):
 
 ```
 Antigen recognition:
@@ -492,37 +492,62 @@ Antigen recognition:
   Match quality = 1.0 - hamming_distance(receptor XOR antigen) / 6
   Activation threshold: match > 0.67 (at most 2 bits different)
 
-Cytokine field:
-  Produced at infection sites (bacteria, infected tissue, debris)
-  Diffuses via 5-point Laplacian with coefficient D
-  Decays at rate cytokine_decay (0.005-0.03)
-  Innate cells follow gradient: move to highest-cytokine empty neighbor
+Wound breach:
+  Gap in tissue barrier on left edge where pathogens invade
+  Marked with "W" glyphs in tissue map view
 
-Entity behaviors:
-  Bacteria: replicate to adjacent empty/tissue cells at replicate_rate
-            mutate antigen (flip random bit) at mutate_rate
-  Virus:    infect adjacent tissue -> infected state
-            infected tissue releases viral copies at replicate_rate
-  Macrophage: phagocytose adjacent pathogen/debris (kills + produces cytokine)
-              move up cytokine gradient
-  Neutrophil: fast responder, kills pathogens, shorter lifespan
-  T-cell:    scan adjacent cells, kill if antigen matches receptor
-             proliferate on activation (clone with same receptor)
-  B-cell:    produce antibodies if antigen match found
-             proliferate on activation, generate memory cells
-  Memory:    long-lived, rapidly reactivate on antigen re-encounter
-  Antibody:  drifts, marks pathogens for destruction (opsonization)
+Diffusible fields (all use 5-point Laplacian diffusion with decay):
+  TNF-α cytokine:  produced at infection/phagocytosis sites, drives immune recruitment
+  IL-6 cytokine:   produced by macrophages and helper T cells, drives fever response
+  Antibody:        secreted by activated B cells, opsonizes pathogens (slows replication,
+                   enhances phagocytosis, directly neutralizes viruses)
+  Complement:      replenished by healthy tissue, membrane attack complex kills pathogens
+                   probabilistically based on local concentration
+
+Fever mechanic:
+  Body temperature = 37.0 + f(mean IL-6 level), range 37-42°C
+  fever_mult = 1.0 + 0.3 × (T - 37) / 5 — boosts immune kinetics
+  Tissue damage when T > 40°C — excessive fever is self-destructive
+
+Entity behaviors (15 types):
+  Tissue (..)      : healthy barrier, replenishes complement
+  Bacteria (@@)    : replicate to adjacent cells at replicate_rate × fever_mult
+                     mutate antigen (flip random bit) at mutate_rate
+  Virus (vv)       : infect adjacent tissue → infected state
+                     infected tissue releases viral copies at replicate_rate
+  Neutrophil (NN)  : fast first responder, chemotaxis up cytokine gradient
+                     kills adjacent pathogens, shorter lifespan
+  Macrophage (MM)  : phagocytose pathogen/debris, present antigen
+                     secrete TNF-α and IL-6, move up cytokine gradient
+  Dendritic (DC)   : patrol tissue, capture antigen, migrate to "lymph node" region
+                     present antigen to naive T cells → activation cascade
+  Naive T (Tn)     : uncommitted T cells, activated by dendritic presentation or
+                     pathogen encounter with cytokine costimulation
+                     differentiate → helper T or killer T
+  Helper T (Th)    : CD4+ orchestrator, secretes cytokines, activates B cells
+                     and naive T cells, clonal expansion, → memory cells
+  Killer T (Tk)    : CD8+ cytotoxic, kills antigen-matched pathogens/infected cells
+                     clonal expansion, → memory cells
+  B-cell (BB)      : antibody producer, activated by helper T cells or direct antigen
+                     secrete into diffusible antibody field, → memory cells
+  Memory (**)      : long-lived (T or B lineage), rapidly reactivate with clonal burst
+                     on antigen re-encounter — dramatically faster secondary response
+  Mast (!!)        : degranulate on antigen contact, releasing massive cytokine bursts
+                     (histamine analog), cause allergic tissue damage
+  Debris (::)      : dead cell remnants, cleared by macrophages
 
 Vaccination preset: pre-seeds memory cells with receptors matching pathogen antigen
-Autoimmune: self-antigen = 0; some immune cells have receptor ~ 0 (attack self)
-Cytokine storm: very low cytokine decay -> runaway positive feedback
+Cytokine storm: TNF-α/IL-6 decay rate 0.005 → runaway positive feedback accumulation
+Immunodeficiency: 80% T-cell depletion at initialization
+Allergic hypersensitivity: pre-sensitized mast cells with matching receptors
 ```
 
-**What to look for** — "Bacterial Invasion" shows innate immunity rushing to contain the front. "Viral Outbreak" demonstrates the critical role of T-cells in clearing infected tissue. "Vaccination" produces a dramatically faster secondary response — memory cells activate within steps rather than requiring clonal expansion. "Autoimmune" shows immune cells attacking healthy tissue (yellow self-damage). "Cytokine Storm" demonstrates immune overreaction: excessive cytokine production recruits too many cells, causing collateral tissue destruction worse than the pathogen itself.
+**What to look for** — "Normal Bacterial Infection" shows the full immune cascade: neutrophils rush to the wound, macrophages phagocytose and present antigen, dendritic cells activate naive T cells which differentiate and expand, B cells begin antibody production, and the infection is gradually contained. "Viral Invasion" demonstrates intracellular replication requiring killer T cells to clear infected tissue. "Cytokine Storm" shows immune overreaction: with reduced cytokine decay, TNF-α and IL-6 accumulate without bound, fever spikes above 40°C, and tissue damage from inflammation exceeds pathogen damage — a runaway positive feedback loop. "Immunodeficiency" reveals how T-cell depletion cripples the adaptive response, leaving innate immunity to fight alone. "Allergic Hypersensitivity" shows mast cell degranulation flooding the tissue with histamine-like cytokine bursts causing collateral damage to healthy tissue. "Vaccination & Re-exposure" produces a dramatically faster secondary response — pre-seeded memory cells reactivate with clonal bursts within steps rather than requiring the full naive → dendritic → activation cascade.
 
 **References**
 - Perelson, A. S. & Weisbuch, G. "Immunology for physicists." *Reviews of Modern Physics* 69 (1997): 1219-1268. https://doi.org/10.1103/RevModPhys.69.1219
 - Murphy, K. & Weaver, C. *Janeway's Immunobiology.* 9th ed., Garland Science, 2016. https://www.garlandscience.com/product/isbn/9780815345053
+- Segovia-Juarez, J. L., Ganguli, S. & Kirschner, D. "Identifying control mechanisms of granuloma formation during M. tuberculosis infection using an agent-based model." *Journal of Theoretical Biology* 231 (2004): 357-376. https://doi.org/10.1016/j.jtbi.2004.06.031
 
 ---
 

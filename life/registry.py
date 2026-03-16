@@ -312,8 +312,8 @@ MODE_REGISTRY = [
     {"name": "Artificial Chemistry", "key": "—", "category": "Chemical & Biological",
      "desc": "Primordial soup of abstract molecules — spontaneous polymerization, autocatalytic cycles & self-replicator emergence", "attr": "achem_mode", "enter": "_enter_achem_mode", "exit": "_exit_achem_mode"},
     # ── Immune System ──
-    {"name": "Immune System Simulation", "key": "—", "category": "Chemical & Biological",
-     "desc": "Adaptive immune response — pathogens invade, innate & adaptive cells coordinate, memory forms, antigens mutate", "attr": "immune_mode", "enter": "_enter_immune_mode", "exit": "_exit_immune_mode"},
+    {"name": "Immune System Response & Pathogen Defense", "key": "—", "category": "Chemical & Biological",
+     "desc": "Innate & adaptive immunity — wound breach invasion, neutrophil/macrophage chemotaxis, T-cell cascade (naive→helper/killer), B-cell antibody fields, complement membrane attack, TNF-α/IL-6 cytokine signaling, fever mechanic, memory cells", "attr": "immune_mode", "enter": "_enter_immune_mode", "exit": "_exit_immune_mode"},
     # ── Coral Reef Ecosystem ──
     {"name": "Coral Reef Ecosystem", "key": "—", "category": "Chemical & Biological",
      "desc": "Multi-species marine ecosystem with coral growth, bleaching cascades, trophic interactions & recovery dynamics", "attr": "reef_mode", "enter": "_enter_reef_mode", "exit": "_exit_reef_mode"},

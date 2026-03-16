@@ -4,6 +4,32 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Rewrite Immune System as full Immune System Response & Pathogen Defense — wound breach invasion, T-cell activation cascade (naive→helper/killer), dendritic antigen presentation, B-cell antibody fields, complement membrane attack, TNF-α/IL-6 dual cytokine signaling, fever mechanic, mast cells, memory cell secondary response
+
+Complete rewrite of the immune system simulation mode from a basic pathogen-vs-immune-cell model into a comprehensive innate + adaptive immunity simulation with 15 entity types, 4 diffusible fields, and realistic immunological cascades.
+
+**`life/modes/immune_system.py`** (rewritten, ~1620 lines):
+
+- **Wound breach**: Pathogens invade through a gap in the tissue barrier on the left edge, marked with "W" glyphs. Creates a spatial focus for the immune response.
+- **15 entity types**: Empty, tissue, infected tissue, bacteria, virus, macrophage, neutrophil, naive T cell, helper T cell (CD4+), killer T cell (CD8+), B cell, memory cell, debris, mast cell, dendritic cell.
+- **Dendritic cell antigen presentation**: Dendritic cells patrol tissue, capture pathogen antigen, migrate toward a "lymph node" region, and present antigen to activate naive T cells — initiating the adaptive immune cascade.
+- **T-cell activation cascade**: Naive T cells differentiate into helper T (CD4+ — secrete cytokines, activate B cells, clonal expansion) or killer T (CD8+ — cytotoxic killing of antigen-matched pathogens/infected cells, clonal expansion). Both lineages can form memory cells.
+- **B-cell antibody production**: Activated B cells secrete into a diffusible antibody field that opsonizes pathogens (slows replication, enhances phagocytosis, directly neutralizes viruses).
+- **Complement system**: Diffusible complement proteins replenished by healthy tissue. Membrane attack complex kills pathogens probabilistically based on local concentration.
+- **Dual cytokine signaling**: TNF-α and IL-6 as separate diffusible fields with independent diffusion coefficients and decay rates. Both drive immune cell recruitment via chemotaxis; IL-6 additionally drives the fever response.
+- **Fever mechanic**: Body temperature (37–42°C) driven by mean IL-6 level. Fever multiplier boosts immune kinetics (faster killing, faster recruitment) but causes tissue damage above 40°C — modeling the double-edged nature of febrile response.
+- **Mast cells**: Degranulate on antigen contact, releasing massive cytokine bursts (histamine analog). Central to the allergic hypersensitivity preset.
+- **Memory cell formation**: Helper T, killer T, and B cells convert to long-lived memory cells. On antigen re-encounter, memory cells rapidly reactivate with clonal burst — dramatically faster secondary response (vaccination effect).
+- **6-bit antigen matching**: Receptors and antigens as 6-bit integers with Hamming distance similarity scoring. Activation threshold at >0.67 match quality (at most 2 bits different).
+- **3 visualization views** (cycle with `v`): Tissue Map (cell glyphs color-coded by type with wound markers "W", pathogen spread visualization, immune cell positions), Cytokine/Antibody Heatmap (TNF-α red, IL-6 yellow, antibody cyan, complement blue overlay showing field concentrations), Time-Series Sparklines (10 metrics: pathogen load, immune cell count, inflammation level, antibody titer, tissue damage, fever temperature, neutrophil count, T-cell count, B-cell count, memory cell count).
+- **6 presets**: Normal Bacterial Infection (standard wound invasion with full immune cascade), Viral Invasion (intracellular replication requiring killer T cells), Cytokine Storm (TNF-α/IL-6 decay rate 0.005 causing runaway inflammatory accumulation), Immunodeficiency (80% T-cell depletion), Allergic Hypersensitivity (pre-sensitized mast cells with matching receptors), Vaccination & Re-exposure (pre-seeded memory cells for rapid secondary response).
+
+**`life/registry.py`**: Updated mode name to "Immune System Response & Pathogen Defense" with expanded description listing all major mechanics.
+
+**`tests/test_immune_system.py`**: Expanded from 5 to 11 tests — added coverage for all 6 presets, antibody/complement field initialization, fever dynamics, history recording, and vaccination memory cell seeding.
+
+---
+
 ### Feature: Add Tokamak Fusion Plasma Confinement — magnetically confined hydrogen plasma with toroidal cross-section, nested flux surfaces, ohmic/NBI/alpha heating, Lawson criterion tracking, sawtooth crashes, ELMs, H-mode transition, disruptions & runaway electrons
 
 A tokamak fusion plasma simulation modeling the poloidal cross-section of a magnetically confined deuterium-tritium plasma. Fills a major gap — the project had no nuclear/plasma-confinement physics despite 171 modes spanning nearly every other domain. Fusion energy is the defining scientific challenge of the era and produces spectacular visuals: glowing plasma, swirling field lines, and instability cascades.
