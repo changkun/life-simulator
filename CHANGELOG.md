@@ -4,6 +4,32 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Ocean Thermohaline Circulation & Global Current System — global ocean conveyor belt with thermohaline density-driven deep circulation (NADW/AABW sinking), wind-driven Ekman transport & western boundary currents (Gulf Stream/Kuroshio), subtropical gyres, ENSO oscillation, freshwater hosing AMOC shutdown, upwelling/downwelling nutrient cycling, 8-layer deep ocean, ice-brine rejection feedback
+
+Completes the Earth system coverage alongside Planetary Atmosphere & Weather and Plate Tectonics modes. The thermohaline "Great Ocean Conveyor Belt" is one of Earth's most critical climate systems — pairs naturally with the existing atmospheric weather mode.
+
+**`life/modes/thermohaline.py`** (new, ~1181 lines):
+
+- **Thermohaline circulation**: Temperature/salinity density gradients (rho = 1.0 - 0.15T + 0.20S) drive deep currents — cold salty polar water sinks, warm surface water returns. AMOC strength dynamically computed from N-S density contrast (target = 0.5 + 10×Δρ, slow adjustment τ=0.01/tick).
+- **Wind-driven surface currents**: Trade winds (easterly -0.15 in tropics), westerlies (+0.20 mid-latitudes), polar easterlies (-0.08). Ekman transport deflects surface flow 90° from wind. Western boundary intensification (+0.08 near western coasts, scaling with |f|) produces Gulf Stream/Kuroshio analogs. Subtropical gyre convergence from meridional wind stress gradient.
+- **Deep water formation**: NADW/AABW sinking at poles when density > 1.02, modulated by AMOC strength. Downwelling injects surface water into 8-layer deep ocean.
+- **Upwelling/downwelling**: Equatorial divergence upwelling (+0.03×AMOC), coastal upwelling near continent edges (+0.015), polar downwelling from dense water formation. Upwelling brings nutrients to surface for biological pump.
+- **ENSO oscillation**: Sinusoidal thermocline seesaw with configurable period (120 ticks) and amplitude. El Niño (positive phase) warms eastern equatorial Pacific and suppresses upwelling; La Niña (negative) enhances upwelling.
+- **Freshwater hosing / AMOC collapse**: Adjustable meltwater input at high latitudes (+/- keys, 0–0.05 range) reduces polar salinity → weakens density contrast → AMOC collapses. Reproduces Heinrich event / Younger Dryas mechanism.
+- **Ice dynamics**: Formation below T=0.12, melting above T=0.18, brine rejection (+0.008 salinity), current-driven breakup at |v|>0.3.
+- **8-layer deep ocean**: Vertical diffusion coupled to AMOC strength, downwelling injection, geothermal bottom heating (+0.001/tick).
+- **3 visualization views**: Global current map (temperature-colored ocean + Unicode current arrows + ^upwelling/vdownwelling + ~ice + #land), ocean cross-section at adjustable latitude (depth profile showing flow directions and density structure, up/down keys move slice), 10-metric sparkline time series (AMOC strength, mean SST, salinity, ENSO index, ice area, upwelling, deep temp, nutrients, max current, density contrast over 300-tick window).
+- **6 presets**: Stable Modern Circulation (AMOC=1.0, balanced conveyor), Gulf Stream Intensification (AMOC=1.4, enhanced western boundary), ENSO El Niño Event (2× amplitude, eastern warm anomaly), Glacial Meltwater Hosing / AMOC Shutdown (hosing=0.015, conveyor collapse), Anoxic Ocean Stratification (AMOC=0.3, strong stratification), Snowball Earth Frozen Ocean (near-global ice, sub-ice brine currents).
+- **Controls**: Space (play/pause), v (cycle views), n (single step), +/- (hosing rate), up/down (cross-section latitude), r (reset), R/m (menu), q (quit).
+
+**`life/registry.py`**: Added "Ocean Thermohaline Circulation & Global Current System" to MODE_REGISTRY under Fluid Dynamics category, with `thermohaline_mode` attribute and `use_delay: False` dispatch override.
+
+**`life/modes/__init__.py`**: Added thermohaline module import and registration.
+
+**`docs/fluid-dynamics.md`**: Added full documentation section covering background (Stommel's bistable thermohaline states, Broecker's conveyor belt, AMOC heat transport, western intensification, Ekman transport, ENSO), complete mathematical formulation (density equation of state, surface heat flux, temperature/salinity evolution, wind-driven currents with Coriolis/PGF/Ekman, vertical velocity, AMOC dynamics, ENSO forcing, deep ocean layers, ice dynamics, nutrient cycling), observation guide for all six presets, controls reference, and academic references (Stommel 1961, Broecker 1991, Rahmstorf 2002, Stommel 1948). Updated mode count from ten to eleven.
+
+---
+
 ### Feature: Add Planetary Accretion & Solar System Formation simulation mode — protoplanetary disk accretion with dust-to-planetesimal coalescing (Hill sphere merging, r_H=a×(m/3M*)^⅓, accretion radius 1.5×r_H), frost line composition bifurcation (rocky inner/icy outer at 2.7 AU), runaway gas accretion for cores >10 mass units (rate 0.08×f_gas, triggering gas giant formation), Keplerian orbital dynamics (ω=√(M*/a³)), eccentricity damping from gas drag (0.998^(1/m)/tick), Type I/II planetary migration (-0.0003/-0.0006 da/dt for small/gap-opening bodies), mean-motion resonance locking (2:1, 3:2, 4:3, 5:3 with 0.08 tolerance, P=0.02/tick capture), giant impacts producing debris (10%×mass ratio) and moon capture (P=0.3), gravitational scattering between nearby bodies driving eccentricity excitation and orbital repulsion, disk gas photoevaporation (×0.9997/tick) and dust depletion (×0.9999/tick), Late Heavy Bombardment outer-body scattering (P=0.01/tick, impulse 0.15), ejection of high-eccentricity bodies (e>0.8), and 3 visualization views (top-down orbital disk map with star/frost line circle/dust density/body glyphs scaled by mass + orbit ellipses + labels, disk cross-section with temperature-colored vertical structure red→yellow→white→blue + frost line marker + midplane bodies, 10-metric sparkline time series tracking planet count/largest mass/disk mass/mean eccentricity/collision rate/total mass/gas giants/rocky count/mean SMA/moon count), with six presets (Calm Accretion with standard even disk, Jupiter Migration Grand Tack with pre-formed migrating Proto-Jupiter, Giant Impact Moon Formation with Proto-Earth + Theia on crossing orbits, Resonant Chain TRAPPIST-1 analog with 7 migrating embryos, Hot Jupiter Inward Spiral with massive giant clearing inner system, Late Heavy Bombardment with mature system + Kuiper belt destabilization)
 
 **`life/modes/accretion.py`** (new, ~680 lines):

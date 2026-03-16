@@ -2,7 +2,7 @@
 
 The motion of liquids, gases, and plasmas — from kitchen honey to interstellar magnetohydrodynamics.
 
-This document covers the ten fluid dynamics simulation modes in Life Simulator. Each mode implements a distinct physical model, discretized for real-time ASCII visualization in the terminal. The models range from kinetic theory (Lattice Boltzmann) to continuum mechanics (Navier-Stokes), from astrophysical plasmas (MHD) to everyday viscous threads (fluid rope coiling).
+This document covers the eleven fluid dynamics simulation modes in Life Simulator. Each mode implements a distinct physical model, discretized for real-time ASCII visualization in the terminal. The models range from kinetic theory (Lattice Boltzmann) to continuum mechanics (Navier-Stokes), from astrophysical plasmas (MHD) to everyday viscous threads (fluid rope coiling).
 
 ---
 
@@ -739,3 +739,124 @@ Switch views with `v`: pressure/wind map (isobar shading + wind arrows + storm g
 - Hadley, G. "Concerning the Cause of the General Trade-Winds." *Philosophical Transactions of the Royal Society*, 39, 1735. https://doi.org/10.1098/rstl.1735.0014
 - Emanuel, K.A. "An Air-Sea Interaction Theory for Tropical Cyclones." *Journal of the Atmospheric Sciences*, 43(6), 1986. https://doi.org/10.1175/1520-0469(1986)043<0585:AASITF>2.0.CO;2
 - Held, I.M. and Hou, A.Y. "Nonlinear Axially Symmetric Circulations in a Nearly Inviscid Atmosphere." *Journal of the Atmospheric Sciences*, 37(3), 1980. https://doi.org/10.1175/1520-0469(1980)037<0515:NASCIA>2.0.CO;2
+
+---
+
+## Ocean Thermohaline Circulation & Global Current System
+
+**Background.** The ocean's thermohaline circulation — often called the "Great Ocean Conveyor Belt" — is one of Earth's most critical climate systems. Dense, cold, salty water sinks at high latitudes in the North Atlantic (forming North Atlantic Deep Water, NADW) and around Antarctica (forming Antarctic Bottom Water, AABW), then flows through the deep ocean basins before eventually upwelling in the tropics and Southern Ocean to complete a global-scale overturning cell. This Atlantic Meridional Overturning Circulation (AMOC) transports roughly 1.3 PW of heat northward, keeping Europe anomalously warm for its latitude. Henry Stommel (1961) demonstrated that the thermohaline circulation has multiple stable states — a "conveyor on" and "conveyor off" mode — making it susceptible to abrupt shutdown if freshwater input from ice sheet melting dilutes the high-latitude sinking zones. Wallace Broecker (1991) popularized the conveyor belt metaphor and warned that anthropogenic climate change could trigger an AMOC collapse. Superimposed on the thermohaline deep circulation are wind-driven surface currents: the trade winds and westerlies drive subtropical gyres, with western boundary intensification (Stommel 1948) producing fast, narrow currents like the Gulf Stream and Kuroshio. Ekman transport deflects surface water 90° from the wind direction, driving equatorial upwelling where trade winds diverge, and coastal upwelling along eastern boundaries. The El Niño–Southern Oscillation (ENSO) modulates Pacific circulation on interannual timescales, with weakened trade winds allowing warm water to spread eastward, suppressing upwelling and disrupting global weather patterns. This mode simulates a complete global ocean on a 2D cylindrical projection with an 8-layer deep ocean, coupling thermohaline density-driven circulation with wind-driven surface currents, ice dynamics with brine rejection, and nutrient cycling driven by upwelling.
+
+**Formulation.** The simulation evolves seven coupled surface fields (temperature, salinity, horizontal current velocity u and v, vertical velocity w, ice coverage, nutrients) plus 8-layer deep ocean temperature and salinity profiles, with AMOC strength and ENSO oscillation as emergent/forced global parameters.
+
+```
+Coordinate system:
+  2D cylindrical projection — periodic in longitude (east-west wrap),
+  bounded at poles (north-south).
+  lat_fraction: 0 = north pole, 0.5 = equator, 1.0 = south pole
+  8 vertical depth layers for cross-section view
+
+Seawater density (linear equation of state):
+  rho = 1.0 + alpha_T * T + alpha_S * S
+  alpha_T = -0.15   (warmer = lighter)
+  alpha_S = +0.20    (saltier = heavier)
+
+Surface heat flux:
+  Q_in = S(lat) * sigma_heat * (1 - 0.8 * ice)
+  S(lat) = cos(pi * (lat - 0.5))           (insolation, max at equator)
+  Q_out = 0.01 * T^2 * (1 - 0.6 * ice)    (radiative + ice insulation)
+
+Temperature evolution:
+  dT/dt = Q_in - Q_out + D_T * laplacian(T) + advection + ENSO_forcing + deep_exchange
+  D_T = 0.04          (thermal diffusion)
+  advection: semi-Lagrangian upwind, coupling = 0.12
+  ENSO: +enso_idx * 0.02 in eastern equatorial zone
+
+Salinity evolution:
+  dS/dt = D_S * laplacian(S) + evap/precip + hosing + advection + brine_rejection
+  D_S = 0.02          (haline diffusion, slower than thermal)
+  Subtropical evaporation: +0.002/tick (where 0.12 < |lat-0.5| < 0.35)
+  Equatorial/polar precipitation: -0.001/tick
+  Brine rejection when ice forms: +0.008 * (1 - ice)
+  Hosing: freshwater input at lat < 0.2, rate adjustable with +/- keys
+
+Wind-driven surface currents:
+  Trade winds (easterly):     -0.15 in tropics (|lat-0.5| < 0.2)
+  Westerlies:                 +0.20 in mid-latitudes (0.2 < |lat-0.5| < 0.4)
+  Polar easterlies:           -0.08 at high latitudes
+
+  du/dt = sigma_w * wind + PGF_u + f*v - 0.03*u + WBC
+  dv/dt = PGF_v - f*u - 0.03*v + Ekman + gyre
+
+  Coriolis: f = 0.12 * sin(pi * (lat - 0.5))
+  PGF: -d(rho)/dx * 0.10 (geostrophic balance)
+  Western boundary current: +0.08 * (1 - d/4) * |f| near western coasts
+  Ekman transport: 0.3 * sigma_w * wind * sign(hemisphere), 90° to wind
+  Gyre convergence: -0.02 in subtropical zone (0.2 < |lat-0.5| < 0.35)
+
+Vertical velocity (upwelling/downwelling):
+  Thermohaline sinking: w = -0.05 * (rho - 1.0) * AMOC at poles (pole_dist < 0.2, rho > 1.02)
+  Equatorial upwelling: w = +0.03 * AMOC (|lat-0.5| < 0.08)
+  ENSO modulation: w -= enso_idx * 0.03 in eastern equatorial Pacific
+  Coastal upwelling: w += 0.015 near continent edges in tropics
+
+AMOC strength (emergent):
+  target_AMOC = clamp(0.5 + 10 * (rho_polar - rho_tropical), 0, 1.5)
+  dAMOC/dt = 0.01 * (target_AMOC - AMOC)
+  Polar water denser than tropical → vigorous overturning
+  Freshwater hosing reduces polar salinity → weakens density contrast → AMOC collapses
+
+ENSO oscillation (forced):
+  phase += 2*pi / 120 per tick (period = 120 ticks)
+  enso_index = amplitude * sin(phase)
+  El Niño (positive): warms eastern equatorial Pacific, suppresses upwelling
+  La Niña (negative): enhances upwelling, cools eastern Pacific
+
+Deep ocean (8 layers):
+  Vertical diffusion from layer above: dT += 0.005 * (T_above - T) * AMOC
+  Geothermal heating at bottom layer: dT += 0.001/tick
+  Downwelling injection: when w < 0, surface water mixes into deep layers
+
+Ice dynamics:
+  Formation: ice += 0.004/tick when T < 0.12
+  Melting: ice -= 0.003/tick when T > 0.18
+  Current breakup: ice -= 0.001 * |current| when |current| > 0.3
+  Brine rejection: increases salinity when ice forms
+
+Nutrient cycling:
+  Upwelling supply: +0.04 * w * 10 (when w > 0)
+  Biological consumption: -0.005 * nutrient (surface biological pump)
+  Advection: semi-Lagrangian, coupling = 0.05
+
+Parameters:
+  dt            = 0.2    (integration timestep)
+  hosing_rate   = 0.0–0.05 (adjustable with +/- keys)
+  ENSO period   = 120 ticks
+  ENSO amplitude = preset-dependent (0.05 modern, 0.30 El Niño)
+  Velocity clamp = u: [-0.8, 0.8], v: [-0.5, 0.5]
+  Temp clamp     = [0.0, 1.2]
+  History buffer  = 300 ticks
+```
+
+**What to look for.** The Stable Modern Circulation preset produces a recognizable global ocean: warm tropical surface waters (red), cold polar waters (blue), subtropical gyres with western-intensified currents, equatorial upwelling (`^` glyphs along the equator), and polar downwelling (`v` glyphs near poles) driving the AMOC. Watch the AMOC strength metric stabilize near 1.0 as the density contrast between cold salty polar water and warm tropical water maintains the conveyor belt.
+
+The Gulf Stream Intensification preset starts with enhanced AMOC (1.4) and a warm anomaly along the western boundary. Arrows show fast northward flow along the western coast, carrying heat poleward. The western boundary intensification is visible as concentrated current arrows near the continent edge.
+
+The ENSO El Niño Event preset starts with a strong warm anomaly in the eastern equatorial Pacific. Watch the ENSO Index metric oscillate between positive (El Niño, warm east Pacific, suppressed upwelling) and negative (La Niña, enhanced upwelling, cool east Pacific). Nutrient levels in the eastern equatorial zone drop during El Niño as upwelling ceases.
+
+The Glacial Meltwater Hosing preset demonstrates AMOC shutdown — the most dramatic scenario. Freshwater input at high northern latitudes (hosing rate 0.015) reduces salinity, lowering polar water density, weakening the density contrast that drives the conveyor belt. Watch the AMOC Strength metric decline toward zero as the North Atlantic freshens. Increase hosing with `+` to accelerate the collapse; decrease with `-` to allow partial recovery. This reproduces the mechanism thought to trigger abrupt climate shifts during ice ages (Heinrich events, Younger Dryas cooling).
+
+The Anoxic Ocean Stratification preset starts with very weak AMOC (0.3) and strong vertical density stratification — warm salty surface over cold fresh deep water. Vertical mixing is suppressed, nutrient supply to the surface is minimal, and the deep ocean stagnates. This approximates conditions thought to produce oceanic anoxic events in Earth's past.
+
+The Snowball Earth Frozen Ocean preset starts with near-global ice coverage, minimal circulation, and geothermal-only deep heating. Brine rejection from ice formation creates dense sub-ice currents. Very slowly, geothermal heating warms the deep ocean from below.
+
+Switch views with `v`: global current map (temperature coloring + current arrows + upwelling/downwelling indicators + ice/land), ocean cross-section at adjustable latitude (depth profile with flow directions and density structure, move slice with up/down arrow keys), and 10-metric sparkline time series.
+
+**Controls:** Space (play/pause), v (cycle views), n (single step), +/- (adjust freshwater hosing rate), up/down (move cross-section latitude slice), r (reset), R/m (preset menu), q (quit).
+
+**Presets:** Stable Modern Circulation (balanced conveyor, AMOC=1.0), Gulf Stream Intensification (enhanced AMOC=1.4, warm western boundary), ENSO El Niño Event (strong 2× amplitude oscillation), Glacial Meltwater Hosing / AMOC Shutdown (freshwater pulse, conveyor collapse), Anoxic Ocean Stratification (weak AMOC=0.3, stagnant deep), Snowball Earth Frozen Ocean (global ice, sub-ice brine currents).
+
+**References.**
+- Stommel, H. "Thermohaline Convection with Two Stable Regimes of Flow." *Tellus*, 13(2), 1961. https://doi.org/10.3402/tellusa.v13i2.9491
+- Broecker, W.S. "The Great Ocean Conveyor." *Oceanography*, 4(2), 1991. https://doi.org/10.5670/oceanog.1991.07
+- Rahmstorf, S. "Ocean Circulation and Climate During the Past 120,000 Years." *Nature*, 419, 2002. https://doi.org/10.1038/nature01211
+- Stommel, H. "The Westward Intensification of Wind-Driven Ocean Currents." *Transactions, American Geophysical Union*, 29(2), 1948. https://doi.org/10.1029/TR029i002p00202

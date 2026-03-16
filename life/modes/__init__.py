@@ -378,6 +378,8 @@ def register_all_modes(App):
     reg_tokamak(App)
     from life.modes.planetary_atmos import register as reg_planetary_atmos
     reg_planetary_atmos(App)
+    from life.modes.thermohaline import register as reg_thermohaline
+    reg_thermohaline(App)
     from life.modes.nuclear_reactor import register as reg_nuclear_reactor
     reg_nuclear_reactor(App)
     from life.modes.mitosis import register as reg_mitosis
