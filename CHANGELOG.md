@@ -4,6 +4,34 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add City Growth & Urban Simulation — emergent urban development with land-value gradients, traffic congestion feedback, gentrification & organic road growth
+
+An urban morphology simulation where residential, commercial, and industrial zones self-organize around road networks through land-value gradients, population pressure, and zoning attraction/repulsion rules. The model captures emergent phenomena including organic road network growth, traffic-driven congestion feedback loops, NIMBYism, gentrification waves, infrastructure decay/renewal cycles, and population migration — drawing on Alonso's bid-rent theory and complex systems approaches to city formation.
+
+**`life/modes/city_growth.py`** (new, ~1193 lines):
+
+- **Zone types**: Empty, Road, Residential, Commercial, Industrial, Park, Water, Ruin — each with density levels (0–5) for buildable zones.
+- **Land value system**: Per-cell land values updated each step based on road access, commercial proximity (agglomeration), industrial NIMBY repulsion, park amenity bonuses, traffic congestion penalties, and centrality to city center.
+- **Traffic simulation**: Residential population generates commuter traffic along roads, creating congestion that depresses land values and drives outward migration — a negative feedback loop constraining urban density.
+- **Organic road growth**: New roads extend incrementally from existing endpoints toward underserved population clusters, producing realistic branching street networks.
+- **Zone self-organization**: Empty road-adjacent cells develop into residential/commercial/industrial based on probabilistic rules weighted by land value, road access, and neighbor compatibility.
+- **Gentrification**: High land value converts low-density residential to commercial, displacing population to cheaper areas — a positive feedback loop concentrating commerce.
+- **Infrastructure decay**: Abandoned or low-activity zones deteriorate into ruins; ruins adjacent to active zones can be reclaimed (redeveloped) proportionally to surrounding activity.
+- **Population migration**: Residents flee congested, low-value, industrial-adjacent areas toward high-value, well-connected neighborhoods.
+- **4 view modes** (toggled with `v`): zone map, land value heatmap, traffic heatmap, population density.
+- **6 presets**: Medieval Town (organic core growth), Suburban Sprawl (low-density car-dependent spread), Dense Metropolis (transit-oriented vertical core), Coastal City (water boundary with port industry), Post-Apocalyptic Regrowth (ruins reclamation), Megacity (multiple competing centers).
+- **Controls**: space=play/pause, n=step, v=view mode, +/-=speed, r=reset, R=menu, q=exit.
+
+**`life/registry.py`**: Added "City Growth & Urban Simulation" entry in Complex Simulations category.
+
+**`life/modes/__init__.py`**: Added registration import for the city_growth module.
+
+**`README.md`**: Added City Growth & Urban Simulation to the Complex Simulations category list.
+
+**`docs/complex-simulations.md`**: Added comprehensive documentation covering land value formulation, traffic mechanics, zone self-organization rules, gentrification dynamics, all six presets, four view modes, and references to Alonso (1964), Batty (2008), Portugali (2000), and Waddell (2002).
+
+---
+
 ### Feature: Add Wildfire Spread & Firefighting Simulation — Rothermel-inspired fire propagation with crown fire, ember spotting, smoke plumes & firefighter agents
 
 A Rothermel-inspired wildfire simulation on heterogeneous terrain with elevation, wind fields, multiple fuel types (grass/shrub/timber/urban/water/rock), slope-driven acceleration, ember spotting for long-range ignition, smoke plume visualization, and active firefighting agents. Fundamentally different from the existing Forest Fire mode (a simple percolation CA) — this models continuous fire intensity, crown fire transitions, fuel moisture dynamics, and coordinated firefighting.

@@ -418,6 +418,9 @@ MODE_REGISTRY = [
     # ── Wildfire Spread & Firefighting ──
     {"name": "Wildfire Spread & Firefighting", "key": "—", "category": "Complex Simulations",
      "desc": "Rothermel-inspired fire on heterogeneous terrain — slope/wind-driven spread, crown fire, ember spotting, smoke plumes & firefighter agents", "attr": "wfire_mode", "enter": "_enter_wfire_mode", "exit": "_exit_wfire_mode"},
+    # ── City Growth & Urban Simulation ──
+    {"name": "City Growth & Urban Simulation", "key": "—", "category": "Complex Simulations",
+     "desc": "Emergent urban development — zones self-organize via land-value gradients, traffic congestion feedback, NIMBYism, gentrification waves & organic road growth", "attr": "city_mode", "enter": "_enter_city_mode", "exit": "_exit_city_mode"},
 ]
 
 

@@ -706,3 +706,93 @@ After acting, agents incur a cooldown (5 steps for break, 3 for water) before th
 - Finney, M.A. "FARSITE: Fire Area Simulator — Model Development and Evaluation." USDA Forest Service Research Paper RMRS-RP-4, 1998. https://doi.org/10.2737/RMRS-RP-4
 - Albini, F.A. "Estimating Wildfire Behavior and Effects." USDA Forest Service General Technical Report INT-30, 1976. https://www.fs.usda.gov/treesearch/pubs/29574
 - Linn, R.R. & Cunningham, P. "Numerical simulations of grass fires using a coupled atmosphere-fire model." *Journal of Geophysical Research*, 110, D13107, 2005. https://doi.org/10.1029/2004JD005597
+
+---
+
+## City Growth & Urban Simulation
+
+**Source:** `life/modes/city_growth.py`
+
+**Background.** This mode simulates emergent urban development where residential, commercial, and industrial zones self-organize around road networks via land-value gradients, population pressure, and zoning attraction/repulsion rules. Unlike simple cellular automata that model individual buildings or traffic, this simulation captures the macro-scale dynamics of urban morphology — how cities grow organically from small settlements into complex metropolitan structures through feedback loops between land value, transportation access, population density, and zoning compatibility. The model draws on urban economics (Alonso's bid-rent theory, von Thünen's land use rings) and complex systems approaches to city formation.
+
+**Formulation.** The simulation operates on a 2D grid where each cell has a zone type, density level (0–5), land value, traffic load, and population count. Eight zone types are defined:
+
+```
+Zone types:
+  Empty (0)       — undeveloped land
+  Road (1)        — transportation network
+  Residential (2) — housing, carries population
+  Commercial (3)  — shops, offices, employment
+  Industrial (4)  — factories, warehouses
+  Park (5)        — green space, amenity bonus
+  Water (6)       — natural water bodies
+  Ruin (7)        — decayed infrastructure
+
+Density levels (for Residential/Commercial/Industrial):
+  0 = vacant, 1 = sparse, 2 = low, 3 = medium, 4 = high, 5 = maximum
+```
+
+**Land value computation.** Each step, land values are recalculated for all cells based on multiple factors:
+
+```
+Land value update:
+  road_access    = count of road neighbors × road_value_bonus
+  commercial_prox = Σ (1/distance) for commercial cells within radius
+  industrial_nimby = -penalty for each industrial cell within radius
+  park_amenity    = bonus for each park cell within radius
+  traffic_penalty = -congestion × traffic_penalty_factor
+  centrality      = bonus inversely proportional to distance from city center
+
+  value = base + road_access + commercial_prox + industrial_nimby
+          + park_amenity + traffic_penalty + centrality
+  value = clamp(value, 0, max_value)
+```
+
+**Traffic simulation.** Population generates commuter traffic along roads. Traffic accumulates on road cells proportional to nearby residential population and decays each step. Congestion (traffic exceeding capacity) depresses surrounding land values and drives population migration.
+
+**Organic road growth.** New roads extend toward underserved population clusters — cells with high residential density but poor road access attract road construction. Roads grow incrementally from existing road endpoints toward demand.
+
+**Zone self-organization.** Empty cells adjacent to roads may develop into zones based on probabilistic rules:
+
+```
+Zone placement probability:
+  Residential: higher when land value is moderate, road-adjacent,
+               away from industrial, near parks
+  Commercial:  higher when land value is high, high road access,
+               near other commercial (agglomeration)
+  Industrial:  higher when land value is low, road-adjacent,
+               away from residential (NIMBY separation)
+```
+
+**Gentrification.** High land value converts low-density residential into commercial zones, displacing population to lower-value areas — a positive feedback loop that concentrates commerce in high-value corridors.
+
+**Infrastructure decay.** Zones with low population, low traffic, or low land value gradually decay. Abandoned zones deteriorate into ruins over time. Ruins adjacent to active zones can be reclaimed (redeveloped) with a probability proportional to surrounding activity.
+
+**Population migration.** Residents move away from congested, low-value, industrial-adjacent areas toward high-value, well-connected, park-adjacent neighborhoods.
+
+**Presets (6):**
+
+| Preset | Character | Initial Layout |
+|--------|-----------|----------------|
+| Medieval Town | Dense core, organic street pattern, walls | Small central market, radiating roads |
+| Suburban Sprawl | Low density, car-dependent, wide spread | Scattered residential, highway grid |
+| Dense Metropolis | High density, transit-oriented, vertical | Large commercial core, dense grid |
+| Coastal City | Water boundary, port industry, waterfront value | Coastline with harbor and beachfront |
+| Post-Apocalyptic Regrowth | Ruins reclaimed, sparse population | Mostly ruins with small survivor clusters |
+| Megacity | Massive scale, multiple centers, congestion | Multiple nuclei, extensive road network |
+
+**View modes (4, cycle with `v`):**
+1. **Zone map** — zone types shown as colored Unicode characters (▪ residential, ◆ commercial, ▲ industrial, ♣ park, · road, ~ water, ░ ruin)
+2. **Land value heatmap** — intensity-mapped gradient showing economic geography
+3. **Traffic heatmap** — congestion visualization revealing bottlenecks
+4. **Population density** — where people actually live
+
+**Controls:** `Space`=play/pause, `n`=step, `v`=cycle views, `+/-`=simulation speed, `r`=reset, `R`=menu, `q`=exit.
+
+**What to look for.** In Medieval Town, watch the organic street network grow outward from the central market, with commercial zones clustering along main roads and residential filling in behind. Suburban Sprawl demonstrates low-density residential spreading far from the center with commercial strips along highways — note the high per-capita traffic. Dense Metropolis shows intense land-value peaks in the commercial core with steep gradients outward, and gentrification waves converting residential edges to commercial. Coastal City reveals how the water boundary concentrates development along the shore and creates a port-industrial zone separated from waterfront residential by land value. Post-Apocalyptic Regrowth is fascinating to watch as small survivor clusters slowly reclaim ruins, rebuilding road connections and re-establishing trade networks. Megacity showcases multiple competing centers with congestion corridors between them. Toggle to the traffic heatmap to see how road networks become saturated, then watch how new roads grow to relieve pressure. The land value view reveals the economic geography underlying all zone placement decisions.
+
+**References.**
+- Alonso, W. *Location and Land Use*. Harvard University Press, 1964.
+- Batty, M. "The Size, Scale, and Shape of Cities." *Science*, 319(5864), 769-771, 2008. https://doi.org/10.1126/science.1151419
+- Portugali, J. *Self-Organization and the City*. Springer, 2000. https://doi.org/10.1007/978-3-662-04099-7
+- Waddell, P. "UrbanSim: Modeling Urban Development for Land Use, Transportation, and Environmental Planning." *Journal of the American Planning Association*, 68(3), 297-314, 2002. https://doi.org/10.1080/01944360208976274

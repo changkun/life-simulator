@@ -336,6 +336,8 @@ def register_all_modes(App):
     reg_crowd(App)
     from life.modes.wildfire import register as reg_wfire
     reg_wfire(App)
+    from life.modes.city_growth import register as reg_city
+    reg_city(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 
