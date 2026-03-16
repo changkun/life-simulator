@@ -4,6 +4,31 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Rewrite Primordial Soup & Origin of Life — full abiogenesis with RNA World replicators, fitness-proportional competition, Eigen error catastrophe, lipid protocell division & autocatalytic metabolism
+
+Complete rewrite of `life/modes/primordial_soup.py` (~700 lines → ~1090 lines), replacing the previous simplified monomer/polymer/replicator model with a scientifically grounded abiogenesis simulation featuring real RNA base sequences, fitness-driven competition, and emergent protocellular life. This is the origin story that the project was born to tell — it thematically underpins every biological mode in the collection.
+
+**`life/modes/primordial_soup.py`** (rewrite, ~1090 lines):
+
+- **Simple molecule chemistry**: H₂, CO₂, NH₃ emitted from hydrothermal vent plumes (8%/6%/3% per tick per neighbor cell), catalyzed on mineral surfaces into amino acids and nucleotides via Fischer-Tropsch type synthesis. Amino acids convert to lipids on mineral surfaces. UV radiation (configurable) degrades surface molecules.
+- **RNA World replication**: Nucleotides polymerize into RNA strands with real AUCG base sequences (3–6 initial length). Fitness computed from three components: length score (min(1, len/15)), GC content optimality (peak at 50%), and palindromic hairpin potential (complementary pairs → ribozyme activity).
+- **Fitness-proportional replication**: RNA strands replicate with probability ∝ fitness × energy × temperature modifier, consuming adjacent nucleotides. Daughter strands undergo point mutations, insertions (if len < 25), and deletions (if len > 2) at configurable rates.
+- **Error catastrophe threshold**: When mutation rate exceeds the Eigen threshold parameter, 50% of daughter sequence bases are randomized — information degrades catastrophically, demonstrating Eigen's 1971 error catastrophe.
+- **Lipid protocells**: Lipid molecules with ≥ 3 lipid neighbors self-assemble into protocells. Protocells grow by absorbing adjacent lipids (+0.3 size each), capture nearby RNA strands, metabolize energy proportional to internal catalytic efficiency, and divide when size exceeds threshold — splitting energy, RNA contents, and lipid layers between daughter cells.
+- **Autocatalytic metabolism**: RNA strands with high catalytic scores (computed from complementary base pair runs: AU, UA, GC, CG) catalyze amino acid formation from H₂ near energy sources, creating metabolic feedback loops.
+- **Phylogenetic tracking**: Every RNA replicator assigned unique ID with parent lineage, generation depth, sequence snapshot, birth step, and alive/dead status — enabling full ancestor-descendant tree reconstruction.
+- **3 visualization views** (cycle with `v`): Molecular Soup (animated vent plumes, mineral surfaces, color-coded molecules H₂/CO₂/NH₃/amino/nucleotide/lipid, RNA strands sized by sequence length, pulsing protocells with energy-based color), Phylogenetic Tree (DFS-layout ancestor-descendant tree with living nodes highlighted and dead nodes dimmed), Time-Series Graphs (10 sparkline metrics: simple molecules, amino acids, nucleotides, RNA count, replicator diversity, protocells, avg fitness, avg metabolic efficiency, avg RNA complexity, mutations/step).
+- **6 presets**: Black Smoker Vent (5 vents, T=95°, high mineral density — classic deep-sea abiogenesis), Warm Little Pond (2 vents, T=40°, UV=0.6, high lipids — Darwin's shallow pond with UV-driven chemistry), RNA World Takeover (pre-seeded 80 nucleotides, high polymerization/replication rates — watch RNA dominate), Error Catastrophe (mutation_rate=0.25 vs threshold=0.12, 30 pre-seeded RNA — information meltdown), Protocell Competition (15 pre-seeded protocells + 20 RNA — Darwinian resource competition), LUCA Emergence (6 vents, T=85°, catalysis_boost=1.5 — long-run bootstrap toward a common ancestor).
+- **Controls**: Space=play/pause, n/. =step, v=cycle views, +/-=speed, r=reset, R/m=menu, q=exit.
+
+**`life/registry.py`**: Updated name from "Primordial Soup / Origin of Life" to "Primordial Soup & Origin of Life" and expanded description to detail the RNA World replication, error catastrophe, and autocatalytic metabolism mechanics.
+
+**`README.md`**: Updated mode name in Chemical & Biological category list to "Primordial Soup & Origin of Life".
+
+**`docs/chemical-and-biological.md`**: Rewrote documentation section with complete formulation covering Fischer-Tropsch synthesis rates, RNA fitness function (length + GC + palindrome), fitness-proportional replication mechanics, Eigen error catastrophe, catalytic score computation, protocell division rules, energy field equation, and phylogenetic tracking. Added references to Eigen (1971), Wächtershäuser (1988), and Szostak et al. (2001).
+
+---
+
 ### Feature: Add Spider Orb Web Construction & Prey Capture — orb-weaving spider builds radial/spiral silk network, vibration-based prey triangulation, wind deformation, thread repair & adaptive web geometry
 
 An orb-weaving spider builds its web in real time — laying radial frame threads from anchor points, then spiraling sticky capture silk — then prey insects blunder into the web, triggering vibration waves that propagate through the silk network. The spider detects vibration direction and intensity to locate and rush toward trapped prey. Wind gusts deform the elastic web structure, damaged sections get repaired, and web geometry adapts to repeated prey capture patterns. First arachnid simulation in the project; the thread network is well-suited for terminal line-drawing characters.

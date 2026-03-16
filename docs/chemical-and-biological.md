@@ -670,72 +670,90 @@ Key parameters per preset:
 
 ---
 
-## Primordial Soup / Origin of Life
+## Primordial Soup & Origin of Life
 
-**Background** — This mode simulates abiogenesis — the transition from prebiotic chemistry to the first living systems. Near hydrothermal vents, minerals catalyze the formation of simple organic monomers, which polymerize into chains (proto-RNA), develop autocatalytic replication, self-assemble into lipid vesicles, and ultimately combine into protocells capable of division and Darwinian evolution. The simulation draws on multiple origin-of-life hypotheses: the RNA World (Gilbert 1986), the metabolism-first iron-sulfur world (Wachtershauser 1988), and the lipid-world/membrane-first hypothesis.
+**Background** — This mode simulates abiogenesis in a hydrothermal vent environment — the transition from prebiotic chemistry to the first self-replicating, evolving systems. Simple molecules (H₂, CO₂, NH₃) emitted from vents are catalyzed on mineral surfaces into amino acids and nucleotides via Fischer-Tropsch type synthesis. Nucleotides polymerize into RNA strands with real AUCG base sequences (RNA World hypothesis, Gilbert 1986). RNA replicators compete via fitness-proportional replication, undergo point mutations, insertions, and deletions, and face Eigen's error catastrophe threshold where excessive mutation destroys heritable information. Lipid molecules self-assemble into vesicles that encapsulate RNA to form protocells — protocells grow by absorbing lipids and divide when they exceed a size threshold, splitting their RNA contents and energy. RNA strands with high catalytic scores (complementary base pair runs) catalyze amino acid formation, creating autocatalytic metabolic feedback loops. The simulation draws on the RNA World (Gilbert 1986), the metabolism-first iron-sulfur world (Wächtershäuser 1988), and the lipid-world/membrane-first hypothesis.
 
-**Formulation** — A 2D ocean grid with hydrothermal vents drives a hierarchy of chemical emergence:
+**Formulation** — A 2D ocean grid with rock substrate, mineral catalyst surfaces, and hydrothermal vents drives a hierarchy of chemical emergence:
 
 ```
-Chemical progression:
-  mineral -> monomer -> polymer -> replicator
-  lipid -> vesicle + replicator -> PROTOCELL -> division
+Molecule types:
+  H₂O (water), Rock, Vent, H₂, CO₂, NH₃, Amino acid, Nucleotide, Lipid, Mineral
 
-Vent activity:
-  Vents produce minerals in adjacent cells (probability 0.15)
-  Minerals -> monomers near vents (probability 0.05 * temp_modifier)
+Chemical synthesis (Fischer-Tropsch type, on mineral surfaces):
+  H₂ + CO₂ + mineral → amino acid   (P = 0.025 × temp_mod × energy × catalysis_boost)
+  H₂ + NH₃ + mineral → nucleotide   (P = 0.020 × temp_mod × energy × catalysis_boost)
+  NH₃ + CO₂ + energy  → nucleotide  (P = 0.015 × temp_mod × energy × catalysis_boost)
+  Amino + mineral      → lipid       (P = 0.008 × temp_mod)
 
-Temperature modifier:
-  T < 0:   0.3 (ice slows but concentrates)
-  T 0-30:  0.5 + T/60
-  T 30-80: 1.0
-  T > 80:  max(0.3, 1.0 - (T-80)/100)
+Vent activity (each tick, per vent neighbor cell):
+  8% → emit H₂, 6% → emit CO₂, 3% → emit NH₃
+  Plume dispersal: upward 2-5 cells with 6% molecule placement
 
-Polymerization:
-  Monomer with >= 2 monomer neighbors + energy > 0.2:
-    probability = polymerize_rate * temp_mod * energy
-    Consumes one adjacent monomer
+Temperature-dependent rate modifier:
+  T < 10:    0.3
+  T 10-40:   0.5 + T/80
+  T 40-90:   1.0
+  T > 90:    max(0.4, 1.0 - (T-90)/120)
 
-  Ice concentration: monomers near >= 2 ice cells polymerize 1.5x faster
+RNA polymerization:
+  Nucleotide with ≥ 2 nucleotide neighbors + (mineral neighbor OR energy > 0.4):
+    P = polymerize_rate × temp_mod × energy × catalysis_boost
+    Creates RNA strand with random 3-6 base AUCG sequence
+    Consumes up to 2 adjacent nucleotides
 
-Replicator formation:
-  Polymer with >= 1 polymer/replicator neighbor + energy > 0.3:
-    probability = replicate_rate * 0.3 * temp_mod * energy
+RNA fitness function:
+  fitness = 0.3 × length_score + 0.4 × gc_score + 0.3 × palindrome_score
+  Where:
+    length_score = min(1, len/15)
+    gc_score = 1 - |GC_fraction - 0.5| × 2   (optimal at 50% GC content)
+    palindrome_score = complementary_palindrome_pairs / (len/2)   (hairpin → ribozyme)
 
-Self-replication:
-  Replicator with >= 2 monomer neighbors:
-    probability = replicate_rate * temp_mod
-    Copy placed in adjacent water; monomer consumed
-    UV degrades replicators (probability uv * 0.02)
+Fitness-proportional replication:
+  RNA with ≥ 1 nucleotide neighbor + energy > 15:
+    P = replicate_rate × fitness × temp_mod × energy × catalysis_boost
+    Daughter sequence undergoes mutation:
+      Point mutation per base: P = mutation_rate
+      Insertion (len < 25): P = mutation_rate × 0.3
+      Deletion (len > 2):   P = mutation_rate × 0.3
 
-Vesicle assembly:
-  Lipid with >= 3 lipid neighbors:
-    probability = lipid_assemble_rate * temp_mod
-    Consumes 2 adjacent lipids
+Error catastrophe (Eigen threshold):
+  When mutation_rate > error_threshold AND sequence length > 3:
+    50% of daughter bases randomized → information meltdown
 
-Protocell formation:
-  Vesicle adjacent to replicator:
-    probability = 0.08 * temp_mod -> PROTOCELL
-    Consumes the replicator
+Autocatalytic metabolism:
+  Catalytic score = 0.2 + complementary_pair_runs / (len - 1), capped at 1.0
+  RNA near H₂ catalyzes amino acid formation: P = 0.02 × catalytic_eff × energy
 
-Protocell division:
-  energy > 120 and age > 10:
-    Split into two protocells in adjacent water
-    Daughter inherits fitness with possible mutation:
-      fitness += uniform(-0.15, 0.2)
-      genome_length += choice(-1, 0, 1)
+Lipid protocell formation:
+  Lipid with ≥ 3 lipid neighbors → protocell (P = lipid_assemble_rate × temp_mod)
+  Consumes 2 adjacent lipids
 
-Energy at position:
-  base = max(0.01, (temperature + 20) / 120) * 0.1
-  For each vent: base += vent_energy / (1 + distance * 0.3)
+Protocell growth & division:
+  Absorb adjacent lipids: +0.3 size per lipid consumed
+  Adjacent RNA captured into protocell interior
+  Metabolic energy: +metabolic_rate × energy × catalysis_boost per tick
+  Division when size > max_size AND energy > 40:
+    Split energy, RNA contents, lipid layers between daughters
+    Daughter placed in adjacent water cell
+
+Energy field:
+  E(r,c) = max(0.01, (T + 20) / 120) × 0.1 + Σ_vents vent_energy / (1 + dist × 0.3)
   Capped at 1.0
+
+Phylogenetic tracking:
+  Every RNA replicator assigned unique ID with parent lineage
+  Records: parent_uid, generation, sequence, birth_step, alive status
 ```
 
-**What to look for** — "Hydrothermal Vent Field" shows the full abiogenesis pathway: watch minerals (::) become monomers (..), polymerize into chains (~~), evolve into replicators (rr), while lipids (oo) assemble into vesicles (()) that capture replicators to form protocells (@@). Protocells pulse with color as they metabolize and divide. "Frozen Comet Lake" demonstrates the ice-concentration hypothesis: freeze-thaw cycles force monomers together, accelerating polymerization. Lightning strikes ('l') inject bursts of organic molecules. Track the statistics: peak protocells, total divisions, and maximum generation depth reveal whether your primordial soup has crossed the threshold from chemistry to life.
+**What to look for** — "Black Smoker Vent" shows the full abiogenesis pathway: watch H₂ and CO₂ molecules emitted from vent plumes get catalyzed on mineral surfaces (::) into amino acids (aa) and nucleotides (nt), which polymerize into RNA strands displayed with their base sequences. RNA replicators compete — fitter sequences (balanced GC content, palindromic hairpins) replicate faster and outcompete weaker ones. Lipids (oo) aggregate into protocells that pulse as they metabolize and divide. Switch to the phylogenetic tree view to see the ancestor-descendant relationships among replicator lineages. "Error Catastrophe" dramatically demonstrates Eigen's threshold: crank mutation rate past the information limit and watch RNA sequences randomize into noise. "Protocell Competition" seeds pre-formed protocells that compete for resources under Darwinian selection. Track the time-series graphs: molecular counts, replicator diversity, protocell population, average fitness, metabolic efficiency, and RNA complexity reveal whether your primordial soup crosses the threshold from chemistry to life.
 
 **References**
 - Gilbert, W. "Origin of life: The RNA world." *Nature* 319 (1986): 618. https://doi.org/10.1038/319618a0
+- Eigen, M. "Selforganization of matter and the evolution of biological macromolecules." *Naturwissenschaften* 58 (1971): 465-523. https://doi.org/10.1007/BF00623322
+- Wächtershäuser, G. "Before enzymes and templates: theory of surface metabolism." *Microbiological Reviews* 52 (1988): 452-484.
 - Martin, W. et al. "Hydrothermal vents and the origin of life." *Nature Reviews Microbiology* 6 (2008): 805-814. https://doi.org/10.1038/nrmicro2022
+- Szostak, J. W. et al. "Synthesizing life." *Nature* 409 (2001): 387-390. https://doi.org/10.1038/35053176
 
 ---
 

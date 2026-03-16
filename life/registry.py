@@ -332,8 +332,8 @@ MODE_REGISTRY = [
     {"name": "Neural Network Training Visualizer", "key": "—", "category": "Procedural & Computational",
      "desc": "Watch a neural network learn XOR, spirals & more — live neurons, gradient flow, decision boundary & loss curves", "attr": "nntrain_mode", "enter": "_enter_nntrain_mode", "exit": "_exit_nntrain_mode"},
     # ── Primordial Soup / Origin of Life ──
-    {"name": "Primordial Soup / Origin of Life", "key": "—", "category": "Chemical & Biological",
-     "desc": "Abiogenesis — molecules polymerize, membranes self-assemble, protocells divide & compete", "attr": "psoup_mode", "enter": "_enter_psoup_mode", "exit": "_exit_psoup_mode"},
+    {"name": "Primordial Soup & Origin of Life", "key": "—", "category": "Chemical & Biological",
+     "desc": "Abiogenesis in hydrothermal vents — H\u2082/CO\u2082/NH\u2083 form amino acids & nucleotides on mineral catalysts, RNA World replicators compete with mutation/error catastrophe, lipid protocells divide & evolve metabolism", "attr": "psoup_mode", "enter": "_enter_psoup_mode", "exit": "_exit_psoup_mode"},
     # ── Quantum Circuit Simulator ──
     {"name": "Quantum Circuit Simulator", "key": "Ctrl+Q", "category": "Procedural & Computational",
      "desc": "Build & simulate quantum circuits with Bloch spheres, entanglement links & measurement histograms", "attr": "qcirc_mode", "enter": "_enter_qcirc_mode", "exit": "_exit_qcirc_mode"},
