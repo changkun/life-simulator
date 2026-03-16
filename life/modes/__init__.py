@@ -280,6 +280,8 @@ def register_all_modes(App):
     reg_rmut(App)
     from life.modes.spectrum import register as reg_spectrum
     reg_spectrum(App)
+    from life.modes.recursive_sim import register as reg_rsim
+    reg_rsim(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

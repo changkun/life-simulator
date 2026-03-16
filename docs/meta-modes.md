@@ -827,3 +827,60 @@ The Rule Mutation Engine has dedicated integration: when the detector is active 
 - Use Reaction-Diffusion and sweep parameters — the detector will bookmark the exact generation where spots transition to worms to spirals.
 - After a long session, press **Ctrl+T** to browse all detected transitions and jump between the most interesting moments, turning hours of observation into a curated highlight reel.
 - Combine with the analytics overlay (**Ctrl+K**) to see transition counts and recent events in real time.
+
+---
+
+## Sim-in-a-Cell (Recursive Nested Simulation)
+
+**Source:** `life/modes/recursive_sim.py`
+
+### Background
+
+Sim-in-a-Cell introduces multi-scale emergence: every cell in a macro-level grid contains a complete, independently running micro-simulation. The micro-simulation's aggregate density feeds upward to determine the macro cell's state, while the macro cell's state feeds back down into its micro-simulation as an external coupling signal. The result is two levels of reality influencing each other simultaneously — patterns at the micro scale drive macro-scale dynamics, and macro-scale context reshapes micro-scale behavior.
+
+Any two of the eight mashup engines (Game of Life, Wave, Reaction-Diffusion, Fire, Boids, Ising, Rock-Paper-Scissors, Physarum) can be combined as macro and micro engines, creating 64 cross-scale combinations. Eight curated presets highlight especially interesting pairings.
+
+### How it works
+
+```
+each generation:
+    for each macro cell (r,c):
+        compute macro cell density as external signal
+        scale by coupling strength → uniform field for micro grid
+        step the micro-simulation with external influence
+        aggregate micro-grid density → rsim_micro_densities[r][c]
+    build density field from all micro densities
+    step the macro engine with micro density field as external input
+    refresh macro density cache
+```
+
+The macro grid dimensions are fitted to the terminal (up to 30×40). Each macro cell hosts a micro-grid of configurable size (6×6, 8×8, 10×10, or 12×12). Bidirectional coupling strength is adjustable from 0 (fully independent) to 1 (maximum influence) with a default of 0.5.
+
+In overview mode, each macro cell is rendered as a 2-character-wide block. The glyph (`░▒▓█`) encodes micro density; color encodes macro state (magenta = both active, cyan = macro alive, green = micro active). A movable cursor lets you select any cell to zoom into.
+
+In zoom mode, the selected cell's micro-simulation is rendered full-screen with scaled-up blocks. A minimap in the corner shows your position in the macro grid. Arrow keys navigate between neighboring cells without returning to the overview.
+
+### Controls
+
+| Key | Action |
+|-----|--------|
+| **Space** | Play / pause |
+| **n** or **.** | Single step |
+| **+** / **-** | Increase / decrease coupling strength |
+| **0** | Set coupling to zero (independent) |
+| **>** / **<** | Increase / decrease simulation speed |
+| **Enter** or **z** | Zoom into selected cell |
+| **Esc** or **Backspace** | Back to overview (when zoomed) |
+| **Arrow keys** / **hjkl** | Move cursor (overview) or navigate neighbor cells (zoom) |
+| **r** | Reset simulation |
+| **R** or **Esc** | Return to preset menu (overview) |
+| **q** | Exit mode |
+
+### What to explore
+
+- Start with "GoL ← RD Cells" to see a Game of Life grid where each cell's alive/dead state is driven by the churning patterns of a Reaction-Diffusion micro-world.
+- Try "GoL ← GoL Cells" for true recursive Life — Game of Life all the way down.
+- Set coupling to 0 and watch macro and micro evolve independently, then slowly increase coupling to see cross-scale synchronization emerge.
+- Zoom into individual cells and watch how neighboring macro-cell states visibly influence a cell's internal dynamics.
+- Compare "Ising ← RPS Cells" (magnetic spins driven by rock-paper-scissors competition) with "RPS ← Wave Cells" (competitive dynamics driven by wave interference) to see how the choice of micro engine fundamentally changes macro-scale behavior.
+- Use small cell sizes (6×6) for faster iteration and larger macro grids, or large cell sizes (12×12) for richer micro-simulation detail.

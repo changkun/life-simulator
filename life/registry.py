@@ -340,6 +340,9 @@ MODE_REGISTRY = [
     # ── Rule Mutation Engine ──
     {"name": "Rule Mutation Engine", "key": "—", "category": "Meta Modes",
      "desc": "Autonomous rule evolution — breeds birth/survival sets toward maximum visual complexity using entropy feedback", "attr": "rmut_mode", "enter": "_enter_rmut_mode", "exit": "_exit_rmut_mode"},
+    # ── Sim-in-a-Cell (Recursive Nested Simulation) ──
+    {"name": "Sim-in-a-Cell", "key": "—", "category": "Meta Modes",
+     "desc": "Recursive nested simulation — each macro cell contains an independent micro-simulation driving multi-scale emergence", "attr": "rsim_mode", "enter": "_enter_recursive_mode", "exit": "_exit_recursive_mode"},
 ]
 
 
