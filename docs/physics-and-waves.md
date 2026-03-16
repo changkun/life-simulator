@@ -1126,3 +1126,73 @@ Dynamics proceed via Monte Carlo Metropolis sweeps: each sweep attempts to flip 
 - Castelnovo, C., Moessner, R., and Sondhi, S.L. "Magnetic monopoles in spin ice," *Nature*, 451, 2008. https://doi.org/10.1038/nature06433
 - Bramwell, S.T. and Gingras, M.J.P. "Spin Ice State in Frustrated Magnetic Pyrochlore Materials," *Science*, 294, 2001. https://doi.org/10.1126/science.1064761
 - Pauling, L. "The Structure and Entropy of Ice and of Other Crystals with Some Randomness of Atomic Arrangement," *Journal of the American Chemical Society*, 57, 1935. https://doi.org/10.1021/ja01315a102
+
+
+---
+
+## Earthquake & Seismic Wave Propagation
+
+**Background** — Earthquakes arise from the sudden release of accumulated tectonic stress along faults, where friction locks plates until stress exceeds the fault's yield strength and slip cascades across a rupture zone. The Burridge-Knopoff (1967) spring-block model captures this stick-slip instability with a one- or two-dimensional chain of blocks connected by springs and resting on a frictional surface driven at constant velocity. Despite its simplicity, the model reproduces the key statistical signatures of natural seismicity: the Gutenberg-Richter power-law frequency-magnitude distribution, Omori's law of aftershock decay, and characteristic earthquake recurrence cycles. This places earthquake dynamics squarely within the framework of self-organized criticality — the system naturally evolves toward a critical state where perturbations of all sizes can occur.
+
+This mode fills a gap between the existing Tectonic Plates mode (large-scale plate motion over geological time) and Wave Equation mode (generic wave propagation) by focusing on the fault-scale rupture dynamics and seismic radiation that neither covers.
+
+**Formulation** — The simulation uses a 2D lattice of spring-blocks with heterogeneous static friction thresholds:
+
+```
+Tectonic loading (each step):
+  stress[r][c] += tectonic_rate
+
+Rupture condition:
+  stress[r][c] >= strength[r][c]  →  block fails (stick-slip)
+
+Stress transfer (spring coupling):
+  released = stress[r][c] * dynamic_drop
+  stress[r][c] -= released
+  stress[neighbor] += released * coupling  (for 4 von Neumann neighbors)
+
+Strength reset (fault healing):
+  strength[r][c] = base_strength * (1 + heterogeneity * (rand - 0.5))
+
+Cascade: failures checked iteratively until no new ruptures (max 50 iterations)
+
+Magnitude estimation:
+  M ≈ (2/3) * log₁₀(n_ruptured_blocks) + 1.0
+
+Seismic wave propagation (finite-difference wave equation):
+  u_next[r][c] = damping * (2*u[r][c] - u_prev[r][c] + c² * Laplacian(u))
+  P-wave speed: 1.5 cells/step, S-wave speed: 0.9 cells/step
+
+Parameters:
+  tectonic_rate  — stress loading per step (0.001 to 0.1)
+  base_strength  — mean static friction threshold
+  heterogeneity  — spatial variation in strength (0 to 1)
+  coupling       — fraction of released stress transferred to neighbors
+  dynamic_drop   — fraction of stress released during slip (0.85)
+  damping        — wave energy dissipation per step (0.96)
+```
+
+**Presets**
+
+| Preset | Key parameters | What it demonstrates |
+|--------|---------------|---------------------|
+| **Strike-Slip Fault** | Balanced coupling (0.15), moderate heterogeneity (0.4) | San Andreas-style lateral rupture with regular earthquake cycles |
+| **Subduction Zone** | High coupling (0.25), high strength (1.4), slow loading | Megathrust earthquakes — long quiet periods punctuated by large cascades |
+| **Swarm Seismicity** | Low strength (0.7), high heterogeneity (0.6), fast loading | Many small events clustering in space and time (volcanic/geothermal) |
+| **Tsunami Generation** | Ruptures inject energy into a shallow-water wave field | Seafloor displacement creates expanding wave rings (separate wave grid) |
+| **Induced Seismicity** | Central injection point raises pore pressure, reducing effective strength | Fluid injection triggers earthquakes near the well, expanding outward |
+| **Coulomb Stress Transfer** | Ruptures apply angular cos(2θ) stress lobes to surrounding fault | One earthquake loads adjacent segments, triggering cascading sequences |
+
+**Views** — Two display modes toggled with `v`:
+- **Fault view**: Stress/rupture heatmap where characters scale with stress ratio (dim → green → yellow → red █ for active rupture). The Induced Seismicity preset shows the injection point as ◉.
+- **Wave view**: Seismic wave propagation — P-waves (blue), S-waves (green), tsunami waves (cyan) spreading from rupture sources with Unicode density characters.
+
+**Controls**: `Space` play/pause, `n`/`.` single step, `t`/`T` decrease/increase tectonic loading rate, `c`/`C` decrease/increase spring coupling, `v` toggle fault/wave view, `+`/`-` adjust steps per frame, `r` reset current preset, `R` return to preset menu, `q` exit mode.
+
+**What to look for** — Start with Strike-Slip Fault and watch the characteristic earthquake cycle: uniform green stress buildup, scattered yellow patches approaching failure, then sudden red rupture cascades that release stress and reload the fault. The info bar shows a running b-value estimate from the Gutenberg-Richter distribution — values near 1.0 indicate realistic scaling. Switch to Subduction Zone for dramatic contrast: long quiet intervals followed by massive cascades that rupture most of the fault. In Swarm Seismicity, the high loading rate and low strength produce nearly continuous small events — notice how they cluster spatially. The Tsunami preset is best viewed in wave mode (`v`): watch concentric shallow-water waves expand from submarine ruptures. The Induced Seismicity preset shows earthquakes nucleating near the injection point (◉) and migrating outward as pore pressure diffuses. Coulomb Stress Transfer demonstrates earthquake triggering — one rupture's stress lobes load adjacent fault segments, producing sequences of events that march along the fault.
+
+**References**
+- Burridge, R. and Knopoff, L. "Model and theoretical seismicity," *Bulletin of the Seismological Society of America*, 57(3), 1967. https://doi.org/10.1785/BSSA0570030341
+- Gutenberg, B. and Richter, C.F. "Frequency of earthquakes in California," *Bulletin of the Seismological Society of America*, 34(4), 1944. https://doi.org/10.1785/BSSA0340040185
+- Omori, F. "On the after-shocks of earthquakes," *Journal of the College of Science, Imperial University of Tokyo*, 7, 1894.
+- Bak, P. and Tang, C. "Earthquakes as a self-organized critical phenomenon," *Journal of Geophysical Research*, 94(B11), 1989. https://doi.org/10.1029/JB094iB11p15635
+- King, G.C.P., Stein, R.S., and Lin, J. "Static stress changes and the triggering of earthquakes," *Bulletin of the Seismological Society of America*, 84(3), 1994. https://doi.org/10.1785/BSSA0840030935

@@ -75,6 +75,8 @@ MODE_REGISTRY = [
      "desc": "Chaotic double pendulum phase traces", "attr": "dpend_mode", "enter": "_enter_dpend_mode", "exit": "_exit_dpend_mode"},
     {"name": "Cloth Simulation", "key": "'", "category": "Physics & Waves",
      "desc": "Spring-mass cloth with gravity and wind", "attr": "cloth_mode", "enter": "_enter_cloth_mode", "exit": "_exit_cloth_mode"},
+    {"name": "Earthquake & Seismic Waves", "key": "—", "category": "Physics & Waves",
+     "desc": "Burridge-Knopoff fault model — stick-slip ruptures, P/S-wave radiation, Gutenberg-Richter scaling", "attr": "quake_mode", "enter": "_enter_quake_mode", "exit": "_exit_quake_mode"},
     # ── Fluid Dynamics ──
     {"name": "Lattice Boltzmann Fluid", "key": "F", "category": "Fluid Dynamics",
      "desc": "Fluid flow simulation via lattice Boltzmann method", "attr": "fluid_mode", "enter": "_enter_fluid_mode", "exit": "_exit_fluid_mode"},

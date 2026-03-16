@@ -4,6 +4,29 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Earthquake & Seismic Wave Propagation — Burridge-Knopoff fault model with stick-slip ruptures, P/S-wave radiation & Gutenberg-Richter scaling
+
+A 2D Burridge-Knopoff spring-block fault model where tectonic stress accumulates on a heterogeneous fault plane until stick-slip ruptures cascade as earthquakes, radiating P-waves and S-waves through layered crust. The model naturally produces emergent power-law statistics (Gutenberg-Richter frequency-magnitude scaling), Omori's law aftershock clustering, and characteristic earthquake cycles — a showcase for self-organized criticality.
+
+**`life/modes/earthquake.py`** (new, ~798 lines):
+
+- **Burridge-Knopoff physics**: 2D grid of spring-blocks with heterogeneous friction thresholds. Tectonic stress loads uniformly; blocks rupture (stick-slip) when stress exceeds strength, cascading to neighbors via spring coupling. Strength resets with randomness after rupture (fault healing).
+- **Seismic wave propagation**: Ruptures inject P-wave and S-wave energy into a finite-difference wave equation grid with configurable speeds (P: 1.5, S: 0.9 cells/step) and damping.
+- **6 presets**: Strike-Slip Fault (San Andreas-style lateral rupture), Subduction Zone (megathrust with high coupling and slow loading), Swarm Seismicity (low strength, high heterogeneity, fast loading), Tsunami Generation (ruptures drive shallow-water waves on a separate grid), Induced Seismicity (injection point reduces effective strength via pore pressure), Coulomb Stress Transfer (cos 2θ angular stress lobes trigger cascading sequences).
+- **Two views** (toggle with `v`): Fault view (stress/rupture heatmap with characters scaling by stress ratio) and Wave view (P-waves blue, S-waves green, tsunami cyan).
+- **Emergent statistics**: Running b-value estimate for Gutenberg-Richter scaling, aftershock count over 30-step Omori windows, event magnitude tracking.
+- **Interactive controls**: t/T tectonic rate, c/C coupling, v view toggle, +/- speed, n step, r reset, R menu.
+
+**`life/registry.py`**: Added "Earthquake & Seismic Waves" entry in Physics & Waves category.
+
+**`life/modes/__init__.py`**: Added registration import for the earthquake module.
+
+**`README.md`**: Added Earthquake & Seismic Waves to the Physics & Waves category list.
+
+**`docs/physics-and-waves.md`**: Added comprehensive documentation covering Burridge-Knopoff formulation, stress transfer mechanics, all six presets with parameter tables, dual-view visualization guide, and references to Burridge & Knopoff (1967), Gutenberg & Richter (1944), Omori (1894), Bak & Tang (1989), and King et al. (1994).
+
+---
+
 ### Feature: Add Spin Ice & Emergent Magnetic Monopoles — frustrated lattice with ice rules, monopole quasiparticles & Dirac strings
 
 A 2D frustrated magnet simulation on a square-ice lattice where arrow-spins on edges obey "2-in/2-out" ice rules at each vertex. Violations behave as emergent magnetic monopole quasiparticles — fractionalized excitations that nucleate as monopole-antimonopole pairs connected by Dirac strings, diffuse as a Coulomb gas, and annihilate on contact.
