@@ -1352,3 +1352,93 @@ Flash map decay: ×0.7 per tick
 - Johnsen, S. "The optics of life: a biologist's guide to light in nature." Princeton University Press, 2012.
 - Herring, P. J. "The biology of the deep ocean." Oxford University Press, 2002.
 - Douglas, R. H. et al. "Dragon fish see using chlorophyll." *Nature*, 393, 423–424, 1998. https://doi.org/10.1038/30871
+
+---
+
+## Mycorrhizal Network & Wood Wide Web
+
+**Background.** Mycorrhizal fungi form symbiotic associations with the roots of over 90% of terrestrial plant species, creating vast underground networks — the "wood wide web" — through which trees exchange carbon, phosphorus, water, and chemical alarm signals. Large hub trees ("mother trees") serve as network centers, detecting stressed seedlings and routing surplus resources through the fungal mesh. Pest-attacked trees broadcast volatile and chemical alarm signals that propagate through the network, triggering preemptive defensive responses in neighbors. The fungi take a carbon "tax" (typically 8–10%) for brokering all transfers. This simulation models the emergent self-organization of these networks: hub-and-spoke topology around mother trees, gradient-driven nutrient flow from surplus to deficit, alarm cascade propagation, and the fragility of the system when hub trees are removed.
+
+**Formulation.** The simulation tracks trees (5 species + seedlings) with individual carbon/phosphorus/water budgets, connected by mycorrhizal hyphae that carry nutrients and signals.
+
+```
+Tree physiology (per tick, when not dormant):
+  Photosynthesis:   carbon += rate × size × season_mult × soil_moisture
+  Root uptake:      phosphorus += 0.005 × root_radius × soil_nutrients
+                    water += 0.01 × root_radius × soil_moisture
+  Growth:           size += 0.0002 × growth_mult  (if C>0.8, P>0.3, W>0.3)
+  Metabolism:       carbon -= 0.005 × size × (0.3 if dormant else 1.0)
+  Seedlings graduate to a random species when size > 0.25
+
+Seasons (120 ticks each):
+  Spring:  photo_mult = 0.7→1.0, growth ×1.2
+  Summer:  photo_mult = 1.0, growth ×1.0
+  Autumn:  photo_mult = 1.0→0.5, growth ×0.5
+  Winter:  photo_mult = 0.1, growth ×0.1, deciduous trees go dormant
+           (Pine and Fir remain active — evergreen species)
+
+Network construction:
+  Trees connect when distance ≤ root_radius_A + root_radius_B
+  Connection probability = 1.0 − (d / max_reach) × 0.6
+    +0.30 if either tree is a mother tree
+    +0.15 if same species (ectomycorrhizal specificity)
+
+Mother tree resource sharing (carbon):
+  Transfer = min(0.03, mother_carbon × 0.05) when mother C > 1.0, neighbor C < 0.4
+  Fungal tax = transfer × 0.10 (carbon diverted to fungal pool)
+
+Non-mother mutualism (gradient-driven):
+  Transfer = (C_a − C_b) × 0.02  when |diff| > 0.3
+  Fungal tax = |transfer| × 0.08
+
+Alarm cascade:
+  Pest-attacked trees (pest > 0.2) broadcast alarm through connected hyphae
+  Receiving trees: defense += signal_strength × 0.5
+  Re-broadcast: if signal_strength > 0.3, cascade at 60% attenuation
+  Signal timer: 15–20 ticks propagation delay
+  Defense reduces pest infection probability: chance × (1.0 − defense_level)
+
+Hypha lifecycle:
+  Thickness grows with use (carbon/phosphorus flow + signal activity)
+  Unused hyphae decay: health −0.002/tick when use < 0.001
+  Active hyphae heal: health +0.001/tick
+  Dead hyphae (health ≤ 0) are pruned and indices remapped
+```
+
+**Tree species (5 + seedlings):**
+
+| Species | Glyph | Characteristics |
+|---------|-------|----------------|
+| Oak | `O` | Deciduous, strong root system, common mother tree |
+| Birch | `B` | Deciduous, pioneer species |
+| Pine | `P` | Evergreen (active in winter), coniferous |
+| Fir | `F` | Evergreen (active in winter), coniferous |
+| Maple | `M` | Deciduous, vibrant autumn colors |
+| Seedling | `.` | Juvenile, 30% photosynthesis rate, graduates at size 0.25 |
+
+**Presets (6):**
+
+| Preset | Character | Configuration |
+|--------|-----------|--------------|
+| Old-Growth Cooperation | Dense diverse old-growth | 4–6 mother trees (size 0.8–1.0), 35 mature trees, 20 seedlings — watch mother trees fund seedlings through dense fungal mesh |
+| Drought Triage | Progressive water stress | Soil moisture starts at 30%, intensity rises +0.001/tick — network reroutes water to weakest trees, mother trees prioritize carbon sharing |
+| Pest Cascade | Bark beetle outbreak | Trees on east edge pre-infected (pest 0.3–0.7) — alarm signals cascade through network, defense levels rise in waves across the forest |
+| Clear-Cut Fragmentation | Logging removes hub trees | Left: intact old-growth, middle: transition zone, right: only seedlings — network fragments into disconnected islands |
+| Monoculture vs. Biodiversity | Side-by-side comparison | Left: pine monoculture (25 trees), right: mixed old-growth with mother trees — compare network density and resilience |
+| Seasonal Nutrient Cycling | Four-season cycle | Starts in spring — watch carbon flush, summer peak, autumn senescence (deciduous dormancy), winter survival on stored reserves |
+
+**View modes (3, cycle with `v`):**
+1. **Forest** — split display: above-ground canopy with seasonal-colored tree glyphs (green/gold/bare), mother tree markers (`M`), pest indicators; below-ground hyphal network with pulsing connections (thickness-scaled `·∙•─═`), flowing nutrient particles (C=green, P=magenta, W=blue, !=red alarm), root system circles
+2. **Network Topology** — graph diagram showing trees as labeled nodes (species glyph + health bar) and hyphae as edges, colored by current activity: red=alarm signal, green=carbon flow, magenta=phosphorus flow, dim=idle
+3. **Time-Series Graphs** — 10 sparkline metrics (Unicode block elements `▁▂▃▄▅▆▇█`): total carbon flow, total phosphorus flow, alarm signals, network edges, average tree health, mother tree count, seedling count, fungal tax collected, average defense level, connected components
+
+**Controls:** `Space`=play/pause, `n`=step, `v`=cycle views, `+/-`=simulation speed, `r`=reset (return to preset menu), `q`=exit mode.
+
+**What to look for.** In Old-Growth Cooperation, the mother trees form bright hub nodes with thick radiating hyphae — green carbon particles flow outward from mothers toward dim seedlings. Switch to Drought Triage and watch the soil moisture gradient darken; mother trees begin sharing water (blue particles) and the network reorganizes around the remaining moisture. In Pest Cascade, red alarm particles burst from the east edge and cascade through the network in waves; trees receiving alarms raise defense levels (visible as brightening nodes) before the pest front arrives — trees with high defense resist infection. Clear-Cut Fragmentation shows the network literally breaking apart: the right side has only isolated seedlings with no connections, while the intact left-side forest maintains a dense web. Monoculture vs. Biodiversity reveals that the mixed forest develops a richer, more interconnected network (same-species bonus + mother tree hubs) compared to the uniform but less-connected monoculture. Seasonal Nutrient Cycling shows the annual rhythm: spring carbon flush (green particles surge), summer stability, autumn carbon flow reversal as deciduous trees shed resources, and winter dormancy where only evergreens (Pine, Fir) remain active on the network.
+
+**References.**
+- Simard, S. W. et al. "Net transfer of carbon between ectomycorrhizal tree species in the field." *Nature*, 388, 579–582, 1997. https://doi.org/10.1038/41557
+- Simard, S. W. "Finding the Mother Tree: Discovering the Wisdom of the Forest." Alfred A. Knopf, 2021.
+- Beiler, K. J. et al. "Architecture of the wood-wide web: *Rhizopogon* spp. genets link multiple Douglas-fir cohorts." *New Phytologist*, 185(2), 543–553, 2010. https://doi.org/10.1111/j.1469-8137.2009.03069.x
+- Babikova, Z. et al. "Underground signals carried through common mycelial networks warn neighbouring plants of aphid attack." *Ecology Letters*, 16(7), 835–843, 2013. https://doi.org/10.1111/ele.12115
+- Klein, T. et al. "Belowground carbon trade among tall trees in a temperate forest." *Science*, 352(6283), 342–344, 2016. https://doi.org/10.1126/science.aad6188

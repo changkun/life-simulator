@@ -356,6 +356,8 @@ def register_all_modes(App):
     reg_sweb(App)
     from life.modes.deep_sea import register as reg_deepsea
     reg_deepsea(App)
+    from life.modes.mycorrhizal import register as reg_myco
+    reg_myco(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

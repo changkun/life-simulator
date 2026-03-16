@@ -448,6 +448,9 @@ MODE_REGISTRY = [
     # ── Deep-Sea Bioluminescent Abyss ──
     {"name": "Deep-Sea Bioluminescent Abyss", "key": "—", "category": "Complex Simulations",
      "desc": "Abyssal ocean zone with anglerfish lure signaling, bioluminescent plankton disturbance cascades, giant squid chromatophore countershading, marine snow drift, hydrostatic pressure zones & light-based predator-prey deception in total darkness", "attr": "deepsea_mode", "enter": "_enter_deepsea_mode", "exit": "_exit_deepsea_mode"},
+    # ── Mycorrhizal Network & Wood Wide Web ──
+    {"name": "Mycorrhizal Network & Wood Wide Web", "key": "—", "category": "Complex Simulations",
+     "desc": "Underground fungal highway connecting forest trees — mother trees fund seedlings, pest alarm signals cascade through the network, fungi take carbon tax for brokering resource transfers, seasonal nutrient cycling", "attr": "myco_mode", "enter": "_enter_myco_mode", "exit": "_exit_myco_mode"},
 ]
 
 

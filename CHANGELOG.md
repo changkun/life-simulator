@@ -4,6 +4,32 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Mycorrhizal Network & Wood Wide Web — underground fungal highway with mother tree resource sharing, pest alarm cascades, fungal carbon tax & seasonal nutrient cycling
+
+A mycorrhizal network simulation modeling the "wood wide web" — underground fungal connections that link forest trees into a shared communication and resource-trading network. Fills the soil science / fungal ecology gap: the project has extensive above-ground and aquatic ecosystems, but nothing modeling the hidden underground networks that sustain forests. Visually distinctive: split above-ground canopy over a below-ground web of pulsing hyphal connections with flowing nutrient particles.
+
+**`life/modes/mycorrhizal.py`** (new, ~1440 lines):
+
+- **5 tree species + seedlings**: Oak, Birch, Pine, Fir, Maple with individual carbon/phosphorus/water budgets, photosynthesis, root uptake, size-based growth. Seedlings graduate to a random species at size 0.25. Evergreens (Pine, Fir) stay active in winter; deciduous species go dormant.
+- **Mother trees**: Large hub trees (size > 0.7) detect stressed neighbors and route carbon (transfer = min(0.03, C×0.05) when mother C > 1.0, neighbor C < 0.4) and phosphorus through the fungal network.
+- **Mycorrhizal hyphae**: Fungal connections between trees within combined root radius. Connection probability modified by mother tree presence (+0.30) and species match (+0.15). Thickness grows with use, unused hyphae decay and die.
+- **Fungal carbon tax**: Fungi take 8–10% of all brokered transfers as payment, accumulating in a fungal carbon pool.
+- **Pest alarm cascade**: Pest-attacked trees broadcast alarm signals through connected hyphae; receiving trees boost defense (defense += signal_strength × 0.5); signals re-broadcast at 60% attenuation if strength > 0.3, creating cascading waves across the forest.
+- **4 seasons** (120 ticks each): Spring flush (photo ×0.7→1.0, growth ×1.2), Summer peak, Autumn senescence (photo ×1.0→0.5), Winter dormancy (photo ×0.1, deciduous trees dormant, evergreens active).
+- **Non-mother mutualism**: Gradient-driven carbon flow between any connected trees when |C_a − C_b| > 0.3, with 8% fungal tax.
+- **3 visualization views** (cycle with `v`): Forest (split above/below-ground with seasonal canopy colors, pulsing hyphal connections, flowing nutrient particles C/P/W/!), Network Topology (graph diagram with activity-colored edges), Time-Series Graphs (10 sparklines: carbon flow, phosphorus flow, alarm signals, network edges, avg health, mother count, seedling count, fungal tax, avg defense, connected components).
+- **6 presets**: Old-Growth Cooperation, Drought Triage, Pest Cascade, Clear-Cut Fragmentation, Monoculture vs. Biodiversity, Seasonal Nutrient Cycling.
+
+**`life/registry.py`**: Added "Mycorrhizal Network & Wood Wide Web" entry in Complex Simulations category.
+
+**`life/modes/__init__.py`**: Added registration import for the mycorrhizal module.
+
+**`README.md`**: Added Mycorrhizal Network & Wood Wide Web to the Complex Simulations category list.
+
+**`docs/complex-simulations.md`**: Added comprehensive documentation covering network construction formulation, tree physiology equations, mother tree sharing mechanics, fungal tax economics, alarm cascade propagation, seasonal cycling, 6 preset configurations, three view modes, and references to Simard et al. (1997), Beiler et al. (2010), Babikova et al. (2013), and Klein et al. (2016).
+
+---
+
 ### Feature: Add Deep-Sea Bioluminescent Abyss — abyssal ocean zone with anglerfish lure predation, bioluminescent plankton disturbance cascades, giant squid chromatophore countershading, marine snow drift & light-based predator-prey deception in total darkness
 
 A deep-sea simulation modeling the ecology of the abyssal ocean (1000m+ depth), where all predator-prey interactions are conducted through bioluminescence in perpetual darkness. Fills the deep-ocean gap — the project has tide pools, coral reefs, and hydrothermal vent chemistry, but nothing modeling the light-based ecology of the abyss. Visually striking: glowing organisms against a pure black terminal background.
