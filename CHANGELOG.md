@@ -4,6 +4,40 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add persistent terrarium mode for cross-session simulation continuity
+
+Added a new Meta Mode that turns the simulator into a persistent world — the simulation saves its state automatically on exit and resumes exactly where it left off on next launch. While "away," it fast-forwards through elapsed generations based on real wall-clock time and maintains a chronicle log of notable events with timestamps. Returning shows a welcome-back summary of what happened while you were gone.
+
+**`life/modes/terrarium.py`** (new, ~400 lines):
+
+- **Session persistence**: Complete state serialized to `~/.life_saves/terrarium/` (grid, viewport, speed, colormap, terrarium metadata) via atomic write (temp file + rename).
+- **Fast-forward catch-up**: On resume, calculates elapsed real time × simulation speed to determine generations to simulate (capped at 50,000). During catch-up, monitors for extinctions (auto-reseeds), population records, and phase transitions.
+- **Chronicle log**: Timestamped event log recording population records (>10% increase), extinctions, phase transitions, session starts/ends, and re-seeds. Bounded at 5,000 entries. Persisted to `chronicle.json`.
+- **Welcome-back summary screen**: Shows time away, generations simulated, population trajectory (start → end, peak, minimum), notable events, and all-time stats (peak population, total sessions, terrarium age).
+- **Chronicle viewer**: Press `c` on the summary screen to browse the full event history (newest first) with color-coded entries by event type.
+- **Status indicator**: `TERRARIUM age:Xd Yh gen:N pop:N` bar in the top-right corner during simulation.
+- **Auto-save**: Saves state every 60 seconds during simulation, and on quit/interrupt/crash.
+- **Extinction recovery**: If population hits zero during catch-up, automatically re-seeds random cells to keep the terrarium alive.
+
+**`life/constants.py`**: Added `TERRARIUM_DIR` constant (`~/.life_saves/terrarium/`).
+
+**`life/registry.py`**: Added "Terrarium" entry in Meta Modes category and `terrarium_mode` to `_EXPLICIT_MODES`.
+
+**`life/modes/__init__.py`**: Added registration call for the terrarium module.
+
+**`life/app.py`** (~43 lines added):
+
+- `__init__`: Initialize terrarium state via `_terrarium_init()`.
+- `main()`: Added `--terrarium` CLI flag.
+- `start()`: Auto-enter terrarium mode when `--terrarium` is passed.
+- Quit handler: Auto-saves terrarium state before exit.
+- `KeyboardInterrupt`/`SystemExit`: Auto-saves on crash/interrupt.
+- Main loop: Draws welcome-back summary, chronicle viewer, and status indicator; intercepts keys for summary/chronicle navigation; records notable events to chronicle on each simulation step.
+
+**`tests/test_mode_wiring.py`**: Added `terrarium_mode` to explicit modes set.
+
+---
+
 ### Feature: Add multi-physics co-simulation mode (Symbiosis)
 
 Added a new Meta Mode where 3–8 distinct simulation engines coexist on the same grid, each running on a separate layer but interacting through shared environmental fields (temperature, chemical concentration, flow velocity). This creates true cross-domain emergent phenomena unlike existing modes: Mashup blends rules into one engine, Split Screen shows side-by-side — Symbiosis preserves independent engine dynamics while coupling them through physics.

@@ -2615,6 +2615,10 @@ class App:
         # ── Minimap overlay state ──
         self.show_minimap = False  # toggled with Tab key
 
+        # ── Terrarium mode state ──
+        self.terrarium_mode = False
+        self._terrarium_init()
+
         self._rebuild_pattern_list()
 
         if pattern:
@@ -3917,6 +3921,17 @@ class App:
                 _my, _mx = self.stdscr.getmaxyx()
                 self._draw_cast_indicator(_my, _mx)
                 self._tc_refresh()
+            # ── Terrarium mode overlays ──
+            if self.terrarium_mode and not self._any_menu_open():
+                _my, _mx = self.stdscr.getmaxyx()
+                if self.terrarium_show_summary:
+                    if hasattr(self, '_terrarium_chronicle_view') and self._terrarium_chronicle_view:
+                        self._draw_terrarium_chronicle_view(_my, _mx)
+                    else:
+                        self._draw_terrarium_summary(_my, _mx)
+                else:
+                    self._draw_terrarium_indicator(_my, _mx)
+                    self._tc_refresh()
             # ── Parameter tuning overlay ──
             if self.param_tuner_active:
                 _my, _mx = self.stdscr.getmaxyx()
@@ -3954,6 +3969,11 @@ class App:
             if key == curses.KEY_MOUSE:
                 self._handle_mouse()
                 continue
+
+            # ── Terrarium summary/chronicle screen (intercept keys) ──
+            if self.terrarium_mode and self.terrarium_show_summary:
+                if self._handle_terrarium_summary_key(key):
+                    continue
 
             # ── Phase transition bookmark menu (intercept keys first) ──
             if self.phase_bookmark_menu:
@@ -4196,6 +4216,9 @@ class App:
                         if self.analytics.enabled or self.analytics.phase_detector.enabled:
                             self.analytics.update(self.grid, self.pop_history)
                         self._process_phase_transitions()
+                        # Record terrarium events (population records, phase transitions)
+                        if self.terrarium_mode:
+                            self._terrarium_record_event()
                         if self.pattern_search_mode:
                             self._scan_patterns()
                         # Step the second grid in comparison mode
@@ -4222,6 +4245,8 @@ class App:
         if key == -1:
             return True
         if key == ord("q"):
+            if self.terrarium_mode:
+                self._terrarium_quit()
             sys.exit(0)
         if key == ord("?") or key == ord("h"):
             self.show_help = True
@@ -6778,6 +6803,10 @@ def main():
         metavar="HOST:PORT",
         help="Connect to a multiplayer game (e.g. 192.168.1.5:7654)",
     )
+    parser.add_argument(
+        "--terrarium", action="store_true",
+        help="Launch in Terrarium mode — persistent simulation that saves on exit and resumes on next launch",
+    )
     args = parser.parse_args()
 
     if args.list_patterns:
@@ -6788,8 +6817,11 @@ def main():
 
     def start(stdscr):
         app = App(stdscr, args.pattern, args.rows, args.cols)
+        # Terrarium mode — persistent simulation
+        if args.terrarium:
+            app._enter_terrarium_mode()
         # Screensaver mode
-        if args.screensaver is not None:
+        elif args.screensaver is not None:
             app.screensaver_interval = args.screensaver_interval
             app._screensaver_init(args.screensaver)
         # Show dashboard on startup unless a pattern, multiplayer, or --no-dashboard is specified
@@ -6828,11 +6860,16 @@ def main():
                 app.running = False
                 app.mp_connect_addr = addr
                 app._flash("Connected! Waiting for game setup...")
-        app.run()
+        try:
+            app.run()
+        except (KeyboardInterrupt, SystemExit):
+            if app.terrarium_mode:
+                app._terrarium_quit()
+            raise
 
     try:
         curses.wrapper(start)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, SystemExit):
         pass
 
 

@@ -346,6 +346,9 @@ MODE_REGISTRY = [
     # ── Symbiosis Multi-Physics Co-Simulation ──
     {"name": "Symbiosis Multi-Physics", "key": "—", "category": "Meta Modes",
      "desc": "3+ physics engines co-simulate on shared environmental fields with cross-domain emergent phenomena", "attr": "symbiosis_mode", "enter": "_enter_symbiosis_mode", "exit": "_exit_symbiosis_mode"},
+    # ── Persistent Terrarium ──
+    {"name": "Terrarium", "key": "—", "category": "Meta Modes",
+     "desc": "Persistent simulation that saves on exit, resumes on launch, and fast-forwards through elapsed time", "attr": "terrarium_mode", "enter": "_enter_terrarium_mode", "exit": "_exit_terrarium_mode"},
 ]
 
 
@@ -371,6 +374,7 @@ _EXPLICIT_MODES = {
     'screensaver_mode', # non-standard key dispatch (requires running)
     'evo_mode',         # uses self.running not evo_running, custom step
     'script_mode',      # draw has extra overlay (_draw_script_source)
+    'terrarium_mode',   # meta-mode wrapping base sim with persistence
 }
 
 # Per-mode overrides for non-standard method names or behavior.

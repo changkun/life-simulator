@@ -102,6 +102,7 @@ class TestDispatchCoverage:
         'compare_mode', 'race_mode', 'puzzle_mode', 'iso_mode', 'hex_mode',
         'heatmap_mode', 'pattern_search_mode', 'blueprint_mode', 'mp_mode',
         'tbranch_mode', 'screensaver_mode', 'evo_mode', 'script_mode',
+        'terrarium_mode',
     }
 
     @pytest.mark.parametrize("attr", MODE_IDS, ids=MODE_IDS)

@@ -4,6 +4,7 @@ import os
 SAVE_DIR = os.path.expanduser("~/.life_saves")
 SNAPSHOT_DIR = os.path.join(SAVE_DIR, "snapshots")
 BLUEPRINT_FILE = os.path.join(SAVE_DIR, "blueprints.json")
+TERRARIUM_DIR = os.path.join(SAVE_DIR, "terrarium")
 
 CELL_CHAR = "\u2588\u2588"  # Full block × 2 for squarish cells
 HEX_CELL = "\u2b22 "       # Hexagon character for hex mode

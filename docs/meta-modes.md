@@ -950,3 +950,41 @@ Visualization uses RGB-layered color channels: each engine is assigned a color (
 - Try "Full Ecosystem" (4 engines) for a richer interaction network where chemistry, organisms, fire, and fungal networks create complex feedback loops.
 - Adjust coupling from 0 (independent) to 1.0 (maximum) to see how cross-domain influence changes emergent behavior. At zero coupling, engines evolve independently; at high coupling, they become strongly correlated.
 - Build a custom combination to test unusual pairings — what happens when Ising spins interact with boid flocks through temperature fields?
+
+---
+
+## Terrarium
+
+**Source:** `life/modes/terrarium.py`
+
+### Background
+
+Terrarium turns the simulator from a tool you run into a world you tend. It adds session persistence and the passage of real time — your simulation saves automatically when you leave and resumes exactly where it left off when you return. While you're away, the terrarium fast-forwards through elapsed generations and keeps a chronicle of notable events (extinctions, population records, phase transitions) with real-world timestamps. Returning to your terrarium shows a summary of what happened while you were gone, like checking in on a digital aquarium.
+
+### How it works
+
+State is saved to `~/.life_saves/terrarium/` as two files: `state.json` (grid, viewport, speed, colormap, terrarium metadata) and `chronicle.json` (timestamped event log). Writes are atomic — a temp file is written first, then renamed into place — so a crash mid-save can't corrupt the save file.
+
+On resume, the elapsed real-world time is multiplied by the simulation speed to calculate how many generations to fast-forward (capped at 50,000). During catch-up, the simulation runs at full speed while monitoring for extinctions (auto-reseeds random cells to keep the world alive), population records, and phase transitions. Analytics and the phase transition detector run at sample intervals during catch-up to detect qualitative shifts.
+
+The chronicle is a bounded log (max 5,000 entries) that records events with both real-world timestamps and simulation generation numbers. Events include: terrarium creation, session starts/ends, population records (>10% increase over previous peak), extinctions, re-seeds, and phase transitions.
+
+Auto-save runs every 60 seconds during simulation, and state is always saved on quit (`q`), `Ctrl+C`, or `SystemExit`.
+
+### Controls
+
+| Key | Action |
+|-----|--------|
+| `--terrarium` | CLI flag to launch in terrarium mode |
+| **Enter** | Dismiss welcome-back summary, start simulation |
+| **↑** / **↓** | Scroll summary or chronicle |
+| **c** | Toggle chronicle viewer from summary screen |
+| **Esc** or **q** | Return from chronicle to summary; from summary, exit |
+
+### What to explore
+
+- Launch with `python life.py --terrarium` and let it run for a while, then quit and come back later — hours, days — to see what happened.
+- Watch the chronicle accumulate over multiple sessions. Population records, extinctions, and phase transitions tell the story of your terrarium's life.
+- Leave the terrarium running overnight and check the welcome-back summary in the morning for a history of what happened while you slept.
+- If your terrarium reaches extinction, it will auto-reseed — watch how different random configurations evolve differently after each extinction event.
+- Use the chronicle viewer (`c`) to scroll through the full event history and spot patterns across sessions.
