@@ -1,6 +1,11 @@
 """Grid class for cellular automaton simulation."""
 import hashlib
 
+from life.patterns import PATTERNS
+from life.constants import HEX_NEIGHBORS_EVEN, HEX_NEIGHBORS_ODD
+from life.rules import rule_string, parse_rule_string
+
+
 class Grid:
     """Finite grid with wrapping (toroidal) boundaries."""
 
@@ -39,6 +44,12 @@ class Grid:
             if self.cells[r][c] > 0:
                 self.population -= 1
             self.cells[r][c] = 0
+
+    def is_alive(self, r: int, c: int) -> bool:
+        """Return True if cell (r, c) is alive."""
+        if 0 <= r < self.rows and 0 <= c < self.cols:
+            return self.cells[r][c] > 0
+        return False
 
     def toggle(self, r: int, c: int):
         if self.cells[r][c]:
