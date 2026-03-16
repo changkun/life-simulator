@@ -809,3 +809,92 @@ Spatial efficiency is achieved via grid-based hashing (4×4 cell buckets) for O(
 - Strogatz, S. H. *Sync: The Emerging Science of Spontaneous Order.* Hyperion, 2003.
 - Buck, J. "Synchronous rhythmic flashing of fireflies. II." *Quarterly Review of Biology* 63 (1988): 265-289. https://doi.org/10.1086/415929
 - Kuramoto, Y. *Chemical Oscillations, Waves, and Turbulence.* Springer, 1984. https://doi.org/10.1007/978-3-642-69689-3
+
+---
+
+## Blood Vessel Network & Angiogenesis
+
+**Background** — Angiogenesis is the growth of new blood vessels from existing vasculature, driven by chemical signals from oxygen-starved tissue. When tissue becomes hypoxic, it secretes vascular endothelial growth factor (VEGF), a diffusible signal that activates endothelial "tip cells" on nearby vessels. These tip cells extend filopodia up the VEGF gradient, migrating through the extracellular matrix and laying down new vessel tubes behind them. Neighboring tip cells or existing vessels can merge (anastomose) to form perfusable loops. Once blood flows through the new network, vessels remodel according to Murray's law — high-flow vessels widen to reduce viscous resistance, while unused vessels regress and collapse. This self-organizing process is central to wound healing, embryonic development, and exercise adaptation, but is also hijacked by tumors that flood VEGF to recruit their own blood supply (tumor angiogenesis). Anti-angiogenic drugs that block VEGF signaling are a major cancer therapy strategy.
+
+**Formulation** — The simulation couples a vascular network graph with continuous scalar fields for oxygen and VEGF on a 2D tissue grid:
+
+```
+Heartbeat pressure wave:
+  Systole (phase < 0.35):
+    P_base = 0.5 + 0.5 × sin(phase_frac × π)
+  Diastole (phase ≥ 0.35):
+    P_base = 0.5 × exp(−2 × diastole_frac)
+
+  Period = 30 ticks, systole fraction = 0.35
+
+Pressure propagation (3 BFS iterations):
+  For each vessel edge (n1, n2):
+    conductance = r⁴ / max(0.5, length)           (Poiseuille's law)
+    flow = conductance × (P_n1 − P_n2) × 0.3
+    wall_shear = |flow| / r³
+    ΔP_transfer = (P_n1 − P_n2) × 0.15 × min(1, conductance)
+
+Oxygen delivery (per vessel cell along edge):
+    O₂_supply = 0.25 × |flow| × (radius / 1.0)
+
+Oxygen field update:
+    O₂(r,c) += 0.12 × (avg_neighbor_O₂ − O₂(r,c))    (diffusion)
+    O₂(r,c) −= 0.015                                    (tissue consumption)
+    O₂(r,c) −= 0.015 × 1.5   if tumor cell             (extra tumor consumption)
+    Exercise preset: consumption × 2.0
+
+VEGF field update:
+    If O₂(r,c) < 0.3:
+        VEGF(r,c) += 0.06 × (0.3 − O₂(r,c)) × drug_factor
+    If tumor cell:
+        VEGF(r,c) += tumor.vegf_boost × 0.05 × drug_factor
+    VEGF(r,c) −= 0.01                                   (decay)
+    VEGF(r,c) += 0.08 × (avg_neighbor_VEGF − VEGF(r,c)) (diffusion)
+    drug_factor = max(0.1, 1 − drug_strength)
+
+Tip cell migration (chemotaxis):
+    heading = 0.6 × heading_prev + 0.4 × grad_angle(VEGF)
+    Δr = sin(heading) × speed
+    Δc = cos(heading) × speed
+    Branch probability: 0.03 if VEGF > 0.15  (±60° bifurcation)
+    Max lifetime: 150 ticks
+
+Anastomosis:
+    If tip cell within 2.5 distance of non-parent vessel node → merge
+
+New sprout probability:
+    0.08/tick from non-source, non-tip nodes where VEGF > 0.15
+
+Murray's law remodeling:
+    optimal_radius = min(3.0, |flow|^(1/3) × 2.0)
+    If radius < optimal: radius += 0.002/tick
+    If radius > 1.2 × optimal: radius −= 0.001/tick
+    Regression: if |flow| < 0.01 and age > 50, radius −= 0.05 at P=0.004
+    Collapse: edges with radius < 0.05 removed, indices rebuilt
+
+Tumor growth:
+    If avg O₂ over tumor cells > 0.2:
+        tumor.radius += growth_rate × avg_o2
+    Cells = integer points within Euclidean radius of center
+```
+
+The vascular network is a graph of `VesselNode` junctions (with pressure, oxygen, source/tip flags) and `VesselEdge` segments (with radius, flow, wall shear, age). A spatial hash provides O(1) lookup of nodes by position for anastomosis detection. Visual RBC particles flow along edges with speed proportional to edge flow.
+
+**Presets** — Six scenarios illustrate distinct vascular dynamics:
+
+| Preset | Configuration | What to watch |
+|--------|--------------|---------------|
+| Healthy Tissue Growth | Dual arterial trees, balanced VEGF | Orderly branching, efficient perfusion coverage |
+| Wound Healing | Vessels on left, hypoxic wound zone on right with VEGF burst | Rapid neovascularization invading the wound bed |
+| Tumor Angiogenesis | Healthy vasculature + aggressive tumor (growth 0.02, VEGF boost 0.4) | Chaotic tortuous vessels, poor perfusion despite dense network |
+| Anti-Angiogenic Drug | Tumor + drug suppression (strength 0.7), toggle with `d` | Vessel normalization, reduced sprouting, tumor O₂ starved |
+| Retinal Vasculature | 8-spoke radial tree from central optic disc | Symmetric radial growth across retinal surface |
+| Exercise Capillarization | Dense beds, 2× O₂ consumption | Capillary bed densification driven by metabolic demand |
+
+**What to look for** — In the Vessel Network view, watch the ♥/♡ heartbeat indicator pulse as pressure waves propagate through arteries (bright red during systole). Red ● particles represent flowing RBCs — their speed visually reflects local flow rate. Sprouting ⌁ tip cells chase VEGF gradients into hypoxic zones, occasionally merging with existing vessels (anastomosis) to form perfusable loops. In Tumor Angiogenesis, the ▓ tumor mass grows and floods VEGF, recruiting a chaotic, tortuous vasculature — toggle the drug with `d` to see vessel normalization. The O₂/VEGF Heatmap view reveals the interplay between oxygen delivery (blue→white gradient) and VEGF signaling (dim→red) — hypoxic zones glow bright in the VEGF panel while remaining dark in the O₂ panel. The sparkline graphs track 10 metrics in real time: perfusion efficiency, vessel density, mean flow, O₂ coverage, VEGF levels, tumor size, tip count, heart pressure, vessel count, and regression events.
+
+**References**
+- Folkman, J. "Angiogenesis in cancer, vascular, rheumatoid and other disease." *Nature Medicine* 1 (1995): 27-31. https://doi.org/10.1038/nm0195-27
+- Murray, C. D. "The physiological principle of minimum work. I. The vascular system and the cost of blood volume." *Proceedings of the National Academy of Sciences* 12 (1926): 207-214. https://doi.org/10.1073/pnas.12.3.207
+- Gerhardt, H. et al. "VEGF guides angiogenic sprouting utilizing endothelial tip cell filopodia." *Journal of Cell Biology* 161 (2003): 1163-1177. https://doi.org/10.1083/jcb.200302047
+- Carmeliet, P. & Jain, R. K. "Angiogenesis in cancer and other diseases." *Nature* 407 (2000): 249-257. https://doi.org/10.1038/35025220

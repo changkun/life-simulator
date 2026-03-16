@@ -358,6 +358,8 @@ def register_all_modes(App):
     reg_deepsea(App)
     from life.modes.mycorrhizal import register as reg_myco
     reg_myco(App)
+    from life.modes.angiogenesis import register as reg_angio
+    reg_angio(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

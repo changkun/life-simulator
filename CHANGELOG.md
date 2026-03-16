@@ -4,6 +4,32 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Blood Vessel Network & Angiogenesis — pulsatile vascular network with VEGF-driven sprouting, Murray's law remodeling, flowing RBCs, heartbeat pressure waves, oxygen perfusion & toggleable tumor angiogenesis
+
+A blood vessel simulation modeling angiogenesis — the growth of new blood vessels from existing vasculature. Fills the cardiovascular / medical-biology gap: the project has no circulatory system or vascular growth simulation. Visually striking: a beating vascular tree with flowing red blood cells growing in real time.
+
+**`life/modes/angiogenesis.py`** (new, ~1245 lines):
+
+- **Vascular network graph**: `_VesselNode` junctions and `_VesselEdge` segments with radius, flow, wall shear stress, and age. Nodes track pressure, oxygen, source/tip status. Edges carry RBC particles. Spatial hash `node_grid` for O(1) positional lookup.
+- **Heartbeat pressure wave**: Sinusoidal systole/diastole cycle (period=30 ticks, systole fraction=0.35). Systole: P = 0.5 + 0.5×sin(frac×π). Diastole: P = 0.5×exp(−2×frac). Pressure propagates from source arterioles through the vessel graph via 3-iteration BFS with Poiseuille-like conductance (flow ∝ r⁴/length × ΔP × 0.3).
+- **Oxygen delivery & diffusion**: Vessels supply O₂ = 0.25 × |flow| × (radius/1.0) to tissue along their length. O₂ diffuses to 4-neighbors (coefficient 0.12) and is consumed by tissue at 0.015/tick (doubled in exercise preset). Tumor cells consume an additional 1.5× rate.
+- **VEGF signaling**: Hypoxic tissue (O₂ < 0.3) secretes VEGF at rate 0.06 × deficit. VEGF diffuses (0.08) and decays (0.01/tick). Tumor cells add 0.05 × vegf_boost per tick. Anti-angiogenic drug reduces secretion and sprouting by drug_strength factor.
+- **Tip cell chemotaxis**: `_TipCell` agents sense VEGF in 8-neighborhood, migrate toward steepest gradient with heading persistence (0.6 current + 0.4 gradient). Branch at probability 0.03 when VEGF > 0.15 (±60° bifurcation). Tip cells die after 150 ticks.
+- **Anastomosis**: Tip cells merge with existing vessels when within 2.5 distance of a non-parent node, forming loops that improve perfusion.
+- **New sprouts**: Existing non-source, non-tip nodes with VEGF > 0.15 sprout new tip cells at probability 0.08 per tick.
+- **Murray's law remodeling**: Optimal radius = min(3.0, |flow|^(1/3) × 2.0). Vessels widen at 0.002/tick toward optimal, narrow at 0.001/tick. Unused vessels (|flow| < 0.01, age > 50) regress at probability 0.004/tick; collapsed vessels (radius < 0.05) are removed with full edge-index rebuild.
+- **Tumor**: `_Tumor` mass centered at (r,c) with radius, growth_rate, and vegf_boost. Grows when avg O₂ in tumor cells > 0.2 (radius += growth_rate × avg_o2). Cells recomputed each tick as integer points within Euclidean radius.
+- **RBC particles**: Visual blood cell particles flowing along vessel edges with speed proportional to |edge.flow| × 0.3. Bounce at endpoints and migrate to connected edges at junctions.
+- **3 visualization views** (cycle with `v`): Vessel Network (tissue background with hypoxic ░ zones, vessel segments sized by radius █▓▒░, red pulsing with heartbeat, ● RBC particles, ⌁ tip cells, ♦ sources, ▓ tumor, ♥/♡ heartbeat), O₂/VEGF Heatmap (split left/right with O₂ blue→white and VEGF dim→red gradients, vessel overlay), Time-Series Graphs (10 sparklines: perfusion, vessel density, mean flow, O₂ coverage, VEGF level, tumor size, tip count, heart pressure, vessel count, regression events).
+- **6 presets**: Healthy Tissue Growth (dual trees, orderly branching), Wound Healing (vessels on left, VEGF-rich wound zone on right), Tumor Angiogenesis (healthy vasculature + aggressive tumor), Anti-Angiogenic Drug Therapy (tumor with drug suppression, toggle with `d`), Retinal Vasculature (8-spoke radial tree from central optic disc), Exercise-Induced Capillarization (dense beds with 2× O₂ consumption).
+- **Controls**: Space=play/pause, v=cycle views, n=step, +/-=speed, t=toggle tumor, d=toggle drug, r=restart, m=menu.
+
+**`life/registry.py`**: Added "Blood Vessel Network & Angiogenesis" entry in Chemical & Biological category.
+
+**`life/modes/__init__.py`**: Added registration import for the angiogenesis module.
+
+---
+
 ### Feature: Add Mycorrhizal Network & Wood Wide Web — underground fungal highway with mother tree resource sharing, pest alarm cascades, fungal carbon tax & seasonal nutrient cycling
 
 A mycorrhizal network simulation modeling the "wood wide web" — underground fungal connections that link forest trees into a shared communication and resource-trading network. Fills the soil science / fungal ecology gap: the project has extensive above-ground and aquatic ecosystems, but nothing modeling the hidden underground networks that sustain forests. Visually distinctive: split above-ground canopy over a below-ground web of pulsing hyphal connections with flowing nutrient particles.

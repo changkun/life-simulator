@@ -451,6 +451,9 @@ MODE_REGISTRY = [
     # ── Mycorrhizal Network & Wood Wide Web ──
     {"name": "Mycorrhizal Network & Wood Wide Web", "key": "—", "category": "Complex Simulations",
      "desc": "Underground fungal highway connecting forest trees — mother trees fund seedlings, pest alarm signals cascade through the network, fungi take carbon tax for brokering resource transfers, seasonal nutrient cycling", "attr": "myco_mode", "enter": "_enter_myco_mode", "exit": "_exit_myco_mode"},
+    # ── Blood Vessel Network & Angiogenesis ──
+    {"name": "Blood Vessel Network & Angiogenesis", "key": "—", "category": "Chemical & Biological",
+     "desc": "Pulsatile vascular network with angiogenic sprouting toward VEGF gradients, Murray's law remodeling, flowing RBCs, heartbeat pressure waves, oxygen perfusion & toggleable tumor hijacking the vasculature", "attr": "angio_mode", "enter": "_enter_angio_mode", "exit": "_exit_angio_mode"},
 ]
 
 
