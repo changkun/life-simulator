@@ -310,6 +310,8 @@ def register_all_modes(App):
     reg_fluidlife(App)
     from life.modes.spacetime_fabric import register as reg_spacetime
     reg_spacetime(App)
+    from life.modes.programmable_matter import register as reg_progmatter
+    reg_progmatter(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

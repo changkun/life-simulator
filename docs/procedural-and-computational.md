@@ -863,3 +863,74 @@ Each rule preset creates fundamentally different gameplay. The Maze rule (B3/S12
 - Toy, M. et al. *Rogue.* UC Berkeley, 1980. (Original roguelike establishing the genre) https://en.wikipedia.org/wiki/Rogue_(video_game)
 - Walker, B. *Brogue.* 2009-2020. (Modern roguelike with procedural dungeon generation and emergent systems) https://sites.google.com/site/broguegame/
 - Wolfram, S. *A New Kind of Science.* Wolfram Media, 2002. (Comprehensive survey of CA behavior classes) https://www.wolframscience.com/nks/
+
+---
+
+## Programmable Matter
+
+**Background**
+
+Programmable matter refers to materials whose physical properties can be programmed to achieve specific shapes or behaviors. The concept originates from Toffoli and Margolus's work on programmable lattice gases (1987) and was formalized by Seth Goldstein and Todd Mowry at Carnegie Mellon (2004) as "claytronics" — ensembles of tiny robots called catoms that can self-assemble into arbitrary 3D shapes. This mode implements a 2D discrete variant: each cell on the grid is an independent state machine executing a local program, communicating with immediate neighbors through signals and bonds. The result is a bridge between passive cellular automata (where rules are fixed and global) and agent-based models (where agents have complex internal state) — cells here are *actively programmable*, yet operate under strict locality constraints.
+
+**Formulation**
+
+```
+Cell state machine:
+  state  in {empty, idle, moving, bonded, signaling}
+  reg_a  = direction register (0-3: N/E/S/W)
+  reg_b  = signal register
+  reg_c  = general-purpose / counter register
+  pc     = program counter
+  program = list of (opcode, operand) pairs
+
+Instruction set (15 opcodes, 2 executed per cell per step):
+  NOP        — no operation
+  MOVE       — move in direction reg_a; if target shape exists, bias toward
+               nearest target cell via Manhattan distance gradient
+  BOND       — bond to adjacent cell (both become bonded state, resist movement)
+  UNBOND     — release all bonds, return to idle
+  SIGNAL     — emit signal value (reg_b or reg_c) into signal field
+  READ       — count 4-neighbors, average their signals into reg_c/reg_b
+  IF_NBRS n  — skip next instruction if neighbor_count >= n
+  IF_REG  n  — skip next instruction if reg_a != n
+  SET_REG n  — set reg[n & 3] = (n >> 2), or random 0-3 if zero
+  REPLICATE  — spawn copy into first empty neighbor (with population cap)
+  TURN    n  — reg_a = (reg_a + n) mod 4
+  IF_BONDED  — skip next instruction if not bonded
+  GOTO    n  — set pc = n mod program_length
+  IF_DIST n  — skip next instruction if Manhattan distance to nearest
+               target cell > n
+  INC_REG n  — increment reg[n & 3]
+
+Simulation phases per step:
+  1. EXECUTE: each cell runs 2 instructions from its program
+  2. RESOLVE MOVEMENT: shuffle proposed moves, first-come-wins, bonded cells skip
+  3. REPLICATE: shuffle proposed replications, spawn until population cap
+     (max_cells = rows * cols / 3)
+  4. DIFFUSE SIGNALS: new_signal[r][c] = 0.6 * signal[r][c]
+       + 0.08 * sum(signal[neighbors])
+       Cells emitting signals override with their value
+  5. UPDATE STATS: count cells, bonded cells, on-target cells, max signal
+
+Target shape generators:
+  Circle:   (r - cr)^2 + (c - cc)^2 <= radius^2
+  Square:   |r - cr| <= side/2 and |c - cc| <= side/2
+  Diamond:  |r - cr| + |c - cc| <= radius  (L1 norm ball)
+  Letter:   5x5 pixel font scaled by min(rows, cols) / 12
+  Line:     single row at center, cols/4 to 3*cols/4
+
+Gradient-following movement:
+  Sample up to 50 target cells, find closest by Manhattan distance
+  For each of 4 directions, pick the one minimizing distance to closest target
+  Bonded cells do not move (structural stability)
+```
+
+**What to look for**
+
+Shape assembly presets demonstrate emergent self-organization: cells scattered randomly across the grid gradually converge on the target shape, with bonding creating structural stability once cells reach their positions. The progress bar in the info panel tracks what fraction of target cells are occupied. Try dealing damage with D to remove a 5×5 patch — watch how unbonded nearby cells re-fill the gap, demonstrating decentralized self-repair with no global coordinator. The Self-Replicating Cluster preset shows exponential growth governed by local density: cells replicate only when they have fewer than 3 neighbors, creating an expanding frontier. The Distributed Counter preset illustrates collective computation: cells increment their internal counters and broadcast via signal diffusion, with the signal field visualization (press V) showing information spreading as a diffusion heatmap. Switch between the three visualization modes to understand different aspects: Cells view shows individual state machines, Signal Field reveals the communication substrate, and Target Overlay provides ground-truth assembly progress (green = correct placement, red = misplaced, cyan = unfilled).
+
+**References**
+
+- Goldstein, S.C., Campbell, J.D., and Mowry, T.C. "Programmable Matter." *IEEE Computer* 38(6), 2005. https://doi.org/10.1109/MC.2005.198
+- Toffoli, T. and Margolus, N. *Cellular Automata Machines: A New Environment for Modeling.* MIT Press, 1987. https://doi.org/10.7551/mitpress/1763.001.0001
+- Derakhshandeh, Z. et al. "Amoebot — A New Model for Programmable Matter." *SPAA*, 2014. https://doi.org/10.1145/2612669.2612712

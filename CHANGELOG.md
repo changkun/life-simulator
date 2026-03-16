@@ -4,6 +4,29 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Programmable Matter — self-assembling state-machine cells
+
+Each cell is a tiny state machine executing a local program with 3 registers and a program counter. Cells move, bond, signal, replicate, and read neighbors — all from purely local rules. Swarms self-assemble into user-defined target shapes, self-repair when damaged, and perform distributed computation. This fills the gap between the project's passive CA modes and its ecosystem modes by making cells *actively programmable agents* on a grid.
+
+**`life/modes/programmable_matter.py`** (new, ~924 lines):
+
+- **Cell model (`_PMCell`)**: 5 states (empty/idle/moving/bonded/signaling), 3 registers (A=direction, B=signal, C=general), program counter, per-cell program storage. Uses `__slots__` for memory efficiency.
+- **15-opcode instruction set**: `NOP`, `MOVE`, `BOND`, `UNBOND`, `SIGNAL`, `READ`, `IF_NBRS`, `IF_REG`, `SET_REG`, `REPLICATE`, `TURN`, `IF_BONDED`, `GOTO`, `IF_DIST`, `INC_REG`. Each cell executes 2 instructions per simulation step.
+- **5-phase simulation loop**: (1) execute programs for all cells, (2) resolve movement conflicts via random-shuffle first-come-wins, (3) process replications with population cap at ⅓ grid capacity, (4) diffuse signal field (0.6 decay, 0.08 neighbor spread), (5) update statistics.
+- **Target shape generators**: filled circle, square, diamond (Manhattan distance), horizontal line, and scalable 5×5 pixel font letters (H, L, T, O, C) for shape assembly presets.
+- **Gradient-following assembly**: cells compute Manhattan distance to nearest sampled target cell and bias movement toward it, bonding when close. Bonded cells resist further movement, stabilizing the formed shape.
+- **8 presets**: Circle Formation, Square Formation, Letter 'H', Diamond Formation, Self-Replicating Cluster, Distributed Counter, Random Explorers, Line Formation. Each preset pairs a shape target with a specialized cell program.
+- **3 visualization modes**: Cells (state-colored glyphs with bond highlighting), Signal Field (diffusion heatmap as `.oO@` density), Target Overlay (green=on-target, red=off-target, cyan=unfilled target cells).
+- **Interactive controls**: Space (play/pause), S (single step), V (cycle view), D (deal 5×5 damage for self-repair demo), +/- (speed 1-5×), R (reset), arrow keys (cursor), I (toggle info panel), Q (quit).
+
+**`life/registry.py`**: Added "Programmable Matter" entry in Procedural & Computational category with `progmatter_mode` attribute, `_enter_progmatter_mode`/`_exit_progmatter_mode` lifecycle hooks.
+
+**`life/modes/__init__.py`**: Added registration import for the programmable_matter module.
+
+**`life/app.py`**: Added initialization of `progmatter_mode`, `pm_menu`, `pm_menu_sel`, and `pm_running` state variables.
+
+---
+
 ### Feature: Add Spacetime Fabric — general-relativistic cellular automaton
 
 Introduces the first mode where the grid geometry itself is dynamically coupled to the simulation state. Live cell clusters warp the surrounding spacetime, producing five GR phenomena: time dilation (cells near mass tick slower via accumulator-based updates), geodesic motion (cells advect along curvature gradients), frame dragging (rotating patterns drag neighbors tangentially), gravitational lensing (visual distortion near dense regions), and gravitational waves (sudden mass changes emit ripples via 2D wave equation on the metric). Every other mode treats the grid as a fixed flat stage — this one makes the stage respond to the actors.

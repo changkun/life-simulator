@@ -384,6 +384,9 @@ MODE_REGISTRY = [
     # ── Spacetime Fabric ──
     {"name": "Spacetime Fabric", "key": "—", "category": "Physics & Waves",
      "desc": "General-relativistic CA — grid geometry warps with mass density, causing time dilation, geodesic motion, frame dragging & gravitational waves", "attr": "spacetime_mode", "enter": "_enter_spacetime_mode", "exit": "_exit_spacetime_mode"},
+    # ── Programmable Matter ──
+    {"name": "Programmable Matter", "key": "—", "category": "Procedural & Computational",
+     "desc": "Self-assembling state-machine cells — each runs a local program, communicating via signals to form shapes, self-repair & compute", "attr": "progmatter_mode", "enter": "_enter_progmatter_mode", "exit": "_exit_progmatter_mode"},
 ]
 
 

@@ -895,6 +895,12 @@ class App:
         self.spacetime_menu_sel = 0
         self.spacetime_running = False
 
+        # ── Programmable Matter state ──
+        self.progmatter_mode = False
+        self.pm_menu = False
+        self.pm_menu_sel = 0
+        self.pm_running = False
+
         # ── Wave Function Collapse state ──
         self.wfc_mode = False
         self.wfc_menu = False
