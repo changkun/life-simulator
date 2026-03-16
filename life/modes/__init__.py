@@ -316,6 +316,8 @@ def register_all_modes(App):
     reg_progmatter(App)
     from life.modes.time_crystal import register as reg_tcrystal
     reg_tcrystal(App)
+    from life.modes.ferrofluid import register as reg_ferrofluid
+    reg_ferrofluid(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

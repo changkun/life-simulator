@@ -2,7 +2,7 @@
 
 The motion of liquids, gases, and plasmas — from kitchen honey to interstellar magnetohydrodynamics.
 
-This document covers the nine fluid dynamics simulation modes in Life Simulator. Each mode implements a distinct physical model, discretized for real-time ASCII visualization in the terminal. The models range from kinetic theory (Lattice Boltzmann) to continuum mechanics (Navier-Stokes), from astrophysical plasmas (MHD) to everyday viscous threads (fluid rope coiling).
+This document covers the ten fluid dynamics simulation modes in Life Simulator. Each mode implements a distinct physical model, discretized for real-time ASCII visualization in the terminal. The models range from kinetic theory (Lattice Boltzmann) to continuum mechanics (Navier-Stokes), from astrophysical plasmas (MHD) to everyday viscous threads (fluid rope coiling).
 
 ---
 
@@ -440,3 +440,90 @@ Use the interactive tools to experiment: place a wall to deflect a glider stream
 - Peskin, C.S. "Flow Patterns around Heart Valves: A Numerical Method." *Journal of Computational Physics*, 10(2), 1972. https://doi.org/10.1016/0021-9991(72)90065-4
 - Qian, Y.H., d'Humieres, D., and Lallemand, P. "Lattice BGK Models for Navier-Stokes Equation." *Europhysics Letters*, 17(6), 1992. https://doi.org/10.1209/0295-5075/17/6/001
 - Berlekamp, E.R., Conway, J.H., and Guy, R.K. *Winning Ways for Your Mathematical Plays*, Vol. 2. A K Peters, 2003.
+
+---
+
+## Ferrofluid Dynamics
+
+**Background.** A ferrofluid is a colloidal suspension of magnetic nanoparticles (~10 nm diameter) coated with a surfactant and dispersed in a carrier liquid. Invented by Steve Papell at NASA in 1963 for magnetically controlled rocket fuel, ferrofluids exhibit some of the most visually striking self-organization in condensed matter physics. When a uniform magnetic field is applied perpendicular to the surface of a ferrofluid pool, the flat surface becomes unstable above a critical field strength and erupts into a regular hexagonal array of spikes — the Rosensweig instability, first analyzed by Ronald Rosensweig in 1985. The instability arises because the magnetic pressure at a surface perturbation peak is stronger than at a trough (the field concentrates at tips), creating a positive feedback that is opposed by surface tension and gravity. The critical field B_crit marks the balance point; above it, the surface spontaneously breaks translational symmetry into a lattice of sharp spikes.
+
+Ferrofluids also exhibit labyrinthine stripe patterns when confined as a thin film in a perpendicular field (competing short-range surface tension and long-range dipolar repulsion create meandering domain walls), and chain/columnar structures when a uniform field aligns the magnetic dipoles into pearl-chain aggregates. This mode captures all three regimes — Rosensweig spikes, labyrinthine domains, and dipolar chains — in a single simulation framework, filling a gap between the project's discrete Ising magnetic model and its continuum MHD plasma solver.
+
+**Formulation.** Each grid cell stores a fluid height h ∈ [0, 1], a vertical velocity v, and a local magnetisation magnitude M. The dynamics combine five forces:
+
+```
+Per-cell forces:
+
+  1. Magnetic body force (Kelvin force):
+     F_mag = μ * h * (B_local - B_crit)
+     If B_local > B_crit (supercritical):
+       F_mag += 0.5 * μ * (B_local - B_crit)^2 * h
+     This creates positive feedback: taller regions in a supercritical
+     field experience stronger upward force, driving spike growth.
+
+  2. Field gradient force:
+     F_grad = μ * h * |∇B| * 0.3
+     Draws fluid toward field maxima (paramagnetic attraction).
+
+  3. Surface tension (Laplacian smoothing):
+     F_surface = γ * (avg_neighbors(h) - h)
+     Opposes sharp height gradients, stabilising short wavelengths.
+
+  4. Gravity:
+     F_grav = -g * h
+     Opposes spike growth, sets the characteristic spike height.
+
+  5. Dipolar chaining (for chain/spike presets):
+     F_chain = 0.02 * μ * B * sum_neighbors(h_neighbor - h)
+     Neighbouring magnetised regions attract, promoting columnar alignment.
+
+Velocity update (damped):
+  v_new = v * damping + F_total
+  v_new clamped to [-0.5, 0.5]
+
+Height update:
+  h_new = h + v_new
+  h_new clamped to [0.0, 1.0]
+
+Magnetisation (linear susceptibility):
+  M = μ * B_local
+
+Post-step corrections:
+  Labyrinthine preset: long-range dipolar repulsion via Moore-neighborhood
+    difference creates stripe domains:
+    repulsion = sum_8neighbors(h_self - h_neighbor)
+    v += 0.015 * μ * B * repulsion
+
+  Chain preset: directional alignment bias along field angle θ:
+    Neighbours along field direction attract more strongly than
+    perpendicular neighbours, promoting columnar structure.
+
+Field configurations:
+  Uniform:     B(r,c) = B₀ + gx*(c - c_mid) + gy*(r - r_mid)
+  Point source: B(r,c) = B₀ * 8 / (dist_to_center + 3)
+  Dual source:  B = sum of two point sources at 1/3 and 2/3 of width
+  Sweeping:     B oscillates with sin/cos of generation count
+
+Parameters:
+  B₀        = 0.0–2.0   (applied field strength)
+  B_crit    = 0.45       (Rosensweig threshold)
+  γ         = 0.05–0.12  (surface tension)
+  g         = 0.01–0.04  (gravity)
+  μ         = 0.6–0.8    (magnetic susceptibility)
+  damping   = 0.97       (viscous dissipation)
+```
+
+**What to look for.** The Rosensweig Spikes preset starts with a flat fluid surface at supercritical field (B=0.6 > B_crit=0.45). Within a few hundred steps, small random perturbations amplify into a hexagonal spike array — the classic normal-field instability. Watch the spike count stabilize as surface tension limits the spatial frequency. Increase B with the `b` key to see spikes grow taller and sharper; decrease below B_crit to watch them collapse back to a flat surface.
+
+The Labyrinthine Maze preset models a thin ferrofluid film. The competing forces — surface tension (short-range smoothing) vs. dipolar repulsion (long-range domain alternation) — produce meandering stripe domains reminiscent of magnetic garnet films. The pattern never settles into a static equilibrium; domains continuously rearrange.
+
+The Chain Columns preset scatters random droplets that coalesce into elongated columnar structures aligned with the field direction. Rotate the field angle with `a`/`A` to see the chains reorient in real time.
+
+Switch views with `v`: top-down (height glyphs with spike markers for tall features), side (cross-section profile through the middle row showing the spike silhouette), and magnetisation (M intensity field showing where the magnetic response is strongest). Click to drop additional fluid and watch it get pulled toward existing spikes by the field gradient.
+
+**Presets:** Rosensweig Spikes (B=0.6, γ=0.08), Labyrinthine Maze (B=0.5, γ=0.12), Chain Columns (B=0.7, γ=0.05), Field-Responsive Art (sweeping gradient), Hedgehog Spikes (point-source B=0.8), Dual Magnets (two-source interference B=0.65).
+
+**References.**
+- Rosensweig, R.E. *Ferrohydrodynamics*. Cambridge University Press, 1985. (Reprinted by Dover, 2013.) https://doi.org/10.1017/CBO9780511564109
+- Cowley, M.D. and Rosensweig, R.E. "The Interfacial Stability of a Ferromagnetic Fluid." *Journal of Fluid Mechanics*, 30(4), 1967. https://doi.org/10.1017/S0022112067001740
+- Richter, R. and Barashenkov, I.V. "Two-Dimensional Solitons on the Surface of Magnetic Fluids." *Physical Review Letters*, 94(18), 2005. https://doi.org/10.1103/PhysRevLett.94.184503

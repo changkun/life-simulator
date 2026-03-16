@@ -393,6 +393,9 @@ MODE_REGISTRY = [
     # ── Time Crystal ──
     {"name": "Time Crystal", "key": "—", "category": "Physics & Waves",
      "desc": "Discrete time crystal — spins break time-translation symmetry via Floquet driving, producing robust period-doubling subharmonic response", "attr": "tcrystal_mode", "enter": "_enter_tcrystal_mode", "exit": "_exit_tcrystal_mode"},
+    # ── Ferrofluid Dynamics ──
+    {"name": "Ferrofluid Dynamics", "key": "—", "category": "Fluid Dynamics",
+     "desc": "Magnetic nanoparticle suspension — Rosensweig spikes, labyrinthine stripes & hexagonal lattices under user-controlled fields", "attr": "ferrofluid_mode", "enter": "_enter_ferrofluid_mode", "exit": "_exit_ferrofluid_mode"},
 ]
 
 

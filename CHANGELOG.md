@@ -4,6 +4,28 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Ferrofluid Dynamics — magnetic nanoparticle self-organization with Rosensweig spikes, labyrinthine stripes & chain columns
+
+Simulates a magnetic nanoparticle suspension (ferrofluid) that self-organizes under user-controlled magnetic fields. The simulation captures three distinct physical regimes: the Rosensweig instability (hexagonal spike arrays above a critical field), labyrinthine stripe domains from competing dipolar repulsion and surface tension, and chain/columnar structures from dipolar alignment. This fills a visual and physical gap between the project's discrete Ising spins and its continuum MHD plasma — ferrofluids are the mesoscale middle ground where magnetic forces, surface tension, and gravity compete to produce some of the most striking patterns in condensed matter physics.
+
+**`life/modes/ferrofluid.py`** (new, ~749 lines):
+
+- **5-force physics model**: Kelvin body force (μ·h·∇H driving fluid toward field maxima), Rosensweig instability (supercritical positive feedback at spike tips), Laplacian surface tension (smoothing), gravity (opposing spike growth), and dipolar chaining (neighbor attraction for columnar alignment).
+- **4 field configurations**: uniform (Rosensweig/labyrinthine/chains), point source (hedgehog), dual source (interference), and time-varying sweep (art mode).
+- **Labyrinthine stripe formation**: post-step Moore-neighborhood dipolar repulsion pass creates competing long-range domain alternation against short-range surface tension.
+- **Chain alignment**: directional bias along field angle promotes columnar structure; chains reorient in real time when the angle is changed.
+- **6 presets**: Rosensweig Spikes, Labyrinthine Maze, Chain Columns, Field-Responsive Art, Hedgehog Spikes, Dual Magnets.
+- **3 visualization modes**: top-down (height glyphs with spike markers), side (cross-section profile through middle row), magnetisation intensity.
+- **Interactive controls**: field strength (b/B), surface tension (g/G), field angle (a/A), field gradient (f/F), click to drop fluid, step/play/reset, view cycling (v), speed control (+/-).
+
+**`life/registry.py`**: Added "Ferrofluid Dynamics" entry in Fluid Dynamics category with `ferrofluid_mode` attribute and lifecycle hooks.
+
+**`life/modes/__init__.py`**: Added registration import for the ferrofluid module.
+
+**`docs/fluid-dynamics.md`**: Added comprehensive documentation section covering Rosensweig instability theory, the 5-force formulation, field configurations, all presets, and references to Rosensweig (1985), Cowley & Rosensweig (1967), and Richter & Barashenkov (2005). Updated mode count from nine to ten.
+
+---
+
 ### Feature: Add Time Crystal — discrete time crystal with Floquet driving and period-doubling
 
 Simulates a discrete time crystal (DTC) where a spin-1/2 lattice spontaneously breaks discrete time-translation symmetry. Under periodic Floquet driving (alternating Ising interaction and imperfect π-pulse), spins respond at half the drive frequency — a robust period-doubling that persists even when the drive is imperfect. This is the hallmark of the DTC phase, experimentally realized in 2016–2017 and one of the most striking phenomena in modern condensed matter physics. Complements the existing Quantum Game of Life and Spacetime Fabric modes in the Physics & Waves category.
