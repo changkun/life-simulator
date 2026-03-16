@@ -190,6 +190,87 @@ Life fraction:   life / max_life determines spark brightness
 ---
 
 
+## Sonification Engine (Generative Soundscape)
+
+**Source:** `life/modes/sonification.py`
+
+**Background.** The sonification engine is a cross-cutting audio layer that attaches to any running simulation mode and maps its spatial dynamics to a real-time generative music composition. Rather than a standalone mode, it operates as a toggleable overlay (Ctrl+A) that transforms the simulator from a purely visual experience into a synesthetic one — Conway's Game of Life sounds fundamentally different from a fluid simulation or a strange attractor. The engine synthesizes four simultaneous voices (bass, melody, harmony, rhythm) using additive waveform synthesis, with musical parameters driven by frame-by-frame analysis of the simulation's spatial state.
+
+**Formulation.** Five core mappings translate simulation metrics to musical parameters:
+
+```
+1. Population density → Pitch register:
+   density_shift = (density - 0.3) * 18 semitones
+   pitch_mult = 2^(density_shift / 12)
+   Applied to bass, melody, and harmony root frequencies.
+   Bass clamped to [30, 500] Hz.
+   Effect: sparse simulations rumble in sub-bass; dense ones climb into mid-range.
+
+2. Entropy → Chord complexity:
+   entropy < 0.15:  open fifth [0, 7]
+   entropy < 0.3:   triad [0, 4, 7]
+   entropy < 0.5:   seventh [0, 4, 7, 11]
+   entropy < 0.7:   ninth [0, 4, 7, 11, 14]
+   entropy >= 0.7:  extended [0, 2, 4, 7, 9, 11, 14]
+   Entropy is Shannon entropy of the row density distribution, normalized
+   to [0, 1]. Ordered patterns stay consonant; chaos produces rich harmony.
+
+3. Spatial clusters → Stereo panning:
+   Column profile is scanned for contiguous density peaks (threshold > 0.03).
+   Each cluster's centroid maps to a pan position: pan = centroid / n_cols.
+   Falls back to quadrant-based panning when no clusters are detected.
+   Per-voice stereo placement:
+     Bass:    always centered (pan 0.5)
+     Melody:  panned to primary (loudest) cluster
+     Harmony: chord voices spread across detected clusters (round-robin)
+     Rhythm:  panned opposite to melody (1.0 - primary_pan)
+   More clusters = wider stereo image.
+
+4. Rate of change (delta) → Rhythm density:
+   delta = |density(t) - density(t-1)|
+   scaled = min(1.0, delta * 5.0)
+   Pattern index = floor(scaled * N_patterns)
+   Patterns range from sparse 4-on-floor to dense 16th-note syncopation.
+   Rhythm voice mix level also scales with delta.
+
+5. Center of mass → Melody contour:
+   register_shift = (0.5 - cy) * 8 semitones
+   Higher center of mass = higher melodic register.
+   Column density peaks select scale degrees for arpeggiated melody.
+
+Voice synthesis:
+  Bass:    0.8 * sin(phase) + 0.2 * sawtooth(phase), portamento between frames
+  Melody:  weighted mix of sine, sawtooth, pulse (per category profile)
+           Per-step envelope with 3ms attack/decay ramps
+  Harmony: sine pad, per-voice stereo from cluster positions
+  Rhythm:  0.6 * noise + 0.4 * sin(perc_phase), gated by pattern, fast decay
+
+Master volume = 0.08 + 0.4 * density + 0.2 * min(1.0, delta * 10)
+Voice levels normalized: bass ~35%, melody ~30%, harmony ~20%, rhythm ~15%
+  (adjusted by drone level, activity, entropy, and delta)
+
+Audio output: 22050 Hz, S16LE stereo, via paplay/aplay/afplay
+Frame duration: delay * 0.8 * tempo_mult, clamped to [0.04, 1.5] seconds
+
+Audio profiles per category (12 defined):
+  Category              base_freq  scale              tempo  drone
+  Classic CA            220 Hz     pentatonic          1.0    0.0
+  Particle & Swarm      330 Hz     minor pent + b7     1.5    0.0
+  Physics & Waves       196 Hz     major               0.8    0.3
+  Fluid Dynamics        110 Hz     in-sen              0.6    0.5
+  Chemical & Biological 261 Hz     harmonic minor      0.9    0.2
+  Fractals & Chaos      174 Hz     whole-tone-ish      0.7    0.4
+  (and 6 more)
+```
+
+**What to look for.** Toggle sonification with Ctrl+A during any running simulation. In a Game of Life glider gun, you'll hear a steady low-register pulse with sparse rhythm; as the field fills, the pitch register climbs and chord complexity increases. In Boids, the melody pans across the stereo field as the flock moves. In Reaction-Diffusion, high entropy produces extended 9th/13th chords while stable Turing patterns stay in simple triads. In chaotic rules like Seeds (B2/S), expect dense syncopated rhythms and wide chord voicings. The status bar shows the current root note, melody note count, cluster count (pan:N), and frame number.
+
+**References.**
+- Hermann, T., Hunt, A. & Neuhoff, J.G. *The Sonification Handbook*. Logos Publishing House, 2011. https://sonification.de/handbook/
+- Vickers, P. & Hogg, B. "Sonification Abstraite/Sonification Concrète: An 'Aesthetic Perspective Space' for Classifying Auditory Displays." *Journal of the Audio Engineering Society*, 2006.
+
+---
+
 ## Music Visualizer
 
 **Background.** This mode generates synthetic audio waveforms from musical tone sequences and visualizes them through six rendering modes: spectrum analyzer, oscilloscope waveform, beat-reactive particles, a combined view, a bass-driven tunnel effect, and frequency rain. The audio pipeline synthesizes additive harmonics, simulates an FFT spectrum, and implements a simple beat detection algorithm based on energy thresholds.

@@ -1,19 +1,19 @@
 """Procedural Music / Generative Soundscape — cross-cutting sonification layer.
 
 A horizontal feature that attaches to *any* running simulation and turns it into
-a listenable composition in real-time. Maps:
-  - Cell density   → harmony (chord voicings, root motion)
-  - Spatial patterns → melody (column profiles become arpeggiated sequences)
-  - Entropy        → rhythm (gate patterns, subdivisions, accents)
-  - Rate of change → dynamics (volume swells, timbre shifts)
-  - Symmetry       → stereo field & pulse-width modulation
-  - Center of mass → pitch register & panning
+a listenable composition in real-time. Core mappings:
+  - Population density → pitch register (sparse=low, dense=high)
+  - Entropy            → chord complexity (uniform=simple, chaotic=rich)
+  - Spatial clusters   → stereo panning (multiple clusters pan independently)
+  - Rate of change     → rhythm (stable=sparse beats, volatile=dense patterns)
+  - Symmetry           → pulse-width modulation & harmonic brightness
+  - Center of mass     → melody contour
 
 Multi-voice synthesis engine with four layers:
-  Bass   — deep root note following harmonic progression
+  Bass   — deep root note, pitch driven by population density
   Melody — arpeggiated sequence extracted from spatial column profile
-  Harmony — sustained chord pad from density & symmetry
-  Rhythm — percussive noise bursts gated by entropy-driven patterns
+  Harmony — sustained chord pad, complexity driven by entropy
+  Rhythm — percussive noise gated by rate-of-change-driven patterns
 
 Frame-to-frame state enables musical continuity: portamento between pitches,
 smooth dynamic transitions, and evolving rhythmic patterns.
@@ -518,24 +518,91 @@ def _analyze_particles(particles, rows, cols):
 
 # ── Musical structure generation ─────────────────────────────────────────────
 
-def _select_chord_voicing(density):
-    """Select chord intervals based on density (sparser = simpler harmony)."""
-    if density < 0.05:
+def _select_chord_voicing(entropy):
+    """Select chord intervals based on entropy (low entropy = simple, high = complex).
+
+    Entropy measures spatial disorder — uniform distributions or high chaos
+    produce richer, more dissonant chords while ordered patterns stay consonant.
+    """
+    if entropy < 0.15:
         return _CHORD_VOICINGS["fifth"]
-    elif density < 0.15:
+    elif entropy < 0.3:
         return _CHORD_VOICINGS["triad"]
-    elif density < 0.3:
+    elif entropy < 0.5:
         return _CHORD_VOICINGS["seventh"]
-    elif density < 0.5:
+    elif entropy < 0.7:
         return _CHORD_VOICINGS["ninth"]
     else:
         return _CHORD_VOICINGS["extended"]
 
 
-def _select_rhythm_pattern(entropy):
-    """Select rhythm gate pattern based on entropy (more entropy = denser rhythm)."""
-    idx = min(len(_RHYTHM_PATTERNS) - 1, int(entropy * len(_RHYTHM_PATTERNS)))
+def _select_rhythm_pattern(delta):
+    """Select rhythm gate pattern based on rate-of-change.
+
+    Stable simulations (low delta) produce sparse, calm rhythms.
+    Volatile simulations (high delta) produce dense, energetic patterns.
+    """
+    # Scale delta (typically 0-0.3) to full pattern range
+    scaled = min(1.0, delta * 5.0)
+    idx = min(len(_RHYTHM_PATTERNS) - 1, int(scaled * len(_RHYTHM_PATTERNS)))
     return _RHYTHM_PATTERNS[idx]
+
+
+def _detect_clusters(col_profile, quadrant_densities):
+    """Detect spatial clusters and return their stereo pan positions.
+
+    Analyzes column profile for distinct density peaks (clusters) and maps
+    each cluster's horizontal position to a stereo pan value (0=left, 1=right).
+    Returns list of (pan_position, intensity) tuples.
+    """
+    if not col_profile:
+        return [(0.5, 1.0)]
+
+    clusters = []
+    n_cols = len(col_profile)
+    threshold = 0.03
+    in_cluster = False
+    cluster_start = 0
+    cluster_sum = 0.0
+    cluster_weight_sum = 0.0
+
+    for i, v in enumerate(col_profile):
+        if v > threshold and not in_cluster:
+            in_cluster = True
+            cluster_start = i
+            cluster_sum = v
+            cluster_weight_sum = v * i
+        elif v > threshold and in_cluster:
+            cluster_sum += v
+            cluster_weight_sum += v * i
+        elif v <= threshold and in_cluster:
+            in_cluster = False
+            if cluster_sum > 0:
+                centroid = cluster_weight_sum / cluster_sum
+                pan = centroid / n_cols  # 0=left, 1=right
+                intensity = min(1.0, cluster_sum / max(1, i - cluster_start))
+                clusters.append((pan, intensity))
+
+    # Close final cluster if still open
+    if in_cluster and cluster_sum > 0:
+        centroid = cluster_weight_sum / cluster_sum
+        pan = centroid / n_cols
+        intensity = min(1.0, cluster_sum / max(1, n_cols - cluster_start))
+        clusters.append((pan, intensity))
+
+    # Also factor in quadrant densities for coarse spatial awareness
+    if not clusters:
+        # Fall back to quadrant-based panning
+        left_weight = quadrant_densities[0] + quadrant_densities[2]
+        right_weight = quadrant_densities[1] + quadrant_densities[3]
+        total = left_weight + right_weight
+        if total > 0:
+            pan = right_weight / total
+        else:
+            pan = 0.5
+        clusters = [(pan, 1.0)]
+
+    return clusters[:8]  # limit to 8 clusters max
 
 
 def _extract_melody_notes(col_profile, scale, base_freq, n_notes=8):
@@ -599,11 +666,13 @@ def _compute_root_motion(delta, frame_count):
 def _sonify_synthesize(metrics, duration, prev_state):
     """Synthesize multi-voice audio from frame metrics.
 
-    Layers:
-      1. Bass   — deep root following harmonic progression
-      2. Melody — arpeggiated spatial sequence
-      3. Harmony — sustained chord pad
-      4. Rhythm — percussive noise gated by entropy pattern
+    Core mappings:
+      1. Bass   — pitch register driven by population density
+      2. Melody — arpeggiated spatial sequence from column profile
+      3. Harmony — chord complexity driven by entropy
+      4. Rhythm — percussive patterns driven by rate-of-change (delta)
+
+    Stereo field is driven by detected spatial clusters, not just center-of-mass.
 
     Returns (PCM bytes S16LE stereo, new_state dict).
     """
@@ -618,50 +687,79 @@ def _sonify_synthesize(metrics, duration, prev_state):
     cx = metrics["center_x"]
     cy = metrics["center_y"]
     col_profile = metrics["col_profile"]
+    quadrant_densities = metrics.get("quadrant_densities", [0.25, 0.25, 0.25, 0.25])
     scale = profile["scale"]
     base_freq = profile["base_freq"]
     swing = profile.get("swing", 0.0)
 
     frame_count = prev_state.get("frame_count", 0)
 
-    # ── Voice 1: Bass root ──
+    # ── Density → Pitch Register ──
+    # Population density shifts the entire pitch register up/down.
+    # Sparse simulations sound deep and low; dense ones climb into higher registers.
+    density_pitch_shift = (density - 0.3) * 18  # ±~9 semitones centered at 30% density
+    density_pitch_mult = 2.0 ** (density_pitch_shift / 12.0)
+
+    # ── Voice 1: Bass root (density-driven pitch) ──
     root_shift = _compute_root_motion(delta, frame_count)
     prev_root_semi = prev_state.get("root_semitone", 0)
-    # Smooth root changes: only apply if shift is non-zero
     new_root_semi = prev_root_semi + root_shift
-    # Keep root within ±12 semitones of base
     new_root_semi = max(-12, min(12, new_root_semi))
-    bass_freq = base_freq * 0.5 * (2.0 ** (new_root_semi / 12.0))
-    # Portamento from previous bass frequency
+    # Bass pitch follows density: low density = sub-bass rumble, high = mid-range
+    bass_freq = base_freq * 0.5 * (2.0 ** (new_root_semi / 12.0)) * density_pitch_mult
+    # Clamp bass to audible range
+    while bass_freq < 30:
+        bass_freq *= 2
+    while bass_freq > 500:
+        bass_freq /= 2
     prev_bass = prev_state.get("bass_freq", bass_freq)
 
-    # ── Voice 2: Melody (arpeggiated) ──
+    # ── Voice 2: Melody (arpeggiated, density-shifted) ──
     n_melody = max(2, min(8, int(2 + activity * 6)))
-    melody_notes = _extract_melody_notes(col_profile, scale, base_freq * (2.0 ** (new_root_semi / 12.0)), n_melody)
-    # Pitch register follows center of mass Y
-    register_shift = (0.5 - cy) * 12  # higher mass position = higher pitch
+    melody_root = base_freq * (2.0 ** (new_root_semi / 12.0)) * density_pitch_mult
+    melody_notes = _extract_melody_notes(col_profile, scale, melody_root, n_melody)
+    # Center-of-mass Y shapes melodic contour
+    register_shift = (0.5 - cy) * 8
     melody_notes = [f * (2.0 ** (register_shift / 12.0)) for f in melody_notes]
     prev_melody = prev_state.get("melody_notes", melody_notes)
 
-    # ── Voice 3: Harmony pad ──
-    chord_intervals = _select_chord_voicing(density)
-    chord_root = base_freq * (2.0 ** (new_root_semi / 12.0))
+    # ── Voice 3: Harmony pad (entropy → chord complexity) ──
+    chord_intervals = _select_chord_voicing(entropy)
+    chord_root = base_freq * (2.0 ** (new_root_semi / 12.0)) * density_pitch_mult
     harmony_freqs = [chord_root * (2.0 ** (iv / 12.0)) for iv in chord_intervals]
 
-    # ── Voice 4: Rhythm ──
-    rhythm_pattern = _select_rhythm_pattern(entropy)
+    # ── Voice 4: Rhythm (rate-of-change → pattern density) ──
+    rhythm_pattern = _select_rhythm_pattern(delta)
+
+    # ── Spatial clusters → stereo panning ──
+    clusters = _detect_clusters(col_profile, quadrant_densities)
+    # Weighted pan from all clusters (used for per-voice stereo placement)
+    if clusters:
+        total_intensity = sum(c[1] for c in clusters)
+        if total_intensity > 0:
+            # Primary cluster: loudest
+            clusters.sort(key=lambda c: c[1], reverse=True)
+            primary_pan = clusters[0][0]
+            # Stereo width: more clusters = wider stereo image
+            stereo_width = min(1.0, len(clusters) / 4.0)
+        else:
+            primary_pan = 0.5
+            stereo_width = 0.0
+    else:
+        primary_pan = 0.5
+        stereo_width = 0.0
 
     # ── Synthesis parameters ──
     n_samples = max(1, int(SAMPLE_RATE * duration))
-    # Master volume: base level + density boost + delta surge
+    # Master volume: base level + activity boost + delta surge
     master_vol = 0.08 + 0.4 * density + 0.2 * min(1.0, delta * 10)
     max_amp = 24000
 
     # Voice mix levels
     bass_level = 0.35 + drone_level * 0.15
     melody_level = 0.30 + activity * 0.15
-    harmony_level = 0.20 + symmetry * 0.1
-    rhythm_level = 0.15 + entropy * 0.15
+    harmony_level = 0.20 + entropy * 0.15  # more entropy = more harmony presence
+    rhythm_level = 0.15 + min(1.0, delta * 5) * 0.15  # more change = more rhythm
 
     # Normalize levels
     total_level = bass_level + melody_level + harmony_level + rhythm_level
@@ -671,10 +769,13 @@ def _sonify_synthesize(metrics, duration, prev_state):
         harmony_level /= total_level
         rhythm_level /= total_level
 
-    # Stereo panning from center of mass X
-    pan = max(0.0, min(1.0, cx))
-    left_gain = math.cos(pan * math.pi / 2)
-    right_gain = math.sin(pan * math.pi / 2)
+    # Per-voice stereo placement from cluster analysis
+    bass_pan = 0.5  # bass always centered
+    melody_pan = primary_pan  # melody follows primary cluster
+    # Harmony spread across stereo field based on cluster width
+    harmony_pan = 0.5  # center, but with stereo widening below
+    # Rhythm pans opposite to melody for spatial interest
+    rhythm_pan = 1.0 - primary_pan
 
     # Melody note timing: divide duration into melody steps
     n_steps = len(melody_notes)
@@ -701,6 +802,29 @@ def _sonify_synthesize(metrics, duration, prev_state):
     # Simple noise state for rhythm
     noise_state = prev_state.get("noise_seed", 42)
 
+    # Pre-compute per-voice stereo gains
+    def _pan_gains(pan_val):
+        p = max(0.0, min(1.0, pan_val))
+        return math.cos(p * math.pi / 2), math.sin(p * math.pi / 2)
+
+    bass_l, bass_r = _pan_gains(bass_pan)
+    mel_l, mel_r = _pan_gains(melody_pan)
+    harm_l, harm_r = _pan_gains(harmony_pan)
+    rhythm_l, rhythm_r = _pan_gains(rhythm_pan)
+
+    # Harmony stereo widening: spread chord voices across clusters
+    harmony_voice_pans = []
+    if len(clusters) > 1 and len(harmony_freqs) > 1:
+        for vi in range(len(harmony_freqs)):
+            ci = vi % len(clusters)
+            harmony_voice_pans.append(_pan_gains(clusters[ci][0]))
+    else:
+        # Slight stereo spread even without clusters
+        spread = stereo_width * 0.3
+        for vi in range(len(harmony_freqs)):
+            offset = (vi / max(1, len(harmony_freqs) - 1) - 0.5) * spread
+            harmony_voice_pans.append(_pan_gains(0.5 + offset))
+
     # Stereo buffer (interleaved L R)
     buf = bytearray(n_samples * 4)
 
@@ -716,28 +840,22 @@ def _sonify_synthesize(metrics, duration, prev_state):
         # Vibrato modulator
         vib = 1.0 + vibrato_depth * math.sin(vibrato_inc * i)
 
-        # ── Bass voice ──
-        # Portamento: interpolate phase increment
+        # ── Bass voice (centered, density-driven pitch) ──
         t = i / n_samples
         bass_inc = bass_inc_start + (bass_inc_end - bass_inc_start) * t
         bass_phase = (bass_inc * vib * i) % (2.0 * math.pi)
-        # Bass uses sine + slight saw for warmth
         bass_val = 0.8 * math.sin(bass_phase) + 0.2 * (2.0 * (bass_phase / (2.0 * math.pi)) - 1.0)
         bass_val *= bass_level
 
-        # ── Melody voice ──
-        # Determine current melody note
+        # ── Melody voice (panned to primary cluster) ──
         step_idx = min(n_steps - 1, i // samples_per_step) if samples_per_step > 0 else 0
         current_note = melody_notes[step_idx]
-        # Smooth transition between melody notes (per-step mini-envelope)
         step_pos = (i % samples_per_step) / samples_per_step if samples_per_step > 0 else 0
-        # Portamento between consecutive notes
         if step_idx > 0:
             prev_note = melody_notes[step_idx - 1]
-            blend = min(1.0, step_pos * 4)  # fast glide in first 25% of step
+            blend = min(1.0, step_pos * 4)
             note_freq = prev_note + (current_note - prev_note) * blend
         else:
-            # Blend from previous frame's last note
             if prev_melody:
                 prev_note = prev_melody[-1]
                 blend = min(1.0, step_pos * 4)
@@ -747,7 +865,6 @@ def _sonify_synthesize(metrics, duration, prev_state):
 
         mel_inc = 2.0 * math.pi * note_freq * vib / SAMPLE_RATE
         mel_phase = (mel_inc * i) % (2.0 * math.pi)
-        # Per-step envelope: gentle attack/decay for each note
         step_env = 1.0
         step_ramp = min(int(0.003 * SAMPLE_RATE), samples_per_step // 4) if samples_per_step > 4 else 1
         step_i = i % samples_per_step if samples_per_step > 0 else 0
@@ -756,63 +873,63 @@ def _sonify_synthesize(metrics, duration, prev_state):
         elif step_i > samples_per_step - step_ramp and samples_per_step > step_ramp:
             step_env = (samples_per_step - step_i) / step_ramp
 
-        # Mix waveforms per profile
         mel_s = 0.0
         if sine_w > 0:
             mel_s += sine_w * math.sin(mel_phase)
         if saw_w > 0:
             mel_s += saw_w * (2.0 * (mel_phase / (2.0 * math.pi)) - 1.0)
         if pulse_w > 0:
-            pw = 0.3 + 0.4 * symmetry  # pulse width from symmetry
+            pw = 0.3 + 0.4 * symmetry
             mel_s += pulse_w * (1.0 if mel_phase < math.pi * 2 * pw else -1.0)
         mel_val = mel_s * step_env * melody_level
 
-        # ── Harmony pad voice ──
-        harm_val = 0.0
-        for h_inc in harmony_incs:
+        # ── Harmony pad (entropy-driven complexity, cluster-spread stereo) ──
+        harm_left = 0.0
+        harm_right = 0.0
+        for hi, h_inc in enumerate(harmony_incs):
             h_phase = (h_inc * vib * i) % (2.0 * math.pi)
-            # Soft sine pad
-            harm_val += math.sin(h_phase)
+            h_sample = math.sin(h_phase)
+            # Each harmony voice panned to its cluster position
+            vp = harmony_voice_pans[hi] if hi < len(harmony_voice_pans) else (harm_l, harm_r)
+            harm_left += h_sample * vp[0]
+            harm_right += h_sample * vp[1]
         if harmony_incs:
-            harm_val /= len(harmony_incs)
-        harm_val *= harmony_level
+            harm_left /= len(harmony_incs)
+            harm_right /= len(harmony_incs)
+        harm_left *= harmony_level
+        harm_right *= harmony_level
 
-        # ── Rhythm voice ──
+        # ── Rhythm voice (delta-driven patterns, panned opposite melody) ──
         sub_idx = min(15, i // samples_per_sub) if samples_per_sub > 0 else 0
         gate = rhythm_pattern[sub_idx]
 
         rhythm_val = 0.0
         if gate > 0:
-            # Noise burst with sharp envelope
             sub_pos = (i % samples_per_sub) / samples_per_sub if samples_per_sub > 0 else 0
-            # Apply swing to even-numbered subdivisions
-            burst_env = max(0.0, 1.0 - sub_pos * 4)  # fast decay
+            burst_env = max(0.0, 1.0 - sub_pos * 4)
             burst_env *= gate
-            # Simple noise via LCG
             noise_state = (noise_state * 1103515245 + 12345) & 0x7FFFFFFF
             noise_val = (noise_state / 0x7FFFFFFF) * 2.0 - 1.0
-            # Filtered noise: blend with sine for tonal percussion
-            perc_freq = base_freq * 4  # high pitched click
+            perc_freq = base_freq * 4
             perc_phase = (2.0 * math.pi * perc_freq / SAMPLE_RATE * i) % (2.0 * math.pi)
             rhythm_val = (0.6 * noise_val + 0.4 * math.sin(perc_phase)) * burst_env * rhythm_level
 
-        # ── Mix all voices ──
-        val = bass_val + mel_val + harm_val + rhythm_val
-        val = val * max_amp * master_vol * env
+        # ── Mix all voices with per-voice stereo placement ──
+        left = (bass_val * bass_l +
+                mel_val * mel_l +
+                harm_left +
+                rhythm_val * rhythm_l)
+        right = (bass_val * bass_r +
+                 mel_val * mel_r +
+                 harm_right +
+                 rhythm_val * rhythm_r)
 
-        sample_val = max(-32767, min(32767, int(val)))
+        left = left * max_amp * master_vol * env
+        right = right * max_amp * master_vol * env
 
-        # Stereo: melody slightly panned based on column, bass centered
-        # Slight stereo widening for harmony
-        mel_pan = pan
-        bass_pan_l = 0.7  # bass mostly center
-        bass_pan_r = 0.7
-
-        left = int(sample_val * left_gain)
-        right = int(sample_val * right_gain)
-        left = max(-32767, min(32767, left))
-        right = max(-32767, min(32767, right))
-        struct.pack_into("<hh", buf, i * 4, left, right)
+        left_s = max(-32767, min(32767, int(left)))
+        right_s = max(-32767, min(32767, int(right)))
+        struct.pack_into("<hh", buf, i * 4, left_s, right_s)
 
     new_state = {
         "frame_count": frame_count + 1,
@@ -821,6 +938,7 @@ def _sonify_synthesize(metrics, duration, prev_state):
         "melody_notes": melody_notes,
         "noise_seed": noise_state,
         "prev_density": density,
+        "clusters": clusters,
     }
 
     return bytes(buf), new_state
@@ -959,13 +1077,14 @@ def _draw_sonify_indicator(self, max_y, max_x):
     frame = state.get("frame_count", 0)
     root_semi = state.get("root_semitone", 0)
     n_melody = len(state.get("melody_notes", []))
+    n_clusters = len(state.get("clusters", []))
 
     # Note name from root semitone
     note_names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
     # Base freq 220 Hz = A3, so root_semitone=0 is A
     root_note = note_names[(9 + root_semi) % 12]  # A=9 in note_names
 
-    indicator = f" {label}[{profile_name}] {root_note} mel:{n_melody} f:{frame} "
+    indicator = f" {label}[{profile_name}] {root_note} mel:{n_melody} pan:{n_clusters} f:{frame} "
     x = max(0, max_x - len(indicator) - 1)
 
     try:
