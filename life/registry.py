@@ -155,7 +155,7 @@ MODE_REGISTRY = [
      "desc": "Real-time sonification — grid rows become a sequencer turning CA patterns into emergent music", "attr": "symphony_mode", "enter": "_enter_symphony_mode", "exit": "_exit_symphony_mode"},
     # ── Complex Simulations ──
     {"name": "Traffic Flow", "key": "T", "category": "Complex Simulations",
-     "desc": "Nagel-Schreckenberg highway traffic model", "attr": "traffic_mode", "enter": "_enter_traffic_mode", "exit": "_exit_traffic_mode"},
+     "desc": "Nagel-Schreckenberg multi-lane highway with lane-changing, on-ramps & fundamental diagram", "attr": "traffic_mode", "enter": "_enter_traffic_mode", "exit": "_exit_traffic_mode"},
     {"name": "Galaxy Formation", "key": "\"", "category": "Complex Simulations",
      "desc": "N-body spiral galaxy dynamics", "attr": "galaxy_mode", "enter": "_enter_galaxy_mode", "exit": "_exit_galaxy_mode"},
     {"name": "Smoke & Fire", "key": "\\", "category": "Complex Simulations",

@@ -1219,14 +1219,31 @@ class App:
         self.traffic_generation = 0
         self.traffic_rows = 0           # number of lanes
         self.traffic_cols = 0           # road length (cells)
-        self.traffic_grid: list[list[int]] = []  # -1=empty, 0..vmax=car speed
+        self.traffic_grid: list[list[int]] = []  # -1=empty, -2=obstacle, 0..vmax=car speed
         self.traffic_steps_per_frame = 1
         self.traffic_preset_name = ""
+        self.traffic_kind = "open"      # scenario type
         self.traffic_vmax = 5           # maximum velocity
         self.traffic_p_slow = 0.3       # random slowdown probability
         self.traffic_density = 0.3      # fraction of cells with cars
-        self.traffic_flow = 0.0         # average flow (cars*speed)
+        self.traffic_flow = 0.0         # average flow (cars*speed/cells)
         self.traffic_avg_speed = 0.0    # average speed of cars
+        self.traffic_measured_density = 0.0  # actual measured density
+        self.traffic_lane_change = True  # enable STCA lane-changing
+        self.traffic_show_diagram = True  # show fundamental diagram overlay
+        self.traffic_view = 0           # 0=road, 1=space-time
+        self.traffic_fd_history: list[tuple[float, float]] = []  # (density, flow) samples
+        self.traffic_fd_max = 300
+        self.traffic_st_height = 40
+        self.traffic_st_buf: list[list[float]] = []  # space-time ring buffer
+        self.traffic_onramp_start = 0
+        self.traffic_onramp_end = 0
+        self.traffic_onramp_rate = 0.08
+        self.traffic_bn_start = 0
+        self.traffic_bn_end = 0
+        self.traffic_bn_vmax = 2
+        self.traffic_incident_lane = 0
+        self.traffic_incident_col = 0
 
         # ── Snowflake Growth (Reiter Crystal) state ──
         self.snowflake_mode = False

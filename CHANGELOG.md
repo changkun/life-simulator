@@ -4,6 +4,27 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Upgrade Traffic Flow to multi-lane NaSch with lane-changing, scenarios & fundamental diagram
+
+Rewrites the Traffic Flow mode from a basic single-lane Nagel-Schreckenberg cellular automaton into a full multi-lane highway simulation with STCA symmetric lane-changing, scenario-based road features, and real-time diagnostic visualizations.
+
+**`life/modes/traffic.py`** (rewritten, ~755 lines):
+
+- **STCA lane-changing**: Vehicles evaluate adjacent lanes for better gaps while checking safety distance to cars behind, providing a realistic pressure-relief mechanism that delays jam formation.
+- **Scenario types**: Four road configurations — open (periodic ring), bottleneck (speed-limit zone causing flow breakdown), on-ramp (slip road injecting merging traffic), and incident (permanent obstacle with rubbernecking cascade).
+- **10 presets**: Open Highway, Moderate Flow, Rush Hour, Gridlock, Bottleneck, On-Ramp Merge, Incident, Cautious Drivers, Aggressive Drivers, Wide Highway (8 lanes).
+- **Fundamental diagram overlay**: ASCII scatter plot of flow (J) vs. density (ρ) drawn on the right side of the road view, showing the characteristic inverted-V phase transition with a marked current operating point.
+- **Space-time diagram**: Toggle view showing position vs. time with speed-encoded color/density, making upstream-propagating phantom jams visible as dark bands.
+- **New controls**: `v`=view toggle (road/space-time), `f`=fundamental diagram on/off, `l`=lane-changing on/off.
+
+**`life/app.py`**: Added state variables for lane-changing, fundamental diagram history, space-time buffer, on-ramp/bottleneck/incident parameters, and obstacle cell value (-2).
+
+**`life/registry.py`**: Updated mode description to reflect multi-lane capabilities.
+
+**`docs/complex-simulations.md`**: Expanded documentation with STCA lane-changing formulation, scenario type descriptions, fundamental diagram explanation, space-time diagram guide, and Rickert et al. (1996) reference.
+
+---
+
 ### Feature: Add Granular Dynamics — DEM granular material simulation with force chains, jamming, avalanches & Brazil nut convection
 
 Simulates granular materials (sand, grains, powder) using the Discrete Element Method where every grain is a physical particle subject to Hertzian contact forces, Coulomb friction, and gravity. This fills the gap between the rule-based Falling Sand cellular automaton and the continuum fluid modes — granular matter is famously "the fourth state" exhibiting solid, liquid, and gas-like behavior depending on conditions.
