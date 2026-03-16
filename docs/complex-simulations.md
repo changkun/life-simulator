@@ -539,3 +539,63 @@ Caustic light effect: phase advances at 0.05/tick for surface shimmer
 **References.**
 - Reynolds, C.W. "Flocks, Herds, and Schools: A Distributed Behavioral Model." *Computer Graphics (SIGGRAPH '87 Proceedings)*, 21(4), 25-34, 1987. https://doi.org/10.1145/37402.37406
 - Tu, X. & Terzopoulos, D. "Artificial Fishes: Physics, Locomotion, Perception, Behavior." *Proceedings of SIGGRAPH '94*, ACM, 43-50, 1994. https://doi.org/10.1145/192161.192170
+
+---
+
+## Cellular Symphony
+
+**Background.** Cellular Symphony bridges cellular automata and the auditory domain, treating the grid as a step sequencer: each row is a beat, each alive cell is a voice, and the column position determines pitch. The result is a synesthetic experience where spatial CA patterns — gliders, oscillators, still lifes — produce characteristic musical textures without any explicit composition. The approach draws on sonification research that maps multidimensional data to audio parameters (pitch, timbre, amplitude) to reveal structure invisible to the eye alone. Different CA rulesets produce radically different sonic characters: Conway's Life yields chaotic jazz-like phrases, Seeds produces staccato bursts, and Maze generates thick sustained clusters.
+
+**Formulation.** The sequencer scans one grid row per beat at configurable BPM (20–300). For each alive cell in the current row:
+
+```
+Pitch mapping (column → frequency):
+  intervals = SCALES[scale]           (pentatonic, chromatic, blues, whole_tone)
+  num_notes = len(intervals) * octave_range
+  idx       = col * num_notes / total_cols
+  octave, degree = divmod(idx, len(intervals))
+  semitones = octave * 12 + intervals[degree]
+  freq      = 130.81 * 2^(semitones / 12)     (base = C3)
+
+Timbre shaping (neighbor count → harmonic richness):
+  nbrs = Moore neighborhood count (0–8)
+  Fundamental:           always present
+  +octave harmonic:      amplitude 0.3  when nbrs >= 3
+  +fifth-above-octave:   amplitude 0.15 when nbrs >= 5
+  +double-octave:        amplitude 0.08 when nbrs >= 7
+  Waveform options: sine, sawtooth, square, triangle
+
+Amplitude shaping (cell age → loudness):
+  age = min(cell_value, 10)
+  amp_scale = 0.4 + 0.6 * (age / 10)
+
+Synthesis:
+  Voices capped at 16 simultaneous
+  Per-voice amplitude = volume / num_voices
+  Attack/release ramp = 8 ms (anti-click)
+  Note duration = min(beat_interval * 0.8, 2.0 s)
+  Output: S16LE mono PCM at 22050 Hz
+
+CA stepping:
+  Grid advances one generation after a full row-scan cycle
+  (i.e., after all rows have been sequenced once)
+```
+
+Seven rule presets are provided, each annotated with its musical character:
+
+| Rule | Birth | Survival | Character |
+|------|-------|----------|-----------|
+| Conway's Life | 3 | 2,3 | chaotic jazz |
+| Seeds | 2 | — | staccato bursts |
+| Day & Night | 3,6,7,8 | 3,4,6,7,8 | dense chords |
+| Diamoeba | 3,5,6,7,8 | 5,6,7,8 | evolving drones |
+| HighLife | 3,6 | 2,3 | melodic drift |
+| Maze | 3 | 1,2,3,4,5 | thick clusters |
+| Anneal | 4,6,7,8 | 3,5,6,7,8 | ambient wash |
+
+**What to look for.** The scan row sweeps down the grid (highlighted in blue), and you can *hear* structural features: gliders produce repeating melodic fragments that shift pitch as they move across columns; blinkers create rhythmic pulses at fixed pitches; random regions generate dense, noisy clusters that thin out as the CA stabilizes. Switching scales changes the harmonic flavor — pentatonic naturally avoids dissonance, while chromatic exposes every column as a distinct pitch. The voice activity meter at the bottom shows instantaneous polyphony. In paint mode, drawing a diagonal line of cells creates an ascending or descending scale run on the next scan pass.
+
+**References.**
+- Hermann, T., Hunt, A. & Neuhoff, J.G. *The Sonification Handbook*. Logos Verlag, 2011. https://sonification.de/handbook/
+- Xenakis, I. *Formalized Music: Thought and Mathematics in Composition*. Pendragon Press, 1992.
+- Burraston, D. & Edmonds, E. "Cellular Automata in Generative Electronic Music and Sonic Art: A Historical and Technical Review." *Digital Creativity*, 16(3), 165-185, 2005. https://doi.org/10.1080/14626260500370882

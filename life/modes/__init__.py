@@ -302,6 +302,8 @@ def register_all_modes(App):
     reg_archaeo(App)
     from life.modes.rule_phylogenetics import register as reg_phylo
     reg_phylo(App)
+    from life.modes.cellular_symphony import register as reg_symphony
+    reg_symphony(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 

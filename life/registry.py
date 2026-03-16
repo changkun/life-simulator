@@ -145,6 +145,8 @@ MODE_REGISTRY = [
      "desc": "Realistic snowfall with wind dynamics, accumulation, drifting & blizzard controls", "attr": "snowfall_mode", "enter": "_enter_snowfall_mode", "exit": "_exit_snowfall_mode"},
     {"name": "Matrix Digital Rain", "key": "Ctrl+Shift+Z", "category": "Audio & Visual",
      "desc": "Iconic falling green character streams with bright heads and fading tails", "attr": "matrix_mode", "enter": "_enter_matrix_mode", "exit": "_exit_matrix_mode"},
+    {"name": "Cellular Symphony", "key": "Ctrl+Shift+Y", "category": "Audio & Visual",
+     "desc": "Real-time sonification — grid rows become a sequencer turning CA patterns into emergent music", "attr": "symphony_mode", "enter": "_enter_symphony_mode", "exit": "_exit_symphony_mode"},
     # ── Complex Simulations ──
     {"name": "Traffic Flow", "key": "T", "category": "Complex Simulations",
      "desc": "Nagel-Schreckenberg highway traffic model", "attr": "traffic_mode", "enter": "_enter_traffic_mode", "exit": "_exit_traffic_mode"},
@@ -491,6 +493,7 @@ _DISPATCH_OVERRIDES = {
     'fdtd_mode': {'use_delay': False},
     'sph_mode': {'use_delay': False},
     'rbc_mode': {'use_delay': False},
+    'symphony_mode': {'running_check': '_is_symphony_auto_stepping', 'use_delay': False},
 }
 
 

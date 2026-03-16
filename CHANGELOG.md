@@ -4,6 +4,28 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Cellular Symphony — real-time sonification turning CA patterns into emergent music
+
+Adds an entirely new sensory dimension to the simulator by bridging cellular automata into the auditory domain. The grid becomes a step sequencer: rows are beats, columns are pitches, neighbor counts shape timbre, and cell age controls dynamics. Different CA rules produce characteristic musical textures — Conway's Life yields chaotic jazz, Seeds produces staccato bursts, Maze generates thick clusters. Users can paint cells and hear the pattern sing, creating a synesthetic experience where emergence is both seen and heard simultaneously.
+
+**`life/modes/cellular_symphony.py`** (new, ~585 lines):
+
+- **Row-by-row sequencer**: Scans the grid one row per beat at configurable BPM (20–300); each alive cell becomes a musical voice.
+- **Column → pitch**: Maps cell column to frequency via four musical scales (pentatonic, chromatic, blues, whole-tone) across configurable octave ranges (2–5).
+- **Neighbor count → timbre**: Moore neighborhood count controls harmonic richness — isolated cells produce pure tones, crowded cells accumulate overtone harmonics.
+- **Cell age → amplitude**: Older cells play louder (0.4–1.0 scaling over 10 generations), creating dynamic evolution as the CA runs.
+- **4 waveforms**: Sine, sawtooth, square, triangle — cycleable at runtime.
+- **7 CA rule presets**: Conway's Life (chaotic jazz), Seeds (staccato bursts), Day & Night (dense chords), Diamoeba (evolving drones), HighLife (melodic drift), Maze (thick clusters), Anneal (ambient wash).
+- **Synthesis engine**: Up to 16 simultaneous voices, 8ms attack/release ramp, S16LE mono PCM at 22050 Hz.
+- **Full interactive controls**: Play/pause, single-step, BPM/volume adjustment, scale/timbre/octave cycling, cell painting mode with cursor, randomize/clear, mute toggle.
+- **Visual feedback**: Scan row highlighted in blue, age-based cell coloring (green→cyan→yellow→magenta→red), voice activity meter, help overlay.
+
+**`life/registry.py`**: Added "Cellular Symphony" entry in Audio & Visual category (`Ctrl+Shift+Y`) with `symphony_mode` dispatch and custom running check.
+
+**`life/modes/__init__.py`**: Added registration import for the cellular_symphony module.
+
+---
+
 ### Feature: Add Rule Phylogenetics — comparative genomics for CA rule families
 
 Applies biological phylogenetics to cellular automaton rules: treats B/S rulesets as 18-bit genomes, computes evolutionary distances, builds family trees, and identifies conserved behavioral motifs. Integrates with Genesis Protocol's Hall of Fame to trace breeding lineage and explain why mutations cause behavioral shifts. Completes the arc from rule *discovery* (Genesis Protocol) through *mapping* (Phase Space Navigator) to *systematic classification*.
