@@ -445,6 +445,9 @@ MODE_REGISTRY = [
     # ── Spider Orb Web Construction & Prey Capture ──
     {"name": "Spider Orb Web Construction & Prey Capture", "key": "—", "category": "Complex Simulations",
      "desc": "Orb-weaving spider builds radial frame/sticky spiral web, prey insects trigger vibration waves through silk network for triangulation, wind deforms elastic threads, damaged sections repaired & geometry adapts to capture patterns", "attr": "sweb_mode", "enter": "_enter_sweb_mode", "exit": "_exit_sweb_mode"},
+    # ── Deep-Sea Bioluminescent Abyss ──
+    {"name": "Deep-Sea Bioluminescent Abyss", "key": "—", "category": "Complex Simulations",
+     "desc": "Abyssal ocean zone with anglerfish lure signaling, bioluminescent plankton disturbance cascades, giant squid chromatophore countershading, marine snow drift, hydrostatic pressure zones & light-based predator-prey deception in total darkness", "attr": "deepsea_mode", "enter": "_enter_deepsea_mode", "exit": "_exit_deepsea_mode"},
 ]
 
 

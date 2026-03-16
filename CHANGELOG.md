@@ -4,6 +4,31 @@ All notable changes to this project are documented in this file.
 
 ## 2026-03-16
 
+### Feature: Add Deep-Sea Bioluminescent Abyss — abyssal ocean zone with anglerfish lure predation, bioluminescent plankton disturbance cascades, giant squid chromatophore countershading, marine snow drift & light-based predator-prey deception in total darkness
+
+A deep-sea simulation modeling the ecology of the abyssal ocean (1000m+ depth), where all predator-prey interactions are conducted through bioluminescence in perpetual darkness. Fills the deep-ocean gap — the project has tide pools, coral reefs, and hydrothermal vent chemistry, but nothing modeling the light-based ecology of the abyss. Visually striking: glowing organisms against a pure black terminal background.
+
+**`life/modes/deep_sea.py`** (new, ~1510 lines):
+
+- **8 creature types**: Anglerfish (bioluminescent esca lure, ambush predation), Giant Squid (chromatophore countershading matching depth, ink cloud defense), Jellyfish (sinusoidal drift, rhythmic glow pulses), Lanternfish & Hatchetfish (counterillumination, schooling, fatal attraction to anglerfish lures), Dragonfish (red photophore searchlight invisible to prey), Shrimp (bioluminescent vomit 3×3 flash defense), Tube Worms (sessile chemosynthetic vent community).
+- **Bioluminescent plankton cascade**: Moving creatures disturb plankton within radius (2.0 + size), triggering chain-reaction light bursts that propagate through neighbors (up to 3 cascade rounds per tick, cascade strength = brightness × (1 − d/3) × 0.5, threshold > 0.15). Brightness decays ×0.85/tick.
+- **Marine snow particle drift**: Organic detritus sinks at 0.15 + size×0.1 per tick with sinusoidal horizontal wobble, feeding plankton within 1.5 distance.
+- **4 hydrostatic pressure zones**: Mesopelagic (200–1000m, ~100 atm), Bathypelagic (1000–4000m, ~400 atm), Abyssopelagic (4000–6000m, ~600 atm), Hadal (6000m+, ~1100 atm). Deeper zones slow metabolism: factor = max(0.3, 1.0 − depth_frac × 0.6).
+- **Predator-prey through light deception**: Anglerfish lures pulse and attract prey fish within 3–12 range; dragonfish red photophores (invisible to prey) illuminate targets; shrimp spray luminous vomit to blind predators; giant squid deploy ink clouds and startle flashes when fleeing.
+- **3 visualization views** (cycle with `v`): Dark Abyss (black background with intensity-scaled bioluminescent glyphs `·∙•○◎●◉*✦✧`, creature glyphs, marine snow, ink clouds, vent plumes, depth zone labels), Depth-Pressure Cross-Section (4 zone bands with pressure/depth labels, creature distribution bars, plankton density bars), Time-Series Graphs (10 sparkline metrics: flash events, cascades, predation, plankton/creature populations, anglerfish/squid/jellyfish counts, avg energy, marine snow).
+- **6 presets**: Midnight Zone Ecosystem (balanced community), Anglerfish Hunting Ground (12 anglerfish, dense prey), Bioluminescent Storm (1200 plankton bloom, spectacular cascades), Giant Squid Territory (8 squid, chromatophore displays), Marine Snow Blizzard (200 snow particles, detrital food web), Abyssal Vent Oasis (4 vents, 20 tubeworms, chemosynthetic community).
+- **Controls**: Space=play/pause, v=cycle views, r=reset, q=exit.
+
+**`life/registry.py`**: Added "Deep-Sea Bioluminescent Abyss" entry in Complex Simulations category.
+
+**`life/modes/__init__.py`**: Added registration import for the deep_sea module.
+
+**`README.md`**: Added Deep-Sea Bioluminescent Abyss to the Complex Simulations category list.
+
+**`docs/complex-simulations.md`**: Added comprehensive documentation covering depth zone formulation, metabolism scaling, plankton cascade propagation mechanics, 8 creature species table with behaviors, predator-prey dynamics, preset configurations, three view modes, and references to Haddock et al. (2010), Widder (2010), and Douglas et al. (1998).
+
+---
+
 ### Feature: Rewrite Primordial Soup & Origin of Life — full abiogenesis with RNA World replicators, fitness-proportional competition, Eigen error catastrophe, lipid protocell division & autocatalytic metabolism
 
 Complete rewrite of `life/modes/primordial_soup.py` (~700 lines → ~1090 lines), replacing the previous simplified monomer/polymer/replicator model with a scientifically grounded abiogenesis simulation featuring real RNA base sequences, fitness-driven competition, and emergent protocellular life. This is the origin story that the project was born to tell — it thematically underpins every biological mode in the collection.

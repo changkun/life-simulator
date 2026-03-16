@@ -1267,3 +1267,88 @@ Energy < 0.1 forces RESTING state. Successful capture grants +0.2 energy and rec
 - Masters, W. M. & Markl, H. "Vibration signal transmission in spider orb webs." *Science*, 213(4505), 363–365, 1981. https://doi.org/10.1126/science.213.4505.363
 - Zschokke, S. & Vollrath, F. "Web construction patterns in a range of orb-weaving spiders (Araneae)." *European Journal of Entomology*, 92(3), 523–541, 1995.
 - Ko, F. K. & Jovicic, J. "Modeling of mechanical properties and structural design of spider web." *Biomacromolecules*, 5(3), 780–785, 2004. https://doi.org/10.1021/bm0345099
+
+---
+
+## Deep-Sea Bioluminescent Abyss
+
+**Background.** The deep ocean below 1000 meters — the bathypelagic, abyssopelagic, and hadal zones — is a world of perpetual darkness where nearly all ecological interactions are mediated through bioluminescence. Over 90% of organisms in the deep sea produce light for predation, defense, communication, or camouflage. This simulation models the light-based ecology of the abyssal zone, where anglerfish lure prey with bioluminescent escae, dragonfish hunt with red photophores invisible to most prey, giant squid use chromatophore countershading to match the ambient darkness, and disturbance of bioluminescent plankton triggers chain-reaction light cascades that propagate through the water column. Marine snow (organic detritus sinking from above) fuels the deep-sea food web, and hydrostatic pressure increases with depth, slowing creature metabolism.
+
+**Formulation.** The simulation tracks three entity types: creatures (8 species), bioluminescent plankton, and marine snow particles. A 2D flash intensity map records light events for rendering.
+
+```
+Depth zones (row fraction → zone):
+  0.00–0.20  Mesopelagic   (200–1000m,  ~100 atm)
+  0.20–0.55  Bathypelagic   (1000–4000m, ~400 atm)
+  0.55–0.80  Abyssopelagic  (4000–6000m, ~600 atm)
+  0.80–1.00  Hadal          (6000m+,     ~1100 atm)
+
+Metabolism factor (depth-dependent):
+  metabolism_factor = max(0.3, 1.0 − depth_frac × 0.6)
+  energy_cost/tick = base_metabolism × metabolism_factor × 0.15
+
+Plankton cascade propagation (up to 3 rounds per tick):
+  Creature movement disturbs plankton within radius (2.0 + creature_size)
+  Disturbed plankton: brightness += 0.6, trigger_timer = 8 ticks
+  Cascade: bright plankton (>0.3) trigger neighbors within distance 3.0
+    cascade_strength = source_brightness × (1.0 − d/3.0) × 0.5
+    Threshold: cascade_strength > 0.15 to propagate
+  Brightness decay: ×0.85 per tick
+
+Marine snow drift:
+  dy = 0.15 + size × 0.1  (sinking)
+  dx = drift + sin(t × 0.05 + x × 0.1) × 0.1  (sinusoidal wobble)
+
+Flash map decay: ×0.7 per tick
+```
+
+**Creature species (8):**
+
+| Species | Glyph | Role | Behavior |
+|---------|-------|------|----------|
+| Anglerfish | `§` | Lure ambush predator | Bioluminescent esca pulses (0.4 + 0.4×sin), lures lanternfish/hatchetfish within range 12; slow approach (0.03 accel) for ambush capture at distance < 1.5 |
+| Giant Squid | `¶` | Active predator | Chromatophore countershading (brightness = 1.0 − depth×1.5), hunts creatures < 60% own size, flees dragonfish with ink cloud defense (radius 1.5, 30-tick duration, 40-tick cooldown) |
+| Jellyfish | `~` | Passive drifter | Sinusoidal drift, rhythmic glow pulses (0.5 + 0.5×sin), feeds on plankton within radius 2.0 |
+| Lanternfish | `°` | Prey fish (schooling) | Counterillumination in shallow depths, schools with same-type neighbors (cohesion within 8.0), fatally attracted to anglerfish lures (range 3–12), flees predators with panic flash |
+| Hatchetfish | `◊` | Prey fish (schooling) | Same schooling/counterillumination behavior as lanternfish; distinct depth preference (0.1–0.4 depth fraction) |
+| Dragonfish | `≈` | Red searchlight predator | Red photophores (invisible to prey) flash every 8 ticks, actively hunts lanternfish/hatchetfish/shrimp/jellyfish within radius 12 |
+| Shrimp | `,` | Scavenger with defense | Bioluminescent vomit defense: 3×3 flash burst (intensity 0.4 per cell) when predator within 4.0, 20-tick cooldown; passive energy gain while idle |
+| Tube Worm | `\|` | Sessile vent community | Immobile (speed 0), chemosynthetic energy from hydrothermal vents (0.5×strength when within vent radius), gentle pulse every 20 ticks |
+
+**Predator-prey dynamics:**
+- **Anglerfish lure attraction**: Prey fish (lanternfish, hatchetfish) are drawn toward anglerfish lure when brightness > 0.5 and distance 3–12, with acceleration proportional to lure brightness × 0.03. Once within 5.0, anglerfish switches to hunting state.
+- **Giant squid hunting**: Targets creatures smaller than 60% of its own size within radius 10. Chromatophore camouflage reduces visibility at depth. Ink cloud deployed as defensive startle when fleeing threats.
+- **Dragonfish red photophores**: Red light (670nm+) invisible to most deep-sea prey — dragonfish can illuminate and track prey without triggering a flight response. Hunts actively with 0.06 acceleration toward target.
+- **Shrimp bioluminescent vomit**: Sprays a 3×3 grid of intense light to blind/disorient approaching predators, then flees at 0.15 acceleration.
+- **Capture mechanic**: Predators (anglerfish, squid, dragonfish) capture prey at distance < 1.5, gaining 60% of prey's energy. Capture generates a bright flash (1.0 intensity).
+
+**Respawn mechanics:**
+- Creatures respawn (15% chance per dead creature, every 30 ticks) when population drops below 40% of initial count.
+- Plankton respawn (20% chance per dead plankton, every 10 ticks) when population drops below 60%.
+
+**Presets (6):**
+
+| Preset | Character | Configuration |
+|--------|-----------|--------------|
+| Midnight Zone Ecosystem | Balanced deep-sea community | 4 anglerfish, 2 squid, 15 jellyfish, 25 lanternfish, 15 hatchetfish, 3 dragonfish, 20 shrimp; 400 plankton, 60 snow particles |
+| Anglerfish Hunting Ground | Dense predator field | 12 anglerfish, 40 lanternfish, 20 hatchetfish — watch lure attraction draw prey to their doom |
+| Bioluminescent Storm | Massive plankton bloom | 1200 plankton, 25 jellyfish — creature movement triggers spectacular cascading chain-reaction light bursts |
+| Giant Squid Territory | Squid-dominated ecosystem | 8 squid with chromatophore displays, ink cloud defenses, active pursuit of smaller creatures |
+| Marine Snow Blizzard | Heavy detrital rain | 200 snow particles, 30 shrimp, 5 tubeworms — dense organic particle rain fuels the food web |
+| Abyssal Vent Oasis | Hydrothermal vent community | 4 vents, 20 tubeworms, 35 shrimp — chemosynthetic community clustered around vent energy sources |
+
+**View modes (3, cycle with `v`):**
+1. **Dark Abyss** — black background with glowing organisms: creature glyphs colored by type/state, bioluminescent flash effects rendered as intensity-scaled characters (`·∙•○◎●◉*✦✧`), marine snow particles (`.,:·`), ink clouds as dark patches, vent plumes with animated shimmer, depth zone labels along left edge
+2. **Depth-Pressure Cross-Section** — 4 depth zone bands with pressure/depth labels, creature distribution bar charts per zone showing population counts by species, plankton density bars per zone
+3. **Time-Series Graphs** — 10 sparkline graphs (Unicode block elements `▁▂▃▄▅▆▇█`) tracking flash events, cascade events, predation, plankton population, creature population, anglerfish count, giant squid count, jellyfish count, average energy, and marine snow count over last 200 ticks
+
+**Controls:** `Space`=play/pause, `v`=cycle views, `r`=reset (return to preset menu), `q`=exit mode.
+
+**What to look for.** In Midnight Zone Ecosystem, the screen is nearly black — watch for scattered dim glows from jellyfish pulses and the rhythmic pulsing of anglerfish lures. When a lanternfish school drifts near an anglerfish, the lure brightens and prey are drawn in; capture triggers a bright flash. Switch to Bioluminescent Storm to see the most dramatic visual: with 1200 plankton, any creature movement sets off cascading chain-reaction light bursts that ripple outward in waves — like underwater lightning illuminating the darkness. Giant Squid Territory shows squid chromatophore behavior: squid darken as they descend and brighten near the surface. When threatened by dragonfish, they release ink clouds (dark patches) and flee with a startling flash. In Anglerfish Hunting Ground, 12 anglerfish lures create a deadly field of pulsing lights; lanternfish and hatchetfish are drawn toward them and captured. Marine Snow Blizzard shows a gentle white rain of organic particles drifting downward with sinusoidal wobble, feeding plankton and supporting a dense shrimp/tubeworm community. Abyssal Vent Oasis concentrates life around hydrothermal vents — tubeworms cluster at the bottom, shrimp swarm near vent plumes for chemosynthetic energy.
+
+**References.**
+- Haddock, S. H. D., Moline, M. A. & Case, J. F. "Bioluminescence in the sea." *Annual Review of Marine Science*, 2, 443–493, 2010. https://doi.org/10.1146/annurev-marine-120308-081028
+- Widder, E. A. "Bioluminescence in the ocean: origins of biological, chemical, and ecological diversity." *Science*, 328(5979), 704–708, 2010. https://doi.org/10.1126/science.1174269
+- Johnsen, S. "The optics of life: a biologist's guide to light in nature." Princeton University Press, 2012.
+- Herring, P. J. "The biology of the deep ocean." Oxford University Press, 2002.
+- Douglas, R. H. et al. "Dragon fish see using chlorophyll." *Nature*, 393, 423–424, 1998. https://doi.org/10.1038/30871

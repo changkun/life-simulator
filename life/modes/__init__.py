@@ -354,6 +354,8 @@ def register_all_modes(App):
     reg_tpool(App)
     from life.modes.spider_web import register as reg_sweb
     reg_sweb(App)
+    from life.modes.deep_sea import register as reg_deepsea
+    reg_deepsea(App)
     from life.dashboard import register as reg_dashboard
     reg_dashboard(App)
 
