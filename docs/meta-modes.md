@@ -1347,7 +1347,7 @@ This mode completes the project's analytical arc: Genesis Protocol *breeds* rule
 
 **Phylogenetic tree construction:** UPGMA (Unweighted Pair Group Method with Arithmetic Mean) hierarchical clustering builds a dendrogram from the pairwise distance matrix. The tree is rendered as color-coded ASCII art: green for glider/replicator rules, yellow for oscillators, red for chaotic rules, cyan for stable/still-life rules.
 
-**Conserved motif detection:** A library of known behavioral motifs (e.g., "Life core" = B{3} S{2,3}, "Replicator seed" = B{1}, "HighLife extension" = B{3,6} S{2,3}) is checked against all rules in the dataset. For each motif, the mode reports frequency of occurrence, example rules carrying that motif, and a visual frequency bar. This reveals which minimal rule fragments are load-bearing for specific behaviors.
+**Conserved motif detection:** A library of known behavioral motifs (e.g., "Life core" = B{3} S{2,3}, "Replicator seed" = B{1}, "HighLife extension" = B{3,6} S{2,3}) is checked against all rules in the dataset. For each motif, the mode reports frequency of occurrence, example rules carrying that motif, and a visual frequency bar. This reveals which minimal rule fragments drive specific behaviors.
 
 **Lineage tracing:** Reconstructs parent→child breeding relationships from the Genesis Protocol's round-based Hall of Fame history. Shows which specific birth/survival mutations occurred between generations and whether those mutations caused behavioral shifts (e.g., stable→chaotic).
 

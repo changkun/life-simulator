@@ -174,7 +174,7 @@ def _biofilm_init(self, preset_idx: int):
     self.biofilm_speed = 1
     self.biofilm_view = "spatial"  # spatial | heatmap | graphs
 
-    # Scalar fields  (row 0 = top/bulk fluid, row max = surface/substrate)
+    # Scalar fields  (row 0 = top/bulk fluid, row max = attachment surface)
     self.biofilm_nutrients = [[0.5] * cols for _ in range(rows)]
     self.biofilm_oxygen = [[0.5] * cols for _ in range(rows)]
     self.biofilm_ai = [[0.0] * cols for _ in range(rows)]       # autoinducer
@@ -210,7 +210,7 @@ def _biofilm_init(self, preset_idx: int):
 
 def _biofilm_setup_preset(self, pid, rows, cols):
     """Configure initial conditions per preset."""
-    # Surface/substrate is at the bottom rows; bulk fluid is at top
+    # The attachment surface is at the bottom rows; bulk fluid is at top
     # Nutrient-rich fluid at top
     for r in range(rows):
         depth_frac = r / max(1, rows - 1)  # 0 at top, 1 at bottom
@@ -937,7 +937,7 @@ def _draw_biofilm_spatial(self, max_y: int, max_x: int):
             pass
 
     # Surface label at bottom
-    surf_label = "═══ SUBSTRATE ═══"
+    surf_label = "═══ SURFACE ═══"
     try:
         sx = max(0, (draw_cols - len(surf_label)) // 2)
         self.stdscr.addstr(min(draw_rows, max_y - 3), sx,

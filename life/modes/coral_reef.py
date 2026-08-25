@@ -26,8 +26,8 @@ CELL_DEAD_CORAL = 4       # dead coral skeleton
 CELL_ALGAE_TURF = 5       # turf algae
 CELL_ALGAE_MACRO = 6      # macroalgae (fleshy)
 CELL_ALGAE_CORALLINE = 7  # coralline algae (CCA — helps coral recruitment)
-CELL_SAND = 8             # sandy substrate
-CELL_ROCK = 9             # rocky substrate
+CELL_SAND = 8             # sandy seabed
+CELL_ROCK = 9             # rocky seabed
 CELL_SPONGE = 10          # sponge
 CELL_ANEMONE = 11         # sea anemone
 
@@ -206,25 +206,25 @@ def _reef_init(self, preset_idx: int):
     # ── Build grid ──
     grid = [[CELL_WATER] * cols for _ in range(rows)]
 
-    # Bottom portion is substrate (sand/rock) — lower 20%
-    substrate_start = int(rows * 0.80)
-    for r in range(substrate_start, rows):
+    # Bottom portion is seabed (sand/rock) — lower 20%
+    seabed_start = int(rows * 0.80)
+    for r in range(seabed_start, rows):
         for c in range(cols):
             if random.random() < settings["sand_density"] * 3:
                 grid[r][c] = CELL_SAND
             elif random.random() < settings["rock_density"] * 3:
                 grid[r][c] = CELL_ROCK
 
-    # Scatter rock substrate in lower 60% as anchor points
+    # Scatter rock in lower 60% as anchor points
     reef_zone_start = int(rows * 0.25)
-    for r in range(reef_zone_start, substrate_start):
+    for r in range(reef_zone_start, seabed_start):
         for c in range(cols):
             if random.random() < settings["rock_density"]:
                 grid[r][c] = CELL_ROCK
 
     # Place coral — branching coral prefers upper zone, massive lower
-    for r in range(reef_zone_start, substrate_start):
-        depth_frac = (r - reef_zone_start) / max(1, substrate_start - reef_zone_start)
+    for r in range(reef_zone_start, seabed_start):
+        depth_frac = (r - reef_zone_start) / max(1, seabed_start - reef_zone_start)
         for c in range(cols):
             if grid[r][c] != CELL_WATER:
                 continue
@@ -254,7 +254,7 @@ def _reef_init(self, preset_idx: int):
                 grid[r][c] = CELL_ALGAE_CORALLINE
 
     # Place sponges and anemones
-    for r in range(reef_zone_start, substrate_start):
+    for r in range(reef_zone_start, seabed_start):
         for c in range(cols):
             if grid[r][c] != CELL_WATER:
                 continue
@@ -278,7 +278,7 @@ def _reef_init(self, preset_idx: int):
 
     # ── Place mobile entities ──
     self.reef_entities = []
-    reef_cells = [(r, c) for r in range(reef_zone_start, substrate_start)
+    reef_cells = [(r, c) for r in range(reef_zone_start, seabed_start)
                   for c in range(cols) if grid[r][c] == CELL_WATER]
 
     def _place_entities(etype, count):

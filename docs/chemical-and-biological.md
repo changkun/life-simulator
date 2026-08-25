@@ -311,7 +311,7 @@ Parameters:
 
 ## Artificial Life Ecosystem
 
-**Background** — This mode implements a complete artificial ecosystem with neuroevolution. Creatures with heritable genomes — encoding speed, size, sensory range, diet type, and a small neural network brain — navigate a 2D environment, eat food or each other, reproduce with mutation, and die from starvation or old age. Over hundreds of generations, natural selection shapes the population: herbivores evolve efficient foraging strategies, predators develop pursuit behaviors, and arms races emerge between prey evasion and predator tracking. The system demonstrates open-ended evolution in a minimal substrate.
+**Background** — This mode implements a complete artificial ecosystem with neuroevolution. Creatures with heritable genomes — encoding speed, size, sensory range, diet type, and a small neural network brain — navigate a 2D environment, eat food or each other, reproduce with mutation, and die from starvation or old age. Over hundreds of generations, natural selection shapes the population: herbivores evolve efficient foraging strategies, predators develop pursuit behaviors, and arms races emerge between prey evasion and predator tracking. The system demonstrates open-ended evolution in a minimal chemistry.
 
 **Formulation** — Each creature has a 6-input, 4-hidden, 2-output neural network brain:
 
@@ -699,7 +699,7 @@ Key parameters per preset:
 
 **Background** — This mode simulates abiogenesis in a hydrothermal vent environment — the transition from prebiotic chemistry to the first self-replicating, evolving systems. Simple molecules (H₂, CO₂, NH₃) emitted from vents are catalyzed on mineral surfaces into amino acids and nucleotides via Fischer-Tropsch type synthesis. Nucleotides polymerize into RNA strands with real AUCG base sequences (RNA World hypothesis, Gilbert 1986). RNA replicators compete via fitness-proportional replication, undergo point mutations, insertions, and deletions, and face Eigen's error catastrophe threshold where excessive mutation destroys heritable information. Lipid molecules self-assemble into vesicles that encapsulate RNA to form protocells — protocells grow by absorbing lipids and divide when they exceed a size threshold, splitting their RNA contents and energy. RNA strands with high catalytic scores (complementary base pair runs) catalyze amino acid formation, creating autocatalytic metabolic feedback loops. The simulation draws on the RNA World (Gilbert 1986), the metabolism-first iron-sulfur world (Wächtershäuser 1988), and the lipid-world/membrane-first hypothesis.
 
-**Formulation** — A 2D ocean grid with rock substrate, mineral catalyst surfaces, and hydrothermal vents drives a hierarchy of chemical emergence:
+**Formulation** — A 2D ocean grid with a rock floor, mineral catalyst surfaces, and hydrothermal vents drives a hierarchy of chemical emergence:
 
 ```
 Molecule types:
@@ -930,7 +930,7 @@ The vascular network is a graph of `VesselNode` junctions (with pressure, oxygen
 
 **Background** — Biofilms are structured communities of bacteria enclosed in a self-produced extracellular polymeric substance (EPS) matrix. They are the dominant mode of bacterial life in nature — over 80% of bacterial infections involve biofilms. The transition from free-swimming (planktonic) to surface-attached (sessile) lifestyle is governed by quorum sensing: a cell-density-dependent signaling system where bacteria secrete small diffusible molecules called autoinducers. When the local autoinducer concentration crosses a threshold, bacteria collectively switch gene expression programs — halting flagellar motility, activating EPS secretion, and assembling into architecturally complex communities with water channels, nutrient gradients, and specialized cell types including metabolically dormant persister cells that tolerate antibiotics.
 
-**Formulation** — The simulation models a 2D cross-section of a fluid–surface interface. Bulk fluid (nutrient/oxygen reservoir) sits at the top; the substrate surface sits at the bottom. Bacteria exist as individual agents with position, velocity, phenotype (planktonic/biofilm/persister), intracellular autoinducer level, energy, and age. Five scalar fields cover the domain: nutrients, oxygen, autoinducer, EPS, and antibiotic — each subject to diffusion and decay.
+**Formulation** — The simulation models a 2D cross-section of a fluid–surface interface. Bulk fluid (nutrient/oxygen reservoir) sits at the top; the attachment surface sits at the bottom. Bacteria exist as individual agents with position, velocity, phenotype (planktonic/biofilm/persister), intracellular autoinducer level, energy, and age. Five scalar fields cover the domain: nutrients, oxygen, autoinducer, EPS, and antibiotic — each subject to diffusion and decay.
 
 ```
 Autoinducer dynamics:
@@ -975,7 +975,7 @@ Cell division:
     Daughter receives half energy and half intracellular AI
 ```
 
-The simulation domain is oriented with bulk fluid at the top (row 0) and substrate at the bottom. Nutrients and oxygen are replenished at the top, creating natural gradients as biofilm grows upward from the surface. Water channels form stochastically in gaps within the EPS matrix (gaps surrounded by ≥3 EPS-rich neighbors at P=0.004/tick), enhancing nutrient delivery to interior cells. Mushroom-shaped towers grow as surface biofilm cells push upward (P=0.02/tick at EPS column tops).
+The simulation domain is oriented with bulk fluid at the top (row 0) and the attachment surface at the bottom. Nutrients and oxygen are replenished at the top, creating natural gradients as biofilm grows upward from the surface. Water channels form stochastically in gaps within the EPS matrix (gaps surrounded by ≥3 EPS-rich neighbors at P=0.004/tick), enhancing nutrient delivery to interior cells. Mushroom-shaped towers grow as surface biofilm cells push upward (P=0.02/tick at EPS column tops).
 
 **Presets** — Six scenarios illustrate distinct biofilm dynamics:
 

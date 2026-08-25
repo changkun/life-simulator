@@ -50,7 +50,7 @@ TPOOL_PRESETS = [
 #  Constants
 # ══════════════════════════════════════════════════════════════════════
 
-# Tile / substrate types
+# Tile / surface types
 TILE_WATER = 0
 TILE_ROCK = 1
 TILE_SAND = 2
@@ -101,7 +101,7 @@ class _Sessile:
 
 
 class _Mobile:
-    """Sea star, urchin, hermit crab, limpet — moves on substrate."""
+    """Sea star, urchin, hermit crab, limpet — moves on the rock surface."""
     __slots__ = ('r', 'c', 'kind', 'energy', 'age', 'stress',
                  'shell_size', 'heading')
 

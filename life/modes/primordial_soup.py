@@ -297,7 +297,7 @@ def _psoup_init(self, preset_idx: int):
     rows, cols = self.psoup_rows, self.psoup_cols
     grid = [[MOL_WATER] * cols for _ in range(rows)]
 
-    # Rock substrate at bottom
+    # Rock floor at bottom
     for r in range(int(rows * 0.82), rows):
         for c in range(cols):
             if random.random() < 0.65:

@@ -73,12 +73,12 @@ def _template_match(template, target):
         return False
     return all(_complement(a) == b for a, b in zip(template, target))
 
-def _find_catalytic_site(catalyst, substrate):
-    """Check if catalyst has a subsequence that matches substrate prefix."""
-    if len(catalyst) < 2 or len(substrate) < 2:
+def _find_catalytic_site(catalyst, reactant):
+    """Check if catalyst has a subsequence that matches the reactant prefix."""
+    if len(catalyst) < 2 or len(reactant) < 2:
         return False
-    # Catalyst must contain the complement of the substrate's first 2 chars
-    target = _complement(substrate[0]) + _complement(substrate[1])
+    # Catalyst must contain the complement of the reactant's first 2 chars
+    target = _complement(reactant[0]) + _complement(reactant[1])
     return target in catalyst
 
 

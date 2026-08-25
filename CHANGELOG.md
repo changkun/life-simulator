@@ -354,7 +354,7 @@ A bacterial biofilm simulation modeling quorum sensing — the density-dependent
 - **Quorum quenching** (toggle `Q`): Enzyme degrades AI at 0.06/tick on top of natural decay, preventing intracellular AI from reaching threshold and blocking phenotype switch.
 - **Biofilm cell detachment**: Rare stochastic detachment (P=0.002) returns biofilm cells to planktonic state with upward drift, modeling dispersal.
 - **Field diffusion**: Two helpers — `_diffuse_field` (4-neighbor averaging with optional channel boost) and `_diffuse_field_with_eps` (EPS-attenuated diffusion for antibiotic penetration).
-- **3 visualization views** (cycle with `v`): Spatial Cross-Section (EPS ▓/░/· matrix, ~ water channels, o planktonic, ● biofilm, ◆ persister, × antibiotic overlay, substrate/fluid labels), AI/Nutrient Heatmap (split left autoinducer with QS threshold coloring green→yellow→red, right nutrient/O₂ blend blue→green→red), Time-Series Graphs (10 sparklines: population, planktonic, biofilm cells, persister cells, avg autoinducer, EPS coverage, avg nutrient, avg oxygen, avg antibiotic, biofilm height).
+- **3 visualization views** (cycle with `v`): Spatial Cross-Section (EPS ▓/░/· matrix, ~ water channels, o planktonic, ● biofilm, ◆ persister, × antibiotic overlay, surface/fluid labels), AI/Nutrient Heatmap (split left autoinducer with QS threshold coloring green→yellow→red, right nutrient/O₂ blend blue→green→red), Time-Series Graphs (10 sparklines: population, planktonic, biofilm cells, persister cells, avg autoinducer, EPS coverage, avg nutrient, avg oxygen, avg antibiotic, biofilm height).
 - **6 presets**: Wound Infection (surface colonization + planktonic in fluid), Dental Plaque (clustered attachment on tooth surface with pre-seeded AI), Catheter Colonization (nutrient-rich 1.5×, heavy surface + fluid seeding), Quorum Quenching Therapy (wound-like + QQ enzyme active from start), Nutrient-Rich Bloom (nutrients at 1.0, sparse bacteria, explosive growth), Antibiotic Pulse (pre-established biofilm with EPS, antibiotic active from start).
 - **Controls**: Space=play/pause, v=cycle views, n=step, +/-=speed, a=toggle antibiotic, Q=toggle quorum quenching, r=restart, m=menu.
 
@@ -501,7 +501,7 @@ An intertidal zone simulation where sinusoidal tidal cycles drive a vertical roc
 
 - **Sinusoidal tidal cycle**: Configurable period (180–300 ticks) and amplitude (0.20–0.45 of vertical range), with small-amplitude wave surge noise from dual sine harmonics. Water line row computed each tick from tide level. Splash-zone spray particles rendered stochastically above the waterline.
 - **5 vertical zonation bands**: Spray (top 10%), High Intertidal (10–30%), Mid Intertidal (30–55%), Low Intertidal (55–80%), Subtidal (80–100%). Zone boundaries computed dynamically from terminal height.
-- **Terrain generation**: Rock substrate with randomly placed tide pools (depressions that retain water at low tide, concentrated in mid/low zones), sand patches in low/subtidal zones, and algae seeded on rocks in mid-low zones.
+- **Terrain generation**: Rock floor with randomly placed tide pools (depressions that retain water at low tide, concentrated in mid/low zones), sand patches in low/subtidal zones, and algae seeded on rocks in mid-low zones.
 - **Temperature & moisture fields**: Per-cell scalar fields updated each tick — exposed cells heat up and dry out (rate scales with elevation), submerged cells and tide pools stay cool and wet. Splash zone receives stochastic partial moisture.
 - **8 species** with distinct ecological roles:
 
@@ -622,7 +622,7 @@ A stigmergic construction simulation where thousands of simple termite agents bu
 
 - **Stigmergic construction**: 3 pheromone layers (build, dig, trail) diffuse and evaporate each tick. Termites follow pheromone gradients to decide where to deposit or remove material, creating positive feedback loops that bootstrap structure from initial seeds.
 - **6 termite roles**: Worker (general labor), Builder (deposits material at build-pheromone peaks), Digger (excavates at dig-pheromone peaks), Soldier (patrols perimeter), Fungus Tender (maintains fungus gardens), Queen (stationary, emits pheromones, marks royal chamber).
-- **8 material types**: Air, Soil, Wall (hardened structural), Chamber, Fungus garden substrate, Royal chamber, Tunnel, Surface.
+- **8 material types**: Air, Soil, Wall (hardened structural), Chamber, Fungus garden bedding, Royal chamber, Tunnel, Surface.
 - **Pheromone dynamics**: 4-neighbor diffusion with configurable diffusion rate and evaporation rate, clamped to [0, 1]. Build/dig pheromones guide construction; trail pheromone aids navigation.
 - **Structural support rules**: Material can only be deposited adjacent to existing structure (soil, wall, or surface), preventing floating construction.
 - **Ventilation shaft formation**: Cathedral preset uses chimney-effect erosion — diggers remove material from vertical columns above chambers, creating passive ventilation networks.
@@ -1082,7 +1082,7 @@ Added the project's first interactive/participant mode: a turn-based roguelike w
 
 **`life/modes/living_labyrinth.py`** (new, ~790 lines):
 
-- **Maze generation**: Recursive backtracker with 30% extra passage opening for interesting CA evolution substrate.
+- **Maze generation**: Recursive backtracker with 30% extra passage opening for interesting CA evolution space.
 - **Player navigation** (`@`) via arrow keys, WASD, or hjkl through a viewport centered on the player.
 - **Living walls**: Full Moore-neighborhood CA step with wall-age tracking. New walls render as `░░`, aging through `▒▒`/`▓▓` to solid `██`. Frozen walls shown with blue background.
 - **Exit portal** (`◈`) placed far from player (bottom-right vs top-left). Safety zones around both prevent instant death.
@@ -4740,7 +4740,7 @@ Grid-based combustion and fluid simulation: heat sources ignite fuel cells, driv
 
 ### Enhanced: Abelian Sandpile — Identity Element & Random Fill
 
-Two new presets bringing total from 7 to 9. **Identity Element**: computes the algebraic identity of the sandpile group via `e = topple(6 − topple(6·ones))` — a BFS-based toppling algorithm processes the formula, producing a striking four-fold-symmetric fractal pattern. Auto-drop disabled since the identity is a complete static display. **Random Fill**: initializes every cell with uniform random [0–3] grains, then sets center to 4, triggering cascading avalanches through the near-maximum substrate. Both presets share a pure-Python queue-based BFS toppling loop (avoiding recursion depth limits).
+Two new presets bringing total from 7 to 9. **Identity Element**: computes the algebraic identity of the sandpile group via `e = topple(6 − topple(6·ones))` — a BFS-based toppling algorithm processes the formula, producing a striking four-fold-symmetric fractal pattern. Auto-drop disabled since the identity is a complete static display. **Random Fill**: initializes every cell with uniform random [0–3] grains, then sets center to 4, triggering cascading avalanches through the near-maximum pile. Both presets share a pure-Python queue-based BFS toppling loop (avoiding recursion depth limits).
 
 **Changed file:** `life.py` (+~80 lines)
 

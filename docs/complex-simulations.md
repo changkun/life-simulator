@@ -1067,7 +1067,7 @@ The shore is divided into 5 zonation bands computed from terminal height:
 | Low Intertidal | 55–80% | Mostly submerged; kelp, urchins, hermit crabs |
 | Subtidal | 80–100% | Permanently submerged; full marine community |
 
-**Terrain.** The substrate is rock with two special features: **tide pools** (depressions that retain water at low tide, concentrated in mid/low zones) and **sand patches** (in low/subtidal, avoided by most mobile organisms except hermit crabs). Algae grows on wet, illuminated rock surfaces.
+**Terrain.** The terrain is rock with two special features: **tide pools** (depressions that retain water at low tide, concentrated in mid/low zones) and **sand patches** (in low/subtidal, avoided by most mobile organisms except hermit crabs). Algae grows on wet, illuminated rock surfaces.
 
 **Physical stress fields.** Two scalar fields — temperature and moisture — are updated per cell each tick:
 
@@ -1169,7 +1169,7 @@ The tangle weaver preset adds random cross-threads between nodes within half the
 | Silk Type | Strength | Elasticity | Sticky | Role |
 |-----------|----------|------------|--------|------|
 | Frame | 1.0 | 0.3 | No | Structural boundary, anchors to environment |
-| Radial | 0.8 | 0.4 | No | Load-bearing spokes from hub to frame |
+| Radial | 0.8 | 0.4 | No | Structural spokes from hub to frame |
 | Auxiliary | 0.4 | 0.2 | No | Inner scaffold spiral, spider walkway |
 | Sticky | 0.5 | 0.8 | Yes | Outer capture spiral with glue droplets |
 

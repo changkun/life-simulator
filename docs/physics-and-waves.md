@@ -848,7 +848,7 @@ Preset energies:
 
 ## Spacetime Fabric
 
-**Background** — In general relativity, spacetime is not a fixed stage on which physics plays out — it is a dynamic participant, curving and warping in response to the matter and energy it contains. Einstein's field equations couple the geometry of spacetime (the metric tensor) to the stress-energy tensor of matter. This mode brings that idea into the cellular automaton domain: the grid itself is no longer a passive substrate but a dynamical entity that curves around live cell clusters, producing gravitational lensing, time dilation, geodesic motion, frame dragging, and gravitational waves. Every other mode in the project treats the grid as flat and fixed; this is the first where the topology responds to the simulation state.
+**Background** — In general relativity, spacetime is not a fixed stage on which physics plays out — it is a dynamic participant, curving and warping in response to the matter and energy it contains. Einstein's field equations couple the geometry of spacetime (the metric tensor) to the stress-energy tensor of matter. This mode brings that idea into the cellular automaton domain: the grid itself is no longer a passive backdrop but a dynamical entity that curves around live cell clusters, producing gravitational lensing, time dilation, geodesic motion, frame dragging, and gravitational waves. Every other mode in the project treats the grid as flat and fixed; this is the first where the topology responds to the simulation state.
 
 **Formulation** — The simulation couples a standard Game of Life (B3/S23) cellular automaton to a scalar approximation of curved spacetime:
 
