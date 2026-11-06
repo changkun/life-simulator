@@ -228,6 +228,11 @@ def _ns_advect(self, d: list[list[float]], d0: list[list[float]],
             # Wrap around
             x = x % cols
             y = y % rows
+            # float rounding: (-tiny) % n == n exactly, which is out of range
+            if x >= cols:
+                x = 0.0
+            if y >= rows:
+                y = 0.0
             # Bilinear interpolation
             i0 = int(y)
             j0 = int(x)
