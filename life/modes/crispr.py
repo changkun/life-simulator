@@ -939,36 +939,60 @@ def _alleles_to_gt(a1, a2):
 #  Key handlers
 # ══════════════════════════════════════════════════════════════════════
 
-def _handle_crispr_menu_key(self, key):
+def _handle_crispr_menu_key(self, key: int) -> bool:
     """Handle keys in the preset selection menu."""
-    if key in ('w', 'KEY_UP'):
-        self.crispr_menu_sel = (self.crispr_menu_sel - 1) % len(CRISPR_PRESETS)
-    elif key in ('s', 'KEY_DOWN'):
-        self.crispr_menu_sel = (self.crispr_menu_sel + 1) % len(CRISPR_PRESETS)
-    elif key in ('\n', ' '):
+    n = len(CRISPR_PRESETS)
+    if key == curses.KEY_UP or key == ord('k') or key == ord('w'):
+        self.crispr_menu_sel = (self.crispr_menu_sel - 1) % n
+        return True
+    if key == curses.KEY_DOWN or key == ord('j') or key == ord('s'):
+        self.crispr_menu_sel = (self.crispr_menu_sel + 1) % n
+        return True
+    if key in (10, 13, curses.KEY_ENTER):
         self._crispr_init(self.crispr_menu_sel)
-    elif key in ('q', '\x1b'):
+        self.crispr_mode = True
+        self.crispr_menu = False
+        self.crispr_running = True
+        return True
+    if key == ord('q') or key == 27:
         self._exit_crispr_mode()
+        return True
+    return False
 
 
-def _handle_crispr_key(self, key):
+def _handle_crispr_key(self, key: int) -> bool:
     """Handle keys while simulation is running."""
-    if key == ' ':
+    if key == ord(' '):
         self.crispr_running = not self.crispr_running
-    elif key == 'v':
+        return True
+    if key == ord('n'):
+        self._crispr_step()
+        return True
+    if key == ord('v'):
         views = ['dna', 'population', 'graphs']
         idx = views.index(self.crispr_view)
         self.crispr_view = views[(idx + 1) % len(views)]
-    elif key == 'r':
+        return True
+    if key == ord('r'):
         self._crispr_init(self.crispr_preset_idx)
-    elif key in ('q', '\x1b'):
+        self.crispr_mode = True
+        return True
+    if key == ord('R') or key == ord('m'):
+        self.crispr_menu = True
+        self.crispr_running = False
+        return True
+    if key == ord('q') or key == 27:
         self._exit_crispr_mode()
-    elif key == 'KEY_LEFT':
+        return True
+    if key == curses.KEY_LEFT:
         self.crispr_scroll = max(0, self.crispr_scroll - 5)
-    elif key == 'KEY_RIGHT':
+        return True
+    if key == curses.KEY_RIGHT:
         self.crispr_scroll = min(
             max(0, self.crispr_dna_len - 40),
             self.crispr_scroll + 5)
+        return True
+    return False
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -1013,7 +1037,7 @@ def _draw_crispr_menu(self, max_y, max_x):
             except curses.error:
                 pass
 
-    hint = " [↑/↓]=select [Enter]=start [q]=back"
+    hint = " [↑/↓/j/k]=select [Enter]=start [q/Esc]=back"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
                            curses.color_pair(6) | curses.A_DIM)
@@ -1327,7 +1351,7 @@ def _draw_crispr_dna(self, max_y, max_x):
         pass
 
     # ── Controls hint ──
-    hint = " [v]iew [←/→]scroll [Space]pause [r]eset [q]uit"
+    hint = " [v]iew [←/→]scroll [Space]pause [n]step [r]eset [R/m]enu [q]uit"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
                            curses.color_pair(7) | curses.A_DIM)
@@ -1493,7 +1517,7 @@ def _draw_crispr_population(self, max_y, max_x):
     except curses.error:
         pass
 
-    hint = " [v]iew [Space]pause [r]eset [q]uit"
+    hint = " [v]iew [Space]pause [n]step [r]eset [R/m]enu [q]uit"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
                            curses.color_pair(7) | curses.A_DIM)
@@ -1569,7 +1593,7 @@ def _draw_crispr_graphs(self, max_y, max_x):
                 except curses.error:
                     pass
 
-    hint = " [v]iew [Space]pause [r]eset [q]uit"
+    hint = " [v]iew [Space]pause [n]step [r]eset [R/m]enu [q]uit"
     try:
         self.stdscr.addstr(max_y - 1, 2, hint[:max_x - 3],
                            curses.color_pair(7) | curses.A_DIM)
