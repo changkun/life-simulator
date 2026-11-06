@@ -3315,9 +3315,12 @@ class App:
             # Check mode
             if getattr(self, md['attr'], False):
                 handler = getattr(self, md['keys'], None)
-                if handler and handler(key):
-                    if not md['no_step']:
-                        self._auto_step_mode(md)
+                consumed = bool(handler and handler(key))
+                # Idle frames (key == -1) advance the mode even when its
+                # handler does not explicitly claim them.
+                if (consumed or key == -1) and not md['no_step']:
+                    self._auto_step_mode(md)
+                if consumed or key == -1:
                     return True
                 # Mode is active but handler didn't consume -> still block fallthrough
                 return False
