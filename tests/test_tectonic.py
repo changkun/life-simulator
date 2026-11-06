@@ -60,7 +60,7 @@ def test_elev_thresholds_sorted():
 
 def test_presets_have_valid_kinds():
     """All preset types are handled by _tectonic_init."""
-    valid_kinds = {"pangaea", "collision", "arcs", "ridges", "ring", "random"}
+    valid_kinds = {"craton", "ridge", "subduction", "collision", "pangaea", "hotspot"}
     for _name, _desc, kind in TECTONIC_PRESETS:
         assert kind in valid_kinds, f"Preset kind '{kind}' not in valid_kinds"
 
@@ -110,13 +110,13 @@ def test_init_all_presets():
 
 
 def test_init_pangaea_continental_plates():
-    """Pangaea preset should have all continental plates."""
+    """Pangaea preset: a supercontinent (continental majority) plus some ocean plates."""
     # Find pangaea index
     idx = next(i for i, (_, _, k) in enumerate(TECTONIC_PRESETS) if k == "pangaea")
     app = _make_app()
     app._tectonic_init(idx)
-    for plate in app.tectonic_plates:
-        assert plate["continental"] is True
+    n_cont = sum(1 for p in app.tectonic_plates if p["continental"])
+    assert n_cont > len(app.tectonic_plates) // 2
 
 
 def test_init_collision_opposing_velocities():
@@ -131,19 +131,17 @@ def test_init_collision_opposing_velocities():
 
 def test_init_elevation_ranges():
     """Continental cells should be positive, oceanic should be negative."""
-    idx = next(i for i, (_, _, k) in enumerate(TECTONIC_PRESETS) if k == "random")
+    idx = next(i for i, (_, _, k) in enumerate(TECTONIC_PRESETS) if k == "subduction")
     app = _make_app()
     app._tectonic_init(idx)
-    has_positive = False
-    has_negative = False
     for r in range(app.tectonic_rows):
         for c in range(app.tectonic_cols):
-            if app.tectonic_elevation[r][c] > 0:
-                has_positive = True
-            if app.tectonic_elevation[r][c] < 0:
-                has_negative = True
-    # Random preset should typically have both
-    assert has_positive or has_negative  # at least one
+            plate = app.tectonic_plates[app.tectonic_plate_id[r][c]]
+            e = app.tectonic_elevation[r][c]
+            if plate["continental"]:
+                assert e > 0
+            else:
+                assert e < 0
 
 
 # ── Step simulation ─────────────────────────────────────────────────────────
