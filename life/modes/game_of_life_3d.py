@@ -4,6 +4,19 @@ import math
 import random
 import time
 
+GOL3D_PRESETS = [
+    ("Classic 3D (B5/S45)", "Stable structures with gradual growth", {5}, {4, 5}, 0.12),
+    ("Clouds (B5-7/S4-6)", "Dense, cloud-like formations", {5, 6, 7}, {4, 5, 6}, 0.10),
+    ("Crystal (B6/S567)", "Slowly growing crystal lattice", {6}, {5, 6, 7}, 0.08),
+    ("Amoeba (B5/S3-5)", "Organic pulsing amoeba shapes", {5}, {3, 4, 5}, 0.15),
+    ("Diamoeba 3D (B5-7/S5-8)", "Large diamond-shaped structures", {5, 6, 7}, {5, 6, 7, 8}, 0.12),
+    ("Sparse (B6-8/S5-7)", "Sparse slow-growth lattice", {6, 7, 8}, {5, 6, 7}, 0.06),
+    ("Pulse (B4/S34)", "Rapid pulsing oscillators", {4}, {3, 4}, 0.20),
+    ("Builder (B6/S456)", "Expanding builder structures", {6}, {4, 5, 6}, 0.10),
+]
+
+GOL3D_SHADE_CHARS = " .:-=+*#%@█"
+
 
 def _enter_gol3d_mode(self):
     """Enter 3D Game of Life mode — show preset menu."""
@@ -488,6 +501,8 @@ def _draw_gol3d(self, max_y: int, max_x: int):
 
 def register(App):
     """Register gol3d mode methods on the App class."""
+    App.GOL3D_PRESETS = GOL3D_PRESETS
+    App.GOL3D_SHADE_CHARS = GOL3D_SHADE_CHARS
     App._enter_gol3d_mode = _enter_gol3d_mode
     App._exit_gol3d_mode = _exit_gol3d_mode
     App._gol3d_init = _gol3d_init

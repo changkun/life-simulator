@@ -4,6 +4,17 @@ import math
 import random
 import time
 
+RBC_PRESETS = [
+    ("Classic Rolls", "Moderate Ra — steady convection rolls", "classic"),
+    ("Gentle Convection", "Low Ra — slow, wide cells", "gentle"),
+    ("Turbulent Cells", "High Ra — vigorous convection", "turbulent"),
+    ("Bénard Hexagons", "Hexagonal cell pattern formation", "hexagons"),
+    ("Mantle Convection", "Earth-like deep slow overturning", "mantle"),
+    ("Solar Granulation", "Sun-surface-like rapid convection", "solar"),
+    ("Asymmetric Heating", "Hot spot on one side of the domain", "asymmetric"),
+    ("Random Perturbation", "Random initial temperature noise", "random"),
+]
+
 
 def _enter_rbc_mode(self):
     """Enter Rayleigh-Bénard Convection mode — show preset menu."""
@@ -546,6 +557,7 @@ def _draw_rbc(self, max_y: int, max_x: int):
 
 def register(App):
     """Register rbc mode methods on the App class."""
+    App.RBC_PRESETS = RBC_PRESETS
     App._enter_rbc_mode = _enter_rbc_mode
     App._exit_rbc_mode = _exit_rbc_mode
     App._rbc_init = _rbc_init

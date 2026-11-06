@@ -3,17 +3,7 @@ import random
 import math
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.boids import register
-
-
-# (name, desc, ratio, sep_r, ali_r, coh_r, sep_w, ali_w, coh_w, max_speed)
-BOIDS_PRESETS = [
-    ("Classic", "Standard flocking behavior", 0.03, 3.0, 8.0, 10.0, 1.5, 1.0, 1.0, 1.0),
-    ("Tight", "Tight cohesive flock", 0.04, 2.0, 6.0, 15.0, 1.0, 1.5, 2.0, 0.8),
-]
-
-# 8 directional arrows: up, NE, right, SE, down, SW, left, NW
-BOIDS_ARROWS = ["\u2191", "\u2197", "\u2192", "\u2198", "\u2193", "\u2199", "\u2190", "\u2196"]
+from life.modes.boids import register, BOIDS_PRESETS, BOIDS_ARROWS
 
 
 class TestBoids:
@@ -21,8 +11,6 @@ class TestBoids:
         random.seed(42)
         self.app = make_mock_app()
         cls = type(self.app)
-        cls.BOIDS_PRESETS = BOIDS_PRESETS
-        cls.BOIDS_ARROWS = BOIDS_ARROWS
         # Instance defaults
         self.app.boids_steps_per_frame = 1
         self.app.boids_preset_name = ""
@@ -40,7 +28,7 @@ class TestBoids:
         assert self.app.boids_menu is False
         assert self.app.boids_generation == 0
         assert len(self.app.boids_agents) > 0
-        assert self.app.boids_preset_name == "Classic"
+        assert self.app.boids_preset_name == BOIDS_PRESETS[0][0]
 
     def test_step_no_crash(self):
         self.app._boids_init(0)

@@ -2,7 +2,7 @@
 import math
 import curses
 from tests.conftest import make_mock_app
-from life.modes.cellular_potts import register
+from life.modes.cellular_potts import register, CPM_PRESETS
 
 
 def _make_app():
@@ -31,15 +31,6 @@ def _make_app():
     app.cpm_chem_decay = 0.01
     app.cpm_chem_source_type = 0
     app.cpm_area_cache = []
-    # Presets: (name, desc, preset_id)
-    type(app).CPM_PRESETS = [
-        ("Cell Sorting", "Differential adhesion drives cell type segregation", "sorting"),
-        ("Wound Healing", "Cell sheet migration into empty wound region", "wound"),
-        ("Tumor Growth", "Tumor cells invade surrounding tissue", "tumor"),
-        ("Checkerboard", "Alternating cell types in a grid", "checker"),
-        ("Foam", "Single-type foam coarsening", "foam"),
-        ("Chemotaxis", "Cells migrate up a chemical gradient", "chemotaxis"),
-    ]
     register(type(app))
     return app
 
@@ -299,7 +290,7 @@ def test_menu_key_navigation():
     assert app.cpm_menu_sel == 0
     # Wrap around
     app._handle_cpm_menu_key(curses.KEY_UP)
-    assert app.cpm_menu_sel == len(type(app).CPM_PRESETS) - 1
+    assert app.cpm_menu_sel == len(CPM_PRESETS) - 1
 
 
 def test_menu_key_select():

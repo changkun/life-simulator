@@ -545,6 +545,9 @@ def _draw_nbody(self, max_y: int, max_x: int):
 
 def register(App):
     """Register nbody mode methods on the App class."""
+    App.NBODY_CHARS = NBODY_CHARS
+    App.NBODY_COLORS = NBODY_COLORS
+    App.NBODY_PRESETS = NBODY_PRESETS
     App._enter_nbody_mode = _enter_nbody_mode
     App._exit_nbody_mode = _exit_nbody_mode
     App._nbody_init = _nbody_init

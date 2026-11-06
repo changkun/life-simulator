@@ -26,18 +26,6 @@ def _make_app():
     app.fdtd_viz_mode = 0
     app.fdtd_freq = 0.15
     app.fdtd_courant = 0.5
-    type(app).FDTD_PRESETS = [
-        ("Point Source", "Single oscillating point source", "point"),
-        ("Double Slit", "Wave diffraction through two slits", "double_slit"),
-        ("Single Slit", "Diffraction through a single slit", "single_slit"),
-        ("Waveguide", "EM wave confined in a metal waveguide", "waveguide"),
-        ("Dielectric Lens", "Focusing by a convex dielectric lens", "lens"),
-        ("Dipole Antenna", "Two sources with opposite phase", "dipole"),
-        ("Phased Array", "Beam steering with phase-shifted sources", "phased_array"),
-        ("Corner Reflector", "Reflection from a 90-degree corner", "corner_reflector"),
-        ("Resonant Cavity", "Standing waves in a metal box", "cavity"),
-        ("Scatterers", "Wave scattering off dielectric cylinders", "scatter"),
-    ]
     register(type(app))
     return app
 

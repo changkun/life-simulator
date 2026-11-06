@@ -8,6 +8,52 @@ import time
 from life.constants import SPEEDS, SPEED_LABELS
 from life.grid import Grid
 
+# States: 0=empty, 1=conductor, 2=electron head, 3=electron tail
+WW_EMPTY = 0
+WW_CONDUCTOR = 1
+WW_HEAD = 2
+WW_TAIL = 3
+
+WW_PRESETS = [
+    ("Diode", "One-way electron flow", {
+        (2, 0): 2, (2, 1): 3, (2, 2): 1, (2, 3): 1,
+        (1, 3): 1, (3, 3): 1, (1, 4): 1, (3, 4): 1,
+        (2, 5): 1, (2, 6): 1, (2, 7): 1, (2, 8): 1,
+    }),
+    ("Clock", "Periodic electron emitter", {
+        (2, 0): 1, (2, 1): 1, (2, 2): 1, (1, 3): 1, (3, 3): 1,
+        (0, 4): 1, (4, 4): 1, (1, 5): 1, (3, 5): 1,
+        (2, 6): 1, (2, 7): 2, (2, 8): 3,
+    }),
+    ("OR gate", "Output fires if any input has signal", {
+        (0, 0): 2, (0, 1): 3, (0, 2): 1, (0, 3): 1, (1, 4): 1,
+        (2, 5): 1, (2, 6): 1, (2, 7): 1,
+        (3, 4): 1, (4, 0): 1, (4, 1): 1, (4, 2): 1, (4, 3): 1,
+    }),
+    ("AND gate", "Output fires only when both inputs fire", {
+        (0, 0): 2, (0, 1): 3, (0, 2): 1, (0, 3): 1, (0, 4): 1,
+        (1, 5): 1, (2, 6): 1, (2, 7): 1, (2, 8): 1,
+        (3, 5): 1, (4, 0): 1, (4, 1): 1, (4, 2): 1, (4, 3): 1, (4, 4): 1,
+        (1, 4): 1, (3, 4): 1,
+    }),
+    ("XOR gate", "Output fires when exactly one input fires", {
+        (0, 0): 2, (0, 1): 3, (0, 2): 1, (0, 3): 1,
+        (1, 4): 1, (1, 5): 1, (2, 6): 1,
+        (3, 5): 1, (3, 4): 1, (2, 3): 1,
+        (4, 0): 1, (4, 1): 1, (4, 2): 1, (4, 3): 1,
+        (2, 7): 1, (2, 8): 1,
+    }),
+    ("Loop", "Electron circulating in a loop", {
+        (0, 1): 1, (0, 2): 1, (0, 3): 1,
+        (1, 0): 1, (1, 4): 1,
+        (2, 0): 3, (2, 4): 1,
+        (3, 0): 2, (3, 4): 1,
+        (4, 1): 1, (4, 2): 1, (4, 3): 1,
+    }),
+    ("Empty grid", "Start with a blank grid for drawing", {}),
+]
+
+
 def _ww_step(self):
     """Advance the Wireworld simulation by one generation."""
     new_grid: dict[tuple[int, int], int] = {}
@@ -388,6 +434,11 @@ def _draw_ww(self, max_y: int, max_x: int):
 
 def register(App):
     """Register ww mode methods on the App class."""
+    App.WW_CONDUCTOR = WW_CONDUCTOR
+    App.WW_EMPTY = WW_EMPTY
+    App.WW_HEAD = WW_HEAD
+    App.WW_PRESETS = WW_PRESETS
+    App.WW_TAIL = WW_TAIL
     App._ww_step = _ww_step
     App._ww_init = _ww_init
     App._enter_ww_mode = _enter_ww_mode

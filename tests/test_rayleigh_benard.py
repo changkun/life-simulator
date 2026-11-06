@@ -3,19 +3,8 @@ import math
 import random
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.rayleigh_benard import register
+from life.modes.rayleigh_benard import register, RBC_PRESETS
 
-
-RBC_PRESETS = [
-    ("Classic", "Standard Rayleigh-Benard convection rolls", "classic"),
-    ("Gentle", "Low Rayleigh number gentle convection", "gentle"),
-    ("Turbulent", "High Rayleigh number turbulence", "turbulent"),
-    ("Hexagons", "Hexagonal convection cells", "hexagons"),
-    ("Mantle", "Earth mantle convection", "mantle"),
-    ("Solar", "Solar convection", "solar"),
-    ("Asymmetric", "Asymmetric heating", "asymmetric"),
-    ("Random", "Random perturbation", "random"),
-]
 
 
 class TestRayleighBenard:
@@ -23,7 +12,6 @@ class TestRayleighBenard:
         random.seed(42)
         self.app = make_mock_app()
         cls = type(self.app)
-        cls.RBC_PRESETS = RBC_PRESETS
         self.app.rbc_menu_sel = 0
         register(cls)
 

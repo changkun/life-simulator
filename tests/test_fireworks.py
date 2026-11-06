@@ -4,35 +4,16 @@ import random
 import curses
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.fireworks import register
+from life.modes.fireworks import (
+    register, FIREWORKS_PRESETS, FIREWORKS_COLORS, FIREWORKS_PATTERNS, FIREWORKS_CHARS,
+)
 
-
-FIREWORKS_PRESETS = [
-    ("Gentle", "Slow, graceful single fireworks", "gentle"),
-    ("Finale", "Rapid multi-burst grand finale", "finale"),
-    ("Crossette", "Splitting crossette rockets", "crossette"),
-    ("Willow", "Drooping willow-style bursts", "willow"),
-    ("Ring", "Ring-shaped explosions", "ring"),
-    ("Random", "Mixed random patterns", "random"),
-]
-
-FIREWORKS_COLORS = [1, 2, 3, 4, 5, 6, 7]
-FIREWORKS_PATTERNS = ["spherical", "ring", "willow", "crossette"]
-FIREWORKS_CHARS = {
-    "spark": [".", "*", "+", "o", "@"],
-    "trail": [".", ",", "'"],
-    "rocket": ["|", "!", "^"],
-}
 
 
 def _make_fireworks_app():
     """Create a mock app with fireworks mode registered."""
     app = make_mock_app()
     cls = type(app)
-    cls.FIREWORKS_PRESETS = FIREWORKS_PRESETS
-    cls.FIREWORKS_COLORS = FIREWORKS_COLORS
-    cls.FIREWORKS_PATTERNS = FIREWORKS_PATTERNS
-    cls.FIREWORKS_CHARS = FIREWORKS_CHARS
     register(cls)
     return app
 

@@ -4,6 +4,31 @@ import math
 import random
 import time
 
+FRACTAL_PRESETS = [
+    ("Classic Mandelbrot", "The full Mandelbrot set overview", "mandelbrot_classic"),
+    ("Seahorse Valley", "Zoom into the seahorse valley region", "mandelbrot_seahorse"),
+    ("Elephant Valley", "Zoom into the elephant valley region", "mandelbrot_elephant"),
+    ("Mini-brot", "A miniature copy deep in the set", "mandelbrot_minibrot"),
+    ("Spiral", "A beautiful spiral formation", "mandelbrot_spiral"),
+    ("Julia — Dendrite", "Dendrite Julia set (c = i)", "julia_dendrite"),
+    ("Julia — Douady Rabbit", "Douady rabbit (c = -0.123+0.745i)", "julia_rabbit"),
+    ("Julia — San Marco", "San Marco attractor (c = -0.75)", "julia_sanmarco"),
+    ("Julia — Siegel Disk", "Siegel disk (c = -0.391-0.587i)", "julia_siegel"),
+    ("Julia — Dragon", "Dragon Julia set (c = -0.8+0.156i)", "julia_dragon"),
+]
+
+FRACTAL_DENSITY = " .:-=+*#%@█"
+FRACTAL_DENSITY_FINE = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
+
+FRACTAL_COLOR_SCHEMES = [
+    ("Classic",    [4, 6, 2, 3, 1, 5, 7]),   # magenta→white→green→yellow→green→red→white
+    ("Ocean",      [2, 6, 2, 6, 7, 7]),       # cyan tones
+    ("Fire",       [5, 3, 3, 5, 4, 7]),       # red→yellow→magenta
+    ("Neon",       [1, 4, 2, 6, 3, 5]),       # green→magenta→cyan→white→yellow→red
+    ("Monochrome", [7, 7, 7, 7, 7, 7]),       # white only
+]
+
+
 
 def _fractal_init(self, preset: str):
     """Initialize fractal exploration for a given preset."""
@@ -405,29 +430,13 @@ def _draw_fractal(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-# ══════════════════════════════════════════════════════════════════════
-#  Navier-Stokes Fluid Dynamics — Mode Ctrl+D
-# ══════════════════════════════════════════════════════════════════════
-
-NS_PRESETS = [
-    ("Dye Playground", "Empty canvas — inject dye with cursor and watch it flow", "playground"),
-    ("Vortex Pair", "Two counter-rotating vortices merging", "vortex_pair"),
-    ("Jet Stream", "Continuous fluid jet from the left wall", "jet"),
-    ("Karman Vortices", "Flow past a circular obstacle with vortex shedding", "karman"),
-    ("Four Corners", "Dye sources in each corner with opposing flows", "four_corners"),
-    ("Shear Layer", "Opposing horizontal flows creating Kelvin-Helmholtz instability", "shear"),
-]
-
-NS_DYE_CHARS = [" ", "░", "▒", "▓", "█"]
-NS_VEL_CHARS = [" ", "·", "∘", "○", "●"]
-NS_VORT_POS = [" ", "·", "∘", "○", "◉"]
-NS_VORT_NEG = [" ", "·", "∙", "•", "⬤"]
-
-
-
 
 def register(App):
     """Register fractal mode methods on the App class."""
+    App.FRACTAL_COLOR_SCHEMES = FRACTAL_COLOR_SCHEMES
+    App.FRACTAL_DENSITY = FRACTAL_DENSITY
+    App.FRACTAL_PRESETS = FRACTAL_PRESETS
+    App.FRACTAL_DENSITY_FINE = FRACTAL_DENSITY_FINE
     App._fractal_init = _fractal_init
     App._fractal_compute = _fractal_compute
     App._enter_fractal_mode = _enter_fractal_mode

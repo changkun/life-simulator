@@ -2,24 +2,14 @@
 import random
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.smoke_fire import register
+from life.modes.smoke_fire import register, SMOKEFIRE_PRESETS
 
-
-SMOKEFIRE_PRESETS = [
-    ("Campfire", "Cozy campfire with rising smoke", "campfire"),
-    ("Wildfire", "Spreading wildfire across vegetation", "wildfire"),
-    ("Explosion", "Central blast zone", "explosion"),
-    ("Candles", "Multiple candle flames", "candles"),
-    ("Inferno", "Wall of fire", "inferno"),
-    ("Smokestack", "Chimney with smoke", "smokestack"),
-]
 
 
 def _make_app():
     """Create a test app with smokefire mode registered."""
     app = make_mock_app()
     cls = type(app)
-    cls.SMOKEFIRE_PRESETS = SMOKEFIRE_PRESETS
     register(cls)
     return app
 

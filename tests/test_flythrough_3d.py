@@ -4,7 +4,7 @@ import math
 from unittest.mock import patch
 
 from tests.conftest import make_mock_app
-from life.modes.flythrough_3d import register
+from life.modes.flythrough_3d import register, FLYTHROUGH_PRESETS
 
 
 def _make_app():
@@ -27,14 +27,6 @@ def _make_app():
     app.flythrough_time = 0.3
     app.flythrough_auto_time = True
     app.flythrough_time_speed = 0.002
-    type(app).FLYTHROUGH_PRESETS = [
-        ("Rolling Hills", "Gentle rolling terrain with grass and trees", "hills"),
-        ("Mountains", "Sharp alpine peaks with snow caps", "mountains"),
-        ("Canyon", "Deep canyon carved through mesa landscape", "canyon"),
-        ("Islands", "Archipelago of volcanic islands", "islands"),
-        ("Glacial Valley", "U-shaped valley with ice features", "glacial"),
-        ("Alien World", "Bizarre alien terrain with strange formations", "alien"),
-    ]
     register(type(app))
     return app
 
@@ -63,14 +55,14 @@ def test_exit_cleanup():
 def test_init_all_presets():
     """Every terrain preset initializes without error."""
     app = _make_app()
-    for idx in range(len(type(app).FLYTHROUGH_PRESETS)):
+    for idx in range(len(FLYTHROUGH_PRESETS)):
         app._flythrough_init(idx)
         assert app.flythrough_mode is True
         assert app.flythrough_menu is False
         assert app.flythrough_running is True
         assert len(app.flythrough_heightmap) == 256
         assert len(app.flythrough_heightmap[0]) == 256
-        assert app.flythrough_preset_name == type(app).FLYTHROUGH_PRESETS[idx][0]
+        assert app.flythrough_preset_name == FLYTHROUGH_PRESETS[idx][0]
 
 
 def test_init_camera_above_terrain():
@@ -327,7 +319,7 @@ def test_menu_navigate_up_wraps():
     app = _make_app()
     app._enter_flythrough_mode()
     app._handle_flythrough_menu_key(ord("k"))
-    n = len(type(app).FLYTHROUGH_PRESETS)
+    n = len(FLYTHROUGH_PRESETS)
     assert app.flythrough_menu_sel == n - 1
 
 

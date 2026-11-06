@@ -4,6 +4,15 @@ import math
 import random
 import time
 
+CPM_PRESETS = [
+    ("Cell Sorting", "Differential adhesion drives type segregation", "sorting"),
+    ("Wound Healing", "Cell sheet migration into empty wound area", "wound"),
+    ("Tumor Growth", "Proliferating tumor cells invade tissue", "tumor"),
+    ("Checkerboard", "Two cell types in alternating pattern", "checker"),
+    ("Foam / Bubbles", "Soap-bubble-like foam coarsening", "foam"),
+    ("Chemotaxis", "Cells migrate toward chemical gradient", "chemotaxis"),
+]
+
 
 def _enter_cpm_mode(self):
     """Enter Cellular Potts Model mode — show preset menu."""
@@ -696,6 +705,7 @@ def _draw_cpm(self, max_y: int, max_x: int):
 
 def register(App):
     """Register cpm mode methods on the App class."""
+    App.CPM_PRESETS = CPM_PRESETS
     App._enter_cpm_mode = _enter_cpm_mode
     App._exit_cpm_mode = _exit_cpm_mode
     App._cpm_init = _cpm_init

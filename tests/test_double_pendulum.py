@@ -3,25 +3,12 @@ import math
 import random
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.double_pendulum import register
-
-
-DPEND_PRESETS = [
-    ("Classic", "Standard double pendulum at 135 degrees", "classic"),
-    ("Gentle", "Small-angle near-periodic motion", "gentle"),
-    ("Heavy Lower", "Heavy lower bob — more inertia", "heavy_lower"),
-    ("Heavy Upper", "Heavy upper bob", "heavy_upper"),
-    ("Max Chaos", "Near-vertical start — maximum chaos", "max_chaos"),
-    ("Near Identical", "Two pendulums differ by 0.001 deg", "near_identical"),
-    ("Butterfly", "Ultra-small perturbation", "butterfly"),
-    ("Long Arms", "Asymmetric arm lengths", "long_arms"),
-]
+from life.modes.double_pendulum import register, DPEND_PRESETS
 
 
 def _make_app():
     app = make_mock_app()
     cls = type(app)
-    cls.DPEND_PRESETS = DPEND_PRESETS
     app.dpend_steps_per_frame = 5
     register(cls)
     return app

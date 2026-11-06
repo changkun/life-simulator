@@ -4,7 +4,7 @@ import math
 from unittest.mock import patch
 
 from tests.conftest import make_mock_app
-from life.modes.ray_marching import register
+from life.modes.ray_marching import register, RAYMARCH_PRESETS
 
 
 def _make_app():
@@ -25,15 +25,6 @@ def _make_app():
     app.raymarch_light_phi = 0.6
     app.raymarch_shadows = True
     app.raymarch_mandelbulb_power = 8.0
-    type(app).RAYMARCH_PRESETS = [
-        ("Sphere", "Perfect sphere with Phong shading", "sphere"),
-        ("Torus", "Donut-shaped torus", "torus"),
-        ("Multi-Object", "Sphere + torus + box scene", "multi"),
-        ("Mandelbulb", "3D Mandelbrot fractal", "mandelbulb"),
-        ("Infinite Spheres", "Repeating spheres via domain repetition", "infinite"),
-        ("Smooth Blend", "Two spheres with smooth union", "blend"),
-    ]
-    type(app).RAYMARCH_SHADE_CHARS = " .:-=+*#%@"
     register(type(app))
     return app
 
@@ -61,12 +52,12 @@ def test_exit_cleanup():
 def test_init_all_presets():
     """Every scene preset initializes without error."""
     app = _make_app()
-    for idx in range(len(type(app).RAYMARCH_PRESETS)):
+    for idx in range(len(RAYMARCH_PRESETS)):
         app._raymarch_init(idx)
         assert app.raymarch_mode is True
         assert app.raymarch_menu is False
         assert app.raymarch_running is True
-        assert app.raymarch_scene == type(app).RAYMARCH_PRESETS[idx][2]
+        assert app.raymarch_scene == RAYMARCH_PRESETS[idx][2]
 
 
 # ── SDF evaluation ───────────────────────────────────────────────────────────
@@ -261,7 +252,7 @@ def test_menu_navigate_up_wraps():
     app = _make_app()
     app._enter_raymarch_mode()
     app._handle_raymarch_menu_key(ord("k"))
-    n = len(type(app).RAYMARCH_PRESETS)
+    n = len(RAYMARCH_PRESETS)
     assert app.raymarch_menu_sel == n - 1
 
 

@@ -3,24 +3,13 @@ import math
 import random
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.cloth import register
-
-
-CLOTH_PRESETS = [
-    ("Hanging", "Cloth pinned along the top edge", "hanging"),
-    ("Curtain", "Cloth pinned at two points", "curtain"),
-    ("Flag", "Cloth pinned along the left edge", "flag"),
-    ("Hammock", "Cloth pinned at four corners", "hammock"),
-    ("Net", "Wide-spaced net pinned at top", "net"),
-    ("Silk", "Fine silk with low tear threshold", "silk"),
-]
+from life.modes.cloth import register, CLOTH_PRESETS
 
 
 def _make_app():
     """Create a test app with cloth mode registered."""
     app = make_mock_app()
     cls = type(app)
-    cls.CLOTH_PRESETS = CLOTH_PRESETS
     register(cls)
     return app
 
@@ -369,7 +358,7 @@ class TestClothModeKeys:
         self.app = _make_app()
         self.app.cloth_mode = True
         self.app.cloth_running = False
-        self.app.cloth_preset_name = "Hanging"
+        self.app.cloth_preset_name = CLOTH_PRESETS[0][0]
         self.app.cloth_steps_per_frame = 3
         self.app._cloth_init("hanging")
 

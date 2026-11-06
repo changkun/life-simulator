@@ -4,6 +4,17 @@ import math
 import random
 import time
 
+RAYMARCH_PRESETS = [
+    ("Sphere", "Classic unit sphere — clean SDF baseline", "sphere"),
+    ("Torus", "Torus knot with smooth shading", "torus"),
+    ("Multi-Shape", "Sphere + torus + box combined scene", "multi"),
+    ("Mandelbulb", "Mandelbulb fractal — power-8 by default", "mandelbulb"),
+    ("Infinite Spheres", "Infinite repeating sphere lattice", "infinite"),
+    ("Smooth Blend", "Two spheres with smooth-union blending", "blend"),
+]
+
+RAYMARCH_SHADE_CHARS = " .:-=+*#%@█"
+
 
 def _enter_raymarch_mode(self):
     """Enter SDF Ray Marching mode — show preset menu."""
@@ -462,6 +473,8 @@ def _draw_raymarch(self, max_y: int, max_x: int):
 
 def register(App):
     """Register raymarch mode methods on the App class."""
+    App.RAYMARCH_PRESETS = RAYMARCH_PRESETS
+    App.RAYMARCH_SHADE_CHARS = RAYMARCH_SHADE_CHARS
     App._enter_raymarch_mode = _enter_raymarch_mode
     App._exit_raymarch_mode = _exit_raymarch_mode
     App._raymarch_init = _raymarch_init

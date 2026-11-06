@@ -4,6 +4,17 @@ import math
 import random
 import time
 
+ACO_PRESETS = [
+    # (name, description, evaporation, deposit_strength, diffusion, num_ants_ratio, num_food, food_radius)
+    ("Forager", "Basic foraging with moderate trails", 0.02, 0.3, 0.01, 0.08, 4, 3),
+    ("Highway", "Strong trails — ants form highways", 0.005, 0.6, 0.005, 0.12, 3, 4),
+    ("Explorer", "High evaporation — ants spread widely", 0.05, 0.2, 0.02, 0.10, 6, 2),
+    ("Swarm", "Many ants, quick convergence", 0.015, 0.4, 0.01, 0.25, 5, 3),
+    ("Minimal", "Few ants, slow trail build-up", 0.01, 0.5, 0.008, 0.04, 2, 5),
+    ("Feast", "Abundant food, dense pheromone clouds", 0.03, 0.35, 0.015, 0.15, 8, 4),
+]
+ACO_DENSITY = ["  ", "░░", "▒▒", "▓▓", "██"]
+
 
 def _enter_aco_mode(self):
     """Enter ACO mode — show preset menu."""
@@ -374,6 +385,8 @@ def _draw_aco(self, max_y: int, max_x: int):
 
 def register(App):
     """Register aco mode methods on the App class."""
+    App.ACO_DENSITY = ACO_DENSITY
+    App.ACO_PRESETS = ACO_PRESETS
     App._enter_aco_mode = _enter_aco_mode
     App._exit_aco_mode = _exit_aco_mode
     App._aco_init = _aco_init

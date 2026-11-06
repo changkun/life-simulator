@@ -3,7 +3,7 @@ import curses
 import random
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.ant import register
+from life.modes.ant import register, ANT_PRESETS, ANT_COLORS
 
 
 class TestAnt:
@@ -506,7 +506,7 @@ class TestAnt:
         self.app._enter_ant_mode()
         self.app._handle_ant_menu_key(ord("k"))
         # Should wrap to the last item
-        n_presets = len(type(self.app).ANT_PRESETS)
+        n_presets = len(ANT_PRESETS)
         total_items = n_presets + 4
         assert self.app.ant_menu_sel == total_items - 1
 
@@ -530,7 +530,7 @@ class TestAnt:
     def test_menu_cycle_num_ants(self):
         """Cycling num ants: 1 -> 2 -> 3 -> 4 -> 1."""
         self.app._enter_ant_mode()
-        n_presets = len(type(self.app).ANT_PRESETS)
+        n_presets = len(ANT_PRESETS)
         self.app.ant_menu_sel = n_presets + 1  # ants item
         assert self.app.ant_num_ants == 1
         self.app._handle_ant_menu_key(10)
@@ -545,7 +545,7 @@ class TestAnt:
     def test_menu_cycle_steps_per_frame(self):
         """Cycling steps/frame: 1 -> 5 -> 10 -> 50 -> 100 -> 500 -> 1."""
         self.app._enter_ant_mode()
-        n_presets = len(type(self.app).ANT_PRESETS)
+        n_presets = len(ANT_PRESETS)
         self.app.ant_menu_sel = n_presets + 2
         assert self.app.ant_steps_per_frame == 1
         self.app._handle_ant_menu_key(10)
@@ -556,7 +556,7 @@ class TestAnt:
     def test_menu_start_item(self):
         """Selecting the 'start' item begins simulation."""
         self.app._enter_ant_mode()
-        n_presets = len(type(self.app).ANT_PRESETS)
+        n_presets = len(ANT_PRESETS)
         self.app.ant_menu_sel = n_presets + 3  # start item
         self.app._handle_ant_menu_key(10)
         assert self.app.ant_mode is True
@@ -582,16 +582,16 @@ class TestAnt:
     # ------------------------------------------------------------------
 
     def test_ant_presets_exist(self):
-        assert len(type(self.app).ANT_PRESETS) == 8
+        assert len(ANT_PRESETS) == 8
 
     def test_ant_presets_valid_rules(self):
         """All preset rules must only contain R and L, length >= 2."""
-        for rule, desc in type(self.app).ANT_PRESETS:
+        for rule, desc in ANT_PRESETS:
             assert len(rule) >= 2, f"Rule '{rule}' too short"
             assert all(ch in "RL" for ch in rule), f"Rule '{rule}' has invalid chars"
 
     def test_ant_colors_exist(self):
-        assert type(self.app).ANT_COLORS == [1, 2, 3, 4, 5, 6, 7, 8]
+        assert ANT_COLORS == [1, 2, 3, 4, 5, 6, 7, 8]
 
     # ------------------------------------------------------------------
     # Grid bounds after init

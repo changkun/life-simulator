@@ -4,6 +4,27 @@ import math
 import random
 import time
 
+FIREWORKS_PRESETS = [
+    ("Grand Finale", "Rapid-fire multi-burst spectacular", "finale"),
+    ("Gentle Evening", "Slow, elegant launches with long trails", "gentle"),
+    ("Crossette Show", "Bursts that split into secondary explosions", "crossette"),
+    ("Willow Garden", "Graceful drooping willow-style bursts", "willow"),
+    ("Ring Parade", "Circular ring-shaped explosions", "ring"),
+    ("Random Mix", "Random assortment of all burst patterns", "random"),
+]
+
+FIREWORKS_PATTERNS = ["spherical", "ring", "willow", "crossette"]
+
+FIREWORKS_CHARS = {
+    "rocket": ["│", "╽", "┃", "╿"],
+    "spark": ["·", "∘", "°", "•", "★", "✦", "✧", "◦"],
+    "burst": ["*", "✴", "✶", "✸", "❋", "✺"],
+    "trail": [".", "·", "∙", ",", "'"],
+    "fade": ["░", "▒", "▓"],
+}
+
+FIREWORKS_COLORS = [1, 2, 3, 4, 5, 6, 7]  # green, cyan, yellow, magenta, red, white-ish, cyan-bold
+
 
 def _fireworks_init(self, preset: str):
     """Initialize fireworks simulation."""
@@ -532,6 +553,10 @@ def _draw_fireworks(self, max_y: int, max_x: int):
 
 def register(App):
     """Register fireworks mode methods on the App class."""
+    App.FIREWORKS_CHARS = FIREWORKS_CHARS
+    App.FIREWORKS_COLORS = FIREWORKS_COLORS
+    App.FIREWORKS_PATTERNS = FIREWORKS_PATTERNS
+    App.FIREWORKS_PRESETS = FIREWORKS_PRESETS
     App._fireworks_init = _fireworks_init
     App._fireworks_launch = _fireworks_launch
     App._fireworks_explode = _fireworks_explode

@@ -13,7 +13,6 @@ def _make_dla_app():
     app = make_mock_app()
     cls = type(app)
     register(cls)
-    cls.DLA_PRESETS = DLA_PRESETS
     # Instance attrs needed by DLA
     app.dla_mode = False
     app.dla_menu = False

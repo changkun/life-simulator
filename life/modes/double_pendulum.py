@@ -4,6 +4,17 @@ import math
 import random
 import time
 
+DPEND_PRESETS = [
+    ("Classic Chaos", "Equal masses, high energy — classic chaotic motion", "classic"),
+    ("Gentle Swing", "Low energy — nearly periodic oscillation", "gentle"),
+    ("Heavy Lower", "Heavy lower bob amplifies chaos", "heavy_lower"),
+    ("Heavy Upper", "Heavy upper bob stabilizes motion", "heavy_upper"),
+    ("Maximum Chaos", "High energy with asymmetric arms", "max_chaos"),
+    ("Near Identical", "Two pendulums differ by 0.001° — watch divergence", "near_identical"),
+    ("Butterfly Effect", "Tiny perturbation, dramatic divergence", "butterfly"),
+    ("Long Arms", "Long lower arm — sweeping trajectories", "long_arms"),
+]
+
 
 def _enter_dpend_mode(self):
     """Enter Double Pendulum mode — show preset menu."""
@@ -531,6 +542,7 @@ def _dpend_draw_line(self, x0: int, y0: int, x1: int, y1: int,
 
 def register(App):
     """Register dpend mode methods on the App class."""
+    App.DPEND_PRESETS = DPEND_PRESETS
     App._enter_dpend_mode = _enter_dpend_mode
     App._exit_dpend_mode = _exit_dpend_mode
     App._dpend_init = _dpend_init

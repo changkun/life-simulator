@@ -7,6 +7,34 @@ import time
 
 from life.constants import SPEEDS
 
+# ══════════════════════════════════════════════════════════════════════
+#  Abelian Sandpile — Mode P
+# ══════════════════════════════════════════════════════════════════════
+
+SANDPILE_PRESETS = [
+    # (name, description, drop_mode, drop_amount, initial_pile, steps_per_frame)
+    ("Single Tower", "Drop grains one at a time onto center — classic fractal", "center", 1, 0, 1),
+    ("Big Pile", "Start with a tall pile in the center and let it collapse", "center", 0, 10000, 10),
+    ("Random Rain", "Grains drop at random locations continuously", "random", 1, 0, 1),
+    ("Four Corners", "Simultaneous piles in four corners", "corners", 1, 0, 1),
+    ("Diamond Seed", "Start with grains arranged in a diamond", "diamond", 1, 0, 1),
+    ("Checkerboard", "Start with alternating 3-grain cells", "checkerboard", 0, 0, 5),
+    ("Max Stable", "Fill grid with 3 grains everywhere, then perturb center", "max_stable", 0, 0, 5),
+    ("Identity Element", "The sandpile identity — unique fractal from 2·max minus topple(2·max)", "identity", 0, 0, 10),
+    ("Random Fill", "Random grain counts (0-3) everywhere, then perturb center", "random_fill", 0, 0, 5),
+]
+
+# Grain count -> (character, color_pair)
+SANDPILE_CHARS = {
+    0: (" ", 0),
+    1: ("░░", 4),   # 1 grain — blue
+    2: ("▒▒", 2),   # 2 grains — green
+    3: ("▓▓", 3),   # 3 grains — yellow
+}
+# ≥4 shown during topple as bright red
+SANDPILE_OVERFLOW_CHAR = ("██", 1)
+
+
 def _enter_sandpile_mode(self):
     """Enter Abelian Sandpile mode — show preset menu."""
     self.sandpile_menu = True
@@ -429,29 +457,12 @@ def _draw_sandpile(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-# ══════════════════════════════════════════════════════════════════════
-#  Forest Fire — Mode O
-# ══════════════════════════════════════════════════════════════════════
-
-FIRE_PRESETS = [
-    # (name, description, density, p_grow, p_lightning, ash_decay)
-    ("Classic", "Balanced growth and lightning", 0.55, 0.03, 0.0005, 0.08),
-    ("Dense Forest", "Thick canopy, rare lightning", 0.85, 0.05, 0.0002, 0.06),
-    ("Dry Season", "Sparse trees, frequent lightning", 0.3, 0.01, 0.003, 0.12),
-    ("Regrowth", "Fast regrowth after fire", 0.4, 0.08, 0.001, 0.15),
-    ("Tinderbox", "High density, high lightning", 0.7, 0.02, 0.005, 0.10),
-    ("Savanna", "Very sparse, steady fires", 0.15, 0.02, 0.002, 0.20),
-    ("Rainforest", "Very dense, very rare fire", 0.95, 0.06, 0.0001, 0.04),
-    ("Firestorm", "Maximum chaos", 0.5, 0.04, 0.01, 0.05),
-    ("Critical Density", "Self-organized criticality demo", 0.60, 0.02, 0.0003, 0.10),
-    ("Slow Burn", "Long-lived embers, slow spread", 0.65, 0.03, 0.0004, 0.03),
-]
-
-
-
 
 def register(App):
     """Register sandpile mode methods on the App class."""
+    App.SANDPILE_CHARS = SANDPILE_CHARS
+    App.SANDPILE_OVERFLOW_CHAR = SANDPILE_OVERFLOW_CHAR
+    App.SANDPILE_PRESETS = SANDPILE_PRESETS
     App._enter_sandpile_mode = _enter_sandpile_mode
     App._exit_sandpile_mode = _exit_sandpile_mode
     App._sandpile_init = _sandpile_init

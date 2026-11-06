@@ -4,6 +4,17 @@ import math
 import random
 import time
 
+MAGFIELD_PRESETS = [
+    ("Cyclotron Orbits", "Charged particles in uniform B-field — circular orbits", "cyclotron"),
+    ("E×B Drift", "Crossed electric and magnetic fields — drift motion", "exb"),
+    ("Magnetic Bottle", "Mirror effect — particles trapped between converging fields", "bottle"),
+    ("Dipole Field", "Planetary magnetosphere — trapped radiation belt particles", "dipole"),
+    ("Quadrupole Trap", "Ion trap — focusing/defocusing quadrupole field", "quadrupole"),
+    ("Mixed Charges", "Opposite charges spiraling in opposite directions", "mixed"),
+    ("Magnetic Shear", "Spatially varying B-field — chaotic particle motion", "shear"),
+    ("Hall Effect", "E⊥B configuration — Hall drift demonstration", "hall"),
+]
+
 
 def _enter_magfield_mode(self):
     """Enter Magnetic Field Lines mode — show preset menu."""
@@ -667,6 +678,7 @@ def _draw_magfield(self, max_y: int, max_x: int):
 
 def register(App):
     """Register magfield mode methods on the App class."""
+    App.MAGFIELD_PRESETS = MAGFIELD_PRESETS
     App._enter_magfield_mode = _enter_magfield_mode
     App._exit_magfield_mode = _exit_magfield_mode
     App._magfield_init = _magfield_init

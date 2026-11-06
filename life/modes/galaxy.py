@@ -8,6 +8,18 @@ import time
 from life.constants import DENSITY_CHARS
 from life.grid import Grid
 
+GALAXY_PRESETS = [
+    ("Milky Way", "Classic barred spiral galaxy with 2 arms", "milky_way"),
+    ("Grand Design", "Prominent 2-arm spiral with dense gas disk", "grand_design"),
+    ("Whirlpool", "Face-on spiral with companion galaxy", "whirlpool"),
+    ("Elliptical", "Pressure-supported elliptical galaxy", "elliptical"),
+    ("Dwarf Irregular", "Small chaotic galaxy with random structure", "dwarf"),
+    ("Galaxy Merger", "Two spiral galaxies in collision", "merger"),
+    ("Ring Galaxy", "Collisional ring galaxy (Cartwheel-like)", "ring"),
+    ("Barred Spiral", "Strong central bar with trailing arms", "barred"),
+]
+
+
 def _galaxy_build_particles(self, preset: str):
     """Generate initial particle distribution for a galaxy preset."""
     rows, cols = self.galaxy_rows, self.galaxy_cols
@@ -709,6 +721,7 @@ def _draw_galaxy(self, max_y: int, max_x: int):
 
 def register(App):
     """Register galaxy mode methods on the App class."""
+    App.GALAXY_PRESETS = GALAXY_PRESETS
     App._galaxy_build_particles = _galaxy_build_particles
     App._galaxy_init = _galaxy_init
     App._galaxy_step = _galaxy_step

@@ -2,7 +2,7 @@
 import math
 import curses
 from tests.conftest import make_mock_app
-from life.modes.sph_fluid import register
+from life.modes.sph_fluid import register, SPH_PRESETS
 
 
 def _make_app():
@@ -27,15 +27,6 @@ def _make_app():
     app.sph_particles = []
     app.sph_num_particles = 0
     app.sph_viz_mode = 0
-    type(app).SPH_PRESETS = [
-        ("Dam Break", "Column of water collapses sideways", "dam"),
-        ("Double Dam", "Two water columns collide", "double_dam"),
-        ("Drop Impact", "Block of fluid falls into pool", "drop"),
-        ("Rain", "Scattered droplets fall under gravity", "rain"),
-        ("Wave Pool", "Tilted water surface generates waves", "wave"),
-        ("Fountain", "Upward jet creates a fountain", "fountain"),
-    ]
-    type(app).SPH_CHARS = " .:-=+*#%@"
     register(type(app))
     return app
 
@@ -283,7 +274,7 @@ def test_menu_key_navigation():
     assert app.sph_menu_sel == 0
     # Wrap around
     app._handle_sph_menu_key(curses.KEY_UP)
-    assert app.sph_menu_sel == len(type(app).SPH_PRESETS) - 1
+    assert app.sph_menu_sel == len(SPH_PRESETS) - 1
 
 
 def test_menu_key_select():

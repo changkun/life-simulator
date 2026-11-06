@@ -486,38 +486,10 @@ def _draw_dla(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-# ══════════════════════════════════════════════════════════════════════
-#  Abelian Sandpile — Mode P
-# ══════════════════════════════════════════════════════════════════════
-
-SANDPILE_PRESETS = [
-    # (name, description, drop_mode, drop_amount, initial_pile, steps_per_frame)
-    ("Single Tower", "Drop grains one at a time onto center — classic fractal", "center", 1, 0, 1),
-    ("Big Pile", "Start with a tall pile in the center and let it collapse", "center", 0, 10000, 10),
-    ("Random Rain", "Grains drop at random locations continuously", "random", 1, 0, 1),
-    ("Four Corners", "Simultaneous piles in four corners", "corners", 1, 0, 1),
-    ("Diamond Seed", "Start with grains arranged in a diamond", "diamond", 1, 0, 1),
-    ("Checkerboard", "Start with alternating 3-grain cells", "checkerboard", 0, 0, 5),
-    ("Max Stable", "Fill grid with 3 grains everywhere, then perturb center", "max_stable", 0, 0, 5),
-    ("Identity Element", "The sandpile identity — unique fractal from 2·max minus topple(2·max)", "identity", 0, 0, 10),
-    ("Random Fill", "Random grain counts (0-3) everywhere, then perturb center", "random_fill", 0, 0, 5),
-]
-
-# Grain count -> (character, color_pair)
-SANDPILE_CHARS = {
-    0: (" ", 0),
-    1: ("░░", 4),   # 1 grain — blue
-    2: ("▒▒", 2),   # 2 grains — green
-    3: ("▓▓", 3),   # 3 grains — yellow
-}
-# ≥4 shown during topple as bright red
-SANDPILE_OVERFLOW_CHAR = ("██", 1)
-
-
-
 
 def register(App):
     """Register dla mode methods on the App class."""
+    App.DLA_PRESETS = DLA_PRESETS
     App._enter_dla_mode = _enter_dla_mode
     App._exit_dla_mode = _exit_dla_mode
     App._dla_init = _dla_init

@@ -4,6 +4,20 @@ import math
 import random
 import time
 
+FDTD_PRESETS = [
+    # (name, description, preset_id)
+    ("Point Source", "Single radiating point source — circular wavefronts", "point"),
+    ("Double Slit", "Plane wave diffracting through two slits — interference pattern", "double_slit"),
+    ("Single Slit", "Plane wave diffracting through a narrow slit", "single_slit"),
+    ("Waveguide", "EM wave channeled through a rectangular waveguide", "waveguide"),
+    ("Lens Focusing", "Dielectric lens focusing a plane wave to a focal point", "lens"),
+    ("Antenna Dipole", "Two out-of-phase sources — dipole radiation pattern", "dipole"),
+    ("Phased Array", "Linear array of phased sources — beam steering", "phased_array"),
+    ("Corner Reflector", "Point source with 90° corner reflector — directed beam", "corner_reflector"),
+    ("Resonant Cavity", "Standing waves in a rectangular metallic cavity", "cavity"),
+    ("Dielectric Scatter", "Plane wave scattering off circular dielectric obstacles", "scatter"),
+]
+
 
 def _enter_fdtd_mode(self):
     """Enter FDTD EM Wave mode — show preset menu."""
@@ -548,6 +562,7 @@ def _draw_fdtd(self, max_y: int, max_x: int):
 
 def register(App):
     """Register fdtd mode methods on the App class."""
+    App.FDTD_PRESETS = FDTD_PRESETS
     App._enter_fdtd_mode = _enter_fdtd_mode
     App._exit_fdtd_mode = _exit_fdtd_mode
     App._fdtd_init = _fdtd_init

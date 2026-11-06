@@ -8,6 +8,25 @@ import time
 from life.constants import SPEEDS
 from life.grid import Grid
 
+# ══════════════════════════════════════════════════════════════════════
+#  Particle Life (Primordial Soup) — Mode 10 (key '0')
+# ══════════════════════════════════════════════════════════════════════
+
+# Particle type display characters and color pairs
+PLIFE_CHARS = ["●", "◆", "■", "▲", "★", "◉", "♦", "✦"]
+PLIFE_COLORS = [1, 2, 3, 4, 5, 6, 7, 1]  # color pair indices
+
+PLIFE_PRESETS = [
+    # (name, description, num_types, density, max_radius, friction, force_scale, seed_or_none)
+    ("Primordial Soup", "Random rules — classic emergent life", 6, 0.06, 15.0, 0.5, 0.05, None),
+    ("Symbiosis", "Species that orbit and depend on each other", 4, 0.05, 18.0, 0.4, 0.04, 42),
+    ("Clusters", "Tight self-organizing clumps", 3, 0.08, 12.0, 0.6, 0.06, 123),
+    ("Predator-Prey", "Chasing and fleeing dynamics", 5, 0.05, 20.0, 0.3, 0.04, 7),
+    ("Galaxy", "Spiraling orbital structures", 4, 0.04, 25.0, 0.35, 0.03, 314),
+    ("Chaos", "High energy, many types, wild behavior", 8, 0.07, 14.0, 0.25, 0.07, None),
+]
+
+
 def _enter_plife_mode(self):
     """Enter Particle Life mode — show preset menu."""
     self.plife_menu = True
@@ -344,6 +363,9 @@ def _draw_plife(self, max_y: int, max_x: int):
 
 def register(App):
     """Register plife mode methods on the App class."""
+    App.PLIFE_CHARS = PLIFE_CHARS
+    App.PLIFE_COLORS = PLIFE_COLORS
+    App.PLIFE_PRESETS = PLIFE_PRESETS
     App._enter_plife_mode = _enter_plife_mode
     App._exit_plife_mode = _exit_plife_mode
     App._plife_init = _plife_init

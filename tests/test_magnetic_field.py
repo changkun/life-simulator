@@ -27,16 +27,6 @@ def _make_app():
     app.magfield_show_field = True
     app.magfield_num_particles = 12
     app.magfield_viz_mode = 0
-    type(app).MAGFIELD_PRESETS = [
-        ("Cyclotron Orbits", "Circular orbits in uniform magnetic field", "cyclotron"),
-        ("E x B Drift", "Crossed electric and magnetic fields", "exb"),
-        ("Magnetic Bottle", "Mirror confinement with converging field lines", "bottle"),
-        ("Dipole Field", "Planetary magnetosphere-like dipole", "dipole"),
-        ("Quadrupole", "Linear focusing quadrupole field", "quadrupole"),
-        ("Mixed Charges", "Positive and negative charges together", "mixed"),
-        ("Magnetic Shear", "Spatially varying magnetic field", "shear"),
-        ("Hall Effect", "Drift in crossed E and B fields", "hall"),
-    ]
     register(type(app))
     return app
 

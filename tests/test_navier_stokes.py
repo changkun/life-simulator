@@ -6,29 +6,10 @@ from tests.conftest import make_mock_app
 from life.modes.navier_stokes import register
 
 
-NS_PRESETS = [
-    ("Dye Playground", "Empty canvas for dye injection", "playground"),
-    ("Vortex Pair", "Two counter-rotating vortices", "vortex_pair"),
-    ("Jet Stream", "Continuous fluid jet from the left wall", "jet"),
-    ("Karman Vortices", "Flow past a circular obstacle", "karman"),
-    ("Four Corners", "Dye sources in each corner", "four_corners"),
-    ("Shear Layer", "Opposing horizontal flows", "shear"),
-]
-
-NS_DYE_CHARS = [" ", "\u2591", "\u2592", "\u2593", "\u2588"]
-NS_VEL_CHARS = [" ", "\u00b7", "\u2218", "\u25cb", "\u25cf"]
-NS_VORT_POS = [" ", "\u00b7", "\u2218", "\u25cb", "\u25c9"]
-NS_VORT_NEG = [" ", "\u00b7", "\u2219", "\u2022", "\u2b24"]
-
 
 def _make_app():
     app = make_mock_app()
     cls = type(app)
-    cls.NS_PRESETS = NS_PRESETS
-    cls.NS_DYE_CHARS = NS_DYE_CHARS
-    cls.NS_VEL_CHARS = NS_VEL_CHARS
-    cls.NS_VORT_POS = NS_VORT_POS
-    cls.NS_VORT_NEG = NS_VORT_NEG
     app.ns_viscosity = 0.0001
     app.ns_diffusion = 0.00001
     app.ns_dt = 0.1

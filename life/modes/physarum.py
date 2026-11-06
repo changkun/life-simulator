@@ -9,6 +9,19 @@ from life.constants import SPEEDS
 from life.grid import Grid
 from life.colors import colormap_addstr
 
+PHYSARUM_PRESETS = [
+    # (name, description, sensor_angle, sensor_dist, turn_speed, move_speed, deposit, decay, num_agents_ratio)
+    ("Explorer", "Sparse network — long-range foraging", 0.4, 9.0, 0.3, 1.0, 0.5, 0.02, 0.15),
+    ("Dense Web", "Thick interconnected veins", 0.3, 5.0, 0.4, 1.0, 0.8, 0.01, 0.30),
+    ("Tendrils", "Thin branching filaments", 0.6, 12.0, 0.2, 1.5, 0.3, 0.03, 0.10),
+    ("Pulsing", "Rhythmic contraction patterns", 0.35, 7.0, 0.5, 0.8, 1.0, 0.04, 0.20),
+    ("Maze Solver", "Finds shortest paths between food", 0.25, 8.0, 0.6, 1.0, 0.6, 0.015, 0.25),
+    ("Galaxy", "Spiral arm formation", 0.8, 10.0, 0.15, 1.2, 0.4, 0.025, 0.12),
+]
+
+PHYSARUM_DENSITY = ["  ", "░░", "▒▒", "▓▓", "██"]
+
+
 def _enter_physarum_mode(self):
     """Enter Physarum mode — show preset menu."""
     self.physarum_menu = True
@@ -332,6 +345,8 @@ def _draw_physarum(self, max_y: int, max_x: int):
 
 def register(App):
     """Register physarum mode methods on the App class."""
+    App.PHYSARUM_DENSITY = PHYSARUM_DENSITY
+    App.PHYSARUM_PRESETS = PHYSARUM_PRESETS
     App._enter_physarum_mode = _enter_physarum_mode
     App._exit_physarum_mode = _exit_physarum_mode
     App._physarum_init = _physarum_init

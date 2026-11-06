@@ -3,27 +3,15 @@ import random
 import math
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.particle_life import register
+from life.modes.particle_life import register, PLIFE_PRESETS
 
 
-# (name, desc, num_types, density, max_radius, friction, force_scale, seed)
-PLIFE_PRESETS = [
-    ("Primordial Soup", "Random rules", 6, 0.06, 15.0, 0.5, 0.05, None),
-    ("Symbiosis", "Orbiting species", 4, 0.05, 18.0, 0.4, 0.04, 42),
-    ("Clusters", "Self-organizing clumps", 3, 0.08, 12.0, 0.6, 0.06, 123),
-]
-
-PLIFE_CHARS = ["\u25cf", "\u25c6", "\u25a0", "\u25b2", "\u2605", "\u25c9", "\u2666", "\u2726"]
-PLIFE_COLORS = [1, 2, 3, 4, 5, 6, 7, 1]
 
 
 def _make_plife_app():
     """Create a mock app wired for particle life testing."""
     app = make_mock_app()
     cls = type(app)
-    cls.PLIFE_PRESETS = PLIFE_PRESETS
-    cls.PLIFE_CHARS = PLIFE_CHARS
-    cls.PLIFE_COLORS = PLIFE_COLORS
     app.plife_steps_per_frame = 1
     app.plife_preset_name = ""
     app.plife_num_particles = 0

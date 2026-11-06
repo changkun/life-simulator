@@ -2,8 +2,7 @@
 import random
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.forest_fire import register
-from life.modes.sandpile import FIRE_PRESETS
+from life.modes.forest_fire import register, FIRE_PRESETS
 
 
 class TestForestFire:
@@ -12,7 +11,6 @@ class TestForestFire:
         self.app = make_mock_app()
         cls = type(self.app)
         register(cls)
-        cls.FIRE_PRESETS = FIRE_PRESETS
         # Instance attrs
         self.app.fire_mode = False
         self.app.fire_menu = False

@@ -8,6 +8,49 @@ import time
 from life.constants import SPEEDS, SPEED_LABELS
 from life.grid import Grid
 
+# ── Falling Sand particle simulation ────────────────────────────────────
+# Elements: 0=empty, 1=sand, 2=water, 3=fire, 4=stone, 5=plant
+SAND_EMPTY = 0
+SAND_SAND = 1
+SAND_WATER = 2
+SAND_FIRE = 3
+SAND_STONE = 4
+SAND_PLANT = 5
+SAND_OIL = 6
+SAND_STEAM = 7
+
+SAND_ELEM_NAMES = {0: "empty", 1: "sand", 2: "water", 3: "fire", 4: "stone", 5: "plant", 6: "oil", 7: "steam"}
+SAND_ELEM_COLORS = {
+    1: 3,   # sand = yellow
+    2: 5,   # water = blue
+    3: 2,   # fire = red
+    4: 8,   # stone = white
+    5: 4,   # plant = green
+    6: 6,   # oil = dark/brown (magenta pair used as brown-ish)
+    7: 8,   # steam = dim white
+}
+SAND_ELEM_CHARS = {
+    1: "\u2591\u2591",  # sand: light shade
+    2: "\u2248\u2248",  # water: waves
+    3: "\u2588\u2588",  # fire: full block
+    4: "\u2593\u2593",  # stone: dark shade
+    5: "\u2588\u2588",  # plant: full block
+    6: "\u2592\u2592",  # oil: medium shade
+    7: "\u2591\u2591",  # steam: light shade
+}
+
+SAND_PRESETS = [
+    ("Hourglass", "Sand falling through a narrow gap", "hourglass"),
+    ("Rainfall", "Water drops falling on stone platforms", "rainfall"),
+    ("Bonfire", "Fire burning through a plant forest", "bonfire"),
+    ("Sandbox", "Empty grid — draw freely", "empty"),
+    ("Lava Lamp", "Water and sand mixing", "lavalamp"),
+    ("Forest Fire", "Dense forest with fire ignition points", "forest"),
+    ("Oil Refinery", "Oil floating on water with fire hazards", "oilrig"),
+    ("Waterfall", "Water cascading over stone ledges", "waterfall"),
+]
+
+
 def _sand_build_preset(self, name: str) -> dict[tuple[int, int], tuple[int, int]]:
     """Build a preset scene for falling sand."""
     grid: dict[tuple[int, int], tuple[int, int]] = {}
@@ -750,6 +793,18 @@ def _draw_sand(self, max_y: int, max_x: int):
 
 def register(App):
     """Register sand mode methods on the App class."""
+    App.SAND_ELEM_CHARS = SAND_ELEM_CHARS
+    App.SAND_ELEM_COLORS = SAND_ELEM_COLORS
+    App.SAND_ELEM_NAMES = SAND_ELEM_NAMES
+    App.SAND_EMPTY = SAND_EMPTY
+    App.SAND_FIRE = SAND_FIRE
+    App.SAND_OIL = SAND_OIL
+    App.SAND_PLANT = SAND_PLANT
+    App.SAND_PRESETS = SAND_PRESETS
+    App.SAND_SAND = SAND_SAND
+    App.SAND_STEAM = SAND_STEAM
+    App.SAND_STONE = SAND_STONE
+    App.SAND_WATER = SAND_WATER
     App._sand_build_preset = _sand_build_preset
     App._sand_init = _sand_init
     App._sand_step = _sand_step

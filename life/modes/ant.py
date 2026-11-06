@@ -7,6 +7,21 @@ import time
 
 from life.constants import SPEEDS, SPEED_LABELS
 
+ANT_PRESETS = [
+    ("RL", "Classic Langton's Ant — produces highway after ~10k steps"),
+    ("RLR", "3-color — symmetric triangular patterns"),
+    ("LLRR", "4-color — grows a filled square"),
+    ("LRRRRRLLR", "9-color — intricate fractal growth"),
+    ("RRLLLRLLLRRR", "12-color — chaotic spiral expansion"),
+    ("RRLL", "4-color — diamond-shaped growth"),
+    ("RLLR", "4-color — square with internal structure"),
+    ("LRRL", "4-color — complex highway variant"),
+]
+
+# Colors for ants and multi-state cells
+ANT_COLORS = [1, 2, 3, 4, 5, 6, 7, 8]
+
+
 def _ant_step(self):
     """Advance all ants by one step."""
     for ant in self.ant_ants:
@@ -371,6 +386,8 @@ def _draw_ant(self, max_y: int, max_x: int):
 
 def register(App):
     """Register ant mode methods on the App class."""
+    App.ANT_COLORS = ANT_COLORS
+    App.ANT_PRESETS = ANT_PRESETS
     App._ant_step = _ant_step
     App._ant_init = _ant_init
     App._enter_ant_mode = _enter_ant_mode

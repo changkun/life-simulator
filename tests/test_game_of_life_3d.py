@@ -5,7 +5,7 @@ import random
 from unittest.mock import patch
 
 from tests.conftest import make_mock_app
-from life.modes.game_of_life_3d import register
+from life.modes.game_of_life_3d import register, GOL3D_PRESETS
 
 
 def _make_app(grid_size=8):
@@ -27,12 +27,6 @@ def _make_app(grid_size=8):
     app.gol3d_cam_dist = 2.5
     app.gol3d_auto_rotate = True
     app.gol3d_rotate_speed = 0.02
-    type(app).GOL3D_PRESETS = [
-        ("5766", "B5/S6,7,8 -- slow crystal growth", {5}, {6, 7, 8}, 0.15),
-        ("Clouds", "B13-26/S14-25 -- gas-like expansion", set(range(13, 27)), set(range(14, 26)), 0.4),
-        ("Coral", "B5-8/S4-7 -- organic branching", set(range(5, 9)), set(range(4, 8)), 0.2),
-    ]
-    type(app).GOL3D_SHADE_CHARS = " .:-=+*#%@"
     register(type(app))
     return app
 
@@ -72,26 +66,26 @@ def test_exit_cleanup():
 def test_init_all_presets():
     """Every preset initializes without error."""
     app = _make_app()
-    for idx in range(len(type(app).GOL3D_PRESETS)):
+    for idx in range(len(GOL3D_PRESETS)):
         app._gol3d_init(idx)
         assert app.gol3d_mode is True
         assert app.gol3d_menu is False
         assert app.gol3d_running is True
-        assert app.gol3d_preset_name == type(app).GOL3D_PRESETS[idx][0]
+        assert app.gol3d_preset_name == GOL3D_PRESETS[idx][0]
         assert len(app.gol3d_grid) == app.gol3d_size
 
 
 def test_init_sets_rules():
     app = _make_app()
     app._gol3d_init(0)
-    assert app.gol3d_birth == {5}
-    assert app.gol3d_survive == {6, 7, 8}
+    assert app.gol3d_birth == GOL3D_PRESETS[0][2]
+    assert app.gol3d_survive == GOL3D_PRESETS[0][3]
 
 
 def test_init_populates_near_center():
     """Initial cells are seeded near the center of the grid."""
     app = _make_app()
-    app._gol3d_init(2)  # coral, density=0.2
+    app._gol3d_init(2)  # preset 2
     sz = app.gol3d_size
     has_center_cell = False
     has_corner_cell = False
@@ -306,7 +300,7 @@ def test_menu_navigate_up_wraps():
     app = _make_app()
     app._enter_gol3d_mode()
     app._handle_gol3d_menu_key(ord("k"))
-    n = len(type(app).GOL3D_PRESETS)
+    n = len(GOL3D_PRESETS)
     assert app.gol3d_menu_sel == n - 1
 
 

@@ -4,6 +4,15 @@ import math
 import random
 import time
 
+FLYTHROUGH_PRESETS = [
+    ("Rolling Hills", "Gentle grassy hills — easy flying", "hills"),
+    ("Mountain Range", "Jagged alpine peaks with snow caps", "mountains"),
+    ("Desert Canyon", "Arid canyons and mesas", "canyon"),
+    ("Volcanic Islands", "Ocean with volcanic island chain", "islands"),
+    ("Glacial Valley", "U-shaped valley with icy ridges", "glacial"),
+    ("Alien World", "Strange otherworldly terrain", "alien"),
+]
+
 
 def _enter_flythrough_mode(self):
     """Enter 3D Terrain Flythrough mode — show preset menu."""
@@ -601,6 +610,7 @@ def _draw_flythrough(self, max_y: int, max_x: int):
 
 def register(App):
     """Register flythrough mode methods on the App class."""
+    App.FLYTHROUGH_PRESETS = FLYTHROUGH_PRESETS
     App._enter_flythrough_mode = _enter_flythrough_mode
     App._exit_flythrough_mode = _exit_flythrough_mode
     App._flythrough_generate = _flythrough_generate

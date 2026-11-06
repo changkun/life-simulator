@@ -8,6 +8,20 @@ import time
 from life.constants import SPEEDS
 from life.grid import Grid
 
+BOIDS_PRESETS = [
+    # (name, description, num_ratio, sep_r, ali_r, coh_r, sep_w, ali_w, coh_w, max_spd)
+    ("Murmuration", "Tight flocks with predator avoidance", 0.08, 2.5, 7.0, 12.0, 2.5, 1.2, 1.0, 1.2),
+    ("Fish School", "Slow, cohesive groups", 0.06, 3.0, 6.0, 10.0, 1.5, 1.5, 1.8, 0.6),
+    ("Swarm", "Fast, loosely coupled agents", 0.10, 2.0, 10.0, 15.0, 1.0, 0.8, 0.5, 1.5),
+    ("Migration", "Long-range aligned movement", 0.04, 3.0, 15.0, 20.0, 1.2, 2.0, 0.8, 1.0),
+    ("Dense Flock", "Tightly packed formation", 0.12, 2.0, 5.0, 8.0, 2.0, 1.5, 2.0, 0.8),
+    ("Chaos", "High separation, low cohesion", 0.10, 4.0, 6.0, 8.0, 3.0, 0.5, 0.3, 1.8),
+]
+
+# Direction arrows: 8 directions based on velocity angle
+BOIDS_ARROWS = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"]
+
+
 def _enter_boids_mode(self):
     """Enter Boids mode — show preset menu."""
     self.boids_menu = True
@@ -348,29 +362,11 @@ def _draw_boids(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-# ══════════════════════════════════════════════════════════════════════
-#  Particle Life (Primordial Soup) — Mode 10 (key '0')
-# ══════════════════════════════════════════════════════════════════════
-
-# Particle type display characters and color pairs
-PLIFE_CHARS = ["●", "◆", "■", "▲", "★", "◉", "♦", "✦"]
-PLIFE_COLORS = [1, 2, 3, 4, 5, 6, 7, 1]  # color pair indices
-
-PLIFE_PRESETS = [
-    # (name, description, num_types, density, max_radius, friction, force_scale, seed_or_none)
-    ("Primordial Soup", "Random rules — classic emergent life", 6, 0.06, 15.0, 0.5, 0.05, None),
-    ("Symbiosis", "Species that orbit and depend on each other", 4, 0.05, 18.0, 0.4, 0.04, 42),
-    ("Clusters", "Tight self-organizing clumps", 3, 0.08, 12.0, 0.6, 0.06, 123),
-    ("Predator-Prey", "Chasing and fleeing dynamics", 5, 0.05, 20.0, 0.3, 0.04, 7),
-    ("Galaxy", "Spiraling orbital structures", 4, 0.04, 25.0, 0.35, 0.03, 314),
-    ("Chaos", "High energy, many types, wild behavior", 8, 0.07, 14.0, 0.25, 0.07, None),
-]
-
-
-
 
 def register(App):
     """Register boids mode methods on the App class."""
+    App.BOIDS_ARROWS = BOIDS_ARROWS
+    App.BOIDS_PRESETS = BOIDS_PRESETS
     App._enter_boids_mode = _enter_boids_mode
     App._exit_boids_mode = _exit_boids_mode
     App._boids_init = _boids_init

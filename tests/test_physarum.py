@@ -3,24 +3,15 @@ import math
 import random
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.physarum import register
+from life.modes.physarum import register, PHYSARUM_PRESETS
 
 
-# (name, desc, sensor_angle, sensor_dist, turn_speed, move_speed, deposit, decay, ratio)
-PHYSARUM_PRESETS = [
-    ("Classic", "Standard slime mold behavior", 0.4, 9.0, 0.3, 1.0, 0.5, 0.02, 0.03),
-    ("Branching", "Dense branching network", 0.6, 12.0, 0.4, 1.2, 0.6, 0.015, 0.04),
-]
-
-PHYSARUM_DENSITY = ["  ", "\u2591\u2591", "\u2592\u2592", "\u2593\u2593", "\u2588\u2588"]
 
 
 def _make_physarum_app():
     """Create and configure a mock app for Physarum testing."""
     app = make_mock_app()
     cls = type(app)
-    cls.PHYSARUM_PRESETS = PHYSARUM_PRESETS
-    cls.PHYSARUM_DENSITY = PHYSARUM_DENSITY
     app.physarum_steps_per_frame = 2
     app.physarum_preset_name = ""
     app.physarum_num_agents = 0
@@ -47,26 +38,28 @@ class TestPhysarumInit:
         assert self.app.physarum_generation == 0
         assert len(self.app.physarum_agents) > 0
         assert len(self.app.physarum_trail) > 0
-        assert self.app.physarum_preset_name == "Classic"
+        assert self.app.physarum_preset_name == PHYSARUM_PRESETS[0][0]
 
     def test_init_branching(self):
         self.app._physarum_init(1)
-        assert self.app.physarum_preset_name == "Branching"
-        assert self.app.physarum_sensor_angle == 0.6
-        assert self.app.physarum_sensor_dist == 12.0
-        assert self.app.physarum_turn_speed == 0.4
-        assert self.app.physarum_move_speed == 1.2
-        assert self.app.physarum_deposit == 0.6
-        assert self.app.physarum_decay == 0.015
+        name, _d, sa, sd, ts, ms, dep, dec, _r = PHYSARUM_PRESETS[1]
+        assert self.app.physarum_preset_name == name
+        assert self.app.physarum_sensor_angle == sa
+        assert self.app.physarum_sensor_dist == sd
+        assert self.app.physarum_turn_speed == ts
+        assert self.app.physarum_move_speed == ms
+        assert self.app.physarum_deposit == dep
+        assert self.app.physarum_decay == dec
 
     def test_init_sets_correct_parameters(self):
         self.app._physarum_init(0)
-        assert self.app.physarum_sensor_angle == 0.4
-        assert self.app.physarum_sensor_dist == 9.0
-        assert self.app.physarum_turn_speed == 0.3
-        assert self.app.physarum_move_speed == 1.0
-        assert self.app.physarum_deposit == 0.5
-        assert self.app.physarum_decay == 0.02
+        _n, _d, sa, sd, ts, ms, dep, dec, _r = PHYSARUM_PRESETS[0]
+        assert self.app.physarum_sensor_angle == sa
+        assert self.app.physarum_sensor_dist == sd
+        assert self.app.physarum_turn_speed == ts
+        assert self.app.physarum_move_speed == ms
+        assert self.app.physarum_deposit == dep
+        assert self.app.physarum_decay == dec
 
     def test_init_trail_all_zeros(self):
         self.app._physarum_init(0)
@@ -78,7 +71,7 @@ class TestPhysarumInit:
     def test_init_agent_count_respects_ratio(self):
         self.app._physarum_init(0)
         rows, cols = self.app.physarum_rows, self.app.physarum_cols
-        expected = max(50, int(rows * cols * 0.03))
+        expected = max(50, int(rows * cols * PHYSARUM_PRESETS[0][8]))
         assert self.app.physarum_num_agents == expected
         assert len(self.app.physarum_agents) == expected
 

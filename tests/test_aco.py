@@ -3,17 +3,7 @@ import math
 import random
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.aco import register
-
-
-# ACO_PRESETS and ACO_DENSITY are referenced on self but never defined as class attrs
-# Define them here for testing
-ACO_PRESETS = [
-    ("Foraging", "Classic foraging — ants search for food", 0.01, 0.3, 0.1, 0.05, 3, 3),
-    ("Dense Colony", "Many ants, strong pheromone", 0.005, 0.5, 0.15, 0.08, 5, 4),
-]
-
-ACO_DENSITY = ["  ", "░░", "▒▒", "▓▓", "██"]
+from life.modes.aco import register, ACO_PRESETS
 
 
 def _make_aco_app(rows=40, cols=120):
@@ -21,8 +11,6 @@ def _make_aco_app(rows=40, cols=120):
     app = make_mock_app(rows=rows, cols=cols)
     cls = type(app)
     register(cls)
-    cls.ACO_PRESETS = ACO_PRESETS
-    cls.ACO_DENSITY = ACO_DENSITY
     # Instance attrs
     app.aco_mode = False
     app.aco_menu = False
@@ -108,9 +96,9 @@ class TestACOInit:
 
     def test_food_sources_created(self):
         self.app._aco_init(0)
-        # Preset 0 has num_food=3
+        num_food = ACO_PRESETS[0][6]
         assert len(self.app.aco_food) > 0
-        assert len(self.app.aco_food) <= 3
+        assert len(self.app.aco_food) <= num_food
 
     def test_food_sources_away_from_nest(self):
         self.app._aco_init(0)
@@ -128,16 +116,17 @@ class TestACOInit:
 
     def test_preset_parameters_applied(self):
         self.app._aco_init(0)
-        # Preset 0: evap=0.01, dep=0.3, diff=0.1
-        assert self.app.aco_evaporation == 0.01
-        assert self.app.aco_deposit_strength == 0.3
-        assert self.app.aco_diffusion == 0.1
+        _n, _d, evap, dep, diff = ACO_PRESETS[0][:5]
+        assert self.app.aco_evaporation == evap
+        assert self.app.aco_deposit_strength == dep
+        assert self.app.aco_diffusion == diff
 
     def test_second_preset(self):
         self.app._aco_init(1)
-        assert self.app.aco_evaporation == 0.005
-        assert self.app.aco_deposit_strength == 0.5
-        assert self.app.aco_diffusion == 0.15
+        _n, _d, evap, dep, diff = ACO_PRESETS[1][:5]
+        assert self.app.aco_evaporation == evap
+        assert self.app.aco_deposit_strength == dep
+        assert self.app.aco_diffusion == diff
 
     def test_generation_reset(self):
         self.app._aco_init(0)
@@ -205,6 +194,9 @@ class TestACOPheromone:
         # Remove ants
         self.app.aco_ants = []
         self.app.aco_num_ants = 0
+
+        # Disable evaporation so the diffused amount is not clamped to zero
+        self.app.aco_evaporation = 0.0
 
         # Set a single pheromone point
         self.app.aco_pheromone = [[0.0] * cols for _ in range(rows)]

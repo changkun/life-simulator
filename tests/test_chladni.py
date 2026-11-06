@@ -3,15 +3,10 @@ import math
 import random
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.chladni import register
+from life.modes.chladni import register, CHLADNI_PRESETS
 
 
-CHLADNI_PRESETS = [
-    ("Mode (2,3)", "Classic Chladni figure m=2 n=3", "2_3"),
-    ("Mode (1,1)", "Fundamental mode m=1 n=1", "1_1"),
-    ("Mode (3,5)", "Higher mode m=3 n=5", "3_5"),
-    ("Sweep", "Frequency sweep through modes", "sweep"),
-]
+SWEEP_IDX = next(i for i, p in enumerate(CHLADNI_PRESETS) if p[2] == "sweep")
 
 
 class TestChladni:
@@ -19,7 +14,6 @@ class TestChladni:
         random.seed(42)
         self.app = make_mock_app()
         cls = type(self.app)
-        cls.CHLADNI_PRESETS = CHLADNI_PRESETS
         self.app.chladni_menu_sel = 0
         register(cls)
 
@@ -77,8 +71,9 @@ class TestChladni:
 
     def test_sweep_preset_initial_values(self):
         """Sweep preset should start with m=1, n=2, freq=0.5."""
-        self.app.chladni_menu_sel = 3
-        self.app._chladni_init(3)  # sweep
+        idx = SWEEP_IDX
+        self.app.chladni_menu_sel = idx
+        self.app._chladni_init(idx)  # sweep
         assert self.app.chladni_m == 1
         assert self.app.chladni_n == 2
         assert self.app.chladni_freq == 0.5
@@ -185,8 +180,8 @@ class TestChladni:
 
     def test_sweep_increases_frequency(self):
         """In sweep mode, frequency should increase each step."""
-        self.app.chladni_menu_sel = 3  # sweep
-        self.app._chladni_init(3)
+        self.app.chladni_menu_sel = SWEEP_IDX
+        self.app._chladni_init(SWEEP_IDX)
         freq_before = self.app.chladni_freq
         self.app._chladni_step()
         assert self.app.chladni_freq > freq_before

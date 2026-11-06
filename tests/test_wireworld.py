@@ -3,38 +3,15 @@ import curses
 import random
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.wireworld import register
-
-
-# Wireworld state constants (from docs/classic-ca.md)
-WW_EMPTY = 0
-WW_CONDUCTOR = 1
-WW_HEAD = 2
-WW_TAIL = 3
-
-# Minimal presets for testing
-WW_PRESETS = [
-    ("Empty", "Start with an empty grid", None),
-    ("Diode", "Simple one-way signal", {
-        (5, 5): WW_CONDUCTOR,
-        (5, 6): WW_CONDUCTOR,
-        (5, 7): WW_HEAD,
-        (5, 8): WW_TAIL,
-        (5, 9): WW_CONDUCTOR,
-    }),
-]
+from life.modes.wireworld import (
+    register, WW_EMPTY, WW_CONDUCTOR, WW_HEAD, WW_TAIL, WW_PRESETS,
+)
 
 
 def _make_ww_app():
     """Create a mock app with wireworld registered and initialized."""
     app = make_mock_app()
-    cls = type(app)
-    cls.WW_EMPTY = WW_EMPTY
-    cls.WW_CONDUCTOR = WW_CONDUCTOR
-    cls.WW_HEAD = WW_HEAD
-    cls.WW_TAIL = WW_TAIL
-    cls.WW_PRESETS = WW_PRESETS
-    register(cls)
+    register(type(app))
     app.ww_mode = True
     app.ww_running = False
     app.ww_drawing = True
@@ -61,7 +38,7 @@ class TestWireworld:
         assert self.app.ww_cols >= 10
 
     def test_init_with_preset(self):
-        cells = WW_PRESETS[1][2]
+        cells = WW_PRESETS[0][2]
         self.app._ww_init(cells)
         assert len(self.app.ww_grid) > 0
         # All cell states should be valid wireworld states
@@ -323,7 +300,7 @@ class TestWireworldCircuits:
 
     def test_diode_forward_propagation(self):
         """Diode preset: electron should propagate through."""
-        cells = WW_PRESETS[1][2]  # Diode preset
+        cells = WW_PRESETS[0][2]  # Diode preset
         self.app._ww_init(cells)
         initial_gen = self.app.ww_generation
         for _ in range(5):
@@ -508,7 +485,7 @@ class TestWireworldStepMulti:
 
     def test_10_steps_no_crash(self):
         """Run the diode preset 10 steps without crashing."""
-        cells = WW_PRESETS[1][2]
+        cells = WW_PRESETS[0][2]
         self.app._ww_init(cells)
         for _ in range(10):
             self.app._ww_step()

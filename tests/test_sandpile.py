@@ -2,8 +2,7 @@
 import random
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.sandpile import register
-from life.modes.dla import SANDPILE_PRESETS, SANDPILE_CHARS, SANDPILE_OVERFLOW_CHAR
+from life.modes.sandpile import register, SANDPILE_PRESETS, SANDPILE_CHARS, SANDPILE_OVERFLOW_CHAR
 from life.constants import SPEEDS
 
 
@@ -12,9 +11,6 @@ def _setup_app():
     app = make_mock_app()
     cls = type(app)
     register(cls)
-    cls.SANDPILE_PRESETS = SANDPILE_PRESETS
-    cls.SANDPILE_CHARS = SANDPILE_CHARS
-    cls.SANDPILE_OVERFLOW_CHAR = SANDPILE_OVERFLOW_CHAR
     app.sandpile_mode = False
     app.sandpile_menu = False
     app.sandpile_menu_sel = 0

@@ -4,26 +4,14 @@ import random
 import curses
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.galaxy import register
+from life.modes.galaxy import register, GALAXY_PRESETS
 
-
-GALAXY_PRESETS = [
-    ("Milky Way", "Spiral galaxy with bulge and disk", "milky_way"),
-    ("Grand Design", "Two-arm spiral galaxy", "grand_design"),
-    ("Whirlpool", "Galaxy with companion", "whirlpool"),
-    ("Elliptical", "Giant elliptical galaxy", "elliptical"),
-    ("Dwarf", "Small irregular galaxy", "dwarf"),
-    ("Merger", "Two colliding galaxies", "merger"),
-    ("Ring", "Ring galaxy with central cluster", "ring"),
-    ("Barred", "Barred spiral galaxy", "barred"),
-]
 
 
 def _make_galaxy_app():
     """Create a mock app with galaxy mode registered."""
     app = make_mock_app()
     cls = type(app)
-    cls.GALAXY_PRESETS = GALAXY_PRESETS
     register(cls)
     return app
 
@@ -297,7 +285,7 @@ class TestGalaxySimKeys:
         app = _make_galaxy_app()
         app.galaxy_mode = True
         app._galaxy_init("dwarf")
-        app.galaxy_preset_name = "Dwarf"
+        app.galaxy_preset_name = next(n for n, _d, pid in GALAXY_PRESETS if pid == "dwarf")
         return app
 
     def test_space_toggles_running(self):

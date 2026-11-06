@@ -2,61 +2,17 @@
 import random
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.falling_sand import register
-
-
-# Sand element type constants
-SAND_EMPTY = 0
-SAND_SAND = 1
-SAND_WATER = 2
-SAND_FIRE = 3
-SAND_STONE = 4
-SAND_PLANT = 5
-SAND_OIL = 6
-SAND_STEAM = 7
-
-SAND_PRESETS = [
-    ("Empty", "Start with an empty grid", "empty"),
-    ("Hourglass", "Sand flowing through a narrow gap", "hourglass"),
-    ("Rainfall", "Water flowing over stone platforms", "rainfall"),
-    ("Bonfire", "Fire spreading through a forest", "bonfire"),
-    ("Lava Lamp", "Layered sand and water", "lavalamp"),
-    ("Forest", "Dense plant growth with fire", "forest"),
-    ("Oil Rig", "Oil floating on water with fire", "oilrig"),
-    ("Waterfall", "Water cascading over ledges", "waterfall"),
-]
-
-SAND_ELEM_NAMES = {
-    0: "empty", 1: "sand", 2: "water", 3: "fire",
-    4: "stone", 5: "plant", 6: "oil", 7: "steam",
-}
-SAND_ELEM_COLORS = {
-    0: 0, 1: 3, 2: 4, 3: 1, 4: 6, 5: 2, 6: 5, 7: 7,
-}
-SAND_ELEM_CHARS = {
-    1: "\u2591\u2591", 2: "\u2248\u2248", 3: "\u2588\u2588",
-    4: "\u2588\u2588", 5: "\u2663\u2663", 6: "\u2592\u2592",
-    7: "\u00b0\u00b0",
-}
+from life.modes.falling_sand import (
+    register, SAND_EMPTY, SAND_SAND, SAND_WATER, SAND_FIRE, SAND_STONE,
+    SAND_PLANT, SAND_OIL, SAND_STEAM, SAND_PRESETS, SAND_ELEM_NAMES,
+    SAND_ELEM_COLORS, SAND_ELEM_CHARS,
+)
 
 
 def _make_sand_app():
     """Create a mock app with sand mode registered."""
     app = make_mock_app()
-    cls = type(app)
-    cls.SAND_EMPTY = SAND_EMPTY
-    cls.SAND_SAND = SAND_SAND
-    cls.SAND_WATER = SAND_WATER
-    cls.SAND_FIRE = SAND_FIRE
-    cls.SAND_STONE = SAND_STONE
-    cls.SAND_PLANT = SAND_PLANT
-    cls.SAND_OIL = SAND_OIL
-    cls.SAND_STEAM = SAND_STEAM
-    cls.SAND_PRESETS = SAND_PRESETS
-    cls.SAND_ELEM_NAMES = SAND_ELEM_NAMES
-    cls.SAND_ELEM_COLORS = SAND_ELEM_COLORS
-    cls.SAND_ELEM_CHARS = SAND_ELEM_CHARS
-    register(cls)
+    register(type(app))
     return app
 
 

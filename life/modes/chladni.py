@@ -4,6 +4,17 @@ import math
 import random
 import time
 
+CHLADNI_PRESETS = [
+    ("Classic (2,3)", "Elegant star-like Chladni figure", "2_3"),
+    ("Simple (1,2)", "Basic cross pattern", "1_2"),
+    ("Complex (3,5)", "Intricate high-mode pattern", "3_5"),
+    ("Symmetric (4,4)", "Square symmetry nodal lines", "4_4"),
+    ("Cathedral (5,7)", "Dense cathedral-window pattern", "5_7"),
+    ("Butterfly (2,5)", "Butterfly-wing nodal figure", "2_5"),
+    ("Diamond (3,4)", "Diamond lattice pattern", "3_4"),
+    ("Harmonic Sweep", "Slowly sweep through frequencies", "sweep"),
+]
+
 
 def _enter_chladni_mode(self):
     """Enter Chladni Plate Vibration Patterns mode — show preset menu."""
@@ -500,6 +511,7 @@ def _draw_chladni(self, max_y: int, max_x: int):
 
 def register(App):
     """Register chladni mode methods on the App class."""
+    App.CHLADNI_PRESETS = CHLADNI_PRESETS
     App._enter_chladni_mode = _enter_chladni_mode
     App._exit_chladni_mode = _exit_chladni_mode
     App._chladni_init = _chladni_init

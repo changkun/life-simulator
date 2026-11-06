@@ -4,6 +4,15 @@ import math
 import random
 import time
 
+CLOTH_PRESETS = [
+    ("Hanging Cloth", "Fabric pinned along top edge, draping under gravity", "hanging"),
+    ("Curtain", "Two-point pinned curtain swaying in wind", "curtain"),
+    ("Flag", "Flag pinned on left edge, flapping in wind", "flag"),
+    ("Hammock", "Fabric pinned at corners, sagging in middle", "hammock"),
+    ("Net", "Coarse net with wide spacing and high tear threshold", "net"),
+    ("Silk Sheet", "Dense, fine fabric with low damping", "silk"),
+]
+
 
 def _cloth_build_points(self, preset: str):
     """Set up cloth point mass grid and constraints for a preset."""
@@ -514,6 +523,7 @@ def _draw_cloth(self, max_y: int, max_x: int):
 
 def register(App):
     """Register cloth mode methods on the App class."""
+    App.CLOTH_PRESETS = CLOTH_PRESETS
     App._cloth_build_points = _cloth_build_points
     App._cloth_init = _cloth_init
     App._cloth_step = _cloth_step

@@ -4,22 +4,9 @@ import heapq
 import random
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.maze import register
+from life.modes.maze import register, MAZE_PRESETS
 
 
-# MAZE_PRESETS is referenced on self but never registered as class attr
-MAZE_PRESETS = [
-    ("DFS Backtracker + BFS", "Recursive backtracker generation, BFS solve",
-     "backtracker", "bfs", 1),
-    ("Prim + A*", "Prim's algorithm generation, A* solve",
-     "prim", "astar", 1),
-    ("Kruskal + DFS", "Kruskal's algorithm generation, DFS solve",
-     "kruskal", "dfs", 1),
-    ("Kruskal + Dijkstra", "Kruskal's algorithm generation, Dijkstra solve",
-     "kruskal", "dijkstra", 1),
-    ("Backtracker + A*", "Recursive backtracker generation, A* solve",
-     "backtracker", "astar", 1),
-]
 
 
 def _make_maze_app():
@@ -27,7 +14,6 @@ def _make_maze_app():
     app = make_mock_app()
     cls = type(app)
     register(cls)
-    cls.MAZE_PRESETS = MAZE_PRESETS
     # Instance attrs that _maze_init expects
     app.maze_mode = False
     app.maze_menu = False
@@ -304,11 +290,7 @@ class TestMazeSolving:
         return app
 
     @pytest.mark.parametrize("preset_idx,desc", [
-        (0, "backtracker+bfs"),
-        (1, "prim+astar"),
-        (2, "kruskal+dfs"),
-        (3, "kruskal+dijkstra"),
-        (4, "backtracker+astar"),
+        (i, f"{p[2]}+{p[3]}") for i, p in enumerate(MAZE_PRESETS)
     ])
     def test_solver_finds_path(self, preset_idx, desc):
         """Each preset should find a valid path."""
@@ -318,10 +300,8 @@ class TestMazeSolving:
         assert _verify_path_valid(app), f"{desc}: path is invalid"
 
     @pytest.mark.parametrize("preset_idx,desc", [
-        (0, "backtracker+bfs"),
-        (1, "prim+astar"),
-        (3, "kruskal+dijkstra"),
-        (4, "backtracker+astar"),
+        (i, f"{p[2]}+{p[3]}") for i, p in enumerate(MAZE_PRESETS)
+        if p[3] in ("bfs", "astar", "dijkstra")
     ])
     def test_optimal_solvers_find_shortest_path(self, preset_idx, desc):
         """BFS, A*, and Dijkstra should find the shortest path (verified by independent BFS)."""
@@ -479,41 +459,45 @@ class TestMazeAlgorithmInvariants:
                 break
         assert len(app.maze_gen_edges) == 0
 
-    def test_astar_heuristic_admissible(self):
+    def test_astar_heuristic_admissible(self, monkeypatch):
         """A* with Manhattan distance heuristic is admissible for grid mazes."""
         # Verify that the A* solver produces the same path length as BFS
         random.seed(42)
         app = _make_maze_app()
-        app._maze_init(4)  # backtracker + astar
+        monkeypatch.setattr(type(app), "MAZE_PRESETS",
+                            [("t", "t", "backtracker", "astar", 1)])
+        app._maze_init(0)
         _run_to_completion(app)
         astar_len = len(app.maze_solve_path)
 
         # Reset and solve with BFS for comparison
         random.seed(42)
         app2 = _make_maze_app()
-        app2._maze_init(0)  # backtracker + bfs (same seed = same maze)
+        monkeypatch.setattr(type(app2), "MAZE_PRESETS",
+                            [("t", "t", "backtracker", "bfs", 1)])
+        app2._maze_init(0)  # same seed = same maze
         _run_to_completion(app2)
         bfs_len = len(app2.maze_solve_path)
 
         assert astar_len == bfs_len, f"A* path ({astar_len}) != BFS path ({bfs_len})"
 
-    def test_dijkstra_same_as_bfs_for_uniform_cost(self):
+    def test_dijkstra_same_as_bfs_for_uniform_cost(self, monkeypatch):
         """Dijkstra should find same-length path as BFS on unweighted maze."""
         random.seed(42)
         # kruskal + dijkstra
         app_dij = _make_maze_app()
-        type(app_dij).MAZE_PRESETS = MAZE_PRESETS
-        app_dij._maze_init(3)
+        monkeypatch.setattr(type(app_dij), "MAZE_PRESETS",
+                            [("t", "t", "kruskal", "dijkstra", 1)])
+        app_dij._maze_init(0)
         _run_to_completion(app_dij)
         dij_len = len(app_dij.maze_solve_path)
 
         # Same maze with BFS
         random.seed(42)
-        bfs_presets = list(MAZE_PRESETS)
-        bfs_presets[3] = ("Kruskal + BFS-check", "test", "kruskal", "bfs", 1)
+        bfs_presets = [("t", "t", "kruskal", "bfs", 1)]
         app_bfs = _make_maze_app()
-        type(app_bfs).MAZE_PRESETS = bfs_presets
-        app_bfs._maze_init(3)
+        monkeypatch.setattr(type(app_bfs), "MAZE_PRESETS", bfs_presets)
+        app_bfs._maze_init(0)
         _run_to_completion(app_bfs)
         bfs_len = len(app_bfs.maze_solve_path)
 

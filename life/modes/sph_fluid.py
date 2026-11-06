@@ -4,6 +4,17 @@ import math
 import random
 import time
 
+SPH_PRESETS = [
+    ("Dam Break", "Column of water collapsing under gravity", "dam"),
+    ("Double Dam", "Two water columns colliding in the center", "double_dam"),
+    ("Dropping Block", "Dense block of fluid dropped into a pool", "drop"),
+    ("Rain", "Particles falling like rain into a basin", "rain"),
+    ("Wave Tank", "Sloshing wave in a rectangular tank", "wave"),
+    ("Fountain", "Continuous upward jet creating a fountain", "fountain"),
+]
+
+SPH_CHARS = [" ", "·", "∘", "○", "●", "◉"]
+
 
 def _enter_sph_mode(self):
     """Enter SPH mode — show preset menu."""
@@ -526,6 +537,8 @@ def _draw_sph(self, max_y: int, max_x: int):
 
 def register(App):
     """Register sph mode methods on the App class."""
+    App.SPH_CHARS = SPH_CHARS
+    App.SPH_PRESETS = SPH_PRESETS
     App._enter_sph_mode = _enter_sph_mode
     App._exit_sph_mode = _exit_sph_mode
     App._sph_init = _sph_init

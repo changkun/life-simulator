@@ -3,29 +3,15 @@ import math
 import random
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.ifs_fractals import register
-
-
-IFS_PRESETS = [
-    ("Sierpinski", "Sierpinski triangle via chaos game", "sierpinski"),
-    ("Fern", "Barnsley fern IFS", "fern"),
-    ("Vicsek", "Vicsek snowflake fractal", "vicsek"),
-    ("Carpet", "Sierpinski carpet", "carpet"),
-    ("Dragon", "Heighway dragon curve", "dragon"),
-    ("Maple", "Maple leaf fractal", "maple"),
-    ("Koch", "Koch snowflake via IFS", "koch"),
-    ("Crystal", "Symmetric crystal pattern", "crystal"),
-]
+from life.modes.ifs_fractals import register, IFS_PRESETS
 
 
 class TestIFSFractals:
     def setup_method(self):
         random.seed(42)
         self.app = make_mock_app()
-        cls = type(self.app)
-        cls.IFS_PRESETS = IFS_PRESETS
         self.app.ifs_menu_sel = 0
-        register(cls)
+        register(type(self.app))
 
     def test_enter(self):
         self.app._enter_ifs_mode()

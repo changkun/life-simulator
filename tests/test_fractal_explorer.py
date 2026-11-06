@@ -3,37 +3,14 @@ import math
 import random
 import pytest
 from tests.conftest import make_mock_app
-from life.modes.fractal_explorer import register
-
-
-FRACTAL_PRESETS = [
-    ("Mandelbrot Classic", "The full Mandelbrot set", "mandelbrot_classic"),
-    ("Seahorse Valley", "Deep zoom into seahorse valley", "mandelbrot_seahorse"),
-    ("Elephant Valley", "Elephant valley region", "mandelbrot_elephant"),
-    ("Minibrot", "Miniature Mandelbrot copy", "mandelbrot_minibrot"),
-    ("Spiral", "Spiral structure", "mandelbrot_spiral"),
-    ("Julia Dendrite", "Dendrite Julia set c=i", "julia_dendrite"),
-    ("Julia Rabbit", "Douady rabbit Julia set", "julia_rabbit"),
-    ("Julia San Marco", "San Marco Julia set", "julia_sanmarco"),
-    ("Julia Siegel", "Siegel disk Julia set", "julia_siegel"),
-    ("Julia Dragon", "Dragon Julia set", "julia_dragon"),
-]
-
-FRACTAL_COLOR_SCHEMES = [
-    ("Classic", [1, 2, 3, 4, 5, 6, 7]),
-    ("Fire", [1, 3, 7]),
-    ("Ocean", [4, 3, 6]),
-]
-
-FRACTAL_DENSITY = " .:-=+*#%@"
+from life.modes.fractal_explorer import (
+    register, FRACTAL_PRESETS, FRACTAL_COLOR_SCHEMES, FRACTAL_DENSITY,
+)
 
 
 def _make_app():
     app = make_mock_app()
-    cls = type(app)
-    cls.FRACTAL_PRESETS = FRACTAL_PRESETS
-    cls.FRACTAL_COLOR_SCHEMES = FRACTAL_COLOR_SCHEMES
-    cls.FRACTAL_DENSITY = FRACTAL_DENSITY
+    register(type(app))
     app.fractal_julia_re = -0.7
     app.fractal_julia_im = 0.27015
     app.fractal_type = "mandelbrot"
@@ -53,7 +30,6 @@ def _make_app():
     app.fractal_running = False
     app.fractal_generation = 0
     app.fractal_preset_name = ""
-    register(cls)
     return app
 
 
@@ -312,12 +288,9 @@ class TestFractalColorSchemes:
     def test_color_scheme_cycles(self):
         n = len(FRACTAL_COLOR_SCHEMES)
         self.app.fractal_color_scheme = 0
-        self.app.fractal_color_scheme = (self.app.fractal_color_scheme + 1) % n
-        assert self.app.fractal_color_scheme == 1
-        self.app.fractal_color_scheme = (self.app.fractal_color_scheme + 1) % n
-        assert self.app.fractal_color_scheme == 2
-        self.app.fractal_color_scheme = (self.app.fractal_color_scheme + 1) % n
-        assert self.app.fractal_color_scheme == 0  # wraps
+        for i in range(1, n + 1):
+            self.app.fractal_color_scheme = (self.app.fractal_color_scheme + 1) % n
+            assert self.app.fractal_color_scheme == i % n  # wraps at n
 
     def test_max_iter_adjustment(self):
         self.app.fractal_max_iter = 80

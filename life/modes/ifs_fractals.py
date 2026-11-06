@@ -4,6 +4,17 @@ import math
 import random
 import time
 
+IFS_PRESETS = [
+    ("Sierpinski Triangle", "Classic chaos game — 3 vertices, ratio 1/2", "sierpinski"),
+    ("Barnsley Fern", "Nature's fractal — realistic fern leaf", "fern"),
+    ("Vicsek Snowflake", "5-fold symmetric cross fractal", "vicsek"),
+    ("Sierpinski Carpet", "Square fractal with center removed", "carpet"),
+    ("Dragon Curve", "Heighway dragon — space-filling curve", "dragon"),
+    ("Maple Leaf", "IFS approximation of a maple leaf", "maple"),
+    ("Koch Snowflake", "Triangular snowflake via IFS", "koch"),
+    ("Crystal", "Symmetric crystal growth pattern", "crystal"),
+]
+
 
 def _enter_ifs_mode(self):
     """Enter Chaos Game / IFS Fractal mode — show preset menu."""
@@ -472,6 +483,7 @@ def _draw_ifs(self, max_y: int, max_x: int):
 
 def register(App):
     """Register ifs mode methods on the App class."""
+    App.IFS_PRESETS = IFS_PRESETS
     App._enter_ifs_mode = _enter_ifs_mode
     App._exit_ifs_mode = _exit_ifs_mode
     App._ifs_init = _ifs_init

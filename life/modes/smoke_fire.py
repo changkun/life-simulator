@@ -4,6 +4,15 @@ import math
 import random
 import time
 
+SMOKEFIRE_PRESETS = [
+    ("Campfire", "Cozy campfire with rising smoke plumes", "campfire"),
+    ("Wildfire Spread", "Fire spreading across fuel-rich terrain", "wildfire"),
+    ("Explosion Burst", "Sudden high-intensity blast with shockwave", "explosion"),
+    ("Candle Row", "A row of small candle-like flames", "candles"),
+    ("Inferno", "Massive blaze with intense heat and turbulence", "inferno"),
+    ("Smoke Stack", "Industrial chimney belching smoke", "smokestack"),
+]
+
 
 def _smokefire_build_preset(self, name: str):
     """Set up a smoke-fire preset scene."""
@@ -603,6 +612,7 @@ def _draw_smokefire(self, max_y: int, max_x: int):
 
 def register(App):
     """Register smokefire mode methods on the App class."""
+    App.SMOKEFIRE_PRESETS = SMOKEFIRE_PRESETS
     App._smokefire_build_preset = _smokefire_build_preset
     App._smokefire_init = _smokefire_init
     App._smokefire_step = _smokefire_step

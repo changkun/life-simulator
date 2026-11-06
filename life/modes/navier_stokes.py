@@ -4,6 +4,24 @@ import math
 import random
 import time
 
+# ══════════════════════════════════════════════════════════════════════
+#  Navier-Stokes Fluid Dynamics — Mode Ctrl+D
+# ══════════════════════════════════════════════════════════════════════
+
+NS_PRESETS = [
+    ("Dye Playground", "Empty canvas — inject dye with cursor and watch it flow", "playground"),
+    ("Vortex Pair", "Two counter-rotating vortices merging", "vortex_pair"),
+    ("Jet Stream", "Continuous fluid jet from the left wall", "jet"),
+    ("Karman Vortices", "Flow past a circular obstacle with vortex shedding", "karman"),
+    ("Four Corners", "Dye sources in each corner with opposing flows", "four_corners"),
+    ("Shear Layer", "Opposing horizontal flows creating Kelvin-Helmholtz instability", "shear"),
+]
+
+NS_DYE_CHARS = [" ", "░", "▒", "▓", "█"]
+NS_VEL_CHARS = [" ", "·", "∘", "○", "●"]
+NS_VORT_POS = [" ", "·", "∘", "○", "◉"]
+NS_VORT_NEG = [" ", "·", "∙", "•", "⬤"]
+
 
 def _enter_ns_mode(self):
     """Enter Navier-Stokes Fluid Dynamics mode — show preset menu."""
@@ -739,6 +757,11 @@ def _draw_ns(self, max_y: int, max_x: int):
 
 def register(App):
     """Register ns mode methods on the App class."""
+    App.NS_DYE_CHARS = NS_DYE_CHARS
+    App.NS_PRESETS = NS_PRESETS
+    App.NS_VEL_CHARS = NS_VEL_CHARS
+    App.NS_VORT_NEG = NS_VORT_NEG
+    App.NS_VORT_POS = NS_VORT_POS
     App._enter_ns_mode = _enter_ns_mode
     App._exit_ns_mode = _exit_ns_mode
     App._ns_make_grid = _ns_make_grid

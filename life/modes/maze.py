@@ -5,6 +5,18 @@ import math
 import random
 import time
 
+MAZE_PRESETS = [
+    # (name, description, gen_algo, solve_algo, maze_scale)
+    # maze_scale: 1=full density, 2=half (bigger corridors visually)
+    ("Classic DFS + A*", "Recursive backtracker maze solved with A*", "backtracker", "astar", 1),
+    ("Prim + Dijkstra", "Prim's random maze with Dijkstra solver", "prim", "dijkstra", 1),
+    ("Kruskal + BFS", "Kruskal's maze with breadth-first search", "kruskal", "bfs", 1),
+    ("Backtracker + DFS", "DFS generation and DFS solving", "backtracker", "dfs", 1),
+    ("Prim + A*", "Prim's algorithm with A* pathfinding", "prim", "astar", 1),
+    ("Kruskal + Dijkstra", "Kruskal's random maze with Dijkstra", "kruskal", "dijkstra", 1),
+]
+
+
 
 def _enter_maze_mode(self):
     """Enter Maze mode — show preset menu."""
@@ -526,10 +538,9 @@ def _draw_maze(self, max_y: int, max_x: int):
             pass
 
 
-
-
 def register(App):
     """Register maze mode methods on the App class."""
+    App.MAZE_PRESETS = MAZE_PRESETS
     App._enter_maze_mode = _enter_maze_mode
     App._exit_maze_mode = _exit_maze_mode
     App._maze_init = _maze_init
