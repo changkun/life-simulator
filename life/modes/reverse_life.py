@@ -669,7 +669,7 @@ def _is_reverse_life_auto_stepping(self):
     return getattr(self, 'reverse_life_running', False)
 
 
-def _draw_reverse_life(self):
+def _draw_reverse_life(self, max_y=None, max_x=None):
     """Render the Reverse Life mode display."""
     scr = self.stdscr
     scr.erase()

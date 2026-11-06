@@ -550,7 +550,7 @@ def _handle_labyrinth_key(self, key):
 
 # ── Drawing ──
 
-def _draw_labyrinth(self):
+def _draw_labyrinth(self, max_y=None, max_x=None):
     """Render the Living Labyrinth."""
     scr = self.stdscr
     scr.erase()
@@ -766,7 +766,7 @@ def _handle_labyrinth_menu_key(self, key):
     return _handle_labyrinth_key(self, key)
 
 
-def _draw_labyrinth_menu(self):
+def _draw_labyrinth_menu(self, max_y=None, max_x=None):
     """No separate menu draw."""
     _draw_labyrinth(self)
 

@@ -1283,7 +1283,7 @@ def _handle_adversary_menu_key(self, key):
     return _handle_adversary_key(self, key)
 
 
-def _draw_adversary_menu(self):
+def _draw_adversary_menu(self, max_y=None, max_x=None):
     _draw_adversary(self)
 
 

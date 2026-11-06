@@ -555,7 +555,7 @@ def _is_archaeo_auto_stepping(self):
 
 # ── Drawing ──────────────────────────────────────────────────────────
 
-def _draw_archaeo(self):
+def _draw_archaeo(self, max_y=None, max_x=None):
     """Main draw function."""
     self.stdscr.erase()
     try:
@@ -596,7 +596,7 @@ def _draw_archaeo(self):
         pass
 
 
-def _draw_archaeo_menu(self):
+def _draw_archaeo_menu(self, max_y=None, max_x=None):
     """Alias for menu draw."""
     _draw_archaeo(self)
 

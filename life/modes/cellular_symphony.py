@@ -373,7 +373,7 @@ def _symphony_step(self):
         _symphony_advance_row(self)
 
 
-def _draw_symphony(self):
+def _draw_symphony(self, max_y=None, max_x=None):
     """Render the Cellular Symphony display."""
     win = self.stdscr
     win.erase()
