@@ -194,7 +194,19 @@ def _screensaver_auto_select_preset(self, entry):
                 # Simulate pressing Enter (key 10) on the menu
                 handler = getattr(self, f"_handle_{prefix}_menu_key", None)
                 if handler:
-                    handler(10)  # Enter key
+                    # The screensaver is unattended: a menu item that asks
+                    # for text input must not block waiting for keystrokes.
+                    self._prompt_text = lambda prompt: None
+                    try:
+                        handler(10)  # Enter key
+                    finally:
+                        del self._prompt_text
+                # Enter landed on a settings item: start with defaults if the
+                # init helper starts the mode, else fall back to its menu.
+                if getattr(self, menu_attr, False):
+                    init_fn()
+                    if not getattr(self, attr_base, False):
+                        getattr(self, entry["enter"])()
                 return
             except Exception:
                 pass
