@@ -32,10 +32,14 @@ def _enter_screensaver_mode(self):
 
 def _exit_screensaver_mode(self):
     """Exit Screensaver mode — clean up and exit any active sub-mode."""
-    # Exit whatever mode is currently running
-    if self.screensaver_active_mode is not None:
-        self._exit_current_modes()
+    # Clear our own flags first: _exit_current_modes() calls the exit hook of
+    # every active mode, including this one, and would otherwise recurse.
+    active = self.screensaver_active_mode
     self.screensaver_mode = False
+    self.screensaver_active_mode = None
+    # Exit whatever mode is currently running
+    if active is not None:
+        self._exit_current_modes()
     self.screensaver_menu = False
     self.screensaver_running = False
     self.screensaver_playlist = []
