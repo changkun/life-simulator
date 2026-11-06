@@ -178,7 +178,7 @@ def _seed_grid(grid, density, style):
         n_clusters = random.randint(2, 5)
         for _ in range(n_clusters):
             cr, cc = random.randint(0, rows - 1), random.randint(0, cols - 1)
-            radius = random.randint(2, min(6, rows // 3))
+            radius = random.randint(2, max(2, min(6, rows // 3)))
             for r in range(max(0, cr - radius), min(rows, cr + radius)):
                 for c in range(max(0, cc - radius), min(cols, cc + radius)):
                     if random.random() < density * 1.5:
