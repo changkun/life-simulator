@@ -152,7 +152,11 @@ def _dla_spawn_walkers(self):
     spawn_r = min(self.dla_max_radius + 10, min(rows, cols) // 2 - 2)
     self.dla_spawn_radius = spawn_r
 
-    while len(self.dla_walkers) < self.dla_num_walkers:
+    # Bounded attempts: the spawn region may be (nearly) full of crystal.
+    attempts = 0
+    max_attempts = 20 * max(1, self.dla_num_walkers)
+    while len(self.dla_walkers) < self.dla_num_walkers and attempts < max_attempts:
+        attempts += 1
         if self.dla_symmetry > 1:
             # For symmetric presets, spawn uniformly
             angle = random.random() * 2 * math.pi
