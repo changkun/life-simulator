@@ -219,7 +219,8 @@ def _galaxy_build_particles(self, preset: str):
         ring_r = min(cx, cy) * 0.5
         for _ in range(200):
             angle = random.uniform(0, 2 * math.pi)
-            r = ring_r + random.gauss(0, 2.0)
+            # Radius is a distance: on small grids ring_r is within a few sigma of 0
+            r = abs(ring_r + random.gauss(0, 2.0))
             x = cx + r * math.cos(angle)
             y = cy + r * math.sin(angle)
             # Outward expansion + circular orbit
