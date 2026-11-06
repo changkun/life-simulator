@@ -900,6 +900,10 @@ def _handle_sweb_menu_key(self, key: int) -> bool:
 
 def _handle_sweb_key(self, key: int) -> bool:
     """Handle key input during simulation."""
+    if key == ord("q") or key == 27:
+        self._exit_sweb_mode()
+        return True
+
     if key == ord(" "):
         self.sweb_running = not self.sweb_running
         self._flash("Running" if self.sweb_running else "Paused")

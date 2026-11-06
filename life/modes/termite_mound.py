@@ -843,6 +843,10 @@ def _handle_tmound_menu_key(self, key: int) -> bool:
 
 def _handle_tmound_key(self, key: int) -> bool:
     """Handle key input during simulation."""
+    if key == ord("q") or key == 27:
+        self._exit_tmound_mode()
+        return True
+
     if key == ord(" "):
         self.tmound_running = not self.tmound_running
         self._flash("Running" if self.tmound_running else "Paused")

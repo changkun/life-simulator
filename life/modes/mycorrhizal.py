@@ -882,6 +882,10 @@ def _handle_myco_menu_key(self, key: int) -> bool:
 
 def _handle_myco_key(self, key: int) -> bool:
     """Handle key input during simulation."""
+    if key == ord("q") or key == 27:
+        self._exit_myco_mode()
+        return True
+
     if key == ord(" "):
         self.myco_running = not self.myco_running
         self._flash("Running" if self.myco_running else "Paused")

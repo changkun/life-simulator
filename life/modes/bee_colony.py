@@ -1006,6 +1006,10 @@ def _handle_bee_menu_key(self, key: int) -> bool:
 
 def _handle_bee_key(self, key: int) -> bool:
     """Handle key input during simulation."""
+    if key == ord("q") or key == 27:
+        self._exit_bee_mode()
+        return True
+
     if key == ord(" "):
         self.bee_running = not self.bee_running
         self._flash("Running" if self.bee_running else "Paused")
