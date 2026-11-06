@@ -3343,12 +3343,15 @@ class App:
             time.sleep(delay)
 
         # Determine step count: look for {prefix}_steps_per_frame, then {prefix}_speed,
-        # then {prefix}_speed_mult, defaulting to 1
+        # then {prefix}_speed_mult, defaulting to 1. Only integers count:
+        # float "speed" attributes are time scales / movement speeds, not
+        # steps per frame.
         prefix = md['prefix']
         step_count = 1
         for count_attr in (f'{prefix}_steps_per_frame', f'{prefix}_speed', f'{prefix}_speed_mult'):
-            if hasattr(self, count_attr):
-                step_count = getattr(self, count_attr)
+            val = getattr(self, count_attr, None)
+            if isinstance(val, int) and not isinstance(val, bool):
+                step_count = val
                 break
 
         # Call step function
