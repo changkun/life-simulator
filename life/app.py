@@ -3300,18 +3300,20 @@ class App:
     def _dispatch_mode_key(self, key: int) -> bool:
         """Route key input to the active mode via MODE_DISPATCH table.
 
-        Returns True and signals 'continue' if a mode handled the key.
+        Returns True (signals 'continue') whenever a table-driven mode or its
+        menu is active, even if the handler ignored the key: an active mode
+        owns input, so unclaimed keys must not fall through to the Game of
+        Life handler (where e.g. 'q' quits and space steps the hidden grid).
         Returns False if no table-driven mode is active.
         """
         for md in MODE_DISPATCH:
             menu_attr = md['menu_attr']
             # Check menu first
-            if hasattr(self, menu_attr) and getattr(self, menu_attr, False):
+            if getattr(self, menu_attr, False):
                 handler = getattr(self, md['menu_keys'], None)
-                if handler and handler(key):
-                    return True
-                # Menu is open but handler didn't consume -> still block fallthrough
-                return False
+                if handler:
+                    handler(key)
+                return True
             # Check mode
             if getattr(self, md['attr'], False):
                 handler = getattr(self, md['keys'], None)
@@ -3320,10 +3322,7 @@ class App:
                 # handler does not explicitly claim them.
                 if (consumed or key == -1) and not md['no_step']:
                     self._auto_step_mode(md)
-                if consumed or key == -1:
-                    return True
-                # Mode is active but handler didn't consume -> still block fallthrough
-                return False
+                return True
         return False
 
     def _auto_step_mode(self, md: dict):
