@@ -615,6 +615,11 @@ def _handle_stellar_menu_key(self, key):
         self.stellar_menu = False
         _stellar_init(self, self.stellar_menu_sel)
         self.stellar_running = True
+    elif key in (ord('q'), 27):
+        self._exit_stellar_mode()
+    else:
+        return False
+    return True
 
 
 def _handle_stellar_key(self, key):

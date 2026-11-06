@@ -521,6 +521,11 @@ def _handle_firefly_menu_key(self, key):
         self.firefly_menu = False
         _firefly_init(self, self.firefly_menu_sel)
         self.firefly_running = True
+    elif key in (ord('q'), 27):
+        self._exit_firefly_mode()
+    else:
+        return False
+    return True
 
 
 def _handle_firefly_key(self, key):
