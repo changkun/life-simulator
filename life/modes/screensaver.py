@@ -4,7 +4,7 @@ import math
 import random
 import time
 
-from life.registry import MODE_REGISTRY
+from life.registry import MODE_DISPATCH, MODE_REGISTRY
 
 
 # ── Screensaver presets ──
@@ -57,8 +57,14 @@ def _screensaver_build_playlist(self):
     except Exception:
         pass
 
-    # Filter modes — skip Game of Life (no enter fn) and the screensaver itself
-    all_modes = [m for m in MODE_REGISTRY if m["enter"] is not None and m["attr"] != "screensaver_mode"]
+    # Play only table-dispatched simulations: the helpers below rely on their
+    # {prefix}_menu / _{prefix}_step / {prefix}_running conventions. This also
+    # skips Game of Life, the screensaver itself, toggles such as Topology and
+    # cast recording, and interactive or persistent meta modes.
+    dispatched = {md["attr"] for md in MODE_DISPATCH}
+    all_modes = [m for m in MODE_REGISTRY
+                 if m["enter"] is not None and m["attr"] in dispatched
+                 and m["attr"] != "screensaver_mode"]
 
     if preset == "all_sequential":
         playlist = list(all_modes)
