@@ -184,14 +184,14 @@ def _tpool_init(self, preset_idx: int):
 
     # Terrain
     self.tpool_grid = [[TILE_ROCK] * cols for _ in range(rows)]
+    # Algae density (0-1 per cell)
+    self.tpool_algae = [[0.0] * cols for _ in range(rows)]
+
     _tpool_make_terrain(self, pid)
 
     # Temperature / desiccation fields
     self.tpool_temp = [[0.0] * cols for _ in range(rows)]
     self.tpool_moisture = [[1.0] * cols for _ in range(rows)]
-
-    # Algae density (0-1 per cell)
-    self.tpool_algae = [[0.0] * cols for _ in range(rows)]
 
     # Organisms
     self.tpool_sessile = []    # list of _Sessile
