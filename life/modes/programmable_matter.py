@@ -263,80 +263,81 @@ class _PMCell:
 def _progmatter_init(self, preset_idx: int):
     """Initialize the programmable matter simulation."""
     name, _desc, shape_key, prog_fn, n_cells, counter_mode = PM_PRESETS[preset_idx]
-    self.pm_preset_name = name
-    self.pm_preset_idx = preset_idx
-    self.pm_generation = 0
-    self.pm_running = False
-    self.pm_counter_mode = counter_mode
+    self.progmatter_mode = True
+    self.progmatter_preset_name = name
+    self.progmatter_preset_idx = preset_idx
+    self.progmatter_generation = 0
+    self.progmatter_running = False
+    self.progmatter_counter_mode = counter_mode
 
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(16, max_y - 6)
     cols = max(16, (max_x - 30) // 2)
-    self.pm_rows = rows
-    self.pm_cols = cols
+    self.progmatter_rows = rows
+    self.progmatter_cols = cols
 
     # build target shape
     if shape_key == "circle":
-        self.pm_target = _shape_circle(rows, cols)
+        self.progmatter_target = _shape_circle(rows, cols)
     elif shape_key == "square":
-        self.pm_target = _shape_square(rows, cols)
+        self.progmatter_target = _shape_square(rows, cols)
     elif shape_key.startswith("letter_"):
-        self.pm_target = _shape_letter(rows, cols, shape_key[-1])
+        self.progmatter_target = _shape_letter(rows, cols, shape_key[-1])
     elif shape_key == "diamond":
-        self.pm_target = _shape_diamond(rows, cols)
+        self.progmatter_target = _shape_diamond(rows, cols)
     elif shape_key == "line":
         cr = rows // 2
-        self.pm_target = {(cr, c) for c in range(cols // 4, 3 * cols // 4)}
+        self.progmatter_target = {(cr, c) for c in range(cols // 4, 3 * cols // 4)}
     else:
-        self.pm_target = set()
+        self.progmatter_target = set()
 
     # compute target centroid
-    if self.pm_target:
-        tr = sum(r for r, c in self.pm_target) / len(self.pm_target)
-        tc = sum(c for r, c in self.pm_target) / len(self.pm_target)
-        self.pm_target_centroid = (tr, tc)
+    if self.progmatter_target:
+        tr = sum(r for r, c in self.progmatter_target) / len(self.progmatter_target)
+        tc = sum(c for r, c in self.progmatter_target) / len(self.progmatter_target)
+        self.progmatter_target_centroid = (tr, tc)
     else:
-        self.pm_target_centroid = (rows // 2, cols // 2)
+        self.progmatter_target_centroid = (rows // 2, cols // 2)
 
     # program
     program = prog_fn()
-    self.pm_program = program
+    self.progmatter_program = program
 
     # grid: None or _PMCell
-    self.pm_grid = [[None] * cols for _ in range(rows)]
+    self.progmatter_grid = [[None] * cols for _ in range(rows)]
 
     # place cells randomly
     positions = [(r, c) for r in range(rows) for c in range(cols)]
     random.shuffle(positions)
     n_cells = min(n_cells, len(positions))
-    self.pm_cell_count = n_cells
+    self.progmatter_cell_count = n_cells
     for i in range(n_cells):
         r, c = positions[i]
-        self.pm_grid[r][c] = _PMCell(list(program))
-        self.pm_grid[r][c].reg_a = random.randint(0, 3)
+        self.progmatter_grid[r][c] = _PMCell(list(program))
+        self.progmatter_grid[r][c].reg_a = random.randint(0, 3)
 
     # signal field (for visualization and READ)
-    self.pm_signal = [[0.0] * cols for _ in range(rows)]
+    self.progmatter_signal = [[0.0] * cols for _ in range(rows)]
     # damage tracking for self-repair demo
-    self.pm_damage_flash = 0
+    self.progmatter_damage_flash = 0
     # stats
-    self.pm_bonded_count = 0
-    self.pm_on_target = 0
-    self.pm_max_signal = 0
+    self.progmatter_bonded_count = 0
+    self.progmatter_on_target = 0
+    self.progmatter_max_signal = 0
     # viz mode: 0=cells, 1=signals, 2=target overlay
-    self.pm_viz = 0
-    self.pm_cursor_r = rows // 2
-    self.pm_cursor_c = cols // 2
-    self.pm_show_info = True
-    self.pm_speed = 1  # steps per frame
+    self.progmatter_viz = 0
+    self.progmatter_cursor_r = rows // 2
+    self.progmatter_cursor_c = cols // 2
+    self.progmatter_show_info = True
+    self.progmatter_speed = 1  # steps per frame
 
 
 def _progmatter_step(self):
     """Execute one generation of the programmable matter simulation."""
-    rows, cols = self.pm_rows, self.pm_cols
-    grid = self.pm_grid
-    target = self.pm_target
-    tc_r, tc_c = self.pm_target_centroid
+    rows, cols = self.progmatter_rows, self.progmatter_cols
+    grid = self.progmatter_grid
+    target = self.progmatter_target
+    tc_r, tc_c = self.progmatter_target_centroid
 
     # Phase 1: execute programs for all cells
     moves = []  # (old_r, old_c, new_r, new_c)
@@ -395,7 +396,7 @@ def _progmatter_step(self):
                 elif op == OP_SIGNAL:
                     cell.signal_val = cell.reg_b if cell.reg_b else cell.reg_c
                     cell.state = ST_SIGNALING
-                    self.pm_signal[r][c] = max(self.pm_signal[r][c],
+                    self.progmatter_signal[r][c] = max(self.progmatter_signal[r][c],
                                                float(cell.signal_val) + 1.0)
 
                 elif op == OP_READ:
@@ -512,15 +513,15 @@ def _progmatter_step(self):
     new_sig = [[0.0] * cols for _ in range(rows)]
     for r in range(rows):
         for c in range(cols):
-            val = self.pm_signal[r][c] * 0.6
+            val = self.progmatter_signal[r][c] * 0.6
             for dr, dc in DR:
                 nr, nc = r + dr, c + dc
                 if 0 <= nr < rows and 0 <= nc < cols:
-                    val += self.pm_signal[nr][nc] * 0.08
+                    val += self.progmatter_signal[nr][nc] * 0.08
             if grid[r][c] is not None and grid[r][c].signal_val > 0:
                 val = max(val, float(grid[r][c].signal_val))
             new_sig[r][c] = val
-    self.pm_signal = new_sig
+    self.progmatter_signal = new_sig
 
     # Phase 5: stats
     bonded = 0
@@ -537,15 +538,15 @@ def _progmatter_step(self):
                 if (r, c) in target:
                     on_target += 1
                 max_sig = max(max_sig, cell.signal_val)
-    self.pm_bonded_count = bonded
-    self.pm_on_target = on_target
-    self.pm_cell_count = cell_count
-    self.pm_max_signal = max_sig
+    self.progmatter_bonded_count = bonded
+    self.progmatter_on_target = on_target
+    self.progmatter_cell_count = cell_count
+    self.progmatter_max_signal = max_sig
 
-    if self.pm_damage_flash > 0:
-        self.pm_damage_flash -= 1
+    if self.progmatter_damage_flash > 0:
+        self.progmatter_damage_flash -= 1
 
-    self.pm_generation += 1
+    self.progmatter_generation += 1
 
 
 def _best_dir_to_target(r, c, target, rows, cols):
@@ -584,16 +585,16 @@ def _min_dist_to_target(r, c, target, rows, cols):
 
 def _enter_progmatter_mode(self):
     """Enter Programmable Matter — show preset menu."""
-    self.pm_menu = True
-    self.pm_menu_sel = 0
+    self.progmatter_menu = True
+    self.progmatter_menu_sel = 0
     self._flash("Programmable Matter — select a configuration")
 
 
 def _exit_progmatter_mode(self):
     """Exit Programmable Matter mode."""
     self.progmatter_mode = False
-    self.pm_menu = False
-    self.pm_running = False
+    self.progmatter_menu = False
+    self.progmatter_running = False
     self._flash("Programmable Matter mode OFF")
 
 
@@ -602,15 +603,15 @@ def _exit_progmatter_mode(self):
 def _handle_progmatter_menu_key(self, key: int) -> bool:
     """Handle keys in preset selection menu."""
     if key == curses.KEY_UP:
-        self.pm_menu_sel = (self.pm_menu_sel - 1) % len(PM_PRESETS)
+        self.progmatter_menu_sel = (self.progmatter_menu_sel - 1) % len(PM_PRESETS)
         return True
     if key == curses.KEY_DOWN:
-        self.pm_menu_sel = (self.pm_menu_sel + 1) % len(PM_PRESETS)
+        self.progmatter_menu_sel = (self.progmatter_menu_sel + 1) % len(PM_PRESETS)
         return True
     if key in (curses.KEY_ENTER, 10, 13):
-        self.pm_menu = False
-        _progmatter_init(self, self.pm_menu_sel)
-        self._flash(f"Programmable Matter: {PM_PRESETS[self.pm_menu_sel][0]}")
+        self.progmatter_menu = False
+        _progmatter_init(self, self.progmatter_menu_sel)
+        self._flash(f"Programmable Matter: {PM_PRESETS[self.progmatter_menu_sel][0]}")
         return True
     if key in (ord("q"), ord("Q"), 27):
         _exit_progmatter_mode(self)
@@ -623,60 +624,60 @@ def _handle_progmatter_menu_key(self, key: int) -> bool:
 def _handle_progmatter_key(self, key: int) -> bool:
     """Handle keys during simulation."""
     if key == ord(" "):
-        self.pm_running = not self.pm_running
+        self.progmatter_running = not self.progmatter_running
         return True
     if key in (ord("q"), ord("Q"), 27):
         _exit_progmatter_mode(self)
         return True
     if key == ord("v"):
-        self.pm_viz = (self.pm_viz + 1) % 3
+        self.progmatter_viz = (self.progmatter_viz + 1) % 3
         labels = ["Cells", "Signal Field", "Target Overlay"]
-        self._flash(f"View: {labels[self.pm_viz]}")
+        self._flash(f"View: {labels[self.progmatter_viz]}")
         return True
     if key == ord("i"):
-        self.pm_show_info = not self.pm_show_info
+        self.progmatter_show_info = not self.progmatter_show_info
         return True
     if key == ord("d"):
         # damage: remove cells in 3x3 area around cursor
         for dr in range(-2, 3):
             for dc in range(-2, 3):
-                nr = self.pm_cursor_r + dr
-                nc = self.pm_cursor_c + dc
-                if 0 <= nr < self.pm_rows and 0 <= nc < self.pm_cols:
-                    if self.pm_grid[nr][nc] is not None:
-                        self.pm_grid[nr][nc] = None
-        self.pm_damage_flash = 10
+                nr = self.progmatter_cursor_r + dr
+                nc = self.progmatter_cursor_c + dc
+                if 0 <= nr < self.progmatter_rows and 0 <= nc < self.progmatter_cols:
+                    if self.progmatter_grid[nr][nc] is not None:
+                        self.progmatter_grid[nr][nc] = None
+        self.progmatter_damage_flash = 10
         self._flash("Damage dealt! Watch self-repair...")
         return True
     if key == ord("+") or key == ord("="):
-        self.pm_speed = min(5, self.pm_speed + 1)
-        self._flash(f"Speed: {self.pm_speed}x")
+        self.progmatter_speed = min(5, self.progmatter_speed + 1)
+        self._flash(f"Speed: {self.progmatter_speed}x")
         return True
     if key == ord("-"):
-        self.pm_speed = max(1, self.pm_speed - 1)
-        self._flash(f"Speed: {self.pm_speed}x")
+        self.progmatter_speed = max(1, self.progmatter_speed - 1)
+        self._flash(f"Speed: {self.progmatter_speed}x")
         return True
     # cursor movement
     if key == curses.KEY_UP:
-        self.pm_cursor_r = max(0, self.pm_cursor_r - 1)
+        self.progmatter_cursor_r = max(0, self.progmatter_cursor_r - 1)
         return True
     if key == curses.KEY_DOWN:
-        self.pm_cursor_r = min(self.pm_rows - 1, self.pm_cursor_r + 1)
+        self.progmatter_cursor_r = min(self.progmatter_rows - 1, self.progmatter_cursor_r + 1)
         return True
     if key == curses.KEY_LEFT:
-        self.pm_cursor_c = max(0, self.pm_cursor_c - 1)
+        self.progmatter_cursor_c = max(0, self.progmatter_cursor_c - 1)
         return True
     if key == curses.KEY_RIGHT:
-        self.pm_cursor_c = min(self.pm_cols - 1, self.pm_cursor_c + 1)
+        self.progmatter_cursor_c = min(self.progmatter_cols - 1, self.progmatter_cursor_c + 1)
         return True
     if key == ord("r"):
         # reset / restart with same preset
-        _progmatter_init(self, self.pm_preset_idx)
+        _progmatter_init(self, self.progmatter_preset_idx)
         self._flash("Reset!")
         return True
     if key == ord("s"):
         # single step
-        for _ in range(self.pm_speed):
+        for _ in range(self.progmatter_speed):
             _progmatter_step(self)
         return True
     return False
@@ -703,8 +704,8 @@ def _draw_progmatter_menu(self, max_y: int, max_x: int):
         for i, (name, desc, *_rest) in enumerate(PM_PRESETS):
             if y + 1 >= max_y:
                 break
-            marker = ">" if i == self.pm_menu_sel else " "
-            attr = curses.A_REVERSE if i == self.pm_menu_sel else 0
+            marker = ">" if i == self.progmatter_menu_sel else " "
+            attr = curses.A_REVERSE if i == self.progmatter_menu_sel else 0
             line = f" {marker} {name}"
             self.stdscr.addstr(y, x, line[:max_x - x - 1], attr | curses.A_BOLD)
             y += 1
@@ -724,11 +725,11 @@ def _draw_progmatter_menu(self, max_y: int, max_x: int):
 
 def _draw_progmatter(self, max_y: int, max_x: int):
     """Draw the programmable matter simulation."""
-    rows, cols = self.pm_rows, self.pm_cols
-    grid = self.pm_grid
-    target = self.pm_target
-    viz = self.pm_viz
-    sig = self.pm_signal
+    rows, cols = self.progmatter_rows, self.progmatter_cols
+    grid = self.progmatter_grid
+    target = self.progmatter_target
+    viz = self.progmatter_viz
+    sig = self.progmatter_signal
 
     # cell glyphs by state
     state_ch = {
@@ -817,8 +818,8 @@ def _draw_progmatter(self, max_y: int, max_x: int):
                 pass
 
     # cursor
-    cy = self.pm_cursor_r + 1
-    cx = self.pm_cursor_c * 2
+    cy = self.progmatter_cursor_r + 1
+    cx = self.progmatter_cursor_c * 2
     if 0 < cy < max_y - 2 and 0 <= cx < max_x - 28:
         try:
             self.stdscr.addstr(cy, cx, "X",
@@ -828,7 +829,7 @@ def _draw_progmatter(self, max_y: int, max_x: int):
             pass
 
     # damage flash
-    if self.pm_damage_flash > 0:
+    if self.progmatter_damage_flash > 0:
         try:
             self.stdscr.addstr(0, 0, " DAMAGE! ", curses.A_BOLD | curses.A_REVERSE |
                                (curses.color_pair(2) if has_color else 0))
@@ -836,7 +837,7 @@ def _draw_progmatter(self, max_y: int, max_x: int):
             pass
 
     # info panel (right side)
-    if self.pm_show_info:
+    if self.progmatter_show_info:
         _draw_pm_info(self, max_y, max_x, has_color)
 
 
@@ -846,34 +847,34 @@ def _draw_pm_info(self, max_y, max_x, has_color):
     if px < 10:
         return
     py = 1
-    target = self.pm_target
+    target = self.progmatter_target
     target_size = len(target) if target else 0
 
     lines = [
         ("PROGRAMMABLE MATTER", curses.A_BOLD),
-        (f"Preset: {self.pm_preset_name}", curses.A_DIM),
+        (f"Preset: {self.progmatter_preset_name}", curses.A_DIM),
         ("", 0),
-        (f"Gen: {self.pm_generation}", 0),
-        (f"Cells: {self.pm_cell_count}", 0),
-        (f"Bonded: {self.pm_bonded_count}", 0),
+        (f"Gen: {self.progmatter_generation}", 0),
+        (f"Cells: {self.progmatter_cell_count}", 0),
+        (f"Bonded: {self.progmatter_bonded_count}", 0),
     ]
 
     if target_size > 0:
-        pct = self.pm_on_target / target_size * 100 if target_size else 0
-        lines.append((f"On target: {self.pm_on_target}/{target_size}", 0))
+        pct = self.progmatter_on_target / target_size * 100 if target_size else 0
+        lines.append((f"On target: {self.progmatter_on_target}/{target_size}", 0))
         # progress bar
         bar_w = 20
         filled = int(pct / 100 * bar_w)
         bar = "[" + "#" * filled + "." * (bar_w - filled) + "]"
         lines.append((f"{pct:5.1f}% {bar}", curses.A_BOLD))
 
-    if self.pm_counter_mode:
-        lines.append((f"Max signal: {self.pm_max_signal}", 0))
+    if self.progmatter_counter_mode:
+        lines.append((f"Max signal: {self.progmatter_max_signal}", 0))
 
     lines.append(("", 0))
-    lines.append((f"Speed: {self.pm_speed}x", curses.A_DIM))
+    lines.append((f"Speed: {self.progmatter_speed}x", curses.A_DIM))
     viz_names = ["Cells", "Signals", "Target"]
-    lines.append((f"View: {viz_names[self.pm_viz]}", curses.A_DIM))
+    lines.append((f"View: {viz_names[self.progmatter_viz]}", curses.A_DIM))
 
     lines.append(("", 0))
     lines.append(("-- Controls --", curses.A_BOLD))
@@ -889,7 +890,7 @@ def _draw_pm_info(self, max_y, max_x, has_color):
     # program listing
     lines.append(("", 0))
     lines.append(("-- Program --", curses.A_BOLD))
-    for i, (op, operand) in enumerate(self.pm_program):
+    for i, (op, operand) in enumerate(self.progmatter_program):
         name = OP_NAMES.get(op, "???")
         marker = ">" if i == 0 else " "  # just show program
         lines.append((f" {marker}{i:02d} {name} {operand}", curses.A_DIM))
@@ -906,7 +907,7 @@ def _draw_pm_info(self, max_y, max_x, has_color):
 
 def _is_progmatter_auto_stepping(self):
     """Return True if mode should auto-step."""
-    return self.pm_running
+    return self.progmatter_running
 
 
 # ── Registration ─────────────────────────────────────────────────────────
