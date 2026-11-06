@@ -15,6 +15,11 @@ SEASON_AUTUMN = 2
 SEASON_WINTER = 3
 SEASON_NAMES = ["Spring", "Summer", "Autumn", "Winter"]
 SEASON_DURATION = 30  # steps per season
+# Hard cap on a plant's L-system string length.  The grammars grow 4-8x per
+# generation, so the nominal max_depth values yield strings of up to ~45M
+# characters; everything below (interpretation, light competition and the
+# time-travel snapshots of lsystem_* state) is linear in this length.
+MAX_STRING_LEN = 20000
 
 
 # ── Species library — L-system grammars ───────────────────────────────────────
@@ -108,6 +113,17 @@ def _make_plant(species_id: str, x: float, y: float, mutation: float = 0.0) -> d
                     rule[idx] = random.choice(choices)
                     rules[k] = "".join(rule)
 
+    # Clamp max_depth so the fully-grown string stays within MAX_STRING_LEN.
+    max_depth = 0
+    cur = sp["axiom"]
+    while max_depth < sp["max_depth"]:
+        nxt_len = sum(len(rules.get(ch, ch)) for ch in cur) if len(cur) <= MAX_STRING_LEN else MAX_STRING_LEN + 1
+        if nxt_len > MAX_STRING_LEN:
+            break
+        cur = "".join(rules.get(ch, ch) for ch in cur)
+        max_depth += 1
+    max_depth = max(1, max_depth)
+
     return {
         "species": species_id,
         "x": x, "y": y,
@@ -117,7 +133,7 @@ def _make_plant(species_id: str, x: float, y: float, mutation: float = 0.0) -> d
         "depth": 0,
         "string": sp["axiom"],
         "length_scale": length_scale,
-        "max_depth": sp["max_depth"],
+        "max_depth": max_depth,
         "flower": sp["flower"],
         "deciduous": sp["deciduous"],
         "color_trunk": sp["color_trunk"],
