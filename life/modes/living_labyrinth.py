@@ -743,8 +743,6 @@ def _draw_labyrinth(self, max_y=None, max_x=None):
             except curses.error:
                 pass
 
-    scr.nontimeout(True)
-    scr.timeout(100)  # 100ms refresh for responsiveness
 
 
 # ── Step (auto-called by dispatch) ──

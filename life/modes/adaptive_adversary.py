@@ -1165,8 +1165,6 @@ def _draw_adversary(self, max_y=None, max_x=None):
     if self.adversary_show_report:
         _draw_adversary_report(self, scr, max_h, max_w, view_h)
 
-    scr.nontimeout(True)
-    scr.timeout(100)
 
 
 def _draw_adversary_report(self, scr, max_h, max_w, view_h):
