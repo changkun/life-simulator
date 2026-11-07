@@ -16,6 +16,10 @@ import random
 import time
 
 
+# Agents are clamped 0.5 from the domain edge, so an exit on the boundary is
+# never closer than 0.5; the escape radius must be larger than that.
+_EXIT_REACH = 0.75
+
 # ══════════════════════════════════════════════════════════════════════
 #  Presets
 # ══════════════════════════════════════════════════════════════════════
@@ -210,17 +214,15 @@ def _spawn_agents(preset_id, rows, cols, walls, exits):
 
     elif preset_id == "concert":
         n = min(250, int(rows * cols * 0.12))
-        right_exits = [e for e in exits if e[1] >= cols - 2]
-        if right_exits:
-            ex_r = sum(e[0] for e in right_exits) / len(right_exits)
-            ex_c = sum(e[1] for e in right_exits) / len(right_exits)
         for _ in range(n):
             for _try in range(20):
                 r = random.randint(2, rows - 3)
                 c = random.randint(cols // 5, cols - 3)
                 if (r, c) not in walls:
                     break
-            a = _Agent(float(c), float(r), ex_c, ex_r,
+            # Aim at the nearest exit cell; the mean of the two exits is a wall.
+            best_exit = min(exits, key=lambda e: (e[0] - r) ** 2 + (e[1] - c) ** 2)
+            a = _Agent(float(c), float(r), float(best_exit[1]), float(best_exit[0]),
                        desired_speed=1.3 * (0.8 + 0.4 * rng()),
                        panic=0.2 + 0.3 * rng())
             agents.append(a)
@@ -280,7 +282,8 @@ def _spawn_agents(preset_id, rows, cols, walls, exits):
         for _ in range(n):
             r = random.randint(rows // 2, rows - 2)
             c = random.randint(2, cols - 3)
-            a = _Agent(float(c), float(r), ex_c, ex_r,
+            best_exit = min(exits, key=lambda e: (e[0] - r) ** 2 + (e[1] - c) ** 2)
+            a = _Agent(float(c), float(r), float(best_exit[1]), float(best_exit[0]),
                        desired_speed=1.8 * (0.8 + 0.4 * rng()),
                        panic=0.5 + 0.4 * rng())
             agents.append(a)
@@ -316,8 +319,7 @@ def _crowd_compute_forces(self):
         dx = agent.target_x - agent.x
         dy = agent.target_y - agent.y
         dist_to_target = math.sqrt(dx * dx + dy * dy)
-        if dist_to_target < 0.5:
-            # Reached target (exit)
+        if dist_to_target < _EXIT_REACH:
             agent.escaped = True
             continue
 
