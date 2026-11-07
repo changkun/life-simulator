@@ -15,6 +15,9 @@ FOURIER_PRESETS = [
     ("Free Draw", "Draw your own shape with the cursor", "freedraw"),
 ]
 
+# Longest free-drawn path fed to the DFT.
+FOURIER_MAX_POINTS = 512
+
 
 def _draw_line_ascii(self, x0, y0, x1, y1, max_y, max_x):
     """Draw a simple line between two points using Bresenham's algorithm."""
@@ -192,6 +195,11 @@ def _fourier_start_playback(self):
     """Compute DFT from drawn path and start playback."""
     if len(self.fourier_path) < 3:
         return
+    # The DFT is O(N^2), so thin out long drawings to keep playback start instant.
+    n = len(self.fourier_path)
+    if n > FOURIER_MAX_POINTS:
+        self.fourier_path = [self.fourier_path[i * n // FOURIER_MAX_POINTS]
+                             for i in range(FOURIER_MAX_POINTS)]
     self.fourier_coeffs = _fourier_dft(self.fourier_path)
     self.fourier_num_circles = len(self.fourier_coeffs)
     self.fourier_max_circles = self.fourier_num_circles
