@@ -1,42 +1,28 @@
-"""Mode: rule_mutation — Real-Time Rule Mutation Engine.
-
-Continuously evolves simulation rules toward maximum visual complexity using
-entropy feedback. Mutates birth/survival sets each generation, keeps mutations
-that increase Shannon entropy and spatial complexity, reverts ones that lead
-to extinction or static states. A lineage sidebar shows the ancestry of the
-current rule. The simulation discovers its own most visually complex behaviors.
-"""
+"""Rule Mutation Engine — evolves birth/survival rules live, keeping mutations that raise entropy and visual complexity."""
 import curses
 import math
 import random
-import time
 
 from life.analytics import (
     PeriodicityDetector,
     shannon_entropy,
     symmetry_score,
 )
-from life.constants import SPEEDS
 from life.grid import Grid
 from life.rules import rule_string, parse_rule_string
 
 # ── Constants ────────────────────────────────────────────────────────
-
-_DENSITY = ["  ", "░░", "▒▒", "▓▓", "██"]
 
 _SPARKLINE_CHARS = "▁▂▃▄▅▆▇█"
 
 # How many generations to evaluate a mutant before deciding keep/revert
 _EVAL_WINDOW = 40
 
-# Minimum population fraction to avoid "extinction" revert
-_MIN_POP_FRAC = 0.005
-
 # Maximum population fraction to avoid "blob" revert (everything alive)
 _MAX_POP_FRAC = 0.85
 
-# Entropy improvement threshold to accept a mutation
-_ENTROPY_ACCEPT_DELTA = -0.02  # accept if entropy >= prev - this margin
+# Accept a mutant whose fitness is at least current + this (a small drop is fine)
+_ENTROPY_ACCEPT_DELTA = -0.02
 
 # Presets: (name, description, initial_rule_str, mutation_rate, seed_density)
 RMUT_PRESETS = [
@@ -121,30 +107,6 @@ def _compute_fitness(grid, pop_history, entropy_history, periodicity_det):
     return score
 
 
-def _compute_spatial_complexity(grid):
-    """Compute edge density as a proxy for spatial structure complexity."""
-    rows, cols = grid.rows, grid.cols
-    edges = 0
-    total = 0
-    for r in range(rows):
-        row = grid.cells[r]
-        for c in range(cols - 1):
-            a = 1 if row[c] > 0 else 0
-            b = 1 if row[c + 1] > 0 else 0
-            if a != b:
-                edges += 1
-            total += 1
-        if r < rows - 1:
-            next_row = grid.cells[r + 1]
-            for c in range(cols):
-                a = 1 if row[c] > 0 else 0
-                b = 1 if next_row[c] > 0 else 0
-                if a != b:
-                    edges += 1
-                total += 1
-    return edges / total if total > 0 else 0.0
-
-
 # ── Mutation operators ───────────────────────────────────────────────
 
 def _mutate_rule(birth, survival, mutation_rate):
@@ -178,30 +140,6 @@ def _random_rule():
     if not birth:
         birth.add(random.randint(1, 5))
     return birth, survival
-
-
-def _crossover_rules(rule_a, rule_b):
-    """Crossover two rules — take random bits from each parent."""
-    birth_a, surv_a = rule_a
-    birth_b, surv_b = rule_b
-    new_birth = set()
-    new_surv = set()
-    for d in range(9):
-        if random.random() < 0.5:
-            if d in birth_a:
-                new_birth.add(d)
-        else:
-            if d in birth_b:
-                new_birth.add(d)
-        if random.random() < 0.5:
-            if d in surv_a:
-                new_surv.add(d)
-        else:
-            if d in surv_b:
-                new_surv.add(d)
-    if not new_birth:
-        new_birth.add(random.randint(1, 5))
-    return new_birth, new_surv
 
 
 # ── Lineage tracking ────────────────────────────────────────────────
@@ -433,9 +371,9 @@ def _rmut_step(self):
             elif candidate_fitness >= self.rmut_current_fitness + _ENTROPY_ACCEPT_DELTA:
                 # Accept: fitness didn't drop significantly (or improved)
                 accepted = True
-                # Simulated annealing: occasionally accept worse mutations
             elif random.random() < 0.05:
-                accepted = True  # occasional random acceptance for exploration
+                # Occasionally accept a worse rule anyway
+                accepted = True
 
             current_entropy = (self.rmut_entropy_history[-1]
                                if self.rmut_entropy_history else 0.0)
@@ -809,8 +747,13 @@ def _draw_rmut_status(self, max_y, max_x):
         status_y = max_y - 1
         state = "▶ RUN" if self.rmut_running else "⏸ STOP"
         evo = "evo:ON" if not self.rmut_paused_evolving else "evo:OFF"
-        bar = (f" {state} {evo} │ SPC:play e:evo r:seed R:reset "
-               f"+/-:mutrate [/]:speed a:adopt q:quit ")
+        bar = f" {state} {evo} │"
+        # Exit and adopt come first so a narrow terminal drops the rest.
+        for hint in ("q=quit", "a=adopt", "Space=play", "n=step", "e=evo",
+                     "r=seed", "R=reset", "[/]=speed", "+/-=mutation"):
+            if len(bar) + len(hint) + 2 > max_x - 1:
+                break
+            bar += f"  {hint}"
         self.stdscr.addstr(status_y, 0, bar[:max_x - 1], curses.A_REVERSE)
     except curses.error:
         pass
