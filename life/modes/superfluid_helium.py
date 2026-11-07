@@ -334,7 +334,7 @@ def _step_vortices(self):
     dt = 0.15 * rho_s  # timestep scales with superfluid fraction
 
     for i in range(n):
-        xi, yi, qi, _, _ = vortices[i]
+        xi, yi, _, _, _ = vortices[i]
         vx_i, vy_i = 0.0, 0.0
 
         # Sum Biot-Savart contributions from other vortices
