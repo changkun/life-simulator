@@ -31,7 +31,6 @@ Keys (main puzzle view):
 import curses
 import math
 import random
-import time
 
 from life.analytics import (
     PeriodicityDetector,
@@ -39,14 +38,12 @@ from life.analytics import (
     symmetry_score,
     classify_stability,
 )
-from life.constants import SPEEDS
 from life.grid import Grid
-from life.rules import rule_string, parse_rule_string, RULE_PRESETS
+from life.rules import rule_string
 
 # ── Constants ────────────────────────────────────────────────────────
 
 _SPARKLINE = "▁▂▃▄▅▆▇█"
-_DENSITY_CHARS = ["  ", "░░", "▒▒", "▓▓", "██"]
 
 _DIFFICULTIES = ["easy", "medium", "hard", "expert"]
 
