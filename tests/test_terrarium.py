@@ -18,14 +18,22 @@ def paths(tmp_path, monkeypatch):
 
 
 class _Detector:
-    enabled = False
+    def __init__(self):
+        self.enabled = False
 
     def reset(self):
         pass
 
+    def drain_pending(self):
+        return []
+
 
 class _Analytics:
-    phase_detector = _Detector()
+    def __init__(self):
+        self.phase_detector = _Detector()
+
+    def update(self, grid, pop_history):
+        pass
 
 
 def _make_app():
@@ -66,3 +74,16 @@ def test_total_generations_not_double_counted(paths):
     app2.grid.generation += 40
     app2._terrarium_save_state()
     assert _saved_total() == 140
+
+
+def test_catchup_summary_stays_bounded(paths, monkeypatch):
+    """A rule that dies out every generation must not flood the summary."""
+    monkeypatch.setattr(terrarium, "MAX_CATCHUP_GENS", 1000)
+    monkeypatch.setattr(terrarium, "MAX_SUMMARY_EVENTS", 20)
+    app = _make_app()
+    app.terrarium_first_started = 1.0
+    app.grid.birth, app.grid.survival = set(), set()
+    app.grid.set_alive(3, 3)
+    app._terrarium_catchup(100000, {"speed_idx": 2})
+    assert len(app.terrarium_catchup_summary) < terrarium.MAX_SUMMARY_EVENTS + 30
+    assert any("more" in line for line in app.terrarium_catchup_summary)

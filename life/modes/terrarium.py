@@ -23,6 +23,8 @@ CATCHUP_GENS_PER_SEC = 10.0
 MAX_CATCHUP_GENS = 50000
 # How often to sample the simulation for events during fast-forward
 CATCHUP_SAMPLE_INTERVAL = 50
+# Maximum events listed in the welcome-back summary
+MAX_SUMMARY_EVENTS = 200
 
 
 def _terrarium_init(self):
@@ -322,6 +324,15 @@ def _terrarium_catchup(self, elapsed_seconds: float, state: dict):
     min_gen = start_gen
     extinctions = 0
     events: list[str] = []
+    omitted = 0
+
+    def note(text: str):
+        # Keep the summary readable when a rule dies out again and again.
+        nonlocal omitted
+        if len(events) < MAX_SUMMARY_EVENTS:
+            events.append(text)
+        else:
+            omitted += 1
 
     for i in range(target_gens):
         self.grid.step()
@@ -340,7 +351,7 @@ def _terrarium_catchup(self, elapsed_seconds: float, state: dict):
         # Detect extinction during catch-up
         if pop == 0:
             extinctions += 1
-            events.append(f"  Extinction at gen {gen}")
+            note(f"  Extinction at gen {gen}")
             _terrarium_chronicle_add(self, "extinction",
                                      f"Extinction during catch-up at gen {gen}")
             # Re-seed with random cells to keep the terrarium alive
@@ -349,7 +360,7 @@ def _terrarium_catchup(self, elapsed_seconds: float, state: dict):
                 r = random.randint(0, self.grid.rows - 1)
                 c = random.randint(0, self.grid.cols - 1)
                 self.grid.set_alive(r, c)
-            events.append(f"  Life re-seeded at gen {gen}")
+            note(f"  Life re-seeded at gen {gen}")
             _terrarium_chronicle_add(self, "reseed",
                                      f"Life re-seeded after extinction at gen {gen}")
 
@@ -364,7 +375,7 @@ def _terrarium_catchup(self, elapsed_seconds: float, state: dict):
                 new_transitions = self.analytics.phase_detector.drain_pending()
                 for t in new_transitions:
                     self.phase_transition_log.append(t)
-                    events.append(f"  {t.label} at gen {t.generation}")
+                    note(f"  {t.label} at gen {t.generation}")
                     _terrarium_chronicle_add(self, f"phase_{t.kind}",
                                              f"{t.label} at gen {t.generation} (during catch-up)")
 
@@ -375,7 +386,7 @@ def _terrarium_catchup(self, elapsed_seconds: float, state: dict):
     if peak_pop > self.terrarium_peak_pop:
         self.terrarium_peak_pop = peak_pop
         self.terrarium_peak_pop_gen = peak_gen
-        events.append(f"  New all-time population record: {peak_pop}")
+        note(f"  New all-time population record: {peak_pop}")
         _terrarium_chronicle_add(self, "population_record",
                                  f"New all-time record: {peak_pop} at gen {peak_gen} (during catch-up)")
 
@@ -391,6 +402,8 @@ def _terrarium_catchup(self, elapsed_seconds: float, state: dict):
     if events:
         summary.append("Notable events while you were away:")
         summary.extend(events)
+        if omitted:
+            summary.append(f"  ... and {omitted:,} more")
     else:
         summary.append("Nothing particularly dramatic happened while you were away.")
 
