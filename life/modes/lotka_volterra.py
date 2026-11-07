@@ -6,6 +6,36 @@ import time
 
 from life.constants import SPEEDS
 
+LV_PRESETS = [
+    # (name, description, grass_regrow, prey_gain, pred_gain,
+    #  prey_breed, pred_breed, prey_init_e, pred_init_e,
+    #  prey_density, pred_density)
+    ("Classic Oscillation",
+     "Balanced ecosystem with clear population cycles",
+     5, 4, 8, 6, 10, 4, 8, 0.25, 0.08),
+    ("Predator Boom",
+     "Many predators — prey crash then predator starvation",
+     4, 4, 10, 6, 12, 4, 10, 0.20, 0.15),
+    ("Prey Paradise",
+     "Few predators, abundant grass — prey explosion",
+     3, 5, 8, 5, 10, 5, 8, 0.30, 0.03),
+    ("Fast Dynamics",
+     "Quick breed cycles — rapid oscillations",
+     2, 3, 6, 4, 7, 3, 6, 0.25, 0.10),
+    ("Sparse Savanna",
+     "Slow grass regrowth — fragile ecosystem",
+     12, 6, 10, 8, 14, 5, 10, 0.15, 0.05),
+    ("Dense Jungle",
+     "Fast grass, many creatures — chaotic dynamics",
+     2, 4, 7, 5, 8, 4, 7, 0.35, 0.12),
+    ("Extinction Edge",
+     "Predators barely viable — boom-bust extinction risk",
+     6, 4, 6, 6, 14, 4, 6, 0.20, 0.06),
+    ("Stable Coexistence",
+     "Tuned for long-term stable oscillations",
+     4, 5, 9, 7, 12, 5, 9, 0.22, 0.07),
+]
+
 # Population samples kept; only the latest is drawn, so a long run stays bounded.
 LV_MAX_HISTORY = 1000
 
@@ -442,42 +472,9 @@ def _draw_lv(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-# Presets for Schelling Segregation; schelling.py imports them from here.
-
-SCHELLING_PRESETS = [
-    # (name, description, tolerance, density, n_groups)
-    ("Mild Preference",
-     "Low tolerance threshold — quick segregation",
-     0.30, 0.90, 2),
-    ("Classic Schelling",
-     "Original 1/3 threshold — dramatic segregation",
-     0.375, 0.90, 2),
-    ("Moderate Bias",
-     "Higher tolerance — slower, stronger clustering",
-     0.50, 0.85, 2),
-    ("Strong Preference",
-     "High tolerance — fast, near-total segregation",
-     0.625, 0.90, 2),
-    ("Three Groups",
-     "Three populations with moderate preference",
-     0.375, 0.85, 3),
-    ("Four Cultures",
-     "Four groups — complex boundary dynamics",
-     0.35, 0.80, 4),
-    ("Sparse City",
-     "Low density — lots of room to relocate",
-     0.40, 0.50, 2),
-    ("Packed Metropolis",
-     "Very high density — few vacancies, slow churn",
-     0.375, 0.97, 2),
-]
-
-
-
 
 def register(App):
     """Register lv mode methods on the App class."""
-    from life.modes.snowflake import LV_PRESETS
     App.LV_PRESETS = LV_PRESETS
     App._enter_lv_mode = _enter_lv_mode
     App._exit_lv_mode = _exit_lv_mode

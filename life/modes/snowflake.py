@@ -442,42 +442,6 @@ def _draw_snowflake(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-# ══════════════════════════════════════════════════════════════════════
-#  Predator-Prey (Lotka-Volterra) Ecosystem — Mode J
-# ══════════════════════════════════════════════════════════════════════
-
-LV_PRESETS = [
-    # (name, description, grass_regrow, prey_gain, pred_gain,
-    #  prey_breed, pred_breed, prey_init_e, pred_init_e,
-    #  prey_density, pred_density)
-    ("Classic Oscillation",
-     "Balanced ecosystem with clear population cycles",
-     5, 4, 8, 6, 10, 4, 8, 0.25, 0.08),
-    ("Predator Boom",
-     "Many predators — prey crash then predator starvation",
-     4, 4, 10, 6, 12, 4, 10, 0.20, 0.15),
-    ("Prey Paradise",
-     "Few predators, abundant grass — prey explosion",
-     3, 5, 8, 5, 10, 5, 8, 0.30, 0.03),
-    ("Fast Dynamics",
-     "Quick breed cycles — rapid oscillations",
-     2, 3, 6, 4, 7, 3, 6, 0.25, 0.10),
-    ("Sparse Savanna",
-     "Slow grass regrowth — fragile ecosystem",
-     12, 6, 10, 8, 14, 5, 10, 0.15, 0.05),
-    ("Dense Jungle",
-     "Fast grass, many creatures — chaotic dynamics",
-     2, 4, 7, 5, 8, 4, 7, 0.35, 0.12),
-    ("Extinction Edge",
-     "Predators barely viable — boom-bust extinction risk",
-     6, 4, 6, 6, 14, 4, 6, 0.20, 0.06),
-    ("Stable Coexistence",
-     "Tuned for long-term stable oscillations",
-     4, 5, 9, 7, 12, 5, 9, 0.22, 0.07),
-]
-
-
-
 
 def register(App):
     """Register Snowflake Growth methods on the App class."""

@@ -2,7 +2,7 @@
 import math
 import random
 from tests.conftest import make_mock_app
-from life.modes.quantum_walk import register
+from life.modes.quantum_walk import register, QWALK_PRESETS
 
 
 class TestQuantumWalk:
@@ -213,6 +213,14 @@ class TestQuantumWalk:
             self.app._qwalk_step()
         total = self._total_probability()
         assert total > 0.0
+
+    # ── QWALK_PRESETS is exported ──
+
+    def test_qwalk_presets_exported(self):
+        """QWALK_PRESETS list is available in this module."""
+        assert len(QWALK_PRESETS) > 0
+        for preset in QWALK_PRESETS:
+            assert len(preset) == 5  # (name, desc, coin, init, boundary)
 
     # ── All presets ──
 

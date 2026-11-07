@@ -514,41 +514,6 @@ def _draw_attractor(self, max_y: int, max_x: int):
             pass
 
 
-# ══════════════════════════════════════════════════════════════════════
-#  Quantum Cellular Automaton (Quantum Walk) — Mode ^
-# ══════════════════════════════════════════════════════════════════════
-
-QWALK_PRESETS = [
-    # (name, description, coin_type, init_type, boundary)
-    ("Hadamard — Single Source",
-     "Classic Hadamard coin, single central walker, periodic boundary",
-     "hadamard", "single", "periodic"),
-    ("Hadamard — Absorbing Edges",
-     "Hadamard coin walk with absorbing boundary conditions",
-     "hadamard", "single", "absorbing"),
-    ("Grover — Diffusion Coin",
-     "Grover diffusion operator as coin — stronger interference",
-     "grover", "single", "periodic"),
-    ("DFT — Fourier Coin",
-     "Discrete Fourier Transform coin — asymmetric spreading",
-     "dft", "single", "periodic"),
-    ("Hadamard — Gaussian Packet",
-     "Gaussian wave packet initial state — localized spreading",
-     "hadamard", "gaussian", "periodic"),
-    ("Grover — Dual Source",
-     "Two walkers that interfere with each other",
-     "grover", "dual", "periodic"),
-    ("Hadamard — Decoherent",
-     "Hadamard coin with decoherence — classical-like diffusion",
-     "hadamard", "single_decoherent", "periodic"),
-    ("DFT — Gaussian Absorbing",
-     "Fourier coin, Gaussian packet, absorbing edges",
-     "dft", "gaussian", "absorbing"),
-]
-
-
-
-
 def register(App):
     """Register Strange Attractors methods on the App class."""
     App.ATTRACTOR_PRESETS = ATTRACTOR_PRESETS

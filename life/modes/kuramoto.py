@@ -4,6 +4,35 @@ import math
 import random
 import time
 
+# Presets for Kuramoto Coupled Oscillators.
+KURAMOTO_PRESETS = [
+    # (name, description, coupling, freq_spread, dt, noise, init_type)
+    ("Gentle Sync", "Weak coupling — slow emergence of coherent islands",
+     0.5, 1.0, 0.1, 0.0, "random"),
+    ("Strong Sync", "Strong coupling — rapid global synchronization",
+     3.0, 1.0, 0.1, 0.0, "random"),
+    ("Critical Point", "Near phase transition — order from chaos",
+     1.5, 1.0, 0.1, 0.0, "random"),
+    ("Noisy Oscillators", "Moderate coupling + noise — flickering domains",
+     2.0, 1.0, 0.1, 0.3, "random"),
+    ("Narrow Band", "Small frequency spread — easy to sync",
+     1.0, 0.3, 0.1, 0.0, "random"),
+    ("Wide Band", "Large frequency spread — hard to synchronize",
+     2.0, 3.0, 0.1, 0.0, "random"),
+    ("Phase Gradient", "Linear phase gradient — travelling wave initial condition",
+     1.0, 1.0, 0.1, 0.0, "gradient"),
+    ("Spiral Seed", "Spiral initial condition — vortex dynamics",
+     1.5, 0.5, 0.1, 0.0, "spiral"),
+    ("Chimera State", "Mixed sync/async — two frequency populations",
+     1.2, 1.0, 0.1, 0.0, "chimera"),
+    ("Frozen Random", "Zero coupling — each oscillator independent",
+     0.0, 1.0, 0.1, 0.0, "random"),
+    ("Fast Dynamics", "Large time step — rapid evolution",
+     1.5, 1.0, 0.3, 0.0, "random"),
+    ("Noise Dominant", "Noise overwhelms coupling — turbulent phase field",
+     0.5, 1.0, 0.1, 1.0, "random"),
+]
+
 
 def _enter_kuramoto_mode(self):
     """Enter Kuramoto Oscillators mode and show the preset menu."""
@@ -364,35 +393,8 @@ def _draw_kuramoto(self, max_y: int, max_x: int):
             pass
 
 
-# Spiking Neural Network presets, registered by life/modes/spiking_neural.py.
-SNN_PRESETS = [
-    # (name, description, excit_ratio, weight, noise, dt, init_type)
-    ("Sparse Random Firing", "Low noise — occasional spontaneous spikes",
-     0.8, 8.0, 3.0, 0.5, "random"),
-    ("Synchronized Bursting", "Strong coupling — rhythmic population bursts",
-     0.8, 18.0, 5.0, 0.5, "random"),
-    ("Traveling Waves", "Directional wave front propagating across the network",
-     0.9, 12.0, 1.0, 0.5, "wave_seed"),
-    ("Spiral Activity", "Rotating spiral waves of neural activation",
-     0.85, 14.0, 1.5, 0.5, "spiral_seed"),
-    ("Excitation Cascade", "Dense excitatory network — avalanche dynamics",
-     0.95, 15.0, 4.0, 0.5, "center_seed"),
-    ("Inhibition-Dominated", "Strong inhibition creates sparse patterns",
-     0.5, 12.0, 6.0, 0.5, "random"),
-    ("Chattering Network", "Fast rhythmic bursting with chattering neurons",
-     0.8, 10.0, 4.0, 0.5, "chattering"),
-    ("Cortical Column", "Mixed regular spiking & fast spiking neurons",
-     0.8, 10.0, 5.0, 0.5, "cortical"),
-    ("Noise-Driven", "High noise — stochastic firing patterns",
-     0.8, 6.0, 12.0, 0.5, "random"),
-    ("Two-Cluster Sync", "Two populations with different synchrony",
-     0.8, 14.0, 3.0, 0.5, "two_cluster"),
-]
-
-
 def register(App):
     """Register kuramoto mode methods on the App class."""
-    from life.modes.wave_equation import KURAMOTO_PRESETS
     App.KURAMOTO_PRESETS = KURAMOTO_PRESETS
     App._enter_kuramoto_mode = _enter_kuramoto_mode
     App._exit_kuramoto_mode = _exit_kuramoto_mode

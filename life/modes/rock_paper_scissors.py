@@ -272,33 +272,6 @@ def _draw_rps(self, max_y: int, max_x: int):
             pass
 
 
-# ══════════════════════════════════════════════════════════════════════
-#  2D Wave Equation — Mode !
-# ══════════════════════════════════════════════════════════════════════
-
-WAVE_PRESETS = [
-    # (name, description, c, damping, boundary, init_type)
-    # c = wave speed (Courant number, keep <= 0.5 for stability)
-    # damping = per-step damping (1.0 = no damping)
-    # boundary = reflect | absorb | wrap
-    # init_type = center_drop | double_slit | corner_pulse | random_drops | ring | cross
-    ("Center Drop", "Single drop in center — watch circular ripples", 0.45, 0.999, "reflect", "center_drop"),
-    ("Reflecting Pool", "Drop with reflective walls — standing waves form", 0.40, 0.9995, "reflect", "center_drop"),
-    ("Absorbing Edges", "Drop with absorbing boundaries — no reflections", 0.45, 0.999, "absorb", "center_drop"),
-    ("Wraparound Torus", "Drop on toroidal surface — waves wrap around", 0.40, 0.999, "wrap", "center_drop"),
-    ("Double Slit", "Plane wave through two slits — diffraction pattern", 0.35, 0.9995, "absorb", "double_slit"),
-    ("Corner Pulse", "Pulse from corner — diagonal wave front", 0.45, 0.999, "reflect", "corner_pulse"),
-    ("Rain Drops", "Random drops — chaotic interference patterns", 0.40, 0.999, "reflect", "random_drops"),
-    ("Ring Wave", "Expanding ring — inward and outward propagation", 0.40, 0.999, "reflect", "ring"),
-    ("Cross Pattern", "Cross-shaped initial disturbance", 0.40, 0.999, "reflect", "cross"),
-    ("Undamped Pool", "No damping — energy conserved forever", 0.40, 1.0, "reflect", "center_drop"),
-    ("Slow Ripple", "Very slow wave speed — watch propagation clearly", 0.20, 0.999, "reflect", "center_drop"),
-    ("Fast Chaos", "Fast waves, random drops — turbulent surface", 0.48, 0.998, "wrap", "random_drops"),
-]
-
-
-
-
 RPS_PRESETS = [
     # (name, description, num_species, swap_rate, layout)
     ("Classic Spiral Waves",

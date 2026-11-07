@@ -3,6 +3,31 @@ import curses
 import random
 import time
 
+# Spiking Neural Network presets.
+SNN_PRESETS = [
+    # (name, description, excit_ratio, weight, noise, dt, init_type)
+    ("Sparse Random Firing", "Low noise — occasional spontaneous spikes",
+     0.8, 8.0, 3.0, 0.5, "random"),
+    ("Synchronized Bursting", "Strong coupling — rhythmic population bursts",
+     0.8, 18.0, 5.0, 0.5, "random"),
+    ("Traveling Waves", "Directional wave front propagating across the network",
+     0.9, 12.0, 1.0, 0.5, "wave_seed"),
+    ("Spiral Activity", "Rotating spiral waves of neural activation",
+     0.85, 14.0, 1.5, 0.5, "spiral_seed"),
+    ("Excitation Cascade", "Dense excitatory network — avalanche dynamics",
+     0.95, 15.0, 4.0, 0.5, "center_seed"),
+    ("Inhibition-Dominated", "Strong inhibition creates sparse patterns",
+     0.5, 12.0, 6.0, 0.5, "random"),
+    ("Chattering Network", "Fast rhythmic bursting with chattering neurons",
+     0.8, 10.0, 4.0, 0.5, "chattering"),
+    ("Cortical Column", "Mixed regular spiking & fast spiking neurons",
+     0.8, 10.0, 5.0, 0.5, "cortical"),
+    ("Noise-Driven", "High noise — stochastic firing patterns",
+     0.8, 6.0, 12.0, 0.5, "random"),
+    ("Two-Cluster Sync", "Two populations with different synchrony",
+     0.8, 14.0, 3.0, 0.5, "two_cluster"),
+]
+
 
 def _enter_snn_mode(self):
     """Enter Spiking Neural Network mode and show the preset menu."""
@@ -469,7 +494,6 @@ def _snn_fire_rate(self) -> float:
 
 def register(App):
     """Register Spiking Neural Network methods on the App class."""
-    from life.modes.kuramoto import SNN_PRESETS
     App.SNN_PRESETS = SNN_PRESETS
     App._enter_snn_mode = _enter_snn_mode
     App._exit_snn_mode = _exit_snn_mode

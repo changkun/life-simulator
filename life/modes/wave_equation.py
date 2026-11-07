@@ -6,6 +6,26 @@ import time
 
 from life.colors import colormap_addstr, colormap_rgb
 
+WAVE_PRESETS = [
+    # (name, description, c, damping, boundary, init_type)
+    # c = wave speed (Courant number, keep <= 0.5 for stability)
+    # damping = per-step damping (1.0 = no damping)
+    # boundary = reflect | absorb | wrap
+    # init_type = center_drop | double_slit | corner_pulse | random_drops | ring | cross
+    ("Center Drop", "Single drop in center — watch circular ripples", 0.45, 0.999, "reflect", "center_drop"),
+    ("Reflecting Pool", "Drop with reflective walls — standing waves form", 0.40, 0.9995, "reflect", "center_drop"),
+    ("Absorbing Edges", "Drop with absorbing boundaries — no reflections", 0.45, 0.999, "absorb", "center_drop"),
+    ("Wraparound Torus", "Drop on toroidal surface — waves wrap around", 0.40, 0.999, "wrap", "center_drop"),
+    ("Double Slit", "Plane wave through two slits — diffraction pattern", 0.35, 0.9995, "absorb", "double_slit"),
+    ("Corner Pulse", "Pulse from corner — diagonal wave front", 0.45, 0.999, "reflect", "corner_pulse"),
+    ("Rain Drops", "Random drops — chaotic interference patterns", 0.40, 0.999, "reflect", "random_drops"),
+    ("Ring Wave", "Expanding ring — inward and outward propagation", 0.40, 0.999, "reflect", "ring"),
+    ("Cross Pattern", "Cross-shaped initial disturbance", 0.40, 0.999, "reflect", "cross"),
+    ("Undamped Pool", "No damping — energy conserved forever", 0.40, 1.0, "reflect", "center_drop"),
+    ("Slow Ripple", "Very slow wave speed — watch propagation clearly", 0.20, 0.999, "reflect", "center_drop"),
+    ("Fast Chaos", "Fast waves, random drops — turbulent surface", 0.48, 0.998, "wrap", "random_drops"),
+]
+
 
 def _enter_wave_mode(self):
     """Show the preset menu."""
@@ -428,41 +448,8 @@ def _draw_wave(self, max_y: int, max_x: int):
             pass
 
 
-# Presets for Kuramoto Coupled Oscillators; life/modes/kuramoto.py imports them.
-KURAMOTO_PRESETS = [
-    # (name, description, coupling, freq_spread, dt, noise, init_type)
-    ("Gentle Sync", "Weak coupling — slow emergence of coherent islands",
-     0.5, 1.0, 0.1, 0.0, "random"),
-    ("Strong Sync", "Strong coupling — rapid global synchronization",
-     3.0, 1.0, 0.1, 0.0, "random"),
-    ("Critical Point", "Near phase transition — order from chaos",
-     1.5, 1.0, 0.1, 0.0, "random"),
-    ("Noisy Oscillators", "Moderate coupling + noise — flickering domains",
-     2.0, 1.0, 0.1, 0.3, "random"),
-    ("Narrow Band", "Small frequency spread — easy to sync",
-     1.0, 0.3, 0.1, 0.0, "random"),
-    ("Wide Band", "Large frequency spread — hard to synchronize",
-     2.0, 3.0, 0.1, 0.0, "random"),
-    ("Phase Gradient", "Linear phase gradient — travelling wave initial condition",
-     1.0, 1.0, 0.1, 0.0, "gradient"),
-    ("Spiral Seed", "Spiral initial condition — vortex dynamics",
-     1.5, 0.5, 0.1, 0.0, "spiral"),
-    ("Chimera State", "Mixed sync/async — two frequency populations",
-     1.2, 1.0, 0.1, 0.0, "chimera"),
-    ("Frozen Random", "Zero coupling — each oscillator independent",
-     0.0, 1.0, 0.1, 0.0, "random"),
-    ("Fast Dynamics", "Large time step — rapid evolution",
-     1.5, 1.0, 0.3, 0.0, "random"),
-    ("Noise Dominant", "Noise overwhelms coupling — turbulent phase field",
-     0.5, 1.0, 0.1, 1.0, "random"),
-]
-
-
-
-
 def register(App):
     """Register wave mode methods on the App class."""
-    from life.modes.rock_paper_scissors import WAVE_PRESETS
     App.WAVE_PRESETS = WAVE_PRESETS
     App._enter_wave_mode = _enter_wave_mode
     App._exit_wave_mode = _exit_wave_mode

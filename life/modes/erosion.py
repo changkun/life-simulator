@@ -6,6 +6,35 @@ import time
 
 from life.constants import SPEEDS
 
+# Hydraulic Erosion presets.
+# Each preset: (name, description, rain_rate, evap_rate, solubility, deposition, terrain_type)
+EROSION_PRESETS = [
+    ("River Valley",
+     "Gentle terrain — wide meandering rivers",
+     0.012, 0.004, 0.008, 0.015, "gentle"),
+    ("Mountain Gorge",
+     "Steep terrain — deep narrow canyons",
+     0.015, 0.003, 0.015, 0.010, "steep"),
+    ("Coastal Plateau",
+     "Flat plateau with coastal cliffs — branching drainage",
+     0.010, 0.005, 0.010, 0.020, "plateau"),
+    ("Badlands",
+     "Heavily eroded terrain — dense dendritic networks",
+     0.020, 0.003, 0.020, 0.008, "rough"),
+    ("Alpine Peaks",
+     "High mountain terrain — glacial-style carving",
+     0.008, 0.002, 0.012, 0.012, "alpine"),
+    ("Rolling Hills",
+     "Smooth undulating terrain — gentle streams",
+     0.010, 0.006, 0.006, 0.025, "hills"),
+    ("Canyon Lands",
+     "Layered mesa terrain — slot canyon formation",
+     0.018, 0.003, 0.018, 0.010, "mesa"),
+    ("Volcanic Island",
+     "Central peak with radial drainage",
+     0.014, 0.004, 0.014, 0.012, "volcano"),
+]
+
 
 def _enter_erosion_mode(self):
     """Enter Erosion Patterns — show the preset menu."""
@@ -445,7 +474,6 @@ def _draw_erosion(self, max_y: int, max_x: int):
 
 def register(App):
     """Register erosion mode methods on the App class."""
-    from life.modes.lightning import EROSION_PRESETS
     App.EROSION_PRESETS = EROSION_PRESETS
     App._enter_erosion_mode = _enter_erosion_mode
     App._exit_erosion_mode = _exit_erosion_mode

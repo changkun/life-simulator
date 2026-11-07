@@ -4,6 +4,34 @@ import math
 import random
 import time
 
+QWALK_PRESETS = [
+    # (name, description, coin_type, init_type, boundary)
+    ("Hadamard — Single Source",
+     "Classic Hadamard coin, single central walker, periodic boundary",
+     "hadamard", "single", "periodic"),
+    ("Hadamard — Absorbing Edges",
+     "Hadamard coin walk with absorbing boundary conditions",
+     "hadamard", "single", "absorbing"),
+    ("Grover — Diffusion Coin",
+     "Grover diffusion operator as coin — stronger interference",
+     "grover", "single", "periodic"),
+    ("DFT — Fourier Coin",
+     "Discrete Fourier Transform coin — asymmetric spreading",
+     "dft", "single", "periodic"),
+    ("Hadamard — Gaussian Packet",
+     "Gaussian wave packet initial state — localized spreading",
+     "hadamard", "gaussian", "periodic"),
+    ("Grover — Dual Source",
+     "Two walkers that interfere with each other",
+     "grover", "dual", "periodic"),
+    ("Hadamard — Decoherent",
+     "Hadamard coin with decoherence — classical-like diffusion",
+     "hadamard", "single_decoherent", "periodic"),
+    ("DFT — Gaussian Absorbing",
+     "Fourier coin, Gaussian packet, absorbing edges",
+     "dft", "gaussian", "absorbing"),
+]
+
 
 def _enter_qwalk_mode(self):
     """Enter Quantum Walk mode — show preset menu."""
@@ -459,7 +487,6 @@ def _qwalk_signed_char(self, val: float, max_p: float) -> tuple:
 
 def register(App):
     """Register qwalk mode methods on the App class."""
-    from life.modes.strange_attractors import QWALK_PRESETS
     App.QWALK_PRESETS = QWALK_PRESETS
     App._enter_qwalk_mode = _enter_qwalk_mode
     App._exit_qwalk_mode = _exit_qwalk_mode

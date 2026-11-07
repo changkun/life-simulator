@@ -6,6 +6,34 @@ import time
 
 from life.constants import SPEEDS
 
+SCHELLING_PRESETS = [
+    # (name, description, tolerance, density, n_groups)
+    ("Mild Preference",
+     "Low tolerance threshold — quick segregation",
+     0.30, 0.90, 2),
+    ("Classic Schelling",
+     "Original 1/3 threshold — dramatic segregation",
+     0.375, 0.90, 2),
+    ("Moderate Bias",
+     "Higher tolerance — slower, stronger clustering",
+     0.50, 0.85, 2),
+    ("Strong Preference",
+     "High tolerance — fast, near-total segregation",
+     0.625, 0.90, 2),
+    ("Three Groups",
+     "Three populations with moderate preference",
+     0.375, 0.85, 3),
+    ("Four Cultures",
+     "Four groups — complex boundary dynamics",
+     0.35, 0.80, 4),
+    ("Sparse City",
+     "Low density — lots of room to relocate",
+     0.40, 0.50, 2),
+    ("Packed Metropolis",
+     "Very high density — few vacancies, slow churn",
+     0.375, 0.97, 2),
+]
+
 _MAX_HISTORY = 2000
 
 def _enter_schelling_mode(self):
@@ -327,7 +355,6 @@ def _draw_schelling(self, max_y: int, max_x: int):
 
 def register(App):
     """Register schelling mode methods on the App class."""
-    from life.modes.lotka_volterra import SCHELLING_PRESETS
     App.SCHELLING_PRESETS = SCHELLING_PRESETS
     App._enter_schelling_mode = _enter_schelling_mode
     App._exit_schelling_mode = _exit_schelling_mode
