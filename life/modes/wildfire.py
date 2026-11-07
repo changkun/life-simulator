@@ -563,8 +563,9 @@ def _wfire_step(self):
                     nfp = _FUEL_PROPS[nf]
                     base = ni * nfp["spread"] * spread_rate / dist
 
-                    # Wind effect: dot product of wind with direction to cell
-                    dx, dy = dc, -dr  # screen coords
+                    # Wind effect: wind component along neighbour -> cell
+                    # (east = +x, north = +y; screen rows grow southward)
+                    dx, dy = -dc, dr
                     wu = wind_u[nr][nc]
                     wv = wind_v[nr][nc]
                     wind_dot = (wu * dx + wv * dy)
@@ -639,7 +640,7 @@ def _wfire_step(self):
             dist = random.randint(3, ember_range)
             # Add some random spread
             angle_pert = (rand() - 0.5) * 1.0
-            base_angle = math.atan2(-wv, wu)
+            base_angle = math.atan2(wv, wu)
             angle = base_angle + angle_pert
             tr = r - int(dist * math.sin(angle))
             tc = c + int(dist * math.cos(angle))

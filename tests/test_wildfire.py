@@ -39,3 +39,26 @@ class TestWildfire:
             assert math.isfinite(app.wfire_max_intensity)
             assert app.wfire_max_intensity <= 5.0
         assert app.wfire_active_cells == 0
+
+
+def test_fire_spreads_downwind():
+    """With an east wind the burned area must reach further east than west."""
+    app = _app(3)
+    app._wfire_init(0)
+    for r in range(app.wfire_rows):
+        for c in range(app.wfire_cols):
+            app.wfire_fuel[r][c] = 0       # uniform grass
+            app.wfire_moisture[r][c] = 0.1
+            app.wfire_elevation[r][c] = 0.0
+            app.wfire_intensity[r][c] = 0.0
+    app.wfire_fighters = []
+    app.wfire_wind_dir = 0.0
+    app.wfire_wind_speed = 1.5
+    app._wfire_make_wind()
+    r0, c0 = app.wfire_rows // 2, app.wfire_cols // 2
+    app.wfire_intensity[r0][c0] = 2.0
+    for _ in range(30):
+        app._wfire_step()
+    cols = [c for row in app.wfire_burned
+            for c, b in enumerate(row) if b]
+    assert max(cols) - c0 > c0 - min(cols)
