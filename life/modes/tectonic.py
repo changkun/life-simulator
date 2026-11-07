@@ -1,26 +1,4 @@
-"""Mode: tectonic — Plate Tectonics & Mantle Convection.
-
-Simulates a 2D cross-section/map view of Earth's lithosphere and asthenosphere:
-- Mantle convection cells (Rayleigh-Benard thermal plumes driving plate motion)
-- Rigid tectonic plates that drift, collide, and subduct
-- Divergent boundaries with mid-ocean ridge spreading and new crust formation
-- Convergent boundaries with subduction zones, volcanic arcs, deep trenches
-- Continental collision producing mountain uplift (orogenesis)
-- Transform faults with earthquake stress accumulation and sudden rupture
-- Hotspot volcanism from deep mantle plumes (Hawaiian chain analog)
-- Oceanic crust aging/cooling/densifying as it moves from ridges
-- Wilson Cycle of supercontinent assembly and breakup
-
-Three views:
-  1) Tectonic map with plate boundaries, volcanoes, quake epicenters
-  2) Mantle convection cross-section with temperature and flow vectors
-  3) Time-series sparkline graphs for 10 metrics
-
-Six presets:
-  Stable Craton, Mid-Ocean Ridge Spreading, Subduction Zone Cascade,
-  Continental Collision Himalayas, Supercontinent Breakup Pangaea,
-  Yellowstone Hotspot Plume
-"""
+"""Plate Tectonics & Mantle Convection — plates drift on a convecting mantle and build ridges, trenches, mountains and volcanoes."""
 import curses
 import math
 import random
@@ -64,12 +42,9 @@ _MANTLE_PLUME_THRESH = 0.75    # temperature threshold for plume detection
 
 # Plate mechanics
 _PLATE_DRAG_COEFF = 0.04       # mantle drag on plates
-_RIDGE_PUSH = 0.02             # force from elevated ridge
-_SLAB_PULL = 0.06              # force from subducting slab
 _CRUST_AGE_RATE = 0.005        # aging rate per tick (density increase)
 _OCEANIC_DENSITY_BASE = 0.3    # base density of new oceanic crust
 _CONTINENTAL_DENSITY = 0.15    # continental crust density (buoyant)
-_SUBDUCTION_ANGLE = 0.7        # slab dip angle factor
 _TRENCH_DEPTH_RATE = 80.0      # depth increase at trench per convergence
 
 # Boundary processes
@@ -91,14 +66,11 @@ _HOTSPOT_SPREAD = 40.0         # lava spread to neighbors
 _EROSION_RATE = 0.025          # smoothing factor
 _PEAK_EROSION = 15.0           # extra erosion for high peaks
 _ISOSTATIC_REBOUND = 30.0      # rebound rate for deep trenches
-_SEA_LEVEL = 0.0               # sea level elevation
 
 # Wilson cycle
-_WILSON_ATTRACT_DIST = 0.35    # distance fraction for continental attraction
 _WILSON_REPEL_FORCE = 0.003    # thermal repulsion from plumes under supercontinents
 
 _NEIGHBORS_4 = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-_NEIGHBORS_8 = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 _HISTORY_MAX = 300
 
 
@@ -320,10 +292,6 @@ def _generate_seeds(kind, num, rows, cols):
         for i in range(2):
             seeds.append((rows // 2 + random.randint(-rows // 8, rows // 8),
                           3 * cols // 4 + random.randint(-cols // 8, cols // 8)))
-    elif kind == "subduction":
-        # Oceanic plate + continental plate arrangement
-        for i in range(num):
-            seeds.append((random.randint(0, rows - 1), random.randint(0, cols - 1)))
     else:
         for i in range(num):
             seeds.append((random.randint(0, rows - 1), random.randint(0, cols - 1)))
@@ -472,10 +440,6 @@ def _tectonic_step(self):
         plate["vr"] += _PLATE_DRAG_COEFF * avg_vr * speed
         plate["vc"] += _PLATE_DRAG_COEFF * avg_vc * speed
 
-        # Slab pull: dense old oceanic crust at edges pulls plate
-        # Ridge push: elevated ridges push plate away
-        # (simplified: applied via velocity damping toward mantle flow)
-
         # Velocity damping
         plate["vr"] *= 0.995
         plate["vc"] *= 0.995
@@ -534,12 +498,9 @@ def _tectonic_step(self):
 
             # Age crust
             crust_age[r][c] += _CRUST_AGE_RATE * speed
-            # Oceanic crust cools and densifies
-            if crust_type[r][c] == 0:
-                age_density = _OCEANIC_DENSITY_BASE + crust_age[r][c] * 0.15
-                # Slight subsidence from cooling
-                if crust_age[r][c] > 0.5:
-                    elev[r][c] -= 2.0 * speed
+            # Old oceanic crust cools and subsides.
+            if crust_type[r][c] == 0 and crust_age[r][c] > 0.5:
+                elev[r][c] -= 2.0 * speed
 
             # Check neighbors for plate boundaries
             for dr, dc in _NEIGHBORS_4:
