@@ -329,12 +329,15 @@ Shader Toy implements real-time per-pixel mathematical animations inspired by th
 **Formulation**
 
 ```
-For each pixel at normalized coords (nx, ny) in [-1, 1] and time t:
+For each cell at normalized coords (nx, ny) and time t
+  (ny in [-1, 1]; nx is scaled by the terminal aspect ratio):
   val = shader(nx, ny, t)    -- returns value in [0, 1]
   char = shade_chars[int(val * N)]
   color = palette_map(val)
 
-Shader functions (selection of 10 presets):
+Presets: Plasma Waves, Tunnel Zoom, Metaballs, Moiré Rings, Fractal Flame,
+Warp Grid, Lava Lamp, Matrix Rain, Kaleidoscope, Spiral Galaxy.
+Four are written out here:
 
   Plasma Waves:
     v = sin(nx*10*A + t) + sin((ny*10*B + t)*0.7)
@@ -359,15 +362,15 @@ Shader functions (selection of 10 presets):
     spiral = sin(angle*2*A - r*10*B + t*1.5)
     arm = max(0, spiral) * max(0, 1 - r*1.2)
     core = max(0, 0.3 - r) * 3
-    val = arm + core + ripple_term
+    val = arm + core + sin(r*30 - t*3) * 0.1 * max(0, 1 - r*2)
 
-Parameters A, B in [0.1, 3.0] modulate each shader's spatial frequency.
+Parameters A, B in [0.1, 3.0] scale frequency terms in each shader.
 Color modes: Rainbow, Fire, Ocean, Mono.
 ```
 
 **What to look for**
 
-Parameters A and B act as spatial frequency multipliers -- increasing them creates finer detail in the pattern. The Metaballs shader demonstrates implicit surface visualization: watch five moving charge points create smooth organic merges where their fields overlap. The Kaleidoscope preset uses modular angular arithmetic to create symmetric patterns from a simple distance function. Compare how the same mathematical output maps to different aesthetics across the four color palettes.
+Parameters A and B (`a`/`A`, `b`/`B`) mostly scale spatial frequency, so raising them gives finer detail. The Metaballs shader demonstrates implicit surface visualization: watch five moving charge points create smooth organic merges where their fields overlap. The Kaleidoscope preset folds the angle into mirrored segments (A sets the segment count) and applies a radial wave. `c` cycles the four colour palettes, `n`/`N` switch shaders, and `+`/`-` change the speed.
 
 **References**
 
