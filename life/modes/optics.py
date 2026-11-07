@@ -572,6 +572,7 @@ def _optics_init(self, preset_idx: int):
     self.optics_elements = elements
     # sources: list of (x, y, angle, spread, n_rays, is_white)
     self.optics_sources = sources
+    self.optics_base_angle = sources[0][2] if sources else 0.0
 
     # Ray trace results
     self.optics_ray_points = []
@@ -596,12 +597,11 @@ def _optics_init(self, preset_idx: int):
 def _optics_step(self):
     """Advance one animation step — rotate source or animate elements."""
     self.optics_anim_angle += 0.03
-    # Gently rotate first source direction for visual effect
+    # Wobble the first source around its preset direction.
     if self.optics_sources:
         src = self.optics_sources[0]
-        base_angle = src[2]
         wobble = 0.15 * math.sin(self.optics_anim_angle)
-        self.optics_sources[0] = (src[0], src[1], base_angle + wobble,
+        self.optics_sources[0] = (src[0], src[1], self.optics_base_angle + wobble,
                                    src[3], src[4], src[5])
     _trace_all_rays(self)
     self.optics_generation += 1
