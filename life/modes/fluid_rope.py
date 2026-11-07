@@ -1,8 +1,6 @@
-"""Mode: fluidrope — simulation mode for the life package."""
+"""Fluid Rope / Honey Coiling — a viscous thread pours onto a surface and coils into a pool."""
 import curses
 import math
-import random
-import time
 
 FLUIDROPE_PRESETS = [
     ("Honey", "Thick golden honey coiling on a surface", "honey"),
@@ -17,6 +15,7 @@ _FLUIDROPE_SPLASH_CHARS = "·∘°~≈"
 
 
 def _enter_fluidrope_mode(self):
+    """Enter Fluid Rope mode and show the preset menu."""
     self.fluidrope_mode = True
     self.fluidrope_menu = True
     self.fluidrope_menu_sel = 0
@@ -26,6 +25,7 @@ def _enter_fluidrope_mode(self):
 
 
 def _exit_fluidrope_mode(self):
+    """Exit Fluid Rope mode and drop the simulation state."""
     self.fluidrope_mode = False
     self.fluidrope_menu = False
     self.fluidrope_running = False
@@ -37,7 +37,7 @@ def _exit_fluidrope_mode(self):
 
 
 def _fluidrope_init(self, preset_key):
-    import math as _m
+    """Start the simulation with the preset named by preset_key."""
     rows, cols = self.stdscr.getmaxyx()
     self.fluidrope_rows = rows
     self.fluidrope_cols = cols
@@ -109,9 +109,7 @@ def _fluidrope_init(self, preset_key):
 
 
 def _fluidrope_step(self):
-    import math as _m
-    import random as _r
-
+    """Advance the simulation by one time step."""
     rows = self.fluidrope_rows
     cols = self.fluidrope_cols
     dt = self.fluidrope_dt
@@ -135,12 +133,11 @@ def _fluidrope_step(self):
 
     # Compute landing position with coiling
     base_land_x = pour_px + self.fluidrope_surface_offset
-    land_x = base_land_x + coil_r * _m.cos(self.fluidrope_coil_angle)
+    land_x = base_land_x + coil_r * math.cos(self.fluidrope_coil_angle)
     land_x_int = int(land_x) % cols
 
     # Record trail for coil visualization
     self.fluidrope_trail.append((land_x_int, surface_y, t))
-    # Keep last 80 trail entries
     max_trail = 80
     if len(self.fluidrope_trail) > max_trail:
         self.fluidrope_trail = self.fluidrope_trail[-max_trail:]
@@ -158,7 +155,7 @@ def _fluidrope_step(self):
         # Near the top, the stream is straight; near bottom it bends toward coil point
         target_x = pour_px * (1.0 - frac ** 2) + land_x * (frac ** 2)
         # Add slight wobble from viscosity
-        wobble = _m.sin(t * 3.0 + i * 0.5) * 0.3 * frac * self.fluidrope_viscosity
+        wobble = math.sin(t * 3.0 + i * 0.5) * 0.3 * frac * self.fluidrope_viscosity
         seg[0] = target_x + wobble
         seg[1] = stream_top + i
 
@@ -240,7 +237,7 @@ def _handle_fluidrope_key(self, key):
         self.fluidrope_show_info = not self.fluidrope_show_info
     elif key == ord('r'):
         preset_key = None
-        for name, desc, pk in FLUIDROPE_PRESETS:
+        for name, _desc, pk in FLUIDROPE_PRESETS:
             if name == self.fluidrope_preset_name:
                 preset_key = pk
                 break
@@ -325,7 +322,7 @@ def _draw_fluidrope_menu(self, max_y, max_x):
 
 
 def _draw_fluidrope(self, max_y, max_x):
-    import math as _m
+    """Draw the pool, coil trail, falling stream and hint bar."""
     self.stdscr.erase()
     rows = max_y
     cols = max_x
@@ -354,14 +351,6 @@ def _draw_fluidrope(self, max_y, max_x):
                     self.stdscr.addch(py, c, ord(ch))
                 except curses.error:
                     pass
-        # Top of pool gets partial char
-        top_py = surface_y + 1
-        if 0 <= top_py < rows - 1 and 0 <= c < cols - 1:
-            tidx = min(bar_height, len(_FLUIDROPE_POOL_CHARS) - 1)
-            try:
-                self.stdscr.addch(top_py, c, ord(_FLUIDROPE_POOL_CHARS[tidx]))
-            except curses.error:
-                pass
 
     # ── Draw coil trail at surface ──
     t_now = self.fluidrope_time
@@ -410,7 +399,7 @@ def _draw_fluidrope(self, max_y, max_x):
 
     # ── Draw splash particles near landing zone ──
     land_x = int(self.fluidrope_pour_x * cols + self.fluidrope_surface_offset +
-                 self.fluidrope_coil_radius * _m.cos(self.fluidrope_coil_angle))
+                 self.fluidrope_coil_radius * math.cos(self.fluidrope_coil_angle))
     land_x = land_x % cols
     for dx in range(-2, 3):
         for dy in range(-1, 2):
