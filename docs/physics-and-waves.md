@@ -379,16 +379,15 @@ Presets: Hanging Cloth (top row pinned), Curtain (two top corners pinned), Flag 
 
 ```
 Mantle convection (Rayleigh-Bénard analog):
-  T_core = 1.0 (normalized), T_surface = 0.1
   Thermal diffusion: D = 0.06, 4-neighbor Laplacian
   Buoyancy-driven flow: velocity ∝ 0.12 × dT/dr (hot rises, cold sinks)
   Viscous drag on flow: 0.03
-  Bottom heating: cells at base → T_core, top cooling: cells at surface → T_surface
+  Each step: heat added +0.005 × depth fraction, cooling −0.004 × (1 − depth fraction); T clamped to [0, 1]
   Plume detection threshold: T > 0.75
 
 Plate mechanics:
   Mantle drag coefficient: 0.04 (couples plate velocity to underlying flow)
-  Ridge push: 0.02, Slab pull: 0.06 (dominant driving force)
+  Plate velocity damping: ×0.995 per step, clamped to ±0.6
   Oceanic crust aging: density += 0.005/tick from base 0.3
   Continental density: 0.15 (buoyant, resists subduction)
 
@@ -412,7 +411,7 @@ Hotspot volcanism:
 Wilson Cycle:
   Continental clustering detection → supercontinent state
   Mantle insulation heating beneath supercontinent
-  Thermal repulsion force: 0.003 drives breakup
+  Mantle under clustered continents warms by 0.003 per step
 
 Erosion & isostasy:
   Smoothing: 0.025 blend toward neighbor average
@@ -1038,7 +1037,7 @@ Oscillation amplitude (per cell, from stroboscopic history):
 
 **Presets** — Six configurations span the DTC phase diagram:
 - **Clean DTC**: Uniform coupling (J=1.0), small drive error (ε=0.03), no disorder — textbook period-doubling from Ising interactions alone
-- **Disordered DTC (MBL)**: Strong quenched disorder (0.5) with J=0.8 — many-body localization protects the DTC from thermalization
+- **Disordered DTC**: Strong quenched disorder (0.5) with J=0.8, ε=0.05 — many-body localization protects the DTC from thermalization
 - **Melting Crystal**: Large drive error (ε=0.20) near the phase boundary — fragile oscillations that gradually decay as the system absorbs energy
 - **Domain Walls**: Alternating horizontal stripe domains — watch subharmonic breathing at domain boundaries
 - **Period-4 Attempt**: Enhanced coupling (J=1.5) with checkerboard initial conditions — seeking higher-order T/4 subharmonic response
@@ -1155,7 +1154,7 @@ Dynamics proceed via Monte Carlo Metropolis sweeps: each sweep makes as many fli
 - **Field Quench**: Starts from an ordered ice state, then at sweep 20 a sudden field (h=3.0) is applied — watch the avalanche of monopole creation as the system reorders to align with the field
 - **Dirac Strings**: Moderate temperature (T=1.5) with 3 randomly flipped horizontal edges (each flip creates a monopole-antimonopole pair) — Dirac string display on by default, showing dotted lines connecting paired monopoles
 - **Kagome Ice**: Random initial arrows at T=1.0 on the same square lattice and 2-in/2-out rule as the other presets; the kagome geometry is not implemented, so this differs from the other presets only in its start state and temperature
-- **Pauling Entropy**: Very low temperature (T=0.01) in a perfect ice state — shows the Pauling estimate of the ice residual entropy, ln(3/2)/ln(2) ≈ 0.585 per vertex (labelled S/kB on screen), once more than 99% of vertices obey the ice rule. Pauling first calculated it in 1935
+- **Pauling Entropy**: Very low temperature (T=0.01) in a perfect ice state — shows the Pauling estimate of the ice residual entropy, ln(3/2) ≈ 0.4055 k_B per vertex (labelled S/kB on screen), once more than 99% of vertices obey the ice rule. Pauling first calculated it in 1935
 
 **Visualization** — The lattice is drawn with Unicode arrows (→←↑↓) on edges colored cyan. Vertices display their charge state: neutral vertices as dim dots (·), positive monopoles as bold red ⊕, and negative antimonopoles as bold blue ⊖. When Dirac string display is enabled, dotted magenta lines (∙) connect nearest monopole-antimonopole pairs via greedy distance matching.
 
@@ -1242,7 +1241,7 @@ Magnitude estimation:
 
 Seismic wave propagation (finite-difference wave equation):
   u_next[r][c] = damping * (2*u[r][c] - u_prev[r][c] + c² * Laplacian(u))
-  P-wave speed: 1.5 cells/step, S-wave speed: 0.9 cells/step
+  P-wave speed: 0.65 cells/step, S-wave speed: 0.39 cells/step
 
 Parameters:
   tectonic_rate  — stress loading per step (0.001 to 0.1)
