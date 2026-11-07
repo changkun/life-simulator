@@ -373,7 +373,7 @@ Bass Tunnel view:
 
 ## Snowfall & Blizzard
 
-**Background.** This mode simulates snowfall with realistic particle dynamics including wind gusts, ground accumulation, snow drifting, and temperature-dependent flake behavior. Each snowflake is an independent particle affected by gravity, wind, and lateral wobble. Snow accumulates column by column on the ground and can be redistributed by wind, forming drifts. The simulation captures the visual character of weather ranging from gentle flurries to arctic whiteouts.
+**Background.** This mode simulates snowfall with wind gusts, ground accumulation, snow drifting, and a simple temperature effect. Each snowflake is an independent particle pushed by gravity, wind, and a lateral wobble. Snow piles up column by column and the wind moves it sideways to form drifts. Weather ranges from gentle flurries to arctic whiteouts.
 
 **Formulation.** Each snowflake carries state [x, y, vx, vy, size, wobble_phase]:
 
@@ -381,6 +381,7 @@ Bass Tunnel view:
 Wind gusts (sinusoidal variation):
   gust = 0.4 * sin(phase) + 0.2 * sin(2.3 * phase + 1.0)
   effective_wind = wind_speed * wind_dir + gust
+  (phase advances by 0.7 * dt per step)
 
 Lateral wobble:
   wobble_phase += dt * (2.0 + size * 0.5)
@@ -393,32 +394,37 @@ Velocity update:
   vy  = 0.3 + size * 0.2 + random(-0.05, 0.05)
   If temperature > 0: vy *= 0.8      (wet snow falls slower)
 
-Accumulation (per-column height):
+Accumulation (per-column height, capped at max_accum):
   When flake hits ground_level:
     accumulation[col] += 0.02 + size * 0.01
+    (the flake then respawns at the top)
 
-Snow drifting (when |wind| > 0.5):
-  transfer = accumulation[i] * |wind| * 0.002
+Snow drifting (when |effective_wind| > 0.5):
+  transfer = accumulation[i] * |effective_wind| * 0.002
   accumulation[i] -= transfer
   accumulation[i + wind_dir] += transfer
   Smoothing: a[i] = 0.98*a[i] + 0.01*(a[i-1] + a[i+1])
 
-Ground drift particles (when |wind| > 1.0):
-  Spawn from snow pile tops, blown horizontally
+Ground drift particles (when |effective_wind| > 1.0):
+  Spawn from piles higher than 0.5, blown horizontally for 15-40 steps
 
-Presets:         density  wind   temp    visibility  max_accum
-  Gentle            80    0.3    -3C     1.00        rows/4
-  Steady           180    1.2    -8C     0.75        rows/3
-  Blizzard         400    3.5    -15C    0.35        rows/2
-  Whiteout         600    5.0    -25C    0.15        rows/2
-  Wet Snow         120    0.5    +1C     0.85        rows/5
-  Squall           350    2.5    -10C    0.45        rows/3
+Presets:                density  wind   temp    visibility  max_accum
+  Gentle Snowfall          80    0.3    -3C     1.00        rows/4
+  Steady Winter Storm     180    1.2    -8C     0.75        rows/3
+  Heavy Blizzard          400    3.5    -15C    0.35        rows/2
+  Arctic Whiteout         600    5.0    -25C    0.15        rows/2
+  Wet Spring Snow         120    0.5    +1C     0.85        rows/5
+  Mountain Squall         350    2.5    -10C    0.45        rows/3
+  (Arctic Whiteout blows toward the left; the others toward the right.)
 
 Flake sizes: 0=small, 1=medium, 2=large
-  Warmer temperatures bias toward larger (wetter) flakes
+  At reset, temperatures above -2C bias flake sizes one step larger
+  (only Wet Spring Snow)
 ```
 
-**What to look for.** In gentle mode, individual flakes trace sinusoidal paths as they drift down. At blizzard intensity, the sheer particle count and horizontal wind create near-horizontal streaks with greatly reduced visibility. Snow accumulates into uneven drifts shaped by wind direction -- reversing wind direction (d key) gradually reshapes the terrain. Warm temperatures produce slower, heavier flakes. Ground-level drift particles are blown off snow pile peaks in high wind, adding texture near the surface.
+**Controls:** `Space`=play/pause, `n` or `.`=step, `+/-`=speed (1-10), `w/W`=wind up/down, `d`=flip wind direction, `f/F`=more/fewer flakes (20-800), `t/T`=warmer/colder (-30 to +3C), `i`=info panel, `r`=reset, `R` or `m`=menu, `q`=exit.
+
+**What to look for.** In Gentle Snowfall, flakes trace slow wavy paths. In Heavy Blizzard and Arctic Whiteout, the flake count and wind make near-horizontal streaks with low visibility. Snow piles into uneven drifts shaped by the wind. Flipping the wind (`d`) slowly reshapes them. Above 0C, flakes fall 20% slower. In strong wind, drift particles blow off the tops of piles.
 
 **References.**
 - Fearing, P. "Computer Modelling of Fallen Snow." *Proceedings of SIGGRAPH '00*, ACM, 37-46, 2000. https://doi.org/10.1145/344779.344936
