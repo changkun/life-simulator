@@ -1047,11 +1047,11 @@ Oscillation amplitude (per cell, from stroboscopic history):
 **Visualization modes** (cycle with `v`):
 - **Spin**: Current σᶻ expectation — warm colors (red/yellow) for spin-up, cool colors (blue) for spin-down, brightness proportional to polarization magnitude
 - **Oscillation**: DTC amplitude per cell — green indicates strong period-doubling, yellow moderate, blue negligible
-- **Stroboscopic**: System state sampled every full Floquet period — in a DTC phase, this view alternates uniformly between two states
+- **Stroboscopic**: System state sampled every full Floquet period — in a DTC phase, this view alternates between two states
 
 **Controls**: `Space` play/pause, `n`/`.` single step, `v` cycle view, `e`/`E` increase/decrease drive error ε, `j`/`J` increase/decrease Ising coupling, `d`/`D` increase/decrease disorder, `+`/`-` adjust speed, `click` flip a spin (test robustness), `r` reset, `R` return to menu.
 
-**What to look for** — In the Clean DTC preset, start the simulation and watch the global DTC order parameter in the title bar climb toward 1.0 as period-doubling establishes itself. Switch to Oscillation view to see green cells indicating robust subharmonic response. Now increase ε (press `e` repeatedly) — at around ε≈0.15–0.20, the DTC melts as the system can no longer maintain coherent period-doubling. Click individual cells to flip their spins and observe how quickly the DTC self-heals — this robustness against local perturbations is the defining feature distinguishing a DTC from trivial oscillation. Compare the Clean DTC (which eventually thermalizes without disorder) to the Disordered DTC (where many-body localization prevents heating indefinitely). The Domain Walls preset reveals how DTC behavior nucleates differently at boundaries between spin domains.
+**What to look for** — In the Clean DTC preset, start the simulation and watch the DTC order parameter in the title bar. It stays near 1.0 because the drive flips almost every spin each period. Switch to the Oscillation view to see green cells indicating a strong subharmonic response. Now press `e` repeatedly: the oscillation amplitude falls gradually rather than collapsing at a sharp threshold (the mean amplitude in a test run was about 0.98 at ε=0.20 and 0.74 at ε=0.50). Click a cell to flip its spin; the flipped spin keeps alternating, but out of phase with its neighbors. The Disordered DTC adds quenched local fields, and the Domain Walls preset starts from horizontal stripes of opposite spin. Press `d`/`D` to change the disorder strength; each press redraws the random fields.
 
 **References**
 - Wilczek, F. "Quantum Time Crystals," *Physical Review Letters*, 109, 2012. https://doi.org/10.1103/PhysRevLett.109.160401
