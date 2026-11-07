@@ -129,7 +129,7 @@ def _draw_iso(self, max_y: int, max_x: int):
         state = "▶ PLAY" if self.running else "⏸ PAUSE"
         speed = SPEED_LABELS[self.speed_idx]
         rs = rule_string(self.grid.birth, self.grid.survival)
-        mode = "  │  🏙 ISO-3D"
+        mode = "  │  ▦ ISO-3D"
         if self.heatmap_mode:
             mode += "  │  ▒ HEATMAP"
         if self.sound_engine.enabled:

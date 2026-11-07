@@ -1157,8 +1157,8 @@ def _draw_protfold_energy(self, max_y, max_x):
 
         if cm_size > 3 and cm_x + cm_size < max_x:
             try:
-                self.stdscr.addstr(cm_y - 1, cm_x, f"Contact Map ({prot.state})",
-                                   curses.A_BOLD)
+                title = f"Contact Map ({prot.state})"[:max_x - 1 - cm_x]
+                self.stdscr.addstr(cm_y - 1, cm_x, title, curses.A_BOLD)
             except curses.error:
                 pass
 

@@ -316,7 +316,7 @@ def _draw_aco(self, max_y: int, max_x: int):
             if abs(r - nr) <= 1 and abs(c - nc) <= 1:
                 # Nest
                 try:
-                    self.stdscr.addstr(1 + r, c * 2, "🏠" if c == nc and r == nr else "▓▓",
+                    self.stdscr.addstr(1 + r, c * 2, "⌂⌂" if c == nc and r == nr else "▓▓",
                                        curses.color_pair(3) | curses.A_BOLD)
                 except curses.error:
                     pass

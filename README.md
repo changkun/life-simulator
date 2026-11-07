@@ -76,6 +76,7 @@ Press `m` to open the mode browser, `?` for help, `q` to quit.
 
 - Python 3.10+
 - A terminal with color support (256-color recommended; 24-bit truecolor for best visuals)
+- At least 80×24 characters. Every mode fits that size: `tests/test_layout_80x24.py` draws each mode's menu, run and alternate views on an 80×24 screen and fails if any text runs off the edge or uses a double-width character.
 - [uv](https://docs.astral.sh/uv/) (recommended) or pip
 
 ## Installation

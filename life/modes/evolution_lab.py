@@ -724,7 +724,7 @@ def _draw_elab_menu(self, max_y, max_x):
 
     items = [
         ("Population Size", str(self.elab_pop_size), "Number of competing organisms (4-20)"),
-        ("Eval Generations", str(self.elab_eval_gens), "Steps to simulate before scoring (50-500)"),
+        ("Eval Generations", str(self.elab_eval_gens), "Steps simulated before scoring (50-500)"),
         ("Mutation Rate", f"{int(self.elab_mutation_rate * 100)}%", "Chance of mutating each rule digit"),
         ("Elite Survivors", str(self.elab_elite_count), "Top performers that reproduce"),
         ("Fitness Preset", self.elab_fitness_preset, "balanced / beauty / chaos / complexity / stability"),
@@ -733,9 +733,13 @@ def _draw_elab_menu(self, max_y, max_x):
         (">>> START (From Saved) <<<", "", "Breed from previously saved organisms"),
     ]
 
+    # Double-space the items when there is room under them for the info
+    # box; otherwise single-space them so every item, START included, still
+    # fits on a 24-row screen.
+    spacing = 2 if 5 + len(items) * 2 <= max_y - 12 else 1
     for i, (label, value, hint) in enumerate(items):
-        y = 5 + i * 2
-        if y >= max_y - 12:
+        y = 5 + i * spacing
+        if y >= max_y - 2:
             break
         if i >= 6:
             line = f"  {label}"
@@ -753,7 +757,7 @@ def _draw_elab_menu(self, max_y, max_x):
             pass
 
     # Info box
-    info_y = max(5 + len(items) * 2 + 1, max_y - 10)
+    info_y = max(5 + len(items) * spacing + 1, max_y - 10)
     info_lines = [
         "HOW IT WORKS:",
         "  A population of CA rules runs in parallel on a tiled grid.",

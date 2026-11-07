@@ -6515,7 +6515,7 @@ class App:
             if self.hex_mode:
                 mode += "  │  ⬡ HEX"
             if self.iso_mode:
-                mode += "  │  🏙 ISO-3D"
+                mode += "  │  ▦ ISO-3D"
             if self.show_minimap:
                 mode += "  │  MAP"
             if self.draw_mode == "draw":

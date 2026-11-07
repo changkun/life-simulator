@@ -285,6 +285,9 @@ def _draw_doomrc_menu(self, max_y: int, max_x: int):
         self.stdscr.addstr(cy, cx, title, curses.A_BOLD | curses.color_pair(4))
         self.stdscr.addstr(cy + 1, max(0, (max_x - len(subtitle)) // 2), subtitle,
                            curses.color_pair(5))
+        # Centre the list as a block and clip each line at the right edge.
+        width = max(22 + len(desc) for _n, desc, _k in self.DOOMRC_PRESETS)
+        lx = max(0, (max_x - width) // 2)
         for i, (name, desc, _key) in enumerate(self.DOOMRC_PRESETS):
             y = cy + 3 + i
             if y >= max_y - 2:
@@ -292,7 +295,7 @@ def _draw_doomrc_menu(self, max_y: int, max_x: int):
             marker = "▸ " if i == self.doomrc_menu_sel else "  "
             attr = curses.A_BOLD | curses.color_pair(4) if i == self.doomrc_menu_sel else curses.color_pair(3)
             line = f"{marker}{name:<18s}  {desc}"
-            self.stdscr.addstr(y, max(0, cx - 2), line[:max_x - 1], attr)
+            self.stdscr.addstr(y, lx, line[:max(0, max_x - 1 - lx)], attr)
         nav = "↑/↓ navigate · Enter select · Esc cancel"
         ny = cy + 3 + len(self.DOOMRC_PRESETS) + 1
         if ny < max_y - 1:

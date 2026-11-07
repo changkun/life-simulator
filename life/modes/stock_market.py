@@ -673,7 +673,8 @@ def _draw_mkt_orderbook(self, max_y, max_x):
     except curses.error:
         pass
 
-    bar_max = mid_x - 14
+    # Ask bars start at mid_x + 16 and must stop short of the last column.
+    bar_max = max(1, min(mid_x - 14, max_x - 1 - (mid_x + 16)))
 
     # Draw bid levels (right-aligned bars growing left)
     for i, (price, qty) in enumerate(bid_sorted):

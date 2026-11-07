@@ -859,9 +859,13 @@ def _draw_adisco_menu(self, max_y, max_x):
         (">>> BROWSE GALLERY <<<", "", "View curated discoveries"),
     ]
 
+    # Double-space the items when there is room under them for the info
+    # box; otherwise single-space them so every item, START included, still
+    # fits on a 24-row screen.
+    spacing = 2 if 5 + len(items) * 2 <= max_y - 14 else 1
     for i, (label, value, hint) in enumerate(items):
-        y = 5 + i * 2
-        if y >= max_y - 14:
+        y = 5 + i * spacing
+        if y >= max_y - 2:
             break
         if i >= 5:
             line = f"  {label}"
@@ -879,7 +883,7 @@ def _draw_adisco_menu(self, max_y, max_x):
             pass
 
     # Info box
-    info_y = max(5 + len(items) * 2 + 1, max_y - 12)
+    info_y = max(5 + len(items) * spacing + 1, max_y - 12)
     info_lines = [
         "HOW IT WORKS:",
         "  The engine autonomously generates CA rule + initial condition pairs.",

@@ -1,5 +1,6 @@
 """Shared test fixtures for the Life Simulator test suite."""
 import curses
+import unicodedata
 import time
 import threading
 import pytest
@@ -22,21 +23,99 @@ def _safe_color_pair(n):
 curses.color_pair = _safe_color_pair
 
 
+def is_wide_or_emoji(ch):
+    """True if *ch* takes two terminal cells or renders as an emoji.
+
+    East Asian Wide/Fullwidth characters always take two cells.  Emoji
+    outside the BMP, the emoji variation selector (U+FE0F) and the
+    zero-width joiner used in emoji sequences make most terminals draw a
+    two-cell picture even when the base character is narrow.
+    """
+    if unicodedata.east_asian_width(ch) in ("W", "F"):
+        return True
+    cp = ord(ch)
+    return cp >= 0x1F000 or cp in (0xFE0F, 0x200D)
+
+
 class MockStdscr:
-    """Minimal curses screen stub for testing."""
+    """Curses screen stub that records what gets drawn.
+
+    Every ``addstr``/``addnstr``/``addch`` call is logged in ``self.writes``
+    as ``(row, col, text)``.  Anything that would not fit on the screen --
+    a glyph past the last column or row, or a negative coordinate -- and
+    any double-width or emoji character is appended to ``self.violations``
+    as ``(row, col, text, reason)``.
+    """
 
     def __init__(self, rows=40, cols=120):
         self._rows = rows
         self._cols = cols
+        self.writes = []
+        self.violations = []
+        self._cy = 0
+        self._cx = 0
 
     def getmaxyx(self):
         return self._rows, self._cols
 
+    # ── recording ──
+
+    def _record(self, y, x, text):
+        self.writes.append((y, x, text))
+        if y < 0 or y >= self._rows:
+            self.violations.append((y, x, text, f"row {y} is off screen"))
+        elif x < 0:
+            self.violations.append((y, x, text, f"column {x} is negative"))
+        elif x + len(text) > self._cols:
+            self.violations.append(
+                (y, x, text, f"runs to column {x + len(text) - 1}"))
+        wide = sorted({c for c in text if is_wide_or_emoji(c)})
+        if wide:
+            names = ", ".join(f"U+{ord(c):04X} {c!r}" for c in wide)
+            self.violations.append((y, x, text, f"double-width: {names}"))
+        self._cy, self._cx = y, x + len(text)
+
+    @staticmethod
+    def _as_text(obj):
+        if isinstance(obj, bytes):
+            return obj.decode("utf-8", "replace")
+        if isinstance(obj, int):
+            # A chtype: the low bits are the character, the rest are
+            # attributes.  ACS_* line-drawing values and other non-ASCII
+            # chtypes are one cell wide, so stand them in with "#".
+            code = obj & curses.A_CHARTEXT
+            return chr(code) if 32 <= code < 127 else "#"
+        return str(obj)
+
+    @staticmethod
+    def _has_pos(args, n):
+        return (len(args) >= n and isinstance(args[0], int)
+                and isinstance(args[1], int))
+
     def addstr(self, *args, **kwargs):
-        pass
+        if self._has_pos(args, 3):
+            self._record(args[0], args[1], self._as_text(args[2]))
+        elif args:
+            self._record(self._cy, self._cx, self._as_text(args[0]))
+
+    def addnstr(self, *args, **kwargs):
+        if self._has_pos(args, 4):
+            y, x, s, n = args[:4]
+            self._record(y, x, self._as_text(s)[:max(0, n)])
+        elif len(args) >= 2:
+            s, n = args[:2]
+            self._record(self._cy, self._cx, self._as_text(s)[:max(0, n)])
 
     def addch(self, *args, **kwargs):
-        pass
+        if self._has_pos(args, 3):
+            self._record(args[0], args[1], self._as_text(args[2]))
+        elif args:
+            self._record(self._cy, self._cx, self._as_text(args[0]))
+
+    def clear_record(self):
+        """Forget everything recorded so far."""
+        self.writes.clear()
+        self.violations.clear()
 
     def clear(self):
         pass
@@ -60,7 +139,7 @@ class MockStdscr:
         pass
 
     def move(self, y, x):
-        pass
+        self._cy, self._cx = y, x
 
     def clrtoeol(self):
         pass

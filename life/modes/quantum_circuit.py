@@ -686,6 +686,8 @@ def _draw_qcirc(self, max_y, max_x):
             bx_v, _by_v, bz_v = _bloch_vector(sv, nq, q)
             lines = _mini_bloch(bx_v, bz_v, size=2)
             bx = bloch_x + q * 12
+            if bx + 10 >= max_x:
+                break  # no room for another sphere
             try:
                 self.stdscr.addstr(bloch_y, bx + 1, f"q{q}",
                                    curses.color_pair(3) | curses.A_BOLD)
