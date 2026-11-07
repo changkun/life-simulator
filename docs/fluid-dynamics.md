@@ -406,11 +406,11 @@ dt = 0.02
 
 ---
 
-## Fluid of Life (CA + LBM Coupled)
+## Fluid of Life
 
-**Background.** Cellular automata and fluid dynamics are two of the most productive frameworks for studying emergent complexity, but they are almost always studied in isolation. The Game of Life operates on a discrete grid with discrete time; Navier-Stokes (or its kinetic surrogate, Lattice Boltzmann) operates on continuous fields. The Fluid of Life mode couples them into a single system: live cells are buoyant particles that inject momentum into a surrounding fluid, and the fluid velocity field advects cells to new grid positions before the next CA generation is applied. This two-way coupling produces qualitatively new phenomena — gliders that curve along streamlines, oscillators that generate vortex streets, and guns that pump coherent fluid jets — that exist only at the intersection of discrete life and continuous flow.
+**Background.** This mode couples the Game of Life (a discrete grid with discrete time) to a Lattice Boltzmann fluid (continuous fields). Live cells are buoyant: they push the fluid upward. The fluid velocity field in turn moves cells to new grid positions between CA generations. Gliders can curve along the flow, oscillators can stir vortices, and guns can pump a fluid jet.
 
-The idea of coupling particle-like automata with continuum fluid has roots in the immersed boundary method (Peskin, 1972), where elastic structures interact with viscous flow. Here the "structure" is the CA itself: living cells exert force on the fluid (buoyancy), and the fluid exerts force on the cells (advection). The result is a hybrid system where neither layer alone predicts the emergent behavior.
+Coupling particle-like structures to a continuum fluid has roots in the immersed boundary method (Peskin, 1972), where elastic structures interact with viscous flow. Here the "structure" is the CA itself: living cells exert force on the fluid (buoyancy), and the fluid exerts force on the cells (advection).
 
 **Formulation.** The fluid uses the D2Q9 Lattice Boltzmann method (same formulation as the standalone LBM mode). The CA uses standard Conway B3/S23 rules. The coupling is:
 
@@ -451,6 +451,8 @@ LBM parameters per preset:
 **What to look for.** The Glider Stream preset places five SE-traveling gliders in a gentle rightward wind. Watch them curve — the wind adds a rightward component to their natural diagonal trajectory, producing arcing paths. The Blinker Vortices preset arranges 24 blinkers in a grid; each oscillation cycle pulses buoyancy on and off, stirring the fluid into a lattice of counter-rotating vortices visible in the vorticity view. The Gosper Gun Jet preset fires a stream of gliders that collectively pump a coherent fluid jet across the domain. The Convection Cells preset seeds heaters along the bottom and coolers along the top, driving Rayleigh-Bénard-like convection rolls that carry CA cells in rising and falling streams.
 
 Use the interactive tools to experiment: place a wall to deflect a glider stream, add a heater beneath an oscillator to loft it upward, or create a fan tunnel to accelerate structures. Switch visualization modes to see the coupled view (age-colored cells + velocity arrows), fluid speed field, pure CA, or vorticity.
+
+**Keys.** `Space` play/pause, `n` step, `v` cycles views, `f` toggles velocity arrows, arrow keys or `w`/`a`/`s`/`d` move the cursor, `t` cycles tools (cursor, wall, four fans, heater, cooler, eraser), `Enter` or `e` places with the current tool, `b`/`B` raise/lower buoyancy, `u`/`U` raise/lower inflow, `c`/`C` raise/lower the CA interval, `+`/`-` LBM steps per frame, `r` reset, `R` or `m` menu, `q` exit.
 
 **Presets:** Glider Stream (ω=1.6), Blinker Vortices (ω=1.5), Gosper Gun Jet (ω=1.7), Thermal Soup (ω=1.4), Wind Tunnel (ω=1.8), Convection Cells (ω=1.5).
 
