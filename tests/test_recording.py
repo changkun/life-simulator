@@ -121,3 +121,25 @@ def test_fps_throttle():
             # Second capture within 1s should be skipped
             app._cast_rec_capture()
     assert len(app.cast_frames) == 1
+
+
+def test_export_menu_box_is_aligned():
+    """Every row of the export dialog has the same width, whatever the window size."""
+    app = _make_app()
+    app.cast_frames = ["x"] * 3
+    app.cast_timestamps = [0.0, 1.0, 2.0]
+    app.cast_width, app.cast_height = 200, 60
+    app.stdscr = unittest.mock.MagicMock()
+    with unittest.mock.patch("curses.color_pair", return_value=0):
+        app._draw_cast_export_menu(70, 200)
+    widths = {len(c.args[2]) for c in app.stdscr.addstr.call_args_list}
+    assert len(widths) == 1
+
+
+def test_export_menu_accepts_keypad_enter():
+    import curses
+    app = _make_app()
+    app.cast_export_menu = True
+    app._cast_rec_export = unittest.mock.MagicMock()
+    assert app._handle_cast_export_key(curses.KEY_ENTER) is True
+    app._cast_rec_export.assert_called_once_with("cast")

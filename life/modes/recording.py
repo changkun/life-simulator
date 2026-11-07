@@ -280,7 +280,7 @@ def _handle_cast_export_key(self, key):
     if key == curses.KEY_DOWN or key == ord("j"):
         self.cast_export_sel = (self.cast_export_sel + 1) % len(export_options)
         return True
-    if key == 10 or key == 13:  # Enter
+    if key in (10, 13, curses.KEY_ENTER):
         choice = export_options[self.cast_export_sel]
         if choice == "both":
             self._cast_rec_export_both()
@@ -333,31 +333,36 @@ def _draw_cast_export_menu(self, max_y, max_x):
     if self.cast_timestamps and len(self.cast_timestamps) > 1:
         duration = self.cast_timestamps[-1] - self.cast_timestamps[0]
 
+    w = 46
+
+    def row(text=""):
+        return "║" + text.ljust(w)[:w] + "║"
+
     lines = [
-        "╔══════════════════════════════════════════════╗",
-        "║       EXPORT RECORDING                      ║",
-        "╠══════════════════════════════════════════════╣",
-        f"║  Frames: {n:<6d}  Duration: {duration:>6.1f}s            ║",
-        f"║  Size: {self.cast_width}x{self.cast_height:<37}║",
-        "║                                              ║",
-        "║  Select export format:                       ║",
-        "║                                              ║",
+        "╔" + "═" * w + "╗",
+        row("       EXPORT RECORDING"),
+        "╠" + "═" * w + "╣",
+        row(f"  Frames: {n:<6d}  Duration: {duration:>6.1f}s"),
+        row(f"  Size: {self.cast_width}x{self.cast_height}"),
+        row(),
+        row("  Select export format:"),
+        row(),
     ]
 
     options = [
-        ("1", "Asciinema .cast", "Playback in any terminal / web embed"),
-        ("2", "Plain-text .txt", "Flipbook with ANSI frames per page"),
-        ("3", "Both formats",    "Export .cast + .txt together"),
+        ("1", "Asciinema .cast", "Terminal / web player"),
+        ("2", "Plain-text .txt", "One plain frame/page"),
+        ("3", "Both formats",    "Export .cast + .txt"),
     ]
     for i, (num, name, desc) in enumerate(options):
         marker = ">" if i == self.cast_export_sel else " "
-        lines.append(f"║  {marker} [{num}] {name:<16s} {desc:<17s}║")
+        lines.append(row(f"  {marker} [{num}] {name:<16s} {desc}"))
 
     lines += [
-        "║                                              ║",
-        "║  Enter=export  d=discard  Esc=cancel          ║",
-        f"║  Files saved to: ~/.life_saves/              ║",
-        "╚══════════════════════════════════════════════╝",
+        row(),
+        row("  Enter=export  d=discard  Esc=cancel"),
+        row("  Files saved to: ~/.life_saves/"),
+        "╚" + "═" * w + "╝",
     ]
 
     start_y = max(0, (max_y - len(lines)) // 2)
