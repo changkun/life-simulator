@@ -448,3 +448,21 @@ class TestGalaxyMenuDraw:
         text = "\n".join(str(s) for s in drawn)
         for name, _desc, _pid in GALAXY_PRESETS:
             assert name in text
+
+
+class TestGalaxyGasPressure:
+    def _speed_after_step(self, gas_density):
+        app = _make_galaxy_app()
+        app._galaxy_init("dwarf")
+        app.galaxy_halo_mass = 0.0
+        app.galaxy_grav_const = 0.0
+        app.galaxy_gas_density = gas_density
+        # Five gas particles in one bin push each other out (density 5 > 3).
+        app.galaxy_particles = [
+            [10.0 + 0.2 * i, 10.0, 0.0, 0.0, 1.0, 1.0] for i in range(5)]
+        app._galaxy_step()
+        return sum(abs(p[2]) for p in app.galaxy_particles)
+
+    def test_pressure_scales_with_gas_setting(self):
+        assert self._speed_after_step(0.0) == 0.0
+        assert self._speed_after_step(1.0) > self._speed_after_step(0.5) > 0.0

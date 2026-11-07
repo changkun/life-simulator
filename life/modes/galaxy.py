@@ -301,7 +301,8 @@ def _galaxy_step(self):
     halo_mass = self.galaxy_halo_mass
     halo_r = self.galaxy_halo_radius
     soft = self.galaxy_softening
-    n = len(particles)
+    # galaxy_gas_density (f/F keys) scales the pressure; the default 0.5 gives 0.5.
+    gas_pressure = self.galaxy_gas_density
 
     # Build density grid for grid-based force calculation
     grid_res = 4  # bin size for grid force
@@ -372,7 +373,7 @@ def _galaxy_step(self):
                 local_density = grid_mass[gi_p][gj_p]
                 if local_density > 3.0:
                     # Pressure pushes outward from dense region
-                    pressure = 0.5 * (local_density - 3.0)
+                    pressure = gas_pressure * (local_density - 3.0)
                     pdx = px - grid_cx[gi_p][gj_p]
                     pdy = py - grid_cy_arr[gi_p][gj_p]
                     pd = math.sqrt(pdx * pdx + pdy * pdy) + 0.1
@@ -492,10 +493,10 @@ def _handle_galaxy_key(self, key: int) -> bool:
         self._flash(f"Rotation: {self.galaxy_rotation_speed:.1f}")
     elif key == ord("f"):
         self.galaxy_gas_density = min(1.0, self.galaxy_gas_density + 0.05)
-        self._flash(f"Gas fraction: {self.galaxy_gas_density:.2f}")
+        self._flash(f"Gas pressure: {self.galaxy_gas_density:.2f}")
     elif key == ord("F"):
         self.galaxy_gas_density = max(0.0, self.galaxy_gas_density - 0.05)
-        self._flash(f"Gas fraction: {self.galaxy_gas_density:.2f}")
+        self._flash(f"Gas pressure: {self.galaxy_gas_density:.2f}")
     elif key == ord("h"):
         self.galaxy_show_halo = not self.galaxy_show_halo
         self._flash("Halo: ON" if self.galaxy_show_halo else "Halo: OFF")
@@ -547,7 +548,7 @@ def _draw_galaxy_menu(self, max_y: int, max_x: int):
         "Stars, gas clouds, and dark matter interact dynamically.",
         "",
         "Controls: v=view, g/G=gravity, d/D=dt, w/W=rotation,",
-        "          f/F=gas fraction, h=halo, +/-=steps/frame, q=exit",
+        "          f/F=gas pressure, h=halo, +/-=steps/frame, q=exit",
     ]
     base_y = 5 + n + 1
     for i, line in enumerate(info_lines):
