@@ -1,32 +1,8 @@
-"""Mode: Living Labyrinth — a playable roguelike where the dungeon IS a cellular automaton.
-
-Navigate an ever-shifting maze as walls grow and decay by CA rules.  Reach the
-exit portal before corridors seal shut.  Items scattered on the grid let you
-freeze, reverse, or mutate the CA around you.
-
-You are a *participant* inside the simulation — the first mode where you're not
-just an observer but an agent interacting with the living automaton.
-
-Keys:
-  Arrow keys / WASD / hjkl — move player (@)
-  Space                    — wait one turn (CA still ticks)
-  f                        — use Freeze item (freezes CA around you for 10 turns)
-  v                        — use Reverse item (rewinds CA 5 steps around you)
-  m                        — use Mutate item (randomises CA rule locally)
-  r                        — cycle CA rule preset
-  n                        — new dungeon (regenerate)
-  +/-                      — adjust CA tick rate (ticks per player move)
-  ?                        — toggle help overlay
-  q / Escape               — exit Living Labyrinth
-"""
+"""Living Labyrinth — a roguelike where the dungeon walls are a cellular automaton."""
 
 import curses
-import math
 import random
 import time
-
-from life.rules import parse_rule_string, rule_string
-
 
 # ── Constants ──
 
@@ -76,7 +52,7 @@ ITEMS_PER_DUNGEON = 12
 # ── Maze generation (recursive backtracker) ──
 
 def _generate_maze(rows, cols):
-    """Generate a maze using recursive backtracker. Returns 2D list of 0/1."""
+    """Carve a maze with a recursive backtracker and return it as a grid of WALL/FLOOR."""
     # Ensure odd dimensions for proper maze corridors
     mr = rows if rows % 2 == 1 else rows - 1
     mc = cols if cols % 2 == 1 else cols - 1
@@ -121,14 +97,14 @@ def _generate_maze(rows, cols):
 
 
 def _find_open_cells(maze, rows, cols):
-    """Return list of (r, c) floor cells."""
+    """Return the (r, c) positions of all floor cells."""
     return [(r, c) for r in range(rows) for c in range(cols) if maze[r][c] == FLOOR]
 
 
 # ── CA step for the labyrinth ──
 
 def _labyrinth_ca_step(cells, rows, cols, birth, survival, frozen_mask=None):
-    """One CA generation. Returns new cells grid. frozen_mask prevents changes."""
+    """Return the next CA generation; cells with a frozen_mask timer keep their state."""
     new = [[0] * cols for _ in range(rows)]
     for r in range(rows):
         for c in range(cols):
@@ -178,7 +154,7 @@ def _labyrinth_ca_step_local(cells, rows, cols, birth, survival, center_r, cente
 # ── State initialization ──
 
 def _labyrinth_init(self):
-    """Initialize Living Labyrinth state variables."""
+    """Set the default Living Labyrinth state on the App class."""
     self.labyrinth_mode = False
     self.labyrinth_running = False
     self.labyrinth_cells = None       # 2D grid of wall/floor
@@ -211,7 +187,7 @@ def _labyrinth_init(self):
 
 
 def _labyrinth_generate(self):
-    """Generate a new labyrinth dungeon."""
+    """Build a new dungeon: maze, player, exit, items and fresh history."""
     h, w = self.grid.rows, self.grid.cols
     self.labyrinth_rows = h
     self.labyrinth_cols = w
@@ -279,7 +255,7 @@ def _labyrinth_generate(self):
 
 
 def _labyrinth_flash(self, msg):
-    """Show a temporary message."""
+    """Show a temporary message in the HUD."""
     self.labyrinth_msg = msg
     self.labyrinth_msg_time = time.time()
 
@@ -287,7 +263,7 @@ def _labyrinth_flash(self, msg):
 # ── Entry / exit ──
 
 def _enter_labyrinth_mode(self):
-    """Enter Living Labyrinth mode."""
+    """Enter Living Labyrinth and start level 1."""
     self.labyrinth_mode = True
     self.labyrinth_running = True
     self.labyrinth_level = 1
@@ -314,7 +290,7 @@ def _exit_labyrinth_mode(self):
 # ── CA tick ──
 
 def _labyrinth_tick_ca(self):
-    """Advance the CA one generation."""
+    """Advance the CA one generation and record it for the Reverse item."""
     h, w = self.labyrinth_rows, self.labyrinth_cols
 
     # Save to history (for reverse item)
@@ -337,7 +313,7 @@ def _labyrinth_tick_ca(self):
 # ── Item usage ──
 
 def _labyrinth_use_freeze(self):
-    """Use freeze item: freeze CA in a radius around player for 10 turns."""
+    """Freeze the CA in a radius around the player for 10 turns."""
     if self.labyrinth_inventory[ITEM_FREEZE] <= 0:
         _labyrinth_flash(self, "No freeze items!")
         return
@@ -353,7 +329,7 @@ def _labyrinth_use_freeze(self):
 
 
 def _labyrinth_use_reverse(self):
-    """Use reverse item: rewind CA 5 steps in a radius around player."""
+    """Rewind the CA up to 5 steps in a radius around the player."""
     if self.labyrinth_inventory[ITEM_REVERSE] <= 0:
         _labyrinth_flash(self, "No reverse items!")
         return
@@ -375,12 +351,11 @@ def _labyrinth_use_reverse(self):
 
 
 def _labyrinth_use_mutate(self):
-    """Use mutate item: randomize CA rule in a radius, creating chaos."""
+    """Flip random cells in a radius around the player."""
     if self.labyrinth_inventory[ITEM_MUTATE] <= 0:
         _labyrinth_flash(self, "No mutate items!")
         return
     self.labyrinth_inventory[ITEM_MUTATE] -= 1
-    # Apply a random local mutation by flipping some cells
     radius = 7
     pr, pc = self.labyrinth_player_r, self.labyrinth_player_c
     h, w = self.labyrinth_rows, self.labyrinth_cols
@@ -397,7 +372,7 @@ def _labyrinth_use_mutate(self):
 # ── Player movement ──
 
 def _labyrinth_move(self, dr, dc):
-    """Try to move player in direction (dr, dc). Returns True if moved."""
+    """Move the player by (dr, dc) if the target is open. Return True if moved."""
     if self.labyrinth_game_over:
         return False
     nr = self.labyrinth_player_r + dr
@@ -436,8 +411,8 @@ def _labyrinth_move(self, dr, dc):
 
 
 def _labyrinth_player_turn(self, dr, dc):
-    """Execute a player turn: move, then tick CA."""
-    moved = _labyrinth_move(self, dr, dc)
+    """Move the player, then advance the CA."""
+    _labyrinth_move(self, dr, dc)
 
     # Tick CA regardless of whether player moved (time passes)
     self.labyrinth_turn += 1
@@ -452,7 +427,6 @@ def _labyrinth_player_turn(self, dr, dc):
 
     # Check if player got trapped (surrounded by walls)
     pr, pc = self.labyrinth_player_r, self.labyrinth_player_c
-    h, w = self.labyrinth_rows, self.labyrinth_cols
     if self.labyrinth_cells[pr][pc] > 0 and not self.labyrinth_game_over:
         # Player got crushed by a wall!
         self.labyrinth_game_over = True
@@ -464,7 +438,7 @@ def _labyrinth_player_turn(self, dr, dc):
 # ── Key handler ──
 
 def _handle_labyrinth_key(self, key):
-    """Handle keyboard input for Living Labyrinth mode."""
+    """Handle a key press in Living Labyrinth."""
     if key == ord('q') or key == 27:  # q or Escape
         _exit_labyrinth_mode(self)
         return True
@@ -553,7 +527,7 @@ def _handle_labyrinth_key(self, key):
 # ── Drawing ──
 
 def _draw_labyrinth(self, max_y=None, max_x=None):
-    """Render the Living Labyrinth."""
+    """Draw the Living Labyrinth."""
     scr = self.stdscr
     scr.erase()
     max_h, max_w = scr.getmaxyx()
@@ -715,28 +689,31 @@ def _draw_labyrinth(self, max_y=None, max_x=None):
 
     # Help overlay
     if self.labyrinth_show_help:
-        help_lines = [
-            "╔══════════════════════════════════════╗",
-            "║      LIVING LABYRINTH — HELP         ║",
-            "╠══════════════════════════════════════╣",
-            "║ Arrow/WASD/hjkl — Move player (@)    ║",
-            "║ Space           — Wait (CA ticks)     ║",
-            "║ f               — Use Freeze item     ║",
-            "║ v               — Use Reverse item    ║",
-            "║ m               — Use Mutate item     ║",
-            "║ r               — Cycle CA rule       ║",
-            "║ n               — New dungeon          ║",
-            "║ +/-             — CA ticks per move    ║",
-            "║ ?               — Toggle this help     ║",
-            "║ q/Esc           — Exit mode            ║",
-            "╠══════════════════════════════════════╣",
-            "║ Walls grow & decay by CA rules.       ║",
-            "║ Reach ◈ before paths seal shut!       ║",
-            "║ ❄ Freeze  — lock walls 10 turns       ║",
-            "║ ⊛ Reverse — rewind walls 5 steps      ║",
-            "║ ✦ Mutate  — randomize walls nearby    ║",
-            "╚══════════════════════════════════════╝",
+        body = [
+            "     LIVING LABYRINTH — HELP",
+            None,
+            "Arrow/WASD/hjkl — Move player (@)",
+            "Space           — Wait (CA ticks)",
+            "f               — Use Freeze item",
+            "v               — Use Reverse item",
+            "m               — Use Mutate item",
+            "r               — Cycle CA rule",
+            "n               — New dungeon",
+            "+/-             — CA ticks per move",
+            "?               — Toggle this help",
+            "q/Esc           — Exit mode",
+            None,
+            "Walls grow & decay by CA rules.",
+            "Reach ◈ before paths seal shut!",
+            "❄ Freeze  — lock walls 10 turns",
+            "⊛ Reverse — rewind walls 5 steps",
+            "✦ Mutate  — randomize walls nearby",
         ]
+        rule_line = "╠" + "═" * 38 + "╣"
+        help_lines = ["╔" + "═" * 38 + "╗"]
+        for row in body:
+            help_lines.append(rule_line if row is None else f"║ {row:<37}║")
+        help_lines.append("╚" + "═" * 38 + "╝")
         hy = max(0, (view_h - len(help_lines)) // 2)
         hx = max(0, (max_w - 40) // 2)
         for i, line in enumerate(help_lines):
@@ -774,9 +751,7 @@ def _draw_labyrinth_menu(self, max_y=None, max_x=None):
 # ── Registration ──
 
 def register(App):
-    """Register Living Labyrinth mode methods on App class."""
-    App.labyrinth_mode = False
-    App.labyrinth_running = False
+    """Register Living Labyrinth methods on the App class."""
     _labyrinth_init(App)
 
     App._enter_labyrinth_mode = _enter_labyrinth_mode
