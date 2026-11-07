@@ -1,15 +1,10 @@
-"""Long-Exposure Photography mode.
+"""Long-Exposure Photography — composites many simulation frames into one still image.
 
-Composites hundreds of simulation frames into a single artistic still image,
-revealing the full trajectory and flow patterns of any simulation — like
-astrophotography for cellular automata.
-
-Blends frame data over a configurable time window (50–500 generations) using
-accumulation buffers, producing luminance trails, flow lines, and density maps
-rendered as a single high-detail truecolor frame.
+Accumulates frames over a configurable window (10–1000 frames) to show the
+trajectories and density of any simulation as a single truecolor image.
 
 Keybindings:
-    Ctrl+E      Start/stop long-exposure capture
+    Ctrl+E      Start or stop capture (stopping freezes the result)
     Ctrl+F      Freeze/unfreeze the current composite (view result)
     [/]         Decrease/increase exposure window length
     {/}         Cycle blend mode (additive / max / average)
@@ -86,7 +81,7 @@ def _long_exposure_accumulate(self):
 
     # 2) Curses screen cells (fallback — use colormap to derive RGB)
     cmap = getattr(self, 'tc_colormap', 'viridis')
-    for y in range(min(my, my - 2)):  # skip status lines
+    for y in range(my - 2):  # skip the status lines
         for x in range(safe_mx):
             key = (y, x)
             if key in seen:
