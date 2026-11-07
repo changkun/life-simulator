@@ -354,34 +354,28 @@ def _hyp_clear(self):
 
 def _handle_hyp_menu_key(self, key):
     """Handle keys in the tiling/rule selection menu."""
-    if key == 27:  # ESC
-        self.hyp_menu = False
-        return True
-
+    back = key == ord("q") or key == 27
     if self.hyp_menu_phase == "tiling":
         n_items = len(HYPERBOLIC_TILINGS)
-        if key == curses.KEY_UP:
+        if key == curses.KEY_UP or key == ord("k"):
             self.hyp_menu_sel = (self.hyp_menu_sel - 1) % n_items
-        elif key == curses.KEY_DOWN:
+        elif key == curses.KEY_DOWN or key == ord("j"):
             self.hyp_menu_sel = (self.hyp_menu_sel + 1) % n_items
         elif key in (10, 13, curses.KEY_ENTER):
             self.hyp_menu_phase = "rule"
             self.hyp_rule_sel = 0
-        elif key == ord("q"):
+        elif back:
             self.hyp_menu = False
-        return True
     elif self.hyp_menu_phase == "rule":
         n_items = len(HYPERBOLIC_RULES)
-        if key == curses.KEY_UP:
+        if key == curses.KEY_UP or key == ord("k"):
             self.hyp_rule_sel = (self.hyp_rule_sel - 1) % n_items
-        elif key == curses.KEY_DOWN:
+        elif key == curses.KEY_DOWN or key == ord("j"):
             self.hyp_rule_sel = (self.hyp_rule_sel + 1) % n_items
         elif key in (10, 13, curses.KEY_ENTER):
             self._hyp_init(self.hyp_menu_sel, self.hyp_rule_sel)
-        elif key == ord("q") or key == 27:
+        elif back:
             self.hyp_menu_phase = "tiling"
-        return True
-
     return True
 
 
@@ -476,19 +470,8 @@ def _draw_hyp_menu(self, max_y, max_x):
         except curses.error:
             pass
 
-        for i, (name, desc, p, q) in enumerate(HYPERBOLIC_TILINGS):
-            r = cy - 3 + i * 2
-            if r >= max_y - 1:
-                break
-            sel = "▸ " if i == self.hyp_menu_sel else "  "
-            attr = curses.A_BOLD | curses.color_pair(2) if i == self.hyp_menu_sel else curses.A_DIM
-            line = f"{sel}{name}"
-            try:
-                self.stdscr.addstr(r, cx - 20, line[:max_x - 1], attr)
-                self.stdscr.addstr(r + 1, cx - 18, desc[:max_x - 1],
-                                   curses.A_DIM | curses.color_pair(6))
-            except curses.error:
-                pass
+        _draw_menu_items(self.stdscr, HYPERBOLIC_TILINGS, self.hyp_menu_sel,
+                         cy, cx, max_y, max_x)
 
         # Draw small tiling preview
         _draw_mini_tiling(self.stdscr, cx + 16, cy - 2,
@@ -505,27 +488,44 @@ def _draw_hyp_menu(self, max_y, max_x):
         except curses.error:
             pass
 
-        for i, (name, desc, _, _) in enumerate(HYPERBOLIC_RULES):
-            r = cy - 3 + i * 2
-            if r >= max_y - 1:
-                break
-            sel = "▸ " if i == self.hyp_rule_sel else "  "
-            attr = curses.A_BOLD | curses.color_pair(2) if i == self.hyp_rule_sel else curses.A_DIM
-            line = f"{sel}{name}"
-            try:
-                self.stdscr.addstr(r, cx - 20, line[:max_x - 1], attr)
-                self.stdscr.addstr(r + 1, cx - 18, desc[:max_x - 1],
-                                   curses.A_DIM | curses.color_pair(6))
-            except curses.error:
-                pass
+        _draw_menu_items(self.stdscr, HYPERBOLIC_RULES, self.hyp_rule_sel,
+                         cy, cx, max_y, max_x)
 
     # Footer
-    foot = "[ESC] back  [q] cancel"
+    foot = "Up/Down=select  Enter=choose  q/Esc=back"
     try:
         self.stdscr.addstr(max_y - 1, cx - len(foot) // 2, foot[:max_x - 1],
                            curses.A_DIM)
     except curses.error:
         pass
+
+
+def _draw_menu_items(scr, items, sel, cy, cx, max_y, max_x):
+    """Draw a menu list of (name, description, ...) rows with the selection marked.
+
+    Each item takes two lines (name, description). When that does not fit,
+    items take one line and only the selected item's description is shown.
+    """
+    top = cy - 3
+    roomy = top + 2 * len(items) <= max_y - 1
+    step = 2 if roomy else 1
+    for i, item in enumerate(items):
+        name, desc = item[0], item[1]
+        r = top + i * step
+        if r >= max_y - 1:
+            break
+        selected = i == sel
+        sel_mark = "▸ " if selected else "  "
+        attr = curses.A_BOLD | curses.color_pair(2) if selected else curses.A_DIM
+        try:
+            scr.addstr(r, cx - 20, f"{sel_mark}{name}"[:max_x - 1], attr)
+            if roomy or selected:
+                dr = r + 1 if roomy else top + len(items) + 1
+                if dr < max_y - 1:
+                    scr.addstr(dr, cx - 18, desc[:max_x - 1],
+                               curses.A_DIM | curses.color_pair(6))
+        except curses.error:
+            pass
 
 
 def _draw_mini_tiling(scr, cx, cy, p, q, max_y, max_x):

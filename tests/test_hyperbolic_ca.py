@@ -72,3 +72,40 @@ def test_randomize_resets_generation():
     assert app.hyp_generation == 5
     app._hyp_randomize()
     assert app.hyp_generation == 0
+
+
+def test_menu_back_keys():
+    """q and Esc go back one level; they leave the menu only from the tiling list."""
+    app = _make_app()
+    app._enter_hyp_mode()
+    app._handle_hyp_menu_key(10)
+    assert app.hyp_menu_phase == "rule"
+    app._handle_hyp_menu_key(27)
+    assert app.hyp_menu_phase == "tiling" and app.hyp_menu is True
+    app._handle_hyp_menu_key(ord("q"))
+    assert app.hyp_menu is False
+
+
+def test_menu_lists_every_rule_on_24_rows():
+    """Every rule name must be drawn even on a 24-row terminal."""
+    from life.modes.hyperbolic_ca import HYPERBOLIC_RULES
+    drawn = []
+
+    class Scr:
+        def erase(self):
+            pass
+
+        def addstr(self, y, x, text, *attr):
+            assert 0 <= y < 24
+            drawn.append(text)
+
+    app = _make_app()
+    app.stdscr = Scr()
+    app._enter_hyp_mode()
+    app.hyp_menu_phase = "rule"
+    for sel in range(len(HYPERBOLIC_RULES)):
+        app.hyp_rule_sel = sel
+        drawn.clear()
+        app._draw_hyp_menu(24, 80)
+        assert any(HYPERBOLIC_RULES[sel][0] in t for t in drawn)
+        assert any(HYPERBOLIC_RULES[sel][1] in t for t in drawn)
