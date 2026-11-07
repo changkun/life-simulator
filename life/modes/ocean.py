@@ -1,8 +1,7 @@
-"""Mode: ocean — simulation mode for the life package."""
+"""Ocean Currents — gyres, deep-water formation, upwelling and plankton blooms on a latitude-banded sea."""
 import curses
 import math
 import random
-import time
 
 OCEAN_PRESETS = [
     ("Gulf Stream", "Warm western boundary current with eddies and meanders", "gulfstream"),
@@ -40,10 +39,8 @@ def _exit_ocean_mode(self):
 
 def _ocean_init(self, preset_idx: int):
     """Initialize ocean simulation from preset."""
-    import random as _rand
-    import math as _math
 
-    name, desc, ptype = OCEAN_PRESETS[preset_idx]
+    name, _desc, ptype = OCEAN_PRESETS[preset_idx]
     self.ocean_preset_name = name
     self.ocean_menu = False
     self.ocean_mode = True
@@ -81,9 +78,9 @@ def _ocean_init(self, preset_idx: int):
         base_temp = -2.0 + 30.0 * lat_factor
         base_salinity = 33.0 + 4.0 * lat_factor  # higher salinity in subtropics
         for c in range(cols):
-            self.ocean_temperature[r][c] = base_temp + _rand.uniform(-1, 1)
-            self.ocean_salinity[r][c] = base_salinity + _rand.uniform(-0.3, 0.3)
-            self.ocean_nutrient[r][c] = 0.1 + 0.5 * (1.0 - lat_factor) + _rand.uniform(-0.05, 0.05)
+            self.ocean_temperature[r][c] = base_temp + random.uniform(-1, 1)
+            self.ocean_salinity[r][c] = base_salinity + random.uniform(-0.3, 0.3)
+            self.ocean_nutrient[r][c] = 0.1 + 0.5 * (1.0 - lat_factor) + random.uniform(-0.05, 0.05)
 
     if ptype == "gulfstream":
         # Western boundary current: strong northward flow on west side
@@ -102,13 +99,13 @@ def _ocean_init(self, preset_idx: int):
                 self.ocean_salinity[r][c] += 1.0 * strength
         # Eddies along the stream
         for _ in range(3):
-            er = _rand.randint(rows // 4, rows * 3 // 4)
-            ec = _rand.randint(cols // 8, cols // 4)
+            er = random.randint(rows // 4, rows * 3 // 4)
+            ec = random.randint(cols // 8, cols // 4)
             self.ocean_gyres.append({
-                "r": er, "c": ec, "radius": _rand.randint(3, 8),
-                "strength": _rand.uniform(0.5, 1.5),
-                "direction": _rand.choice([-1, 1]),
-                "vr": _rand.uniform(-0.1, 0.1), "vc": _rand.uniform(0.02, 0.1),
+                "r": er, "c": ec, "radius": random.randint(3, 8),
+                "strength": random.uniform(0.5, 1.5),
+                "direction": random.choice([-1, 1]),
+                "vr": random.uniform(-0.1, 0.1), "vc": random.uniform(0.02, 0.1),
             })
 
     elif ptype == "pacificgyre":
@@ -139,9 +136,9 @@ def _ocean_init(self, preset_idx: int):
             belt_factor = 1.0 - abs(r - (belt_start + belt_end) / 2.0) / ((belt_end - belt_start) / 2.0)
             for c in range(cols):
                 self.ocean_current_u[r][c] = 3.0 * belt_factor
-                self.ocean_temperature[r][c] = -1.0 + 2.0 * _rand.random()
-                self.ocean_salinity[r][c] = 34.0 + _rand.uniform(-0.5, 0.5)
-                self.ocean_nutrient[r][c] = 0.7 + _rand.uniform(-0.1, 0.1)
+                self.ocean_temperature[r][c] = -1.0 + 2.0 * random.random()
+                self.ocean_salinity[r][c] = 34.0 + random.uniform(-0.5, 0.5)
+                self.ocean_nutrient[r][c] = 0.7 + random.uniform(-0.1, 0.1)
         # Deep water formation zone near Antarctic coast
         self.ocean_deep_formation.append({
             "r": rows - 3, "c": cols // 3, "radius": cols // 4,
@@ -160,8 +157,8 @@ def _ocean_init(self, preset_idx: int):
             for c in range(cols):
                 # El Niño: warm water shifts east
                 warm_factor = c / float(cols)  # warmer toward east
-                self.ocean_temperature[r][c] = 22.0 + 8.0 * warm_factor + _rand.uniform(-0.5, 0.5)
-                self.ocean_salinity[r][c] = 34.5 + _rand.uniform(-0.3, 0.3)
+                self.ocean_temperature[r][c] = 22.0 + 8.0 * warm_factor + random.uniform(-0.5, 0.5)
+                self.ocean_salinity[r][c] = 34.5 + random.uniform(-0.3, 0.3)
                 # Weakened easterly trade winds
                 self.ocean_current_u[r][c] = 0.3  # weak eastward instead of strong westward
         # Reduced upwelling on eastern coast
@@ -206,26 +203,26 @@ def _ocean_init(self, preset_idx: int):
         for c in range(cols):
             for dr in range(min(4, rows)):
                 r = rows - 1 - dr
-                self.ocean_temperature[r][c] = -1.5 + _rand.uniform(-0.3, 0.3)
-                self.ocean_salinity[r][c] = 34.7 + _rand.uniform(-0.1, 0.1)
+                self.ocean_temperature[r][c] = -1.5 + random.uniform(-0.3, 0.3)
+                self.ocean_salinity[r][c] = 34.7 + random.uniform(-0.1, 0.1)
 
     else:  # random
-        n_gyres = _rand.randint(2, 5)
+        n_gyres = random.randint(2, 5)
         for _ in range(n_gyres):
             self.ocean_gyres.append({
-                "r": _rand.randint(3, rows - 4), "c": _rand.randint(3, cols - 4),
-                "radius": _rand.randint(min(rows, cols) // 6, min(rows, cols) // 3),
-                "strength": _rand.uniform(0.5, 2.5),
-                "direction": _rand.choice([-1, 1]),
-                "vr": _rand.uniform(-0.05, 0.05), "vc": _rand.uniform(-0.05, 0.05),
+                "r": random.randint(3, rows - 4), "c": random.randint(3, cols - 4),
+                "radius": random.randint(min(rows, cols) // 6, min(rows, cols) // 3),
+                "strength": random.uniform(0.5, 2.5),
+                "direction": random.choice([-1, 1]),
+                "vr": random.uniform(-0.05, 0.05), "vc": random.uniform(-0.05, 0.05),
             })
-        if _rand.random() < 0.7:
+        if random.random() < 0.7:
             self.ocean_deep_formation.append({
-                "r": _rand.randint(2, rows // 4),
-                "c": _rand.randint(cols // 4, cols * 3 // 4),
-                "radius": _rand.randint(cols // 8, cols // 4),
-                "strength": _rand.uniform(1.0, 2.0),
-                "salinity_boost": _rand.uniform(0.5, 2.0),
+                "r": random.randint(2, rows // 4),
+                "c": random.randint(cols // 4, cols * 3 // 4),
+                "radius": random.randint(cols // 8, cols // 4),
+                "strength": random.uniform(1.0, 2.0),
+                "salinity_boost": random.uniform(0.5, 2.0),
             })
 
     # Apply gyres to current field
@@ -238,7 +235,7 @@ def _ocean_init(self, preset_idx: int):
     for r in range(rows):
         for c in range(cols):
             if self.ocean_nutrient[r][c] > 0.4 and self.ocean_upwelling[r][c] > 0.05:
-                self.ocean_plankton[r][c] = _rand.uniform(0.1, 0.4)
+                self.ocean_plankton[r][c] = random.uniform(0.1, 0.4)
 
     self._flash(f"Ocean Currents: {self.ocean_preset_name}")
 
@@ -247,7 +244,6 @@ def _ocean_init(self, preset_idx: int):
 
 def _ocean_apply_gyres(self):
     """Apply gyre circulation patterns to current field."""
-    import math as _math
     rows, cols = self.ocean_rows, self.ocean_cols
 
     for gyre in self.ocean_gyres:
@@ -261,15 +257,15 @@ def _ocean_apply_gyres(self):
             for c in range(cols):
                 dr = r - gr
                 dc = c - gc
-                dist = _math.sqrt(dr * dr + dc * dc)
+                dist = math.sqrt(dr * dr + dc * dc)
                 if dist < 1:
                     continue
                 if dist > radius * 1.5:
                     continue
                 # Tangential flow: perpendicular to radius vector
-                falloff = _math.exp(-dist * dist / (2.0 * radius * radius))
+                falloff = math.exp(-dist * dist / (2.0 * radius * radius))
                 # Scale by distance from center (strongest at ~radius/2)
-                radial_scale = dist / radius * _math.exp(0.5 - dist / radius)
+                radial_scale = dist / radius * math.exp(0.5 - dist / radius)
                 mag = strength * radial_scale * falloff * direction
                 # Tangent: rotate radius vector 90 degrees
                 nx = -dr / dist
@@ -316,8 +312,6 @@ def _ocean_compute_upwelling(self):
 
 def _ocean_step(self):
     """Advance ocean simulation by one time step."""
-    import random as _rand
-    import math as _math
 
     self.ocean_generation += 1
     self.ocean_day += 1
@@ -331,7 +325,7 @@ def _ocean_step(self):
         gyre["r"] = gyre["r"] % rows
         gyre["c"] = gyre["c"] % cols
         # Strength fluctuation
-        gyre["strength"] += _rand.uniform(-0.03, 0.03) * speed
+        gyre["strength"] += random.uniform(-0.03, 0.03) * speed
         gyre["strength"] = max(0.2, min(3.5, gyre["strength"]))
 
     # Rebuild current field from gyres
@@ -368,7 +362,7 @@ def _ocean_step(self):
             for c in range(max(0, dc_center - radius), min(cols, dc_center + radius + 1)):
                 dr = r - dr_center
                 dc = c - dc_center
-                dist = _math.sqrt(dr * dr + dc * dc)
+                dist = math.sqrt(dr * dr + dc * dc)
                 if dist > radius:
                     continue
                 falloff = 1.0 - dist / radius
@@ -502,13 +496,13 @@ def _ocean_step(self):
             self.ocean_current_v[r][c] -= d_dr * 0.0005 * speed
 
     # Occasional eddy spawning
-    if _rand.random() < 0.008 * speed and len(self.ocean_gyres) < 10:
+    if random.random() < 0.008 * speed and len(self.ocean_gyres) < 10:
         self.ocean_gyres.append({
-            "r": _rand.randint(3, rows - 4), "c": _rand.randint(3, cols - 4),
-            "radius": _rand.randint(3, max(3, min(rows, cols) // 6)),
-            "strength": _rand.uniform(0.3, 1.2),
-            "direction": _rand.choice([-1, 1]),
-            "vr": _rand.uniform(-0.08, 0.08), "vc": _rand.uniform(-0.05, 0.1),
+            "r": random.randint(3, rows - 4), "c": random.randint(3, cols - 4),
+            "radius": random.randint(3, max(3, min(rows, cols) // 6)),
+            "strength": random.uniform(0.3, 1.2),
+            "direction": random.choice([-1, 1]),
+            "vr": random.uniform(-0.08, 0.08), "vc": random.uniform(-0.05, 0.1),
         })
 
     # Remove weak gyres
@@ -522,7 +516,6 @@ def _ocean_current_arrow(self, u: float, v: float) -> str:
     speed = (u * u + v * v) ** 0.5
     if speed < 0.3:
         return '·'
-    import math
     angle = math.atan2(v, u)
     sector = int((angle + math.pi) / (math.pi / 4) + 0.5) % 8
     arrows = ['←', '↖', '↑', '↗', '→', '↘', '↓', '↙']
@@ -533,7 +526,6 @@ def _ocean_current_arrow(self, u: float, v: float) -> str:
 
 def _ocean_temp_color(self, temp: float) -> int:
     """Return curses color pair for sea surface temperature."""
-    import curses
     if temp < 0:
         return curses.color_pair(1) | curses.A_BOLD   # freezing = white bold
     elif temp < 5:
@@ -554,7 +546,6 @@ def _ocean_temp_color(self, temp: float) -> int:
 
 def _ocean_density_color(self, d: float) -> int:
     """Return curses color pair for density."""
-    import curses
     if d < 1024:
         return curses.color_pair(2) | curses.A_BOLD  # light = red
     elif d < 1025:
@@ -571,7 +562,6 @@ def _ocean_density_color(self, d: float) -> int:
 
 def _handle_ocean_menu_key(self, key: int) -> bool:
     """Handle input in ocean preset menu."""
-    import curses
     n = len(OCEAN_PRESETS)
     if key == curses.KEY_DOWN or key == ord('j'):
         self.ocean_menu_sel = (self.ocean_menu_sel + 1) % n
@@ -629,7 +619,6 @@ def _handle_ocean_key(self, key: int) -> bool:
 
 def _draw_ocean_menu(self, max_y: int, max_x: int):
     """Draw ocean preset selection menu."""
-    import curses
     title = "═══ Ocean Currents & Thermohaline Circulation ═══"
     try:
         self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
@@ -655,8 +644,6 @@ def _draw_ocean_menu(self, max_y: int, max_x: int):
 
 def _draw_ocean(self, max_y: int, max_x: int):
     """Render ocean simulation as ASCII oceanographic map."""
-    import curses
-    import math as _math
     rows, cols = self.ocean_rows, self.ocean_cols
     draw_rows = min(rows, max_y - 3)
     draw_cols = min(cols, max_x - 1)
