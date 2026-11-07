@@ -1132,29 +1132,34 @@ def _draw_adversary(self, max_y=None, max_x=None):
 
     # Help overlay
     if self.adversary_show_help:
-        help_lines = [
-            "╔═══════════════════════════════════════════╗",
-            "║       ADAPTIVE ADVERSARY — HELP           ║",
-            "╠═══════════════════════════════════════════╣",
-            "║ Arrow/WASD/hjkl — Move player (@)         ║",
-            "║ Space           — Wait (CA ticks)          ║",
-            "║ f               — Use Freeze item          ║",
-            "║ v               — Use Reverse item         ║",
-            "║ m               — Use Mutate item          ║",
-            "║ +/-             — CA ticks per move         ║",
-            "║ TAB             — Toggle Adversary Report   ║",
-            "║ n               — New dungeon               ║",
-            "║ ?               — Toggle this help          ║",
-            "║ q/Esc           — Exit mode                 ║",
-            "╠═══════════════════════════════════════════╣",
-            "║ The dungeon LEARNS from how you play.      ║",
-            "║ It evolves CA rules to exploit your         ║",
-            "║ weaknesses after each level.                ║",
-            "║ Can you outthink an evolving adversary?     ║",
-            "╚═══════════════════════════════════════════╝",
+        help_rows = [
+            "Arrow/WASD/hjkl — Move player (@)",
+            "Space           — Wait (CA ticks)",
+            "f               — Use Freeze item",
+            "v               — Use Reverse item",
+            "m               — Use Mutate item",
+            "+/-             — CA ticks per move",
+            "TAB             — Toggle Adversary Report",
+            "n               — New dungeon",
+            "?               — Toggle this help",
+            "q/Esc           — Exit mode",
         ]
+        about_rows = [
+            "The dungeon LEARNS from how you play.",
+            "It evolves CA rules to exploit your",
+            "weaknesses after each level.",
+            "Can you outthink an evolving adversary?",
+        ]
+        rule = "═" * 43
+        help_lines = (
+            [f"╔{rule}╗", f"║{'ADAPTIVE ADVERSARY — HELP':^43}║", f"╠{rule}╣"]
+            + [f"║ {row:<42}║" for row in help_rows]
+            + [f"╠{rule}╣"]
+            + [f"║ {row:<42}║" for row in about_rows]
+            + [f"╚{rule}╝"]
+        )
         hy = max(0, (view_h - len(help_lines)) // 2)
-        hx = max(0, (max_w - 46) // 2)
+        hx = max(0, (max_w - 45) // 2)
         for i, line in enumerate(help_lines):
             try:
                 scr.addstr(hy + i, hx, line, curses.A_BOLD)
@@ -1179,11 +1184,13 @@ def _draw_adversary_report(self, scr, max_h, max_w, view_h):
 
     # Player behavior summary
     total = max(1, profile["total_moves"])
-    lines.append(f"║ Total moves: {profile['total_moves']:>5}  │  Wins: {profile['wins']}  Deaths: {profile['deaths']:<5}  ║")
+    line = (f"║ Total moves: {profile['total_moves']:>5}  │  Wins: {profile['wins']}"
+            f"  Deaths: {profile['deaths']}")
+    lines.append(f"{line:<52}║")
     lines.append("║                                                   ║")
 
     # Direction breakdown
-    lines.append("║ ── Movement Analysis ──                            ║")
+    lines.append(f"{'║ ── Movement Analysis ──':<52}║")
     dirs = {
         "↑": profile["moves_up"], "↓": profile["moves_down"],
         "←": profile["moves_left"], "→": profile["moves_right"],
@@ -1200,7 +1207,7 @@ def _draw_adversary_report(self, scr, max_h, max_w, view_h):
     lines.append("║                                                   ║")
 
     # Item usage
-    lines.append("║ ── Item Usage ──                                   ║")
+    lines.append(f"{'║ ── Item Usage ──':<52}║")
     items = {
         "❄ Freeze": profile["freeze_used"],
         "⊛ Reverse": profile["reverse_used"],
@@ -1213,7 +1220,7 @@ def _draw_adversary_report(self, scr, max_h, max_w, view_h):
     lines.append("║                                                   ║")
 
     # Detected weaknesses
-    lines.append("║ ── Detected Patterns ──                            ║")
+    lines.append(f"{'║ ── Detected Patterns ──':<52}║")
     for adaptation in report["adaptations"]:
         # Wrap long lines
         while len(adaptation) > 47:
@@ -1226,7 +1233,7 @@ def _draw_adversary_report(self, scr, max_h, max_w, view_h):
     lines.append("║                                                   ║")
 
     # Evolution status
-    lines.append("║ ── Evolution Status ──                             ║")
+    lines.append(f"{'║ ── Evolution Status ──':<52}║")
     line = f"║  Generation: {self.adversary_generation}  │  Population: {ADVERSARY_POP_SIZE} rulesets"
     lines.append(f"{line:<52}║")
     if self.adversary_current_genome:
@@ -1242,7 +1249,7 @@ def _draw_adversary_report(self, scr, max_h, max_w, view_h):
 
     # Recent adaptation log
     if self.adversary_adaptation_log:
-        lines.append("║ ── Recent Adaptations ──                          ║")
+        lines.append(f"{'║ ── Recent Adaptations ──':<52}║")
         for lvl, adaptations in self.adversary_adaptation_log[-5:]:
             for a in adaptations[:1]:  # show first adaptation per level
                 text = a[:42]
