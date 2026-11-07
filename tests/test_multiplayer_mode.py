@@ -137,6 +137,23 @@ class TestMultiplayerMode:
         mock_net.send.assert_called_once_with({"type": "quit"})
         mock_net.stop.assert_called_once()
 
+    def test_exit_clears_draw_mode(self):
+        self.app.mp_mode = True
+        self.app.mp_net = None
+        self.app.draw_mode = "draw"
+        self.app._mp_exit()
+        assert self.app.draw_mode is None
+
+    def test_finish_sends_final_state_before_finished(self):
+        mock_net = MagicMock()
+        self.app.mp_mode = True
+        self.app.mp_role = "host"
+        self.app.mp_net = mock_net
+        self.app._mp_init_owner_grid()
+        self.app._mp_finish()
+        types = [c.args[0]["type"] for c in mock_net.send.call_args_list]
+        assert types == ["state", "finished"]
+
     # ── Territory / cell placement ──────────────────────────────────────
 
     def test_place_cell_p1_left_side(self):
@@ -358,8 +375,7 @@ class TestMultiplayerMode:
         self.app.mp_net = mock_net
         self.app._mp_init_owner_grid()
         self.app._mp_finish()
-        mock_net.send.assert_called_once()
-        msg = mock_net.send.call_args[0][0]
+        msg = mock_net.send.call_args[0][0]  # the last message sent
         assert msg["type"] == "finished"
         assert "scores" in msg
         assert "bonus" in msg

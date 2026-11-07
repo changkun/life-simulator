@@ -97,6 +97,7 @@ def _mp_exit(self):
     self.mp_scores = [0, 0]
     self.mp_round = 0
     self.mp_ready = [False, False]
+    self.draw_mode = None
     self.running = False
     self._flash("Multiplayer ended")
 
@@ -124,6 +125,7 @@ def _mp_start_planning(self):
 def _mp_start_sim(self):
     """Transition from planning to simulation phase."""
     self.mp_phase = "running"
+    self.draw_mode = None
     self.mp_start_gen = self.grid.generation
     self.mp_scores = [0, 0]
     self.mp_territory_bonus = [0, 0]
@@ -246,6 +248,7 @@ def _mp_finish(self):
         winner = "TIE"
     self._flash(f"Round over! {winner} wins!  P1:{total1} P2:{total2}")
     if self.mp_net and self.mp_role == "host":
+        self._mp_send_state()  # the last broadcast may be up to 2 generations old
         self.mp_net.send({"type": "finished", "scores": [s1, s2],
                           "bonus": [b1, b2]})
 
