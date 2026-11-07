@@ -1,9 +1,6 @@
-"""Mode: lissajous — simulation mode for the life package."""
+"""Lissajous Curve / Harmonograph — a pen driven by sine oscillators with optional damping."""
 import curses
 import math
-import math as _math
-import random
-import time
 
 LISSAJOUS_PRESETS = [
     ("Classic 3:2", "Classic Lissajous figure with frequency ratio 3:2", "classic_3_2"),
@@ -20,7 +17,7 @@ LISSAJOUS_CHARS = " ·.,:;+=*#@"
 
 
 def _enter_lissajous_mode(self):
-    """Enter Lissajous / Harmonograph mode — show preset menu."""
+    """Enter Lissajous Curve / Harmonograph mode and show the preset menu."""
     self.lissajous_mode = True
     self.lissajous_menu = True
     self.lissajous_menu_sel = 0
@@ -30,7 +27,7 @@ def _enter_lissajous_mode(self):
 
 
 def _exit_lissajous_mode(self):
-    """Exit Lissajous mode and clean up."""
+    """Exit Lissajous Curve / Harmonograph mode."""
     self.lissajous_mode = False
     self.lissajous_menu = False
     self.lissajous_running = False
@@ -41,7 +38,7 @@ def _exit_lissajous_mode(self):
 
 
 def _lissajous_init(self, preset_key):
-    """Initialize Lissajous mode from selected preset."""
+    """Start the selected preset."""
     rows, cols = self.stdscr.getmaxyx()
     self.lissajous_rows = rows
     self.lissajous_cols = cols
@@ -67,28 +64,28 @@ def _lissajous_init(self, preset_key):
     if preset_key == "classic_3_2":
         self.lissajous_freq_a = 3.0
         self.lissajous_freq_b = 2.0
-        self.lissajous_phase = _math.pi / 4
+        self.lissajous_phase = math.pi / 4
     elif preset_key == "figure_eight":
         self.lissajous_freq_a = 2.0
         self.lissajous_freq_b = 1.0
-        self.lissajous_phase = _math.pi / 2
+        self.lissajous_phase = math.pi / 2
     elif preset_key == "star":
         self.lissajous_freq_a = 5.0
         self.lissajous_freq_b = 4.0
-        self.lissajous_phase = _math.pi / 4
+        self.lissajous_phase = math.pi / 4
     elif preset_key == "harmonograph":
         self.lissajous_freq_a = 2.01
         self.lissajous_freq_b = 3.0
-        self.lissajous_phase = _math.pi / 6
+        self.lissajous_phase = math.pi / 6
         self.lissajous_damping = 0.003
         self.lissajous_max_trail = 8000
     elif preset_key == "lateral":
         self.lissajous_freq_a = 2.0
         self.lissajous_freq_b = 3.0
-        self.lissajous_phase = _math.pi / 4
+        self.lissajous_phase = math.pi / 4
         self.lissajous_freq_c = 2.005
         self.lissajous_freq_d = 3.003
-        self.lissajous_phase2 = _math.pi / 3
+        self.lissajous_phase2 = math.pi / 3
         self.lissajous_damping = 0.002
         self.lissajous_max_trail = 10000
     elif preset_key == "rose":
@@ -98,13 +95,13 @@ def _lissajous_init(self, preset_key):
     elif preset_key == "decay_spiral":
         self.lissajous_freq_a = 10.0
         self.lissajous_freq_b = 9.0
-        self.lissajous_phase = _math.pi / 3
+        self.lissajous_phase = math.pi / 3
         self.lissajous_damping = 0.008
         self.lissajous_max_trail = 6000
     elif preset_key == "knot":
         self.lissajous_freq_a = 5.0
         self.lissajous_freq_b = 3.0
-        self.lissajous_phase = _math.pi / 7
+        self.lissajous_phase = math.pi / 7
         self.lissajous_damping = 0.001
         self.lissajous_max_trail = 8000
 
@@ -112,28 +109,28 @@ def _lissajous_init(self, preset_key):
 
 
 def _lissajous_step(self):
-    """Advance the Lissajous curve by one timestep."""
+    """Advance the pen by one time step and mark its path on the canvas."""
     t = self.lissajous_time
     rows = self.lissajous_rows
     cols = self.lissajous_cols
 
-    decay = _math.exp(-self.lissajous_damping * t) if self.lissajous_damping > 0 else 1.0
+    decay = math.exp(-self.lissajous_damping * t) if self.lissajous_damping > 0 else 1.0
 
     # Primary oscillators
-    x = self.lissajous_amp_x * decay * _math.sin(self.lissajous_freq_a * t + self.lissajous_phase)
-    y = self.lissajous_amp_y * decay * _math.sin(self.lissajous_freq_b * t)
+    x = self.lissajous_amp_x * decay * math.sin(self.lissajous_freq_a * t + self.lissajous_phase)
+    y = self.lissajous_amp_y * decay * math.sin(self.lissajous_freq_b * t)
 
     # Secondary oscillators (harmonograph)
     if self.lissajous_freq_c != 0.0:
-        x += self.lissajous_amp_x * 0.5 * decay * _math.sin(self.lissajous_freq_c * t + self.lissajous_phase2)
+        x += self.lissajous_amp_x * 0.5 * decay * math.sin(self.lissajous_freq_c * t + self.lissajous_phase2)
     if self.lissajous_freq_d != 0.0:
-        y += self.lissajous_amp_y * 0.5 * decay * _math.sin(self.lissajous_freq_d * t)
+        y += self.lissajous_amp_y * 0.5 * decay * math.sin(self.lissajous_freq_d * t)
 
     # Normalize combined amplitudes
     max_amp_x = self.lissajous_amp_x * (1.5 if self.lissajous_freq_c != 0.0 else 1.0)
     max_amp_y = self.lissajous_amp_y * (1.5 if self.lissajous_freq_d != 0.0 else 1.0)
 
-    # Map to screen coords — use 2:1 aspect ratio correction for terminal chars
+    # Map to screen coordinates, scaled to the terminal size.
     cx = cols / 2.0
     cy = rows / 2.0
     half_w = (cols - 4) / 2.0
@@ -161,7 +158,7 @@ def _lissajous_step(self):
         prev_y, prev_x, _ = self.lissajous_trail[-2]
         dy = sy - prev_y
         dx = sx - prev_x
-        dist = _math.sqrt(dy * dy + dx * dx)
+        dist = math.sqrt(dy * dy + dx * dx)
         if dist > 1.0:
             steps = int(dist)
             for s in range(1, steps):
@@ -178,7 +175,7 @@ def _lissajous_step(self):
 
 
 def _handle_lissajous_menu_key(self, key):
-    """Handle input in preset menu."""
+    """Handle input in the preset menu."""
     n = len(LISSAJOUS_PRESETS)
     if key in (curses.KEY_UP, ord('k')):
         self.lissajous_menu_sel = (self.lissajous_menu_sel - 1) % n
@@ -195,7 +192,7 @@ def _handle_lissajous_menu_key(self, key):
 
 
 def _handle_lissajous_key(self, key):
-    """Handle input during simulation."""
+    """Handle input while the simulation is active."""
     if key == ord(' '):
         self.lissajous_running = not self.lissajous_running
     elif key == ord('n'):
@@ -241,7 +238,7 @@ def _handle_lissajous_key(self, key):
 
 
 def _draw_lissajous_menu(self, max_y, max_x):
-    """Draw preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     rows, cols = max_y, max_x
     n = len(LISSAJOUS_PRESETS)
@@ -299,31 +296,30 @@ def _draw_lissajous_menu(self, max_y, max_x):
 
 
 def _lissajous_preview_art(preset_key):
-    """Generate small ASCII art preview for a preset."""
-    import math
+    """Return a small ASCII preview of a preset."""
     lines = []
     w, h = 30, 12
     canvas = {}
-    fa, fb, phase, damp = 3.0, 2.0, _math.pi / 4, 0.0
+    fa, fb, phase, damp = 3.0, 2.0, math.pi / 4, 0.0
     fc, fd, phase2 = 0.0, 0.0, 0.0
 
     if preset_key == "classic_3_2":
-        fa, fb, phase = 3.0, 2.0, _math.pi / 4
+        fa, fb, phase = 3.0, 2.0, math.pi / 4
     elif preset_key == "figure_eight":
-        fa, fb, phase = 2.0, 1.0, _math.pi / 2
+        fa, fb, phase = 2.0, 1.0, math.pi / 2
     elif preset_key == "star":
-        fa, fb, phase = 5.0, 4.0, _math.pi / 4
+        fa, fb, phase = 5.0, 4.0, math.pi / 4
     elif preset_key == "harmonograph":
-        fa, fb, phase, damp = 2.01, 3.0, _math.pi / 6, 0.003
+        fa, fb, phase, damp = 2.01, 3.0, math.pi / 6, 0.003
     elif preset_key == "lateral":
-        fa, fb, phase, damp = 2.0, 3.0, _math.pi / 4, 0.002
-        fc, fd, phase2 = 2.005, 3.003, _math.pi / 3
+        fa, fb, phase, damp = 2.0, 3.0, math.pi / 4, 0.002
+        fc, fd, phase2 = 2.005, 3.003, math.pi / 3
     elif preset_key == "rose":
         fa, fb, phase = 7.0, 4.0, 0.0
     elif preset_key == "decay_spiral":
-        fa, fb, phase, damp = 10.0, 9.0, _math.pi / 3, 0.008
+        fa, fb, phase, damp = 10.0, 9.0, math.pi / 3, 0.008
     elif preset_key == "knot":
-        fa, fb, phase, damp = 5.0, 3.0, _math.pi / 7, 0.001
+        fa, fb, phase, damp = 5.0, 3.0, math.pi / 7, 0.001
 
     for i in range(600):
         t = i * 0.04
@@ -357,7 +353,7 @@ def _lissajous_preview_art(preset_key):
 
 
 def _draw_lissajous(self, max_y, max_x):
-    """Draw the Lissajous simulation."""
+    """Draw the canvas, pen and status lines."""
     self.stdscr.erase()
     rows, cols = max_y, max_x
 
@@ -386,7 +382,9 @@ def _draw_lissajous(self, max_y, max_x):
             pass
 
     # Title
-    title = f" Lissajous — {self.lissajous_preset_name} "
+    preset_label = next((n for n, _d, k in LISSAJOUS_PRESETS if k == self.lissajous_preset_name),
+                        self.lissajous_preset_name)
+    title = f" Lissajous — {preset_label} "
     state = "▶ RUNNING" if self.lissajous_running else "❚❚ PAUSED"
     header = f"{title}  [{state}]  gen={self.lissajous_generation}  speed={self.lissajous_speed}x"
     try:
@@ -423,7 +421,7 @@ def _draw_lissajous(self, max_y, max_x):
                 iy += 1
 
     # Hint bar
-    hint = " Space=play n=step +/-=speed a/A=freqA b/B=freqB p/P=phase d/D=damping c=clear i=info r=reset R=menu q=exit"
+    hint = " Space=play  n=step  +/-=speed  a/A=freqA  b/B=freqB  p/P=phase  d/D=damping  c=clear  i=info  r=reset  R=menu  q=exit"
     hint_y = rows - 1
     if 0 <= hint_y < rows:
         try:
@@ -433,7 +431,7 @@ def _draw_lissajous(self, max_y, max_x):
 
 
 def register(App):
-    """Register lissajous mode methods on the App class."""
+    """Register Lissajous Curve / Harmonograph methods on the App class."""
     App._enter_lissajous_mode = _enter_lissajous_mode
     App._exit_lissajous_mode = _exit_lissajous_mode
     App._lissajous_init = _lissajous_init
