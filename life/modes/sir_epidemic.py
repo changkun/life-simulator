@@ -1,9 +1,8 @@
-"""Mode: sir — simulation mode for the life package."""
+"""SIR Epidemic — disease spread through a grid population (susceptible, infected, recovered, dead)."""
 import curses
 import math
 import random
 import time
-
 
 from life.constants import SPEEDS
 
@@ -24,15 +23,14 @@ SIR_CHARS = {0: "██", 1: "██", 2: "██", 3: "░░"}
 
 
 def _enter_sir_mode(self):
-    """Enter SIR epidemic mode — show preset menu."""
+    """Enter SIR Epidemic mode and show the preset menu."""
     self.sir_menu = True
     self.sir_menu_sel = 0
     self._flash("Epidemic / SIR — select a scenario")
 
 
-
 def _exit_sir_mode(self):
-    """Exit SIR epidemic mode."""
+    """Exit SIR Epidemic mode."""
     self.sir_mode = False
     self.sir_menu = False
     self.sir_running = False
@@ -42,9 +40,8 @@ def _exit_sir_mode(self):
     self._flash("Epidemic mode OFF")
 
 
-
 def _sir_init(self, preset_idx: int):
-    """Initialize SIR simulation with the given preset."""
+    """Start the simulation from the given preset."""
     (name, _desc, density, n_infected, radius,
      trans_prob, recovery, mortality, reinfection) = self.SIR_PRESETS[preset_idx]
     self.sir_preset_name = name
@@ -89,9 +86,8 @@ def _sir_init(self, preset_idx: int):
     self._flash(f"Epidemic: {name} — Space to start")
 
 
-
 def _sir_record_counts(self):
-    """Count S, I, R, D populations and append to history."""
+    """Append the current S, I, R, D counts to the history."""
     s = i = r_count = d = 0
     for row in self.sir_grid:
         for cell in row:
@@ -106,9 +102,8 @@ def _sir_record_counts(self):
     self.sir_counts.append((s, i, r_count, d))
 
 
-
 def _sir_step(self):
-    """Advance the SIR simulation by one step."""
+    """Advance the simulation by one day."""
     rows, cols = self.sir_rows, self.sir_cols
     grid = self.sir_grid
     timers = self.sir_infection_timer
@@ -123,7 +118,6 @@ def _sir_step(self):
         for c in range(cols):
             if grid[r][c] != 1:
                 continue
-            # This infected cell tries to spread
             for dr in range(-ir, ir + 1):
                 for dc in range(-ir, ir + 1):
                     if dr == 0 and dc == 0:
@@ -133,7 +127,7 @@ def _sir_step(self):
                         continue
                     nr, nc = r + dr, c + dc
                     if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] == 0:
-                        # Distance-weighted probability
+                        # Closer neighbours are more likely to be infected.
                         p = trans_p * (1.0 - dist / (radius + 1.0))
                         if random.random() < p:
                             new_infections.append((nr, nc))
@@ -156,7 +150,7 @@ def _sir_step(self):
                 else:
                     grid[r][c] = 2  # recovered
 
-    # Phase 4: Optional reinfection (recovered -> susceptible with low prob)
+    # Phase 4: Recovered cells slowly lose immunity (reinfection presets only).
     if self.sir_reinfection:
         for r in range(rows):
             for c in range(cols):
@@ -167,9 +161,8 @@ def _sir_step(self):
     self._sir_record_counts()
 
 
-
 def _handle_sir_menu_key(self, key: int) -> bool:
-    """Handle input in SIR preset menu."""
+    """Handle a key press in the preset menu."""
     n = len(self.SIR_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.sir_menu_sel = (self.sir_menu_sel + 1) % n
@@ -183,9 +176,8 @@ def _handle_sir_menu_key(self, key: int) -> bool:
     return True
 
 
-
 def _handle_sir_key(self, key: int) -> bool:
-    """Handle input in active SIR simulation."""
+    """Handle a key press while the simulation is active."""
     if key == ord(" "):
         self.sir_running = not self.sir_running
     elif key in (ord("n"), ord(".")):
@@ -225,16 +217,13 @@ def _handle_sir_key(self, key: int) -> bool:
         self.speed_idx = min(len(SPEEDS) - 1, self.speed_idx + 1)
     elif key in (ord("q"), 27):
         self._exit_sir_mode()
-    else:
-        return True
     return True
 
 
-
 def _draw_sir_menu(self, max_y: int, max_x: int):
-    """Draw the SIR preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
-    title = "── Epidemic / SIR Disease Spread ── Select Scenario ──"
+    title = "── SIR Epidemic ── Select Scenario ──"
     try:
         self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
                            curses.color_pair(7) | curses.A_BOLD)
@@ -254,16 +243,15 @@ def _draw_sir_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hint = " [j/k]=navigate  [Enter]=select  [q]=cancel"
+    hint = " j/k=navigate  Enter=select  q=cancel"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:
         pass
 
 
-
 def _draw_sir(self, max_y: int, max_x: int):
-    """Draw the active SIR simulation."""
+    """Draw the simulation."""
     self.stdscr.erase()
     grid = self.sir_grid
     rows, cols = self.sir_rows, self.sir_cols
@@ -371,7 +359,7 @@ def _draw_sir(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [t/T]=trans+/- [v/V]=recovery+/- [d]=mortality+ [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  t/T=transmission  v/V=recovery  d/D=mortality  +/-=steps/frame  </>=speed  r=reset  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -379,7 +367,7 @@ def _draw_sir(self, max_y: int, max_x: int):
             pass
 
 def register(App):
-    """Register sir mode methods on the App class."""
+    """Register SIR Epidemic methods on the App class."""
     App.SIR_PRESETS = SIR_PRESETS
     App._enter_sir_mode = _enter_sir_mode
     App._exit_sir_mode = _exit_sir_mode
