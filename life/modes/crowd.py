@@ -1,15 +1,4 @@
-"""Mode: crowd — Crowd Dynamics & Evacuation Simulation.
-
-Social-force model where individual agents navigate rooms, corridors, and
-doorways with emergent crowd behaviors — lane formation in counterflow,
-arch formation at bottlenecks, panic propagation, and stampede dynamics.
-
-Emergent phenomena:
-  - Arch / clogging at narrow exits
-  - Lane formation in bidirectional flow
-  - Faster-is-slower effect under panic
-  - Herding / panic contagion waves
-"""
+"""Crowd Dynamics & Evacuation — social-force pedestrians leave rooms, corridors and stadiums, with panic and counterflow."""
 import curses
 import math
 import random
@@ -475,7 +464,6 @@ def _crowd_init(self, preset_idx: int):
     self.crowd_mode = True
 
     self.crowd_dt = 0.1
-    self.crowd_initial_count = 0
     self.crowd_escaped_count = 0
     self.crowd_max_density = 0.0
     self.crowd_avg_speed = 0.0
@@ -671,7 +659,7 @@ def _draw_crowd_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+        hint = " j/k=navigate  Enter=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -719,7 +707,7 @@ def _draw_crowd(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [p/P]=±panic [+/-]=dt [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  p/P=panic+/-  +/-=dt  r=reset  R=menu  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -819,7 +807,6 @@ def _draw_crowd_field(self, max_y: int, max_x: int):
                     self.stdscr.addstr(screen_y, sx, ch, attr)
                 except curses.error:
                     pass
-            # else: empty space, leave blank
 
 
 # ══════════════════════════════════════════════════════════════════════
