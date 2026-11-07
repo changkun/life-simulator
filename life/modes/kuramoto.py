@@ -364,10 +364,7 @@ def _draw_kuramoto(self, max_y: int, max_x: int):
             pass
 
 
-# ══════════════════════════════════════════════════════════════════════
-#  Spiking Neural Network (Izhikevich) — Mode )
-# ══════════════════════════════════════════════════════════════════════
-
+# Spiking Neural Network presets, registered by life/modes/spiking_neural.py.
 SNN_PRESETS = [
     # (name, description, excit_ratio, weight, noise, dt, init_type)
     ("Sparse Random Firing", "Low noise — occasional spontaneous spikes",
@@ -391,8 +388,6 @@ SNN_PRESETS = [
     ("Two-Cluster Sync", "Two populations with different synchrony",
      0.8, 14.0, 3.0, 0.5, "two_cluster"),
 ]
-
-
 
 
 def register(App):
