@@ -563,9 +563,13 @@ def _adisco_save_gallery(self):
     if not self.adisco_gallery:
         self._flash("Gallery is empty — nothing to save")
         return
-    os.makedirs(SAVE_DIR, exist_ok=True)
-    with open(_GALLERY_FILE, "w") as f:
-        json.dump(self.adisco_gallery, f, indent=2)
+    try:
+        os.makedirs(SAVE_DIR, exist_ok=True)
+        with open(_GALLERY_FILE, "w") as f:
+            json.dump(self.adisco_gallery, f, indent=2)
+    except OSError as e:
+        self._flash(f"Could not save gallery: {e}")
+        return
     self._flash(f"Gallery saved: {len(self.adisco_gallery)} entries → {_GALLERY_FILE}")
 
 

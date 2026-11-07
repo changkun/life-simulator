@@ -84,3 +84,13 @@ def test_removing_last_gallery_entry_keeps_selection_valid():
     app._handle_adisco_gallery_key(ord("x"))
     assert app.adisco_gallery == []
     assert app.adisco_gallery_sel == 0
+
+
+def test_save_gallery_reports_io_errors(tmp_path, monkeypatch):
+    import life.modes.auto_discovery as ad
+    monkeypatch.setattr(ad, "SAVE_DIR", str(tmp_path))
+    monkeypatch.setattr(ad, "_GALLERY_FILE", str(tmp_path / "missing" / "g.json"))
+    app = _make_app()
+    app.adisco_gallery = [{"label": "x"}]
+    app._adisco_save_gallery()
+    assert "Could not save" in app.message
