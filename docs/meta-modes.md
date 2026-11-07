@@ -14,7 +14,7 @@ Compare Rules displays two cellular automata side by side, each running a differ
 
 ### How it works
 
-The screen is split vertically at the midpoint. Both grids share a viewport origin (scroll position), so the same spatial region is visible in each panel. The left panel uses the current active rule; the right panel uses a second rule chosen from presets or typed as a custom B/S string. Each generation, both grids step independently, and population histories are recorded into separate ring buffers rendered as Unicode sparklines.
+The screen is split vertically at the midpoint. Both grids share a viewport origin (scroll position), so the same spatial region is visible in each panel. The left panel uses the current rule. The right panel uses a second rule that you pick from the rule presets or type as a custom B/S string with `/`. Both grids start as copies of the current pattern. Each generation, both step independently and each records its own population history, drawn as a Unicode sparkline.
 
 ### What to explore
 
@@ -30,17 +30,17 @@ The screen is split vertically at the midpoint. Both grids share a viewport orig
 
 ### Background
 
-Multi-Rule Race pits 2--4 cellular automata rulesets against each other in a timed competition. All grids start from identical random initial conditions and run for a configurable number of generations. A live scoreboard tracks population, peak population, oscillation period, extinction generation, and a composite score.
+Multi-Rule Race pits 2--4 cellular automata rulesets against each other. All grids start as copies of the current pattern and run for a set number of generations. A live scoreboard tracks population, peak population, oscillation period, extinction generation, and a final score.
 
 ### How it works
 
-Grids are arranged in a tiled layout (1x2, 2x2, or 2+1 depending on count). Each grid runs independently with its own B/S rule. The system tracks per-grid state hashes for cycle detection. When the race duration expires or all but one rule go extinct, the race ends. Final scores combine population, peak, and longevity metrics. A progress bar shows elapsed generations versus the configurable maximum (10--10,000).
+In the rule menu, `Space` toggles a preset, `/` adds a custom rule, `g` sets the duration (10--10,000 generations), and `Enter` starts the race. Grids are tiled 1x2 for two rules and 2x2 for three or four. Each grid runs independently with its own B/S rule, and state hashes detect cycles. The race ends when the duration expires, even if every rule is still alive. The final score is the end population, plus a survival bonus (the full duration, or the generations survived before extinction), plus 50 for an oscillation with period above 1, plus half the peak population. A progress bar shows elapsed generations against the duration.
 
 ### What to explore
 
 - Race explosive rules (Seeds B2/S) against stable ones (Life B3/S23) to see who survives.
 - Set a long duration (5000+ generations) to discover which rules have staying power.
-- Watch for oscillation detection: the scoreboard reports periodicity when found.
+- Watch the oscillation column: the scoreboard reports a period once a grid repeats a state.
 
 ---
 
@@ -50,11 +50,11 @@ Grids are arranged in a tiled layout (1x2, 2x2, or 2+1 depending on count). Each
 
 ### Background
 
-Puzzle mode presents a series of cellular automata challenges: build a still life, construct an oscillator with a minimum period, reach a target population, escape a bounding box, cause extinction, or survive for a given number of generations. Each puzzle constrains how many cells you may place.
+Puzzle mode presents a series of cellular automata challenges: build a still life, construct an oscillator with a minimum period, reach a target population, escape a bounding box, cause extinction, or survive for a given number of generations. Each puzzle limits how many cells you may place.
 
 ### How it works
 
-The mode has three phases: *planning* (place cells on a blank grid with draw/erase tools), *running* (the simulation advances while win/loss conditions are checked each step), and *result* (score displayed). Win detection uses state-hash cycle detection for still-life and oscillator puzzles, population thresholds for growth puzzles, and bounding-box geometry for escape puzzles. Scoring rewards efficiency: `score = 100 * max_cells / cells_used + speed_bonus`.
+The mode has three phases: *planning* (place cells on a blank grid with draw/erase tools), *running* (the simulation advances while win/loss conditions are checked each step), and *result* (score displayed). Win detection uses state-hash cycle detection for still-life and oscillator puzzles, population thresholds for growth puzzles, and bounding-box geometry for escape puzzles. Scoring rewards efficiency: `score = 100 * max_cells / cells_used + speed_bonus`, capped at 999. The speed bonus (up to 50) applies to oscillator, population, escape and extinction puzzles. In planning, `e` toggles a cell, `d` and `x` switch to draw and erase, `c` clears, and `Enter` runs.
 
 ### What to explore
 
@@ -70,7 +70,7 @@ The mode has three phases: *planning* (place cells on a blank grid with draw/era
 
 ### Background
 
-Evolution mode uses a genetic algorithm to breed Life-like rulesets. A population of candidate B/S rules runs in parallel on small grids; after a configurable number of simulation generations, each is scored on longevity, population stability, diversity, and average population. The top performers reproduce through crossover and mutation.
+Evolution mode uses a genetic algorithm to breed Life-like rulesets. A population of candidate B/S rules runs in parallel on small grids. After a set number of generations, each rule is scored on longevity, population stability, diversity, and average population. The top performers carry over and reproduce through crossover and mutation.
 
 ### How it works
 
@@ -85,7 +85,7 @@ for each generation:
     breed next generation: crossover pairs of parents, mutate offspring
 ```
 
-Crossover is uniform per-digit: for each neighbor count 0--8, the child inherits the birth/survival bit from a randomly chosen parent. Mutation flips individual digits with a configurable rate. Four fitness modes (balanced, longevity, diversity, population) reweight the scoring components.
+Crossover is uniform per digit: for each neighbor count 0--8, the child takes the birth and survival bits from a randomly chosen parent. Mutation flips individual digits at the set rate. The first generation uses random rules. Four fitness modes (balanced, longevity, diversity, population) reweight the scoring components.
 
 ### What to explore
 
@@ -105,17 +105,18 @@ Crossover is uniform per-digit: for each neighbor count 0--8, the child inherits
 
 ### Background
 
-Screensaver mode auto-cycles through all simulation modes in the system, running each for a configurable interval before transitioning to the next. It functions as an unattended demo reel that showcases the full range of available simulations.
+Screensaver mode cycles through the simulation modes, running each for a set interval before moving to the next. It works as an unattended demo reel.
 
 ### How it works
 
-A playlist is built from the mode registry, filtered by category, favorites, or "all modes." The screensaver saves its own state, exits the current sub-mode, enters the next one, and attempts to auto-select a preset by simulating an Enter keypress on the mode's menu. Transitions use a dissolve effect: random block characters are drawn over the screen at decreasing density. A fade-in overlay displays the mode name and category for 3 seconds before fading out. The interval between mode switches is adjustable from 5 to 120 seconds.
+A playlist is built from the mode registry: all modes, your favorites, or one category, in order or shuffled. Only simulations that the main loop dispatches by table are played, so Game of Life, the screensaver itself, toggles such as Topology, and interactive meta modes are skipped. To start each mode, the screensaver tries a fixed list of strategies (press Enter on its menu, call its init function, try common preset names). It never presses arbitrary menu items, so it cannot trigger saves or deletes. A mode that none of these start stays in its menu. Transitions use a dissolve effect: random block characters are drawn over the screen at decreasing density. An overlay box with the mode name, category and playlist position shows for 3 seconds, then fades. A status bar always shows the countdown to the next mode. The interval is 5 to 120 seconds, adjusted with `+`/`-`.
 
 ### What to explore
 
 - Use "All Modes -- Shuffle" for a randomized tour of every simulation.
-- Press `i` to toggle the persistent info overlay showing mode name and countdown.
-- Pause with Space to linger on an interesting simulation, then resume cycling.
+- Press `i` to keep the overlay box on screen.
+- Pause with `Space` to linger on an interesting simulation, then resume cycling.
+- Skip with `n` or `p` (or the arrow keys).
 
 ---
 
@@ -129,13 +130,14 @@ Parameter Space Explorer displays a grid of live simulation thumbnails, each run
 
 ### How it works
 
-The explorer supports pluggable simulation engines. Currently implemented are Gray-Scott Reaction-Diffusion (feed vs. kill rate) and a Lenia-like smooth CA (mu vs. sigma). For an NxM tile grid, parameter values are evenly spaced across the visible range on each axis. Each tile runs its own independent mini-simulation. When the user zooms in, the visible range shrinks to 40% of the current span, centered on the selected tile's parameters. Zooming out expands by 150%. Preset bookmarks jump to known interesting parameter combinations.
+The explorer supports two engines: Gray-Scott Reaction-Diffusion (feed vs. kill rate) and Smooth Life, a simplified continuous CA with a Gaussian growth function (mu vs. sigma). For an NxM tile grid, parameter values are evenly spaced across the visible range on each axis. Each tile runs its own independent mini-simulation. Zooming in with `Enter` shows 40% of the full range on each axis, centered on the selected tile's parameters. Preset bookmarks jump to known interesting parameter combinations.
 
 ### What to explore
 
 - In Gray-Scott mode, zoom into the boundary between "spots" and "worms" around feed=0.04, kill=0.063.
-- Use the `p` key to cycle through named presets (Coral Growth, Mitosis, Spirals, etc.).
-- Increase steps-per-frame with `+` to accelerate convergence on slow-forming patterns.
+- Use `p` to cycle through the named presets (Coral Growth, Mitosis, Fingerprints, Spots, Worms, Spirals, Maze, Chaos).
+- Raise steps per frame with `+` (lower with `_`) to speed up slow-forming patterns.
+- Press `r` to return to the full range.
 
 ---
 
@@ -145,21 +147,17 @@ The explorer supports pluggable simulation engines. Currently implemented are Gr
 
 ### Background
 
-Evolution Lab extends the basic Evolution mode with analytics-driven fitness scoring (Shannon entropy, symmetry, periodicity, stability), multi-state genomes (Moore and von Neumann neighborhoods, 2--5 cell states), manual "favorite" protection from culling, and persistent save/load of discovered organisms to disk.
+Evolution Lab extends the basic Evolution mode with analytics-driven fitness scoring (Shannon entropy, symmetry, stability, longevity, diversity), multi-state genomes (Moore and von Neumann neighborhoods, 2--5 cell states), manual "favorite" protection from culling, and save/load of discovered organisms.
 
 ### How it works
 
-Genomes encode birth/survival sets, neighborhood type, and state count. Fitness is computed from five analytics metrics with configurable weight presets (balanced, beauty, chaos, complexity, stability). The beauty preset, for example, weights symmetry at 3x. Organisms marked as favorites are immune to culling and always appear as parents in the next generation. The breeding pipeline is: sort by fitness (favorites first), select elite parents, fill remaining slots with crossover + mutation. Organisms can be saved to `~/.life_saves/evolution_lab.json` and reloaded as seeds for future runs.
+Genomes encode birth/survival sets, neighborhood type, and state count. Fitness is a weighted sum of five metrics, with weight presets balanced, beauty, chaos, complexity, and stability. The beauty preset, for example, weights symmetry at 3x. Stability is a proxy based on how much the population varies over the last 30 generations. Favorites are immune to culling and always parent the next generation. The breeding pipeline is: sort by fitness (favorites first), select elite parents, fill remaining slots with crossover and mutation. Organisms can be saved to `~/.life_saves/evolution_lab.json` and reloaded as seeds for future runs.
 
 ### What to explore
 
 - Use the "beauty" fitness preset to evolve rules that produce symmetric, visually striking patterns.
 - Favorite a promising organism and watch its traits propagate through subsequent generations.
-- Save an organism, restart with "Start (From Saved)" to continue evolving from your best discoveries.
-
-### References
-
-- Mordvintsev, A. et al. (2020). "Growing Neural Cellular Automata." *Distill*. https://distill.pub/2020/growing-ca/
+- Save an organism with `s`, then restart with "START (From Saved)" to continue evolving from your best discoveries.
 
 ---
 
@@ -169,11 +167,11 @@ Genomes encode birth/survival sets, neighborhood type, and state count. Fitness 
 
 ### Background
 
-Evolutionary Playground is a human-in-the-loop genetic algorithm where you are the fitness function. A grid of live simulations runs with different randomly generated CA rules. You watch them, select the most visually interesting ones as parents, and press `b` to breed the next generation through crossover and mutation.
+Evolutionary Playground is a human-in-the-loop genetic algorithm where you are the fitness function. A grid of live simulations runs with different randomly generated CA rules. You watch them, select the most interesting ones as parents, and press `b` to breed the next generation through crossover and mutation.
 
 ### How it works
 
-The population fills the terminal as a tiled grid of mini-simulations. Genomes include birth/survival sets, neighborhood type (Moore, von Neumann, or hexagonal), and multi-state cell counts. Selection is manual: navigate with arrow keys, press Enter to toggle a tile as a parent. Breeding requires at least 2 parents. Children inherit traits via uniform crossover and per-digit mutation. The mutation rate is adjustable. Discovered rules can be saved to `~/.life_saves/evolved_rules.json` or adopted directly into the main simulator.
+The population fills the terminal as a tiled grid of mini-simulations. Genomes include birth/survival sets, neighborhood type (Moore, von Neumann, or hexagonal), and multi-state cell counts. Selection is manual: navigate with the arrow keys, press `Enter` to toggle a tile as a parent (`A` toggles all). Breeding requires at least 2 parents. Children inherit traits via uniform crossover and per-digit mutation. The mutation rate is set in the start menu. `S` saves the rule under the cursor to `~/.life_saves/evolved_rules.json`; `a` adopts it into the main simulator; `r` starts a new random population.
 
 ### What to explore
 
@@ -189,17 +187,17 @@ The population fills the terminal as a tiled grid of mini-simulations. Genomes i
 
 ### Background
 
-Live Rule Editor provides an interactive REPL where you type Python expressions to define custom cellular automaton birth and survival rules. The expressions execute in real time on a grid, giving immediate visual feedback. Variables available include `neighbors` (list of 8 neighbor states), `age`, `x`, `y`, `step`, and `random()`.
+Live Rule Editor lets you type Python expressions that define custom cellular automaton birth and survival rules. The expressions run on a grid as you edit them. Variables available include `neighbors` (list of 8 neighbor states), `age`, `x`, `y`, `step`, and `random()`.
 
 ### How it works
 
-Birth and survival expressions are compiled with Python's `compile()` into code objects, then evaluated per-cell each generation using a restricted `eval()` sandbox (no `__builtins__`). The sandbox exposes `sum`, `len`, `min`, `max`, `any`, `all`, `abs`, `math`, and `random`. Expressions like `sum(neighbors) == 3 and age < 10` let you create age-dependent rules, positional biases, or stochastic behavior. Ten starter snippets are provided. Rules can be saved to and loaded from `~/.life_saves/custom_rules.json`.
+Birth and survival expressions are compiled with Python's `compile()` into code objects, then evaluated per-cell each generation using a restricted `eval()` sandbox (no `__builtins__`). The sandbox exposes `sum`, `len`, `min`, `max`, `any`, `all`, `abs`, `int`, `float`, `math`, and `random`. Expressions like `sum(neighbors) == 3 and age < 10` let you create age-dependent rules, positional biases, or stochastic behavior. `Enter` edits the selected expression, `Tab` switches fields, and `i` imports a rule from Evolutionary Playground. Ten starter snippets are provided. Rules can be saved to and loaded from `~/.life_saves/custom_rules.json`.
 
 ### What to explore
 
 - Try `sum(neighbors) == 3 or (sum(neighbors) == 2 and random() < 0.05)` for stochastic Life.
 - Create position-dependent rules: `sum(neighbors) == 3 and (x + y) % 3 == 0`.
-- Use the `a` key to translate your expression into a standard B/S rule and apply it to the main grid.
+- Press `a` to translate your expression into a standard B/S rule and apply it to the main grid. This works only for rules that depend on the neighbor count alone.
 
 ---
 
@@ -213,13 +211,13 @@ Simulation Mashup layers two different simulation engines on the same grid with 
 
 ### How it works
 
-Eight mini-simulation engines are implemented (Game of Life, Wave Equation, Reaction-Diffusion, Forest Fire, Boids, Ising Model, Rock-Paper-Scissors, Physarum). Each exposes `init`, `step(state, other_density, coupling_strength)`, and `density` functions. On each tick, simulation A receives B's density map as a coupling input and vice versa. The coupling strength (0.0--1.0) controls how strongly each simulation influences the other. Rendering overlays both density fields with color-coding: cyan for A, red for B, magenta for overlap.
+Eight mini-simulation engines are implemented (Game of Life, Wave Equation, Reaction-Diffusion, Forest Fire, Boids Flocking, Ising Model, Rock-Paper-Scissors, Physarum Slime). The menu offers eight preset pairs plus a custom pick. Each exposes `init`, `step(state, other_density, coupling_strength)`, and `density` functions. On each tick, simulation A receives B's density map as a coupling input and vice versa. The coupling strength (0.0--1.0, default 0.5) controls how strongly each simulation influences the other. Rendering overlays both density fields with color-coding: cyan for A, red for B, magenta for overlap.
 
 ### What to explore
 
 - "Boids + Wave Equation": watch flocking agents create ripples and steer along wave gradients.
-- Adjust coupling with `+`/`-` to find the sweet spot between independence and lock-in.
-- Set coupling to 0 with `0` to see both simulations run independently for comparison.
+- Adjust coupling with `+`/`-` (steps of 0.05) to find the sweet spot between independence and lock-in.
+- Press `0` to set coupling to 0 and run both simulations independently. Press `5` to return to 0.5.
 
 ---
 
@@ -229,17 +227,17 @@ Eight mini-simulation engines are implemented (Game of Life, Wave Equation, Reac
 
 ### Background
 
-Battle Royale places four cellular automata factions on a shared grid, each starting in a corner with its own B/S rule. Factions compete for territory through birth, survival, and conquest mechanics. The last faction standing wins.
+Battle Royale places four cellular automata factions on a shared grid, each with its own B/S rule. Factions compete for territory through birth, survival, and conquest mechanics. The last faction standing wins.
 
 ### How it works
 
-The grid tracks per-cell ownership (faction index or neutral) and age. Each generation: empty cells check which factions could birth there using their respective birth sets, with the highest neighbor count winning ties. Alive cells check survival using their faction's survival set. A conquest mechanic triggers when enemy neighbor density exceeds own-faction density by more than 1 and the dominant enemy has 3+ neighbors. Territory percentages are displayed in a live scoreboard with a stacked bar chart. Eight factions are available, color-coded in 256-color mode.
+The grid tracks per-cell ownership (faction index or neutral) and age. Each generation: an empty cell is born for the faction whose birth set matches its neighbor count, and the faction with more neighbors wins (ties are random). Alive cells check survival using their faction's survival set. A surviving cell is conquered when enemy neighbors outnumber its own faction's by more than 1 and the strongest enemy faction has 3 or more neighbors. Territory percentages are displayed in a live scoreboard with a stacked bar chart. Eight factions exist (Life, HighLife, Day&Night, Seeds, Morley, Maze, Amoeba, Diamoeba); four fight in each battle.
 
 ### What to explore
 
-- "Classic Showdown" pits Life, HighLife, Day&Night, and Seeds in a four-way battle.
+- "Classic Showdown" pits Life, HighLife, Day&Night, and Seeds in a four-way battle. The other presets are "Aggressive Mix", "Territorial War" and "Survival of the Fittest".
 - Watch Seeds (B2/S) explode quickly but burn out, while Life slowly consolidates territory.
-- Try "Custom Battle" to pick any 4 of the 8 available factions.
+- Try "Custom Battle..." to pick any 4 of the 8 factions.
 
 ---
 
@@ -249,17 +247,18 @@ The grid tracks per-cell ownership (faction index or neutral) and age. Each gene
 
 ### Background
 
-Simulation Portal splits the screen into two halves (vertically or horizontally), each running a different simulation engine. A visible seam connects them: density information bleeds across the boundary with a configurable depth, creating emergent cross-talk where one simulation feeds energy into the other at the interface.
+Simulation Portal splits the screen into two halves (vertically or horizontally), each running a different simulation engine from the mashup module. Density bleeds across the seam to a set depth, so each simulation feeds the other at the interface.
 
 ### How it works
 
-Boundary influence is computed by extracting the edge columns (or rows) of one simulation's density field, attenuating linearly with distance from the seam, and injecting them into the other simulation's coupling input. The "bleed" parameter (1--20 cells) controls how deep the cross-talk extends. Two influence builders handle the directionality: A's right edge maps to B's left edge, and B's left edge maps to A's right edge (with a flip function). Near-seam cells are rendered in magenta to visualize the cross-talk zone.
+Boundary influence is computed by taking the edge columns (or rows) of one simulation's density field, fading them linearly with distance from the seam, and injecting them into the other simulation's coupling input. A's right edge feeds B's left edge, and B's left edge feeds A's right edge. The "bleed" parameter (1--20 cells, default 3) sets how deep the cross-talk extends. Coupling (0.0--1.0, default 0.5) scales its strength. Near-seam cells are drawn in magenta to show the cross-talk zone.
 
 ### What to explore
 
 - Toggle orientation with `o` to see how vertical vs. horizontal seams change the interaction.
-- Increase bleed depth with `b` to let the simulations influence each other more deeply.
-- Try "Wave + Forest Fire": wave amplitude ignites fire at the boundary.
+- Increase bleed depth with `b` (decrease with `B`) to let the simulations influence each other more deeply.
+- Adjust coupling with `+`/`-`.
+- Try "Wave ↔ Forest Fire": wave amplitude ignites fire at the boundary.
 
 ---
 
@@ -269,25 +268,24 @@ Boundary influence is computed by extracting the edge columns (or rows) of one s
 
 ### Background
 
-Split-Screen Dual Simulation runs any two of the eight mini-simulation engines side by side with optional bidirectional coupling. Each pane has its own state, generation counter, and density grid. Unlike Observatory (which tiles 2–9 viewports with no coupling) or Mashup (which couples two engines on the same grid), Split-Screen offers a spectrum from clean uncoupled comparison to full cross-domain emergence — a fluid simulation's density can drive a cellular automaton's birth threshold, a particle swarm's positions can seed a reaction-diffusion pattern, or an Ising model's magnetization can modulate a wave equation's damping.
+Split-Screen Dual Simulation runs any two of the eight mini-simulation engines side by side with optional bidirectional coupling. Each pane has its own state, generation counter, and density grid. Observatory tiles 2--9 viewports with no coupling, and Mashup couples two engines on one grid. Split-Screen sits between them: coupling runs from fully independent (0%) to fully coupled (100%).
 
 ### How it works
 
-The terminal is divided vertically at the midpoint. A single-character `│` divider separates the panes. Each pane wraps one of the eight engines from the mashup module (Game of Life, Wave, Reaction-Diffusion, Forest Fire, Boids, Ising, Rock-Paper-Scissors, Physarum) via the shared `_ENGINES` registry, reusing `init`, `step`, and `density` functions.
+The terminal is split vertically at the midpoint by a `│` divider. Each pane wraps one of the eight engines from the mashup module (Game of Life, Wave, Reaction-Diffusion, Forest Fire, Boids, Ising, Rock-Paper-Scissors, Physarum).
 
-Coupling is controlled by a `split_coupling` parameter (0.0–1.0). At 0.0 the panes are fully independent. At higher values, each simulation receives the *other* pane's density map as input before stepping (Jacobi-style: both densities are snapshotted before either steps, so neither has temporal priority). All eight engines already accept `(state, other_density, coupling_strength)` in their step functions — Split-Screen simply wires the cross-pane density exchange. When coupling is active, the vertical divider shows a `⇄` bidirectional arrow at its center, and the title bar displays the current coupling percentage.
+Coupling (`split_coupling`, 0.0--1.0) starts at 0.0. Above 0, each engine receives the *other* pane's density map as input before stepping. Both densities are taken before either pane steps, so neither has priority. The divider then shows a `⇄` arrow at its center, and the title bar shows the coupling percentage.
 
-A preset menu offers 8 curated pairings (e.g., "Game of Life vs Lenia-style RD", "Boids vs Physarum") for quick launch, plus a two-step custom picker that lets you choose any left and right engine independently. Focus state (`split_focus`) determines which pane's title bar is highlighted with a reverse-video diamond marker; Tab swaps focus. The `r` key resets only the focused pane, reinitializing its engine state and zeroing its generation counter while the other pane continues undisturbed.
+The menu offers 8 preset pairings (such as "Game of Life vs Lenia-style RD" and "Boids vs N-Body (Physarum)") plus a two-step custom picker for the left and right engines. `Tab` moves focus between panes, `s` swaps the two simulations, and `r` resets only the focused pane.
 
 ### What to explore
 
-- Compare "Game of Life vs Boids" to see grid-based discrete dynamics next to free-roaming agent behavior.
-- Use `s` to swap panes and see how visual placement affects your perception of the two simulations.
-- Reset one pane with `r` while the other runs to compare fresh vs. evolved states of the same engine.
-- Use the custom picker to pair any two engines — try "Ising vs Rock-Paper-Scissors" for two spatial competition models.
-- Press `c` to cycle coupling (0% → 20% → 50% → 80% → 100% → off) and watch cross-domain patterns emerge — a Wave/Ising pairing at 50% coupling produces magnetization waves that don't exist in either simulation alone.
-- Fine-tune coupling with `+`/`-` (5% increments) to find the critical threshold where one simulation begins to entrain the other.
-- Try "Reaction-Diffusion vs Physarum" with high coupling — the RD spots become food sources for the slime mold network.
+- Compare "Game of Life vs Boids" to see grid-based discrete dynamics next to free-roaming agents.
+- Pair "Ising vs Rock-Paper-Scissors" for two spatial competition models.
+- Reset one pane with `r` while the other runs to compare a fresh state with an evolved one.
+- Press `c` to cycle coupling (0% → 20% → 50% → 80% → 100% → 0%) and watch how each pane responds to the other.
+- Fine-tune coupling with `+`/`-` (5% steps).
+- Try "Reaction-Diffusion vs Physarum" at high coupling.
 
 ---
 
@@ -297,17 +295,17 @@ A preset menu offers 8 curated pairings (e.g., "Game of Life vs Lenia-style RD",
 
 ### Background
 
-Simulation Observatory runs 2--9 independent simulations simultaneously in a tiled split-screen layout. Unlike Mashup, there is no coupling between viewports. The focus is on visual comparison: press a number key to expand any viewport to full screen, then press `0` to return to the grid view.
+Simulation Observatory runs 2--9 independent simulations simultaneously in a tiled layout. Unlike Mashup, there is no coupling between viewports. The focus is on visual comparison: press `1`--`9` to expand a viewport to full screen, then press `0` to return to the grid view.
 
 ### How it works
 
-Viewports are arranged in auto-calculated grid layouts (1x2, 2x2, 2x3, or 3x3) based on the number of simulations selected. Each viewport wraps one of the eight mini-simulation engines from the mashup module. All viewports step in lockstep each frame. The focus mechanism simply switches between the tiled draw function and a full-screen draw function for the selected viewport index.
+Viewports are arranged in auto-calculated grid layouts (1x2, 2x2, 2x3, or 3x3) based on the number of simulations selected. Each viewport wraps one of the eight mini-simulation engines from the mashup module. All viewports step in lockstep each frame. The presets are "Fluid Trio", "Chaos Theory", "Micro vs Macro", "Nature's Patterns", and "Everything"; a custom option lets you pick the layout and engines.
 
 ### What to explore
 
-- The "Everything" preset runs all 8 engines at once in a 3x3 grid.
+- The "Everything" preset runs all 8 engines, plus a second Game of Life, in a 3x3 grid.
 - Focus on the Physarum viewport (`8`) to see trail networks form at full resolution.
-- Compare fluid-like simulations (Wave, RD, Physarum) side by side in the "Fluid Trio" preset.
+- Compare Wave, RD, and Physarum side by side in the "Fluid Trio" preset.
 
 ---
 
@@ -317,11 +315,11 @@ Viewports are arranged in auto-calculated grid layouts (1x2, 2x2, 2x3, or 3x3) b
 
 ### Background
 
-Layer Compositing stacks 2--4 independent simulations as transparent layers with configurable blend modes (add, XOR, mask, multiply, screen) and per-layer opacity and tick rate. The result is a single composited viewport where multiple simulation dynamics interweave visually.
+Layer Compositing stacks 2--4 independent simulations as transparent layers with configurable blend modes (add, XOR, mask, multiply, screen) and per-layer opacity and tick rate. The result is a single composited viewport.
 
 ### How it works
 
-Each layer wraps an independent simulation engine. On each frame, layers whose `generation % tick_mult == 0` are stepped. The compositing engine iterates over every cell, applying blend functions sequentially from the base layer upward:
+Each layer wraps an independent simulation engine with no coupling. On each frame, layers whose `generation % tick_mult == 0` are stepped, so a higher tick multiplier runs a layer slower. The compositing engine iterates over every cell, applying blend functions sequentially from the base layer upward. The base layer has no blend mode:
 
 ```
 for each cell (r, c):
@@ -331,13 +329,14 @@ for each cell (r, c):
     dominant_layer = argmax(layer_contributions)
 ```
 
-The dominant layer determines the cell's display color. Blend modes include `screen` (inverse multiply, good for lightening) and `mask` (layer A visible only where layer B exceeds a threshold).
+The dominant layer determines the cell's display color. `screen` is an inverse multiply that lightens. `mask` keeps the value below it only where the layer's density exceeds 0.15.
 
 ### What to explore
 
-- "Breathing Shapes": Reaction-Diffusion masked by Game of Life creates pulsing organic forms.
-- Use Tab to cycle focus between layers, then `+`/`-` to adjust opacity in real time.
-- Press `b` to cycle blend modes on the focused layer and see the visual effect immediately.
+- "Breathing Shapes": Reaction-Diffusion masked by Game of Life.
+- Use `Tab` to cycle focus between layers, then `+`/`-` to adjust opacity in real time.
+- Press `t`/`T` to slow down or speed up the focused layer.
+- Press `b` to cycle the blend mode of the focused layer (not the base layer).
 
 ---
 
@@ -367,17 +366,17 @@ Each "act" specifies a simulation engine, duration (10--14 seconds), camera path
 
 ### Background
 
-Topology Mode changes the grid's boundary conditions, transforming the surface on which any simulation runs. Five topologies are supported: plane (hard edges), torus (both axes wrap), Klein bottle (rows wrap with horizontal flip), Mobius strip (columns wrap with vertical flip), and projective plane (both axes wrap with flips).
+Topology Mode changes the grid's boundary conditions, transforming the surface on which any simulation runs. Five topologies are supported: plane (hard edges), torus (both axes wrap, the default), Klein bottle (columns wrap; rows wrap with a horizontal flip), Mobius strip (columns wrap with a vertical flip; rows have hard edges), and projective plane (both axes wrap with flips).
 
 ### How it works
 
-The Grid class implements neighbor lookups that consult the `topology` attribute. For twist-wrapping topologies, when a coordinate wraps past an edge, the opposite axis is mirrored: on a Klein bottle, a cell going off the top row reappears at the bottom with its column reflected (`c' = cols - 1 - c`). The topology mode draws visual edge indicators: thin lines for walls, double lines for seamless wraps, and wavy lines with arrow glyphs for twist wraps. Corner markers and midpoint arrows communicate the surface's non-orientable nature.
+The Grid class implements neighbor lookups that consult the `topology` attribute. For twist-wrapping topologies, when a coordinate wraps past an edge, the opposite axis is mirrored: on a Klein bottle, a cell going off the top row reappears at the bottom with its column reflected (`c' = cols - 1 - c`). Ctrl+W cycles through the topologies. Outside the torus, the mode draws a label in the top-right corner and edge indicators: thin lines for walls, double lines for seamless wraps, and wavy lines for twist wraps. Corner markers and midpoint arrows mark twisted edges.
 
 ### What to explore
 
-- Run a glider on a Mobius strip (Ctrl+W to cycle topology) and watch it return mirror-reversed.
-- Compare pattern evolution on torus vs. Klein bottle: the flip creates asymmetric interference.
-- Try the projective plane with a symmetric initial pattern to see how double-twist affects symmetry.
+- Run a glider on a Mobius strip and watch it return mirror-reversed.
+- Compare pattern evolution on a torus and a Klein bottle.
+- Try the projective plane with a symmetric initial pattern to see how the flips affect symmetry.
 
 ---
 
@@ -391,7 +390,7 @@ The Visual FX Pipeline provides six stackable post-processing effects (scanlines
 
 ### How it works
 
-Effects are applied after the simulation's draw call, operating directly on the curses screen buffer via `inch()` and `chgat()`. Scanlines dim every other row. Bloom makes occupied cells bold and paints dim glow characters in adjacent empty cells. Trails maintain a ring buffer of past frame occupancy maps; older frames are rendered with progressively lighter block characters. Edge detection builds an occupancy bitmap and erases interior cells (those with all four cardinal neighbors occupied). Color cycling rotates color pair indices modulo 5 based on a frame counter. CRT adds vignette darkening, scanlines, and a rounded bezel border.
+Ctrl+V opens the effects menu, where `1`--`6` toggle effects and `Esc` closes it. Effects are applied after the simulation's draw call, operating directly on the curses screen buffer via `inch()` and `chgat()`. Scanlines dim every other row. Bloom makes occupied cells bold and paints dim glow characters in the four adjacent empty cells. Trails keep a buffer of past frame occupancy maps; older frames are drawn with progressively lighter block characters. Edge detection builds an occupancy bitmap and erases interior cells (those with all four cardinal neighbors occupied). Color cycling rotates color pair indices modulo 5 based on a frame counter. CRT adds vignette darkening, scanlines, and a rounded bezel border.
 
 ### What to explore
 
@@ -407,17 +406,17 @@ Effects are applied after the simulation's draw call, operating directly on the 
 
 ### Background
 
-Recording & Export captures terminal frames during any simulation and exports them as asciinema v2 `.cast` files (playable in any terminal or embeddable on the web) or plain-text flipbooks. It operates as a background capture system toggled with Ctrl+X.
+Recording & Export captures terminal frames during any simulation and exports them as asciinema v2 `.cast` files (playable in any terminal or embeddable on the web) or plain-text flipbooks. Ctrl+X starts and stops the capture.
 
 ### How it works
 
-When recording is active, each frame the system reads every cell of the curses window via `inch()`, groups runs of identical attributes, and emits ANSI escape sequences for color and style changes. A parallel plain-text capture strips all ANSI codes. Frame capture respects an FPS budget (default 10 fps) and a safety cap of 3000 frames. The `.cast` exporter writes asciinema v2 format: a JSON header line followed by `[elapsed, "o", data]` event lines. A blinking red REC indicator is drawn in the top-right corner during recording.
+When recording is active, each frame the system reads every cell of the curses window via `inch()`, groups runs of identical attributes, and emits ANSI escape sequences for color and style changes. A parallel plain-text capture strips all ANSI codes. Frame capture respects an FPS budget (default 10 fps) and a safety cap of 3000 frames. The `.cast` exporter writes asciinema v2 format: a JSON header line followed by `[elapsed, "o", data]` event lines. A blinking red REC indicator with the frame count and elapsed time is drawn in the top-right corner during recording. Stopping opens an export menu: `1` for `.cast`, `2` for `.txt`, `3` for both, and `d` or `Esc` to discard.
 
 ### What to explore
 
-- Record a Battle Royale match and play it back with `asciinema play recording.cast`.
-- Export as both formats simultaneously to get a web-embeddable `.cast` and a searchable `.txt`.
-- Recordings are saved to `~/.life_saves/` with timestamped filenames.
+- Record a Battle Royale match and play it back with `asciinema play` on the saved `.cast` file.
+- Export both formats to get a web-embeddable `.cast` and a searchable `.txt`.
+- Recordings are saved to `~/.life_saves/` as `recording_<timestamp>.cast` or `.txt`.
 
 ---
 
@@ -459,7 +458,7 @@ new_state = old_state + update              # residual
 alive_mask: cell dies if no neighbor has alpha > 0.1
 ```
 
-Training uses antithetic Evolution Strategies: generate N/2 random perturbations (and their negatives), grow each candidate from seed for 30 steps, compute MSE loss against the target, and estimate a gradient for weight update. The system has 107 learnable parameters. Users can draw custom target patterns or select from presets (circle, square, diamond, cross, ring, heart).
+Training uses antithetic Evolution Strategies: generate N/2 random perturbations (and their negatives), grow each candidate from seed for the set number of grow steps (default 20), compute the loss against the target, and estimate a gradient for the weight update. The system has 107 learnable parameters. Users can draw custom target patterns or select from presets (circle, square, diamond, cross, ring, heart).
 
 ### What to explore
 
@@ -479,11 +478,11 @@ Training uses antithetic Evolution Strategies: generate N/2 random perturbations
 
 ### Background
 
-Timeline Branching lets you fork alternate realities from any point in a simulation's history. Scrub back through the timeline, fork the grid state into a branch (optionally with a different rule), and watch both the original and branched timelines evolve side by side in a split view with a real-time divergence metric.
+Timeline Branching lets you fork an alternate timeline from any point in a simulation's history. Scrub back through the timeline, press Ctrl+F to fork the grid state into a branch (optionally with a different rule), and watch both timelines evolve side by side in a split view with a live divergence metric.
 
 ### How it works
 
-Forking deep-copies the primary grid (cells, rules, topology) into a secondary grid. Both grids advance in lockstep from the fork point. The split view renders them side by side with dual sparklines and a divergence bar that computes the fraction of cells differing between the two grids: `divergence = count(cell_a != cell_b) / total_cells * 100%`. The fork menu offers two options: "Fork with same rules" (to study sensitivity to initial conditions) or "Fork with different rule" (to compare rule behavior from identical starting states). The fork-point generation and rule labels are displayed in a status bar.
+Forking copies the primary grid (cells, rules, topology) into a secondary grid. Both grids advance in lockstep from the fork point. The split view renders them side by side with dual sparklines and a divergence bar. Divergence is the share of cells that are alive in one grid and dead in the other: `divergence = count(alive_a != alive_b) / total_cells * 100%`. The fork menu offers two options: "Fork with same rules" (to study sensitivity to initial conditions) or "Fork with different rule" (to compare rule behavior from identical starting states). The fork-point generation and rule labels are displayed in a status bar. Ctrl+F again exits the split view.
 
 ### What to explore
 
@@ -503,7 +502,7 @@ Ancestor Search reverse-engineers cellular automata: given a target pattern, it 
 
 ### How it works
 
-The search engine uses simulated annealing with stochastic restarts. Candidates are flat binary grids. Fitness is the count of cells matching the target after one forward CA step (perfect = all cells match). Each generation applies adaptive-rate mutations and occasional crossover with the global best. Simulated annealing acceptance allows uphill moves with probability `exp(delta / temperature)`, where temperature cools by 0.3% per generation. After 200 restarts with no perfect solution, an exhaustive local search (500 multi-flip attempts) runs to confirm Garden of Eden status. The three-panel display shows the target, the best candidate ancestor, and either a confirmed solution or the evolved-best for comparison.
+The search engine uses simulated annealing with stochastic restarts. Candidates are flat binary grids. Fitness is the count of cells matching the target after one forward CA step (perfect = all cells match). Each generation applies adaptive-rate mutations and occasional crossover with the global best. Simulated annealing also accepts a worse candidate with probability `exp(delta / temperature)`, where `delta` is negative and temperature cools by 0.3% per generation. Every 50 generations without a perfect solution counts as a restart: the worst half of the candidates is replaced and the temperature partly resets. After 200 restarts with no solution, a local search (500 multi-flip attempts) runs. If it also fails, the target is reported as a probable Garden of Eden; this is a heuristic, not a proof. The display shows up to three panels, depending on terminal width: the target, the best ancestor, and either a found solution or the best ancestor after one step.
 
 ### What to explore
 
@@ -519,16 +518,16 @@ The search engine uses simulated annealing with stochastic restarts. Candidates 
 
 ### Background
 
-Self-Modifying Rules creates a cellular automaton where each living cell carries its own rule DNA encoded as a pair of 9-bit genomes (birth and survival bitstrings). When a cell is born, it inherits a possibly mutated rule from the majority of its live neighbors. This produces emergent speciation, ecological niches, and evolutionary arms races without any external fitness function.
+Self-Modifying Rules creates a cellular automaton where each living cell carries its own rule DNA, a pair of 9-bit bitstrings (birth and survival). When a cell is born, it inherits a possibly mutated rule from the majority of its live neighbors. This produces emergent speciation, ecological niches, and evolutionary arms races without any external fitness function.
 
 ### How it works
 
-Each cell's genome is a `(birth_bits, survival_bits)` pair. Alive cells check survival using their own genome's survival set. Dead cells check birth using the majority genome among their live neighbors' birth sets. Newborn cells inherit the majority genome with a per-event mutation probability; mutation flips random bits in the 9-bit birth and survival bitstrings. Species are identified by unique genomes and color-coded via a hash function into 8 distinct terminal colors. The info panel tracks species count, births, deaths, total mutations, and displays sparklines for diversity and population over time. Eight presets are provided, ranging from "Life vs HighLife" (two-species competition) to "Cambrian Explosion" (8 random seed species) to "Blank Canvas" (every cell gets a random genome).
+Each cell's genome is a `(birth_bits, survival_bits)` pair. Alive cells check survival using their own genome's survival set. Dead cells use the birth set of the majority genome among their live neighbors (ties are random). A newborn cell inherits that genome. With the mutation probability, the child's bits are flipped at random (15% per bit). Species are identified by unique genomes and color-coded by hashing the genome into 8 terminal colors. The info panel tracks species count, births, deaths, total mutations, and displays sparklines for diversity and population over time. Eight presets are provided, ranging from "Life vs HighLife" (two-species competition) to "Cambrian Explosion" (8 random seed species) to "Blank Canvas" (every cell gets a random genome).
 
 ### What to explore
 
 - "Mutation Storm" starts with a single Life rule but high mutation creates rapid speciation -- watch dozens of species emerge.
-- Adjust mutation rate with `+`/`-` in real time: low rates produce stable ecosystems, high rates produce constant turnover.
+- Adjust mutation rate with `+`/`-` in real time: low rates favor stable ecosystems, high rates cause constant turnover.
 - The species panel shows which B/S rules are currently winning the ecological competition.
 
 ---
@@ -543,7 +542,7 @@ Long-Exposure Photography composites hundreds of simulation frames into a single
 
 ### How it works
 
-When capture is active, every rendered frame is accumulated into a per-pixel buffer that tracks seven values: total R/G/B (for additive and average blending), hit count (how many frames occupied this pixel), and peak R/G/B (for max blending). The system captures from both the truecolor buffer (`tc_buf`) and the curses screen, so it works with all 130+ modes regardless of their rendering path.
+When capture is active, every rendered frame is accumulated into a per-pixel buffer that tracks seven values: total R/G/B (for additive and average blending), hit count (how many frames occupied this pixel), and peak R/G/B (for max blending). The system captures from both the truecolor buffer (`tc_buf`) and the curses screen, so it works with every mode regardless of its rendering path.
 
 When the exposure window is reached (or the user manually freezes), the accumulation buffer is composited into a final image using one of three blend modes:
 
@@ -571,7 +570,7 @@ Export produces two files: a JSON file containing per-pixel coordinates, RGB val
 
 ### Background
 
-Ghost Trail adds a temporal echo rendering layer that overlays fading afterimages from previous frames onto any simulation mode. It makes motion visible: particles leave streaks, wavefronts show their propagation paths, cellular automata reveal their recent evolution, and flocking agents draw luminous trails. The feature enhances all 125+ modes at once without modifying any mode logic.
+Ghost Trail adds a temporal echo rendering layer that overlays fading afterimages from previous frames onto any simulation mode. It makes motion visible: particles leave streaks, wavefronts show their propagation paths, cellular automata reveal their recent evolution, and flocking agents draw luminous trails. The feature enhances every mode at once without modifying any mode logic.
 
 ### How it works
 
@@ -605,9 +604,9 @@ Parameter Tuner adds a real-time HUD overlay for interactively adjusting any sim
 
 ### How it works
 
-The system has two layers. First, an explicit parameter registry (`TUNABLE_PARAMS`) defines curated min/max/step/format metadata for 33 modes covering ~100 individual parameters: Boids (7 params for separation/alignment/cohesion radii and weights), Physarum (sensor angle, distance, turn/move speed, deposit, decay), Reaction-Diffusion (feed/kill rates, diffusion coefficients), Ising (temperature, external field), N-Body (gravity, timestep, softening), and many more.
+The system has two layers. First, an explicit parameter registry (`TUNABLE_PARAMS`) defines curated min/max/step/format metadata for 30 modes covering 82 individual parameters: Boids (7 params for separation/alignment/cohesion radii and weights), Physarum (sensor angle, distance, turn/move speed, deposit, decay), Reaction-Diffusion (feed/kill rates, diffusion coefficients), Ising (temperature, external field), N-Body (gravity, timestep, softening), and many more.
 
-Second, an auto-detection fallback scans any mode's `self.{prefix}_*` attributes for numeric values, filters out structural/internal attributes via a suffix blocklist, and generates reasonable ranges and step sizes based on magnitude. This means all 132 modes can benefit from the tuner even without explicit definitions.
+Second, an auto-detection fallback scans any mode's `self.{prefix}_*` attributes for numeric values, filters out structural/internal attributes via a suffix blocklist, and generates reasonable ranges and step sizes based on magnitude. This means modes without explicit definitions can still use the tuner.
 
 The HUD draws on the right side of the screen with:
 - Parameter names with current formatted values
@@ -632,7 +631,7 @@ Key handling intercepts arrow keys and vim-style navigation only when the tuner 
 
 ### Background
 
-Auto-Discovery is an autonomous pattern exploration engine that searches the vast cellular automaton rule space for visually striking emergent behavior without human intervention. Where Evolution Lab requires manual fitness preset selection and Evolutionary Playground relies on human-in-the-loop selection, Auto-Discovery is fully autonomous: it generates, simulates, scores, curates, and breeds candidate configurations in a continuous loop, building a gallery of the most interesting patterns it finds.
+Auto-Discovery is an autonomous pattern exploration engine that searches the vast cellular automaton rule space for visually striking emergent behavior without human intervention. Evolution Lab needs you to pick a fitness preset, and Evolutionary Playground relies on human selection. Auto-Discovery is autonomous: it generates, simulates, scores, curates, and breeds candidate configurations in a loop, building a gallery of the most interesting patterns it finds.
 
 ### How it works
 
@@ -640,26 +639,26 @@ The engine operates in a generate-evaluate-breed cycle:
 
 1. **Generate**: A batch of candidate configurations is created, each with a randomized B/S ruleset, neighborhood type (Moore or von Neumann), and one of six initial condition styles (random, symmetric, clustered, sparse, striped, central). The batch is displayed as a tiled grid of live mini-simulations.
 
-2. **Evaluate**: Each candidate runs for a configurable number of steps (default 150) and is scored on five visual complexity metrics:
-   - **Entropy** — Shannon entropy of the cell density grid, measuring structural complexity
+2. **Evaluate**: Each candidate runs for a configurable number of steps (50--500, default 150) and is scored on five metrics:
+   - **Entropy** — Shannon entropy of the grid, measuring structural complexity
    - **Symmetry** — horizontal, vertical, and rotational symmetry detection, measuring emergent order
    - **Stability** — coefficient of variation of the population time series, rewarding the sweet spot between static and chaotic
    - **Periodicity** — state hash cycle detection, rewarding oscillating patterns
-   - **Longevity** — sustained activity without extinction or grid saturation
+   - **Longevity** — the share of the run with a live population; extinction and grid saturation are penalized
 
-3. **Curate**: Candidates exceeding a configurable score threshold are added to a persistent gallery (with deduplication). The gallery is sorted by composite score and bounded to a maximum size.
+3. **Curate**: The top three candidates of each round join the gallery if they reach the score threshold (starts at 150 and rises as the gallery fills). Entries with the same rule and a similar score are skipped. The gallery is sorted by score and capped at a maximum size (10--100, default 50).
 
-4. **Breed**: The next batch is produced through crossover and mutation from gallery entries and current top performers, continuously exploring the neighborhood of known-good configurations.
+4. **Breed**: The next batch is produced through crossover and mutation from the top six gallery entries and the three best candidates of the round.
 
-The gallery browser provides a sortable list view with preview thumbnails, the ability to adopt any discovered rule into the main simulation grid, and save/load to disk (`~/.life_saves/auto_discovery_gallery.json`).
+The gallery browser lists entries by score. `Enter` adopts the selected rule into the main grid, `x` removes an entry, and `W` saves the gallery to `~/.life_saves/auto_discovery_gallery.json`. The start menu can load the saved gallery to continue from it.
 
 ### What to explore
 
 - Let it run unattended for several rounds — the gallery accumulates increasingly refined patterns as breeding favors high-scoring configurations.
 - Press `g` to browse the gallery, then Enter to adopt a discovered rule into the main Life grid at full resolution.
-- Adjust mutation rate to balance exploration (high mutation, more novelty) vs. exploitation (low mutation, refinement of known good rules).
-- Save the gallery with `W` and reload it later to continue evolving from your best discoveries.
-- Compare with Evolution Lab: Auto-Discovery explores a broader space (varied seed styles, autonomous curation) while Evolution Lab offers more manual control over fitness weights.
+- Set the mutation rate in the start menu: high for novelty, low for refining known good rules.
+- Save the gallery with `W`, then choose "START FROM GALLERY" later to continue from your best discoveries.
+- Compare with Evolution Lab: Auto-Discovery varies seed styles and curates on its own, while Evolution Lab gives you control over fitness weights.
 
 ---
 
@@ -669,7 +668,7 @@ The gallery browser provides a sortable list view with preview thumbnails, the a
 
 ### Background
 
-Mode Morph Transitions replaces the hard cut between simulation modes with a smooth crossfade. When you switch modes (manually or via screensaver auto-cycling), the outgoing mode's final frame is captured and faded out over a configurable number of frames while the new mode fades in underneath. This turns mode-switching into a visually seamless experience, especially effective during demo-reel playback through all 130+ modes.
+Mode Morph Transitions replaces the hard cut between simulation modes with a smooth crossfade. When you switch modes (manually or via screensaver auto-cycling), the outgoing mode's final frame is captured and faded out over a configurable number of frames while the new mode fades in underneath. This turns mode-switching into a visually seamless experience, especially effective during demo-reel playback.
 
 ### How it works
 
@@ -701,28 +700,30 @@ Duration is configurable from 10 to 120 frames (default 45, roughly 1.5 seconds 
 
 ### Background
 
-Rule Mutation Engine turns the simulator from a tool you explore manually into one that explores *itself*. It runs a live genetic algorithm on cellular automaton birth/survival rulesets, continuously mutating rules each generation and keeping mutations that increase Shannon entropy and spatial complexity. The user watches as the simulation autonomously discovers its most visually complex behaviors, with a lineage sidebar showing the ancestry of the current rule.
+Rule Mutation Engine turns the simulator from a tool you explore manually into one that explores *itself*. It runs a live genetic algorithm on cellular automaton birth/survival rulesets, mutating the rule every 80 generations and keeping mutations that raise a fitness score built mainly on Shannon entropy. A lineage sidebar shows the ancestry of the current rule.
 
-Where Auto-Discovery evaluates batches of candidates offline in a tiled grid, Rule Mutation Engine operates on a single live simulation — you see the mutation happen in real time as rules shift, populations fluctuate, and the fitness score climbs. It is a "genetic algorithm for interestingness" running directly on screen.
+Auto-Discovery evaluates batches of candidates in a tiled grid. Rule Mutation Engine works on a single live simulation, so you see the rule shift, the population change, and the fitness score move in real time.
 
 ### How it works
 
 The engine operates in a two-phase cycle:
 
-1. **Stable phase** (40 generations): The current rule runs undisturbed. Shannon entropy, population, periodicity, and symmetry metrics are collected every 2 steps. At the end of the window, a composite fitness score is computed and the full grid state is saved as a revert checkpoint.
+1. **Stable phase** (40 generations): The current rule runs undisturbed. Entropy is sampled every 2 steps, and population and periodicity are tracked. At the end of the window, a composite fitness score is computed and the grid is saved as a revert checkpoint.
 
 2. **Evaluation phase** (40 generations): A candidate rule is produced by randomly flipping digits in the birth/survival sets at the configured mutation rate. The candidate rule is applied to the live grid and evaluated for another 40 steps. At the end:
-   - **Accept** if the candidate's fitness meets or exceeds the current fitness (within a −0.02 margin), plus a 5% random acceptance chance for exploration (simulated annealing).
-   - **Hard reject** if the grid goes extinct (population = 0) or saturates (>85% alive). On extinction, the grid is reverted from the saved checkpoint and re-seeded if needed.
-   - **Soft reject** if fitness dropped and the static periodicity detector shows a frozen or short-cycle pattern.
+   - **Hard reject** if the grid goes extinct (population = 0) or saturates (>85% alive). On extinction, the grid is restored from the checkpoint and re-seeded if it is still empty.
+   - **Reject** if the grid is frozen (period 1) and fitness did not improve.
+   - **Accept** if the candidate's fitness is at least the current fitness minus 0.02.
+   - Otherwise accept with a 5% chance, for exploration.
 
-**Fitness function** — a weighted composite of four signals:
+**Fitness function** — a weighted composite of these signals:
 - **Shannon entropy** (×40): the dominant factor, measuring structural diversity in the density field.
 - **Population dynamics** (up to +35): rewards moderate density (5–60% alive) and population variance (coefficient of variation 0.02–0.5).
 - **Periodicity scoring** (−20 to +10): penalises static grids and short cycles, rewards complex oscillations.
-- **Partial symmetry bonus** (+10): rewards partial (20–80%) horizontal, vertical, and rotational symmetry — more visually interesting than none or full.
+- **Partial symmetry bonus** (+10): rewards average horizontal, vertical, and rotational symmetry of 20--80%, which looks more interesting than none or full symmetry.
+- **Extinction penalty** (−50): applies when the grid is empty.
 
-**Lineage tracking**: Every mutation attempt is recorded as a `LineageNode` with rule string, fitness score, generation, parent rule, and accept/reject status. The sidebar displays the ancestry as a scrolling list with ✓/✗ markers.
+**Lineage tracking**: Every mutation attempt is recorded as a `LineageNode` with rule string, fitness score, generation, parent rule, and accept/reject status. The sidebar shows the ancestry as a scrolling list with ✓/✗ markers.
 
 ### Presets
 
@@ -740,9 +741,9 @@ The engine operates in a two-phase cycle:
 - Run Entropy Climber and watch the rule gradually depart from standard Life, discovering increasingly complex behavior.
 - Try From Nothing to see viable birth/survival rules emerge from a blank ruleset — the lineage sidebar shows the evolutionary path.
 - Use `e` to pause evolution while the simulation keeps running, freezing on a particularly interesting rule to observe its long-term dynamics.
-- Adjust mutation rate with `+`/`-` to balance exploration (high rate, more novelty) vs. refinement (low rate, incremental improvement).
+- Adjust mutation rate with `+`/`-` (0.01--0.50): high for novelty, low for incremental refinement.
 - Press `a` to adopt the currently evolved rule into the main Game of Life grid for full-resolution exploration.
-- Compare with Auto-Discovery: Rule Mutation runs a single live simulation with continuous in-place mutation, while Auto-Discovery evaluates batches in parallel with crossover breeding.
+- Compare with Auto-Discovery: Rule Mutation mutates one live simulation in place, while Auto-Discovery evaluates batches with crossover breeding.
 
 ---
 
@@ -752,11 +753,11 @@ The engine operates in a two-phase cycle:
 
 ### Background
 
-The 2D Spatial Frequency Spectrum overlay performs a Discrete Fourier Transform on any running simulation's grid and displays the frequency-domain magnitude as a colorful panel. It reveals hidden periodic structures — standing waves, lattice patterns, rotational symmetry, oscillation frequencies — that are invisible in the spatial domain. Like ghost trail and long-exposure, it works as a universal overlay on all 130+ modes without modifying any mode logic.
+The 2D Spatial Frequency Spectrum overlay performs a Discrete Fourier Transform on any running simulation's grid and displays the frequency-domain magnitude as a colorful panel. It reveals hidden periodic structures — standing waves, lattice patterns, rotational symmetry, oscillation frequencies — that are invisible in the spatial domain. Like ghost trail and long-exposure, it works as a universal overlay on any mode without modifying any mode logic.
 
 ### How it works
 
-The overlay samples the current simulation state into an N×N grid (default 32×32) via `_get_minimap_data()`, the same universal sampling interface used by the minimap. The 2D DFT is computed using a separable approach:
+Press `y` to toggle the overlay. It samples the current simulation state into an N×N grid (default 32×32) via `_get_minimap_data()`, the same universal sampling interface used by the minimap. The 2D DFT is computed using a separable approach:
 
 ```
 For each row:    X_row[k] = Σ_n x[n] · e^(-j2πkn/N)
@@ -792,7 +793,7 @@ Phase transitions — moments when a system's qualitative behavior shifts abrupt
 
 ### How it works
 
-The detector is a global overlay (not a mode) that works across all 140+ simulation engines with zero per-mode configuration. When enabled via **Ctrl+P**, it watches five analytics channels every generation:
+The detector is a global overlay (not a mode) that works across all simulation modes with no per-mode configuration. When enabled via **Ctrl+P**, it watches five analytics channels every generation:
 
 | Channel | Detection method | Threshold |
 |---------|-----------------|-----------|
@@ -830,7 +831,7 @@ The Rule Mutation Engine has dedicated integration: when the detector is active 
 
 ---
 
-## Sim-in-a-Cell (Recursive Nested Simulation)
+## Sim-in-a-Cell
 
 **Source:** `life/modes/recursive_sim.py`
 
@@ -838,7 +839,7 @@ The Rule Mutation Engine has dedicated integration: when the detector is active 
 
 Sim-in-a-Cell introduces multi-scale emergence: every cell in a macro-level grid contains a complete, independently running micro-simulation. The micro-simulation's aggregate density feeds upward to determine the macro cell's state, while the macro cell's state feeds back down into its micro-simulation as an external coupling signal. The result is two levels of reality influencing each other simultaneously — patterns at the micro scale drive macro-scale dynamics, and macro-scale context reshapes micro-scale behavior.
 
-Any two of the eight mashup engines (Game of Life, Wave, Reaction-Diffusion, Fire, Boids, Ising, Rock-Paper-Scissors, Physarum) can be combined as macro and micro engines, creating 64 cross-scale combinations. Eight curated presets highlight especially interesting pairings.
+Any two of the eight mashup engines (Game of Life, Wave, Reaction-Diffusion, Forest Fire, Boids, Ising, Rock-Paper-Scissors, Physarum) can be combined as macro and micro engines, creating 64 cross-scale combinations. Eight curated presets highlight especially interesting pairings.
 
 ### How it works
 
@@ -893,7 +894,7 @@ In zoom mode, the selected cell's micro-simulation is rendered full-screen with 
 
 ### Background
 
-Symbiosis Multi-Physics is a co-simulation mode where 3–8 distinct simulation engines run simultaneously on overlapping layers of the same grid, interacting through shared environmental fields. Unlike Mashup mode (which blends rules into a single engine) or Split Screen (side-by-side comparison), Symbiosis preserves each engine's independent dynamics while coupling them through four physical fields: temperature, chemical concentration, and flow velocity (u/v components). This creates true cross-domain emergent phenomena — organisms following chemical trails shaped by fluid currents, reactions accelerating in warm zones created by friction, currents deflected by growing biological structures.
+Symbiosis Multi-Physics is a co-simulation mode where 3–8 distinct simulation engines run simultaneously on overlapping layers of the same grid, interacting through shared environmental fields. Unlike Mashup (two engines coupled by density) or Split-Screen (two panes), Symbiosis keeps each engine's own dynamics and couples them through four shared fields: temperature, chemical concentration, and flow velocity (u and v components). Engines can follow chemical trails shaped by currents or react to heat from other engines.
 
 ### How it works
 
@@ -908,7 +909,7 @@ Each engine runs its own simulation step independently, producing a density grid
 - **RPS** → deposits chemical from competition intensity
 - **Game of Life** → raises temperature from population density
 
-The fields then feed back into each engine through coupling densities — each engine type responds to different fields (e.g., fire responds to chemical fuel and wind, boids follow chemical gradients and are carried by flow currents, physarum is attracted to chemicals but avoids heat). Fields decay and diffuse spatially each step for smooth, natural-looking interactions.
+The fields then feed back into each engine through coupling densities — each engine type responds to different fields (e.g., fire responds to chemical fuel and wind, boids follow chemical gradients and are carried by flow currents, physarum is attracted to chemicals but avoids heat). Fields decay and diffuse each step.
 
 Visualization uses RGB-layered color channels: each engine is assigned a color (red, green, cyan, yellow, magenta, or white), with the dominant layer at each cell determining the displayed color. When two layers overlap with similar intensity, magenta is used to indicate mixing. Density is shown using five-level Unicode block characters (░▒▓█).
 
@@ -965,7 +966,7 @@ Terrarium turns the simulator from a tool you run into a world you tend. It adds
 
 State is saved to `~/.life_saves/terrarium/` as two files: `state.json` (grid, viewport, speed, colormap, terrarium metadata) and `chronicle.json` (timestamped event log). Writes are atomic — a temp file is written first, then renamed into place — so a crash mid-save can't corrupt the save file.
 
-On resume, the elapsed real-world time is multiplied by the simulation speed to calculate how many generations to fast-forward (capped at 50,000). During catch-up, the simulation runs at full speed while monitoring for extinctions (auto-reseeds random cells to keep the world alive), population records, and phase transitions. Analytics and the phase transition detector run at sample intervals during catch-up to detect qualitative shifts.
+On resume, the elapsed real-world time is converted to generations at the saved speed setting and fast-forwarded (capped at 50,000). During catch-up, the simulation runs at full speed while monitoring for extinctions (auto-reseeds random cells to keep the world alive), population records, and phase transitions. Analytics and the phase transition detector run at sample intervals during catch-up to detect qualitative shifts.
 
 The chronicle is a bounded log (max 5,000 entries) that records events with both real-world timestamps and simulation generation numbers. Events include: terrarium creation, session starts/ends, population records (>10% increase over previous peak), extinctions, re-seeds, and phase transitions.
 
@@ -976,10 +977,10 @@ Auto-save runs every 60 seconds during simulation, and state is always saved on 
 | Key | Action |
 |-----|--------|
 | `--terrarium` | CLI flag to launch in terrarium mode |
-| **Enter** | Dismiss welcome-back summary, start simulation |
+| **Enter** or **Esc** | Dismiss the welcome-back summary and start the simulation (from the chronicle: back to the summary) |
 | **↑** / **↓** | Scroll summary or chronicle |
 | **c** | Toggle chronicle viewer from summary screen |
-| **Esc** or **q** | Return from chronicle to summary; from summary, exit |
+| **q** | Return from chronicle to summary; while running, save and exit |
 
 ### What to explore
 
@@ -997,9 +998,9 @@ Auto-save runs every 60 seconds during simulation, and state is always saved on 
 
 ### Background
 
-The project has 150+ simulation modes but until now no tool to understand *what they're computing*. Existing analytics measure statistical properties — entropy, periodicity, phase transitions — but don't reveal **causal structure and information flow**. The Emergent Computation Detector fills this gap: it's an information-theoretic overlay that can instrument any running simulation to discover hidden computational primitives — glider guns, logic gates, signal channels, memory cells — using transfer entropy, integrated information, and causal density.
+Existing analytics measure statistical properties (entropy, periodicity, phase transitions) but not **causal structure and information flow**. The Emergent Computation Detector is an information-theoretic overlay that instruments any running simulation to find computational structures — glider guns, logic gates, signal channels, memory cells — using transfer entropy, integrated information, and causal density.
 
-This mode works as a universal overlay, not a standalone simulation. It samples the active simulation via `_get_minimap_data()`, meaning it works across every existing mode without modification. Toggle it on with `I` during any simulation to see what computational structures have emerged from simple rules.
+This mode works as a universal overlay, not a standalone simulation. It samples the active simulation via `_get_minimap_data()`, meaning it works across every existing mode without modification. Toggle it with `I` during any simulation.
 
 ### How it works
 
@@ -1054,8 +1055,6 @@ The detector samples the simulation into a configurable N×N grid (default 24×2
 
 Butterfly Effect mode answers the question "did this cell actually matter?" by forking the simulation at any point, applying a single-cell perturbation, and running both the original and altered timelines in parallel. A real-time divergence heatmap shows exactly how and where the perturbation cascades through the system, turning the simulator into a causal analysis tool.
 
-This ties together the simulator's existing timeline/bookmark infrastructure with a new divergence-tracking engine. The name comes from chaos theory's "butterfly effect" — the idea that a tiny change in initial conditions can lead to vastly different outcomes.
-
 ### How it works
 
 Press **Ctrl+B** to enter Butterfly Effect mode. The current grid state is deep-copied into a second "perturbed" timeline. A crosshair cursor appears for cell selection — navigate with arrow keys or hjkl, then press Enter to flip that cell (alive→dead or dead→alive). Both timelines then evolve independently using identical rules.
@@ -1077,7 +1076,7 @@ The heatmap supports both linear and logarithmic color scaling. Log scale is use
 | Key | Action |
 |-----|--------|
 | **Ctrl+B** | Enter/exit Butterfly Effect mode |
-| **Arrows / hjkl** | Move cursor (picking) or scroll viewport (running) |
+| **Arrows** / **hjkl** | Move cursor while picking (while running, arrows scroll the viewport and `h` toggles the heatmap mode) |
 | **Enter** | Confirm cell perturbation |
 | **Space** | Play/pause both timelines |
 | **n** / **.** | Single-step both timelines |
@@ -1111,7 +1110,7 @@ The mode builds on the project's existing infrastructure — rule mutation from 
 
 ### How it works
 
-Each round, the system generates a batch of 8 candidate universes with random or evolved genomes. A genome encodes: birth set, survival set, neighborhood type (Moore or von Neumann), initial density, and seed style (random, symmetric, clustered, sparse, striped, or central). Candidates are displayed in a 2×4 tiled grid and simulated forward for 120 generations.
+Each round, the system generates a batch of candidate universes (4--20, default 8) with random or evolved genomes. A genome encodes: birth set, survival set, neighborhood type (Moore or von Neumann), initial density, and seed style (random, symmetric, clustered, sparse, striped, or central). Candidates are displayed in a tiled grid and simulated forward for 120 generations (50--500 in the start menu).
 
 During simulation, the system collects per-universe metrics:
 
@@ -1122,7 +1121,7 @@ During simulation, the system collects per-universe metrics:
 - **Population dynamics** — coefficient of variation of the population trajectory
 - **Periodicity** — oscillation detection via autocorrelation of population history
 
-After 120 generations, each universe receives a composite fitness score (0–100). Structural classification identifies gliders, oscillators, replicators, still lifes, chaotic patterns, expanding, and collapsing configurations. Top scorers are promoted to the Hall of Fame (persisted to `~/.life_saves/genesis_hall_of_fame.json`) if they exceed an adaptive quality threshold that rises as better universes are found.
+After the run, each universe receives a composite fitness score (0–100). Structural classification identifies gliders, oscillators, replicators, still lifes, chaotic patterns, expanding, and collapsing configurations. Top scorers are promoted to the Hall of Fame (persisted to `~/.life_saves/genesis_hall_of_fame.json`) if they exceed an adaptive quality threshold (starts at 80, rises as better universes are found).
 
 The next round breeds from the best: crossover between hall-of-fame members and top performers, point mutation on birth/survival sets, and fresh random genomes for diversity injection. The system auto-continues indefinitely, building up an increasingly curated collection of complex emergent universes.
 
@@ -1131,13 +1130,19 @@ The next round breeds from the best: crossover between hall-of-fame members and 
 | Key | Action |
 |-----|--------|
 | **Space** | Pause/resume simulation |
-| **s** | Skip to scoring (end current eval early) |
-| **b** | Force breed next generation |
-| **Arrows / hjkl** | Navigate cursor between tiles |
-| **Enter** | Adopt selected universe's rules for main simulation |
-| **f** | Toggle Hall of Fame browser |
-| **↑ / ↓** (in HoF view) | Scroll through Hall of Fame entries |
-| **a** | Toggle auto-continue between rounds |
+| **S** | Skip to scoring (finish the current evaluation at once) |
+| **b** | Score the round, or breed the next one once scored |
+| **Arrows** / **wasd** | Move the cursor between tiles |
+| **a** | Adopt the selected universe's rules into the main grid |
+| **h** | Toggle Hall of Fame browser |
+| **↑ / ↓** or **k / j** (in HoF view) | Scroll through Hall of Fame entries |
+| **Enter** (in HoF view) | Adopt the selected entry's rules |
+| **x** (in HoF view) | Remove the selected entry |
+| **A** | Toggle auto-continue between rounds |
+| **W** | Save the Hall of Fame |
+| **r** | Start over with a new random batch |
+| **R** | Return to the settings menu |
+| **> / <** | Change speed |
 | **Esc** / **q** | Exit Genesis Protocol |
 
 ### What to explore
@@ -1199,6 +1204,7 @@ A BFS solvability check runs after each level generation; if no path exists from
 | **+/-** | Adjust CA ticks per player move |
 | **TAB** | Toggle Adversary Report overlay |
 | **?** | Toggle help overlay |
+| **n** | Restart from level 1 (after game over: next level) |
 | **Esc / q** | Exit Adaptive Adversary |
 
 ### What to explore
@@ -1331,15 +1337,15 @@ The mode leverages the analytical infrastructure built by Genesis Protocol, Phas
 
 ### Background
 
-Rule Phylogenetics applies comparative genomics to cellular automaton rules. It treats B/S rulesets as 18-bit genetic sequences, computes evolutionary distances between them, builds phylogenetic family trees, and identifies conserved behavioral motifs — minimal rule fragments that reliably produce specific behaviors across many rule variants. It integrates directly with the Genesis Protocol's Hall of Fame, turning a curated collection of interesting rules into a dataset for systematic analysis.
+Rule Phylogenetics applies comparative genomics to cellular automaton rules. It treats B/S rulesets as 18-bit genetic sequences, computes distances between them, builds family trees, and identifies conserved behavioral motifs, which are minimal rule fragments that produce specific behaviors across many rule variants. It reads the Genesis Protocol Hall of Fame (`~/.life_saves/genesis_hall_of_fame.json`) as its dataset.
 
-This mode completes the project's analytical arc: Genesis Protocol *breeds* rules, Phase Space Navigator *maps* rule-space landscapes, and Rule Phylogenetics *classifies* the relationships between rules and explains why families of rules share behavioral traits.
+Genesis Protocol *breeds* rules, Phase Space Navigator *maps* rule space, and Rule Phylogenetics *classifies* the relationships between rules.
 
 ### How it works
 
 **Genome encoding:** Each B/S rule is encoded as an 18-bit binary vector — 9 bits for birth conditions (B0–B8) and 9 bits for survival conditions (S0–S8). This uniform representation enables direct bitwise comparison, distance computation, and motif detection across any pair of rules.
 
-**Distance metrics:** Three complementary distance measures are combined with configurable weights:
+**Distance metrics:** Three complementary distance measures are combined with weights (default 0.4 Hamming, 0.3 Jaccard, 0.3 behavioral; the start menu cycles four weight presets):
 
 - **Hamming distance** — raw bit-level difference between two rule genomes, normalized to [0, 1]. Measures syntactic distance.
 - **Jaccard distance** — set-theoretic (1 − intersection/union) computed separately for birth and survival sets, then averaged. Measures structural similarity of the rule logic.
@@ -1355,11 +1361,11 @@ This mode completes the project's analytical arc: Genesis Protocol *breeds* rule
 
 ### Five interactive views
 
-1. **Tree (key: 1)** — Full phylogenetic tree with scroll navigation. Color-coded by behavioral classification. Arrow keys to scroll, Enter to preview a selected rule live.
+1. **Tree (key: 1)** — Full phylogenetic tree, color-coded by behavioral classification. Arrow keys move the cursor, Enter previews the selected rule live.
 
 2. **Motifs (key: 2)** — Conserved motif catalog showing each motif's name, birth/survival fragment, associated behavior, frequency across the dataset, and example rules. Scroll through with arrow keys.
 
-3. **Diff (key: 3)** — Select two rules and see a detailed genome comparison: full 18-bit vectors, birth/survival set differences, Hamming/Jaccard/behavioral distances, and behavioral shift analysis.
+3. **Diff (key: 3)** — Mark two rules with `a` and `b`, press `d`, and see a genome comparison: full 18-bit vectors, birth/survival set differences, Hamming/Jaccard/behavioral distances, and behavioral shift analysis.
 
 4. **Lineage (key: 4)** — Breeding history from Genesis Protocol. Shows generation chains with parent→child arrows, mutation annotations, and behavioral classification at each node. Traces how rule families evolved through the breeding process.
 
@@ -1370,12 +1376,14 @@ This mode completes the project's analytical arc: Genesis Protocol *breeds* rule
 | Key | Action |
 |-----|--------|
 | **1–5** | Switch between Tree / Motifs / Diff / Lineage / Families views |
-| **↑/↓** | Scroll within the current view |
+| **↑/↓** | Move the cursor within the current view |
+| **PgUp/PgDn** | Scroll the view |
 | **Enter** | Preview selected rule as a live mini-simulation |
-| **d** | Enter diff mode — select two rules to compare |
-| **r** | Refresh data from Hall of Fame file |
-| **w** | Adjust distance metric weights |
-| **q / Esc** | Exit mode |
+| **Space** | Pause/resume the preview |
+| **a** / **b** / **d** | In the Diff view: mark rule A, mark rule B, compute the diff |
+| **s** | Cycle sort order (score, classification, Hamming distance from Life) |
+| **r** | Re-run the analysis from the Hall of Fame file |
+| **q / Esc** | Close the preview or diff; otherwise exit the mode |
 
 ### What to explore
 
@@ -1383,3 +1391,42 @@ This mode completes the project's analytical arc: Genesis Protocol *breeds* rule
 - Compare the phylogenetic tree against your intuitions from Phase Space Navigator. Rules that are close in the tree should also be close in phase space, but behavioral distance can sometimes group syntactically distant rules together.
 - Use the Lineage view after a long Genesis Protocol session to see which breeding mutations were productive vs neutral. Most single-bit mutations are behavioral no-ops, but flipping certain positions (especially B3, S2, S3) can cause dramatic phase transitions.
 - The Diff view is particularly revealing for "near-miss" rule pairs — rules that differ by a single bit but behave completely differently. These are the phase boundaries of rule-space.
+
+---
+
+## Reverse Life
+
+**Source:** `life/modes/reverse_life.py`
+
+### Background
+
+Reverse Life runs the Game of Life backwards. Given the pattern on the main grid, it searches for a predecessor: a configuration that produces the pattern after one step. It also detects Garden of Eden patterns, which have no predecessor.
+
+### How it works
+
+A constraint solver assigns each predecessor cell to alive or dead. Constraint propagation prunes impossible values, and backtracking resolves the rest. The solver uses the main grid's current birth/survival rule. The search covers the whole grid, so a pattern with no predecessor on that grid is reported as a Garden of Eden.
+
+The solver runs as a generator, so the search is visible: candidate cells flicker, dead ends flash red, and a solution shows in green. `Space` starts and pauses the search; `s` cycles its speed (slow, medium, fast, instant). `Enter` accepts the solution as the new target, so you can step further back in time. `n` restarts the search for another predecessor.
+
+### Controls
+
+| Key | Action |
+|-----|--------|
+| **Space** | Start/pause the solver |
+| **Enter** | Accept the solution as the new target and reverse again |
+| **n** | Restart the search for another predecessor |
+| **r** | Reset the solver, keeping the pattern |
+| **g** | Run the solver to completion (Garden of Eden check) |
+| **s** | Cycle solver speed |
+| **v** | Cycle view: solver, solution, overlay, diff |
+| **c** | Toggle constraint-propagation display |
+| **d** | Cycle display: cells, search tree, stats |
+| **p** | Load the next preset pattern |
+| **h** | Toggle help |
+| **q** | Exit mode |
+
+### What to explore
+
+- Press `p` to cycle the presets (Block, two Blinker phases, Glider, Beehive, Loaf, Toad, Beacon, R-pentomino result) and solve each one.
+- Accept a solution with `Enter` several times to walk a pattern back through time.
+- Press `g` on a random pattern to check whether it is a Garden of Eden.
