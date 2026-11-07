@@ -1,9 +1,6 @@
-"""Mode: compare — simulation mode for the life package."""
+"""Compare Rules — two Life-like rules run side by side from the same starting grid."""
 import curses
-import math
-import random
 import time
-
 
 from life.colors import color_for_age
 from life.constants import CELL_CHAR, SPEED_LABELS
@@ -12,10 +9,9 @@ from life.rules import RULE_PRESETS, parse_rule_string, rule_string
 from life.utils import sparkline
 
 def _enter_compare_mode(self):
-    """Open the rule picker for the second grid to start comparison mode."""
+    """Open the rule picker for the second grid."""
     self.compare_rule_menu = True
     self.compare_rule_sel = 0
-
 
 
 def _exit_compare_mode(self):
@@ -27,8 +23,8 @@ def _exit_compare_mode(self):
     self._flash("Comparison mode OFF")
 
 
-
 def _handle_compare_rule_menu_key(self, key: int) -> bool:
+    """Handle keys in the second-rule picker."""
     if key == -1:
         return True
     if key == 27 or key == ord("q"):  # ESC or q
@@ -58,8 +54,8 @@ def _handle_compare_rule_menu_key(self, key: int) -> bool:
     return True
 
 
-
 def _draw_compare_rule_menu(self, max_y: int, max_x: int):
+    """Draw the second-rule picker."""
     title = "── Pick Second Rule for Comparison (Enter=select, /=custom, q/Esc=cancel) ──"
     try:
         self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
@@ -98,15 +94,13 @@ def _draw_compare_rule_menu(self, max_y: int, max_x: int):
             pass
 
 def _start_compare(self, birth2: set, survival2: set):
-    """Clone the current grid into a second grid with different rules and start comparison."""
+    """Copy the current grid into a second grid with the given rule and start comparing."""
     self.grid2 = Grid(self.grid.rows, self.grid.cols)
-    # Copy cell state from the primary grid
     for r in range(self.grid.rows):
         for c in range(self.grid.cols):
             self.grid2.cells[r][c] = self.grid.cells[r][c]
     self.grid2.generation = self.grid.generation
     self.grid2.population = self.grid.population
-    # Apply the chosen rule to the second grid
     self.grid2.birth = birth2
     self.grid2.survival = survival2
     self.pop_history2 = list(self.pop_history)
@@ -117,23 +111,17 @@ def _start_compare(self, birth2: set, survival2: set):
     self._flash(f"Comparing: {r1} vs {r2}  (V to exit)")
 
 
-# ── Race mode ──
-
-
-
 def _draw_compare(self, max_y: int, max_x: int):
     """Draw split-screen comparison of two grids side by side."""
-    # Layout: [left grid] [divider col] [right grid]
-    # Each cell = 2 screen columns, divider = 1 column
+    # Layout: [left grid] [divider column] [right grid]; a cell is 2 screen columns wide.
     half_x = max_x // 2
     divider_x = half_x  # column for the vertical divider
     vis_rows = max_y - 4  # leave room for status + sparkline
 
-    # Each panel's cell columns
     left_cell_cols = (divider_x) // 2
     right_cell_cols = (max_x - divider_x - 1) // 2
 
-    # Centre viewport on cursor for both panels
+    # Both panels share one viewport centred on the cursor.
     self.view_r = self.cursor_r - vis_rows // 2
     self.view_c = self.cursor_c - left_cell_cols // 2
 
@@ -232,14 +220,12 @@ def _draw_compare(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play/pause [n]=step [+/-]=speed [V]=exit compare [Arrows]=scroll [q]=quit"
+            hint = " Space=play/pause  n=step  +/-=speed  Arrows=scroll  V=exit compare  q=quit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
         except curses.error:
             pass
-
-
 
 
 def register(App):
