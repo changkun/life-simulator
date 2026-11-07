@@ -269,9 +269,10 @@ def _wfire_ignite(self):
             if fuel[r][c] not in (FUEL_WATER, FUEL_ROCK):
                 intensity[r][c] = 1.0
     elif preset_id == "canyon":
-        # Ignite at bottom of canyon
+        # Ignite at the head of the canyon so the southward wind drives
+        # the fire down its length.
         mid_c = cols // 2
-        r = rows - 3
+        r = 2
         for dc in range(-2, 3):
             c = mid_c + dc
             if 0 <= c < cols and fuel[r][c] not in (FUEL_WATER, FUEL_ROCK):
@@ -284,20 +285,20 @@ def _wfire_ignite(self):
             if fuel[r][c] not in (FUEL_WATER, FUEL_ROCK):
                 intensity[r][c] = 3.0
     else:
-        # Single point ignition near center-left
+        # Single point ignition near center-left, on the nearest burnable
+        # cell (mountain terrain can put rock or water right there).
         r = rows // 2
         c = cols // 4
-        # Find a burnable cell near this point
-        for dr in range(-3, 4):
-            for dc in range(-3, 4):
-                nr, nc = r + dr, c + dc
-                if 0 <= nr < rows and 0 <= nc < cols:
-                    if fuel[nr][nc] not in (FUEL_WATER, FUEL_ROCK):
-                        intensity[nr][nc] = 2.0
-                        break
-            else:
-                continue
-            break
+        best = None
+        for nr in range(rows):
+            for nc in range(cols):
+                if fuel[nr][nc] in (FUEL_WATER, FUEL_ROCK):
+                    continue
+                d = (nr - r) ** 2 + (nc - c) ** 2
+                if best is None or d < best[0]:
+                    best = (d, nr, nc)
+        if best is not None:
+            intensity[best[1]][best[2]] = 2.0
 
 
 def _wfire_make_wind(self):

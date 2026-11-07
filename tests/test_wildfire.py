@@ -31,6 +31,12 @@ class TestWildfire:
         assert app.wfire_running is False
 
     @pytest.mark.parametrize("idx", range(len(WFIRE_PRESETS)))
+    def test_every_preset_starts_burning(self, idx):
+        app = _app(idx)
+        app._wfire_init(idx)
+        assert _burning(app) > 0
+
+    @pytest.mark.parametrize("idx", range(len(WFIRE_PRESETS)))
     def test_intensity_stays_finite_and_fire_burns_out(self, idx):
         app = _app(idx)
         app._wfire_init(idx)
@@ -39,6 +45,7 @@ class TestWildfire:
             assert math.isfinite(app.wfire_max_intensity)
             assert app.wfire_max_intensity <= 5.0
         assert app.wfire_active_cells == 0
+        assert app.wfire_area_fraction > 0.0
 
 
 def test_fire_spreads_downwind():
@@ -62,3 +69,14 @@ def test_fire_spreads_downwind():
     cols = [c for row in app.wfire_burned
             for c, b in enumerate(row) if b]
     assert max(cols) - c0 > c0 - min(cols)
+
+
+def test_canyon_fire_runs_down_the_canyon():
+    """The southward wind must carry the fire over most of the canyon length."""
+    app = _app(5)
+    app._wfire_init(5)
+    for _ in range(300):
+        app._wfire_step()
+    rows = [r for r in range(app.wfire_rows)
+            for c in range(app.wfire_cols) if app.wfire_burned[r][c]]
+    assert max(rows) - min(rows) > app.wfire_rows // 2
