@@ -1,17 +1,4 @@
-"""Mode: city — City Growth & Urban Simulation.
-
-Emergent urban development where residential, commercial, and industrial zones
-self-organize around road networks via land-value gradients, population pressure,
-and zoning attraction/repulsion rules.
-
-Emergent phenomena:
-  - Organic road network growth following population demand
-  - Traffic-driven congestion feedback loops
-  - NIMBYism and gentrification waves
-  - Infrastructure decay and renewal cycles
-  - Population migration between neighborhoods
-  - Land value gradients shaping urban morphology
-"""
+"""City Growth & Urban Simulation — zones self-organize around roads via land value, traffic and population pressure."""
 import curses
 import math
 import random
@@ -365,13 +352,11 @@ def _city_step(self):
     decay_grid = self.city_decay
     rows = self.city_rows
     cols = self.city_cols
-    gen = self.city_generation
     preset_id = self.city_preset_id
 
     growth_rate = self.city_growth_rate
     rng = random.random
 
-    total_pop = 0
     total_zones = {Z_RESIDENTIAL: 0, Z_COMMERCIAL: 0, Z_INDUSTRIAL: 0}
 
     # ── Phase 1: Update land values ──
@@ -541,7 +526,6 @@ def _city_step(self):
 
                 if z in total_zones:
                     total_zones[z] += 1
-                total_pop += pop
 
                 # Population growth in occupied zones
                 if pop > 0:
@@ -687,14 +671,14 @@ def _city_step(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _enter_city_mode(self):
-    """Enter City Growth mode — show preset menu."""
+    """Show the scenario menu."""
     self.city_menu = True
     self.city_menu_sel = 0
     self._flash("City Growth & Urban Simulation — select a scenario")
 
 
 def _exit_city_mode(self):
-    """Exit City Growth mode."""
+    """Leave the mode."""
     self.city_mode = False
     self.city_menu = False
     self.city_running = False
@@ -702,7 +686,7 @@ def _exit_city_mode(self):
 
 
 def _city_init(self, preset_idx: int):
-    """Initialize city simulation with the given preset."""
+    """Start the preset at the given index, paused."""
     name, _desc, preset_id = self.CITY_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
 
@@ -856,7 +840,7 @@ def _draw_city_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+        hint = " j/k=navigate  Enter=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -910,7 +894,7 @@ def _draw_city(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [v]=view [+/-]=growth [p]=park [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  v=view  +/-=growth  p=park  r=reset  R=menu  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -1034,13 +1018,13 @@ def _draw_city_value_view(self, max_y, max_x):
                 continue
 
             if lv > 75:
-                attr = curses.color_pair(1) | curses.A_BOLD  # red = expensive
+                attr = curses.color_pair(1) | curses.A_BOLD
             elif lv > 50:
-                attr = curses.color_pair(5)  # magenta
+                attr = curses.color_pair(5)
             elif lv > 25:
-                attr = curses.color_pair(3)  # green
+                attr = curses.color_pair(3)
             else:
-                attr = curses.color_pair(4) | curses.A_DIM  # blue = cheap
+                attr = curses.color_pair(4) | curses.A_DIM
 
             try:
                 self.stdscr.addstr(screen_y, sx, ch, attr)
@@ -1096,11 +1080,11 @@ def _draw_city_traffic_view(self, max_y, max_x):
                 continue
 
             if t > 8:
-                attr = curses.color_pair(1) | curses.A_BOLD  # red = jammed
+                attr = curses.color_pair(1) | curses.A_BOLD
             elif t > 4:
-                attr = curses.color_pair(5)  # yellow
+                attr = curses.color_pair(5)
             elif t > 1:
-                attr = curses.color_pair(3)  # green = flowing
+                attr = curses.color_pair(3)
             else:
                 attr = curses.color_pair(2) | curses.A_DIM
 
