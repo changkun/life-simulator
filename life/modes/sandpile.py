@@ -1,15 +1,9 @@
-"""Mode: sandpile — simulation mode for the life package."""
+"""Abelian Sandpile — grains topple onto their neighbors and build fractal avalanches."""
 import curses
-import math
 import random
 import time
 
-
 from life.constants import SPEEDS
-
-# ══════════════════════════════════════════════════════════════════════
-#  Abelian Sandpile — Mode P
-# ══════════════════════════════════════════════════════════════════════
 
 SANDPILE_PRESETS = [
     # (name, description, drop_mode, drop_amount, initial_pile, steps_per_frame)
@@ -36,7 +30,7 @@ SANDPILE_OVERFLOW_CHAR = ("██", 1)
 
 
 def _enter_sandpile_mode(self):
-    """Enter Abelian Sandpile mode — show preset menu."""
+    """Enter Abelian Sandpile mode and show the preset menu."""
     self.sandpile_menu = True
     self.sandpile_menu_sel = 0
     self._flash("Abelian Sandpile — select a scenario")
@@ -54,7 +48,7 @@ def _exit_sandpile_mode(self):
 
 
 def _sandpile_init(self, preset_idx: int):
-    """Initialize sandpile simulation with the given preset."""
+    """Start the preset at the given index."""
     (name, _desc, drop_mode, drop_amount,
      initial_pile, spf) = self.SANDPILE_PRESETS[preset_idx]
     self.sandpile_preset_name = name
@@ -143,10 +137,9 @@ def _sandpile_init(self, preset_idx: int):
         )
         self.sandpile_auto_drop = False
     elif drop_mode == "random_fill":
-        import random as _rng
         for r in range(rows):
             for c in range(cols):
-                v = _rng.randint(0, 3)
+                v = random.randint(0, 3)
                 self.sandpile_grid[r][c] = v
                 self.sandpile_total_grains += v
         # Perturb center to trigger avalanches
@@ -161,7 +154,7 @@ def _sandpile_init(self, preset_idx: int):
 
 
 def _sandpile_drop(self):
-    """Drop grains according to drop mode."""
+    """Drop grains according to the drop mode."""
     rows, cols = self.sandpile_rows, self.sandpile_cols
     grid = self.sandpile_grid
     cr, cc = rows // 2, cols // 2
@@ -193,7 +186,7 @@ def _sandpile_drop(self):
 
 
 def _sandpile_step(self):
-    """Advance one step: optionally drop, then topple until stable."""
+    """Advance one step: optionally drop grains, then topple until stable."""
     if self.sandpile_auto_drop:
         self._sandpile_drop()
 
@@ -202,10 +195,9 @@ def _sandpile_step(self):
     grid = self.sandpile_grid
     topples = 0
 
-    # Keep toppling until stable
     changed = True
     iterations = 0
-    max_iterations = 1000  # prevent infinite loop in huge avalanches
+    max_iterations = 1000  # bound the work per step; a huge avalanche resumes next step
     while changed and iterations < max_iterations:
         changed = False
         iterations += 1
@@ -221,7 +213,6 @@ def _sandpile_step(self):
         changed = True
         topples += len(topple_list)
 
-        # Apply all topples simultaneously
         for r, c in topple_list:
             grid[r][c] -= 4
             # Distribute to 4 neighbors (grains fall off edges)
@@ -251,13 +242,13 @@ def _sandpile_step(self):
 
 
 def _handle_sandpile_menu_key(self, key: int) -> bool:
-    """Handle input in sandpile preset menu."""
+    """Handle input in the preset menu."""
     n = len(self.SANDPILE_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.sandpile_menu_sel = (self.sandpile_menu_sel + 1) % n
     elif key in (ord("k"), curses.KEY_UP):
         self.sandpile_menu_sel = (self.sandpile_menu_sel - 1) % n
-    elif key in (ord("\n"), ord("\r")):
+    elif key in (ord("\n"), ord("\r"), curses.KEY_ENTER):
         self._sandpile_init(self.sandpile_menu_sel)
     elif key in (ord("q"), 27):
         self.sandpile_menu = False
@@ -267,7 +258,7 @@ def _handle_sandpile_menu_key(self, key: int) -> bool:
 
 
 def _handle_sandpile_key(self, key: int) -> bool:
-    """Handle input in active sandpile simulation."""
+    """Handle input while the simulation is active."""
     if key == ord(" "):
         self.sandpile_running = not self.sandpile_running
     elif key in (ord("n"), ord(".")):
@@ -284,7 +275,6 @@ def _handle_sandpile_key(self, key: int) -> bool:
         self.sandpile_menu = True
         self.sandpile_menu_sel = 0
     elif key == ord("a"):
-        # Add a big pile at center
         cr, cc = self.sandpile_rows // 2, self.sandpile_cols // 2
         self.sandpile_grid[cr][cc] += 100
         self.sandpile_total_grains += 100
@@ -295,7 +285,6 @@ def _handle_sandpile_key(self, key: int) -> bool:
         self.sandpile_total_grains += 1000
         self._flash("Added 1000 grains at center")
     elif key == ord("d"):
-        # Toggle drop mode
         modes = ["center", "random", "cursor"]
         try:
             idx = modes.index(self.sandpile_drop_mode)
@@ -325,20 +314,17 @@ def _handle_sandpile_key(self, key: int) -> bool:
     elif key in (ord("j"), curses.KEY_DOWN):
         self.sandpile_cursor_r = min(self.sandpile_rows - 1, self.sandpile_cursor_r + 1)
     elif key == ord("e"):
-        # Drop grain at cursor
         r, c = self.sandpile_cursor_r, self.sandpile_cursor_c
         self.sandpile_grid[r][c] += 1
         self.sandpile_total_grains += 1
     elif key in (ord("q"), 27):
         self._exit_sandpile_mode()
-    else:
-        return True
     return True
 
 
 
 def _draw_sandpile_menu(self, max_y: int, max_x: int):
-    """Draw the sandpile preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Abelian Sandpile ── Select Scenario ──"
     try:
@@ -360,7 +346,7 @@ def _draw_sandpile_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hint = " [j/k]=navigate  [Enter]=select  [q]=cancel"
+    hint = " j/k=select  Enter=start  q/Esc=cancel"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:
@@ -369,21 +355,19 @@ def _draw_sandpile_menu(self, max_y: int, max_x: int):
 
 
 def _draw_sandpile(self, max_y: int, max_x: int):
-    """Draw the active sandpile simulation."""
+    """Draw the grid, cursor and status lines."""
     self.stdscr.erase()
     grid = self.sandpile_grid
     rows, cols = self.sandpile_rows, self.sandpile_cols
     state = "▶ RUNNING" if self.sandpile_running else "⏸ PAUSED"
     gen = self.sandpile_generation
 
-    # Find max grain count for stats
     max_grains = 0
     for row in grid:
         for v in row:
             if v > max_grains:
                 max_grains = v
 
-    # Title bar
     title = (f" Sandpile: {self.sandpile_preset_name}  |  step {gen}"
              f"  |  grains={self.sandpile_total_grains}"
              f"  |  topples={self.sandpile_topples}"
@@ -397,7 +381,6 @@ def _draw_sandpile(self, max_y: int, max_x: int):
     view_rows = max_y - 3
     view_cols = (max_x - 1) // 2
 
-    # Draw grid
     for r in range(min(rows, view_rows)):
         for c in range(min(cols, view_cols)):
             val = grid[r][c]
@@ -405,7 +388,7 @@ def _draw_sandpile(self, max_y: int, max_x: int):
             sy = 1 + r
 
             if val == 0:
-                continue  # empty
+                continue
             elif val >= 4:
                 ch, cp = self.SANDPILE_OVERFLOW_CHAR
                 attr = curses.color_pair(cp) | curses.A_BOLD
@@ -433,7 +416,6 @@ def _draw_sandpile(self, max_y: int, max_x: int):
             except curses.error:
                 pass
 
-    # Info bar
     info_y = max_y - 2
     if info_y > 1:
         info = (f" Step {gen}  |  drop={self.sandpile_drop_mode}"
@@ -444,14 +426,13 @@ def _draw_sandpile(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    # Hint bar
     hint_y = max_y - 1
     if hint_y > 0:
         now = time.monotonic()
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [d]=drop-mode [a/A]=+100/+1000 [e]=drop@cursor [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  d=drop-mode  a/A=+100/+1000  hjkl=cursor  e=drop@cursor  +/-=steps/frame  r=reset  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -460,7 +441,7 @@ def _draw_sandpile(self, max_y: int, max_x: int):
 
 
 def register(App):
-    """Register sandpile mode methods on the App class."""
+    """Register Abelian Sandpile methods on the App class."""
     App.SANDPILE_CHARS = SANDPILE_CHARS
     App.SANDPILE_OVERFLOW_CHAR = SANDPILE_OVERFLOW_CHAR
     App.SANDPILE_PRESETS = SANDPILE_PRESETS
