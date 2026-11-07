@@ -1,16 +1,14 @@
-"""Mode: snn — simulation mode for the life package."""
+"""Spiking Neural Network — Izhikevich neurons on a grid that excite and inhibit their neighbours."""
 import curses
-import math
 import random
 import time
 
 
 def _enter_snn_mode(self):
-    """Enter Spiking Neural Network mode — show preset menu."""
+    """Enter Spiking Neural Network mode and show the preset menu."""
     self.snn_menu = True
     self.snn_menu_sel = 0
     self._flash("Spiking Neural Network — select a scenario")
-
 
 
 def _exit_snn_mode(self):
@@ -25,9 +23,8 @@ def _exit_snn_mode(self):
     self._flash("Spiking Neural Network OFF")
 
 
-
 def _snn_init(self, preset_idx: int):
-    """Initialize the Spiking Neural Network with the given preset."""
+    """Start the network from the given preset."""
     name, _desc, excit_ratio, weight, noise, dt, init_type = self.SNN_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(20, max_y - 4)
@@ -146,7 +143,6 @@ def _snn_init(self, preset_idx: int):
     self._flash(f"SNN: {name} — Space to start, w/W=weight")
 
 
-
 def _snn_step(self):
     """Advance the Izhikevich spiking neural network by one time step.
 
@@ -209,7 +205,7 @@ def _snn_step(self):
             vv = v_r[c]
             uu = u_r[c]
 
-            # Izhikevich step (Euler, possibly with smaller sub-steps for stability)
+            # Euler sub-steps of size dt keep the quadratic v term stable.
             for _ in range(int(1.0 / dt)):
                 if vv >= 30.0:
                     break
@@ -243,9 +239,8 @@ def _snn_step(self):
     self.snn_generation += 1
 
 
-
 def _handle_snn_menu_key(self, key: int) -> bool:
-    """Handle input in SNN preset menu."""
+    """Handle a key press in the preset menu."""
     presets = self.SNN_PRESETS
     if key == curses.KEY_DOWN or key == ord("j"):
         self.snn_menu_sel = (self.snn_menu_sel + 1) % len(presets)
@@ -259,9 +254,8 @@ def _handle_snn_menu_key(self, key: int) -> bool:
     return True
 
 
-
 def _handle_snn_key(self, key: int) -> bool:
-    """Handle input in active SNN simulation."""
+    """Handle a key press while the simulation is active."""
     if key == ord("q") or key == 27:
         self._exit_snn_mode()
         return True
@@ -329,9 +323,8 @@ def _handle_snn_key(self, key: int) -> bool:
     return True
 
 
-
 def _draw_snn_menu(self, max_y: int, max_x: int):
-    """Draw the SNN preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Spiking Neural Network (Izhikevich) ── Select Scenario ──"
     try:
@@ -354,12 +347,11 @@ def _draw_snn_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+        hint = " j/k=navigate  Enter=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
             pass
-
 
 
 def _draw_snn(self, max_y: int, max_x: int):
@@ -458,7 +450,7 @@ def _draw_snn(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [w/W]=weight [v/V]=noise [p]=stimulate [+/-]=steps/f [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  w/W=weight  v/V=noise  p=stimulate  +/-=steps/frame  r=reset  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -466,13 +458,8 @@ def _draw_snn(self, max_y: int, max_x: int):
             pass
 
 
-# ══════════════════════════════════════════════════════════════════════
-
-
-
-
 def _snn_fire_rate(self) -> float:
-    """Compute the fraction of neurons that fired this step."""
+    """Return the fraction of neurons that fired this step."""
     total = self.snn_rows * self.snn_cols
     if total == 0:
         return 0.0
@@ -481,7 +468,7 @@ def _snn_fire_rate(self) -> float:
 
 
 def register(App):
-    """Register snn mode methods on the App class."""
+    """Register Spiking Neural Network methods on the App class."""
     from life.modes.kuramoto import SNN_PRESETS
     App.SNN_PRESETS = SNN_PRESETS
     App._enter_snn_mode = _enter_snn_mode
