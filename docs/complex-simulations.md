@@ -71,22 +71,23 @@ Diagnostics:
 
 ## Galaxy Formation
 
-**Background.** This N-body simulation models the gravitational dynamics of spiral galaxies. Particles representing stars and gas orbit within an analytic dark matter halo whose gravitational potential follows an NFW (Navarro-Frenk-White) profile. The simulation demonstrates how logarithmic spiral arms, velocity dispersion, tidal interactions, and gas pressure give rise to the rich morphological diversity observed in galaxies -- from grand-design spirals to ellipticals and mergers.
+**Background.** This N-body simulation models the gravitational dynamics of spiral galaxies. Particles representing stars and gas orbit within an analytic dark matter halo whose gravitational potential follows an NFW (Navarro-Frenk-White) profile. The presets show how spiral arms, velocity dispersion, tidal interactions, and gas pressure produce different galaxy shapes, from grand-design spirals to ellipticals and mergers.
 
-**Formulation.** Each particle i carries state [x, y, vx, vy, mass, type] and evolves via leapfrog integration:
+**Formulation.** Each particle carries the state [x, y, vx, vy, mass, type]. Each step applies these forces:
 
 ```
 Halo force (NFW-like profile):
   r     = sqrt((x - cx)^2 + (y - cy)^2)
   F_halo = -G * M_halo * r / (r + r_s)^2
 
-Grid-based particle-particle gravity (binned to 4-cell resolution):
+Grid-based particle-particle gravity (binned to 4-cell resolution,
+summed over the 5x5 bins around each particle):
   F_pp  = G * m_bin / (d^2 + epsilon^2)
   where d = distance to bin center-of-mass, epsilon = softening
 
 Gas pressure (for gas particles, type > 0.5):
-  If local_density > 3.0:
-    F_pressure = 0.5 * (density - 3.0) * (outward direction)
+  If the particle's bin mass > 3.0:
+    F_pressure = 0.5 * (bin_mass - 3.0) * (away from bin center-of-mass)
   Gas cooling: v *= 0.998 per step
 
 Circular orbital velocity (initialization):
@@ -95,19 +96,23 @@ Circular orbital velocity (initialization):
 Spiral arm placement (logarithmic spiral perturbation):
   angle = base_angle + arm_index * (2*pi / N_arms) + 0.3 * ln(1 + r) * N_arms
 
-Leapfrog integration:
-  v(t + dt/2) = v(t) + a(t) * dt
-  x(t + dt)   = x(t) + v(t + dt/2) * dt
+Integration (kick, then drift; positions wrap at the edges):
+  v(t + dt) = v(t) + a(t) * dt
+  x(t + dt) = x(t) + v(t + dt) * dt
 
 Parameters:
   G           — gravitational constant (default 1.0, range 0.1-5.0)
-  M_halo      — dark matter halo mass (300-1000)
-  r_s         — halo scale radius (15-30)
-  dt          — timestep (default 0.03)
+  M_halo      — dark matter halo mass (1000; 300 in Dwarf Irregular)
+  r_s         — halo scale radius (30; 15 in Dwarf Irregular; scaled down on small grids)
+  dt          — timestep (default 0.03, range 0.005-0.2)
   epsilon     — softening length (1.0)
 ```
 
-**What to look for.** In the Milky Way and Grand Design presets, watch spiral arms wind up over time. The Whirlpool preset features a companion galaxy on an infall trajectory producing tidal tails. The Merger preset shows two disk galaxies colliding, producing a burst of tidal debris. Elliptical galaxies maintain a pressure-supported spheroid with no net rotation. Toggling the dark matter halo overlay (h key) reveals the NFW density profile underlying all dynamics. Gas particles experience drag and pressure, collecting in spiral arm density peaks.
+**Presets (8):** Milky Way, Grand Design, Whirlpool, Elliptical, Dwarf Irregular, Galaxy Merger, Ring Galaxy, Barred Spiral.
+
+**Controls:** `Space`=play/pause, `n`=step, `v`=view (combined/stars/gas/velocity), `g/G`=raise/lower gravity, `d/D`=raise/lower dt, `w/W`=rotation speed and `f/F`=gas fraction (both change a stored value that the simulation never reads, so they have no effect), `h`=halo overlay, `+/-`=steps per frame (1-10), `r`=reset, `R` or `m`=menu, `q` or `Esc`=exit.
+
+**What to look for.** In the Milky Way and Grand Design presets, watch spiral arms wind up over time. The Whirlpool preset adds a small companion galaxy that starts off to one side and moves toward the main disk. The Galaxy Merger preset starts two disk galaxies on a collision course. Elliptical starts with random velocities and no net rotation. The halo overlay (`h`) shows the NFW density profile behind all the dynamics. Gas particles lose speed slowly and feel pressure in dense bins.
 
 **References.**
 - Navarro, J.F., Frenk, C.S. & White, S.D.M. "The Structure of Cold Dark Matter Halos." *The Astrophysical Journal*, 462, 563, 1996. https://doi.org/10.1086/177173
