@@ -1,4 +1,4 @@
-"""Mode: kuramoto — simulation mode for the life package."""
+"""Kuramoto Oscillators — phase oscillators on a periodic grid, coupled to their four neighbours."""
 import curses
 import math
 import random
@@ -6,7 +6,7 @@ import time
 
 
 def _enter_kuramoto_mode(self):
-    """Enter Kuramoto Coupled Oscillators mode — show preset menu."""
+    """Enter Kuramoto Oscillators mode and show the preset menu."""
     self.kuramoto_menu = True
     self.kuramoto_menu_sel = 0
     self._flash("Kuramoto Coupled Oscillators — select a scenario")
@@ -25,7 +25,7 @@ def _exit_kuramoto_mode(self):
 
 
 def _kuramoto_init(self, preset_idx: int):
-    """Initialize the Kuramoto simulation with the given preset."""
+    """Start the Kuramoto simulation with the given preset."""
     name, _desc, coupling, freq_spread, dt, noise, init_type = self.KURAMOTO_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(20, max_y - 4)
@@ -42,13 +42,12 @@ def _kuramoto_init(self, preset_idx: int):
 
     TWO_PI = 2.0 * math.pi
 
-    # Initialize natural frequencies (drawn from normal distribution centered at 0)
+    # Natural frequencies are Gaussian around zero.
     self.kuramoto_nat_freq = [
         [random.gauss(0.0, freq_spread) for _ in range(cols)]
         for _ in range(rows)
     ]
 
-    # Initialize phases based on init_type
     if init_type == "gradient":
         # Linear phase gradient across the grid
         self.kuramoto_phases = [
@@ -73,7 +72,7 @@ def _kuramoto_init(self, preset_idx: int):
                 else:
                     row.append(random.uniform(0.0, TWO_PI))
             self.kuramoto_phases.append(row)
-        # Also give the two halves different frequency distributions
+        # The synchronized half gets narrow frequencies, the random half wide ones.
         for r in range(rows):
             for c in range(cols):
                 if c < cols // 2:
@@ -94,13 +93,12 @@ def _kuramoto_init(self, preset_idx: int):
 
 
 def _kuramoto_step(self):
-    """Advance the Kuramoto coupled oscillator system by one time step.
+    """Advance the oscillators by one Euler step.
 
-    Each oscillator i has:
-        dθ_i/dt = ω_i + (K/N_neighbors) * Σ sin(θ_j - θ_i) + noise
+        dθ_i/dt = ω_i + (K/4) * Σ sin(θ_j - θ_i) + noise
 
-    where ω_i is the natural frequency, K is coupling strength,
-    and the sum is over the 4 nearest neighbors (von Neumann).
+    where ω_i is the natural frequency, K the coupling strength and the sum
+    runs over the four nearest neighbours.
     """
     phases = self.kuramoto_phases
     nat_freq = self.kuramoto_nat_freq
@@ -140,11 +138,7 @@ def _kuramoto_step(self):
 
 
 def _kuramoto_order_parameter(self) -> float:
-    """Compute the Kuramoto order parameter r ∈ [0,1].
-
-    r = |1/N Σ exp(iθ_j)|
-    r ≈ 0 means incoherence, r ≈ 1 means full synchronization.
-    """
+    """Return the order parameter r = |1/N Σ exp(iθ_j)|, from 0 (incoherent) to 1 (synchronized)."""
     cos = math.cos
     sin = math.sin
     sum_cos = 0.0
@@ -162,7 +156,7 @@ def _kuramoto_order_parameter(self) -> float:
 
 
 def _handle_kuramoto_menu_key(self, key: int) -> bool:
-    """Handle input in Kuramoto preset menu."""
+    """Handle keys in the Kuramoto preset menu."""
     presets = self.KURAMOTO_PRESETS
     if key == curses.KEY_DOWN or key == ord("j"):
         self.kuramoto_menu_sel = (self.kuramoto_menu_sel + 1) % len(presets)
@@ -178,7 +172,7 @@ def _handle_kuramoto_menu_key(self, key: int) -> bool:
 
 
 def _handle_kuramoto_key(self, key: int) -> bool:
-    """Handle input in active Kuramoto simulation."""
+    """Handle keys in the running Kuramoto simulation."""
     if key == ord("q") or key == 27:
         self._exit_kuramoto_mode()
         return True
@@ -213,7 +207,7 @@ def _handle_kuramoto_key(self, key: int) -> bool:
         self.kuramoto_steps_per_frame = choices[max(idx - 1, 0)]
         self._flash(f"Speed: {self.kuramoto_steps_per_frame} steps/frame")
         return True
-    # Coupling strength: k/K
+    # Coupling strength: c/C
     if key == ord("c"):
         self.kuramoto_coupling = max(0.0, self.kuramoto_coupling - 0.1)
         self._flash(f"Coupling K: {self.kuramoto_coupling:.1f}")
@@ -222,7 +216,6 @@ def _handle_kuramoto_key(self, key: int) -> bool:
         self.kuramoto_coupling = min(10.0, self.kuramoto_coupling + 0.1)
         self._flash(f"Coupling K: {self.kuramoto_coupling:.1f}")
         return True
-    # Noise: v/V
     if key == ord("v"):
         self.kuramoto_noise = max(0.0, self.kuramoto_noise - 0.05)
         self._flash(f"Noise: {self.kuramoto_noise:.2f}")
@@ -231,7 +224,6 @@ def _handle_kuramoto_key(self, key: int) -> bool:
         self.kuramoto_noise = min(5.0, self.kuramoto_noise + 0.05)
         self._flash(f"Noise: {self.kuramoto_noise:.2f}")
         return True
-    # Time step: d/D
     if key == ord("d"):
         self.kuramoto_dt = max(0.01, self.kuramoto_dt - 0.01)
         self._flash(f"dt: {self.kuramoto_dt:.2f}")
@@ -240,7 +232,7 @@ def _handle_kuramoto_key(self, key: int) -> bool:
         self.kuramoto_dt = min(0.5, self.kuramoto_dt + 0.01)
         self._flash(f"dt: {self.kuramoto_dt:.2f}")
         return True
-    # Perturb: p — randomize a small patch
+    # Randomize a 7x7 patch of phases.
     if key == ord("p"):
         rows, cols = self.kuramoto_rows, self.kuramoto_cols
         pr = random.randint(2, rows - 3)
@@ -290,10 +282,7 @@ def _draw_kuramoto_menu(self, max_y: int, max_x: int):
 
 
 def _draw_kuramoto(self, max_y: int, max_x: int):
-    """Draw the active Kuramoto oscillator simulation.
-
-    Phase is mapped to hue (rainbow), producing flowing color patterns.
-    """
+    """Draw the oscillator phases as a color wheel, plus the order parameter."""
     self.stdscr.erase()
     phases = self.kuramoto_phases
     rows, cols = self.kuramoto_rows, self.kuramoto_cols
@@ -314,15 +303,12 @@ def _draw_kuramoto(self, max_y: int, max_x: int):
 
     TWO_PI = 2.0 * math.pi
 
-    # Map phase [0, 2π) to color pairs for a rainbow effect
-    # We use the available 7 color pairs to create a phase wheel:
-    # pair 1=red, 2=green, 3=yellow, 4=cyan, 5=magenta, 6=blue(ish), 7=white
-    # Phase sectors: divide [0, 2π) into segments
+    # Map phase [0, 2π) onto six color pairs, one per sector.
     phase_colors = [1, 3, 2, 6, 4, 5]  # red, yellow, green, blue-ish, cyan, magenta
     n_colors = len(phase_colors)
     sector_size = TWO_PI / n_colors
 
-    # Block characters based on phase within sector (for sub-sector shading)
+    # Shade by position within the sector.
     blocks = ["░░", "▒▒", "▓▓", "██", "▓▓", "▒▒"]
     n_blocks = len(blocks)
 
@@ -333,16 +319,14 @@ def _draw_kuramoto(self, max_y: int, max_x: int):
             theta = phases_r[c]
             sx = c * 2
 
-            # Determine color sector
             sector_idx = int(theta / sector_size) % n_colors
-            # Position within sector [0, 1)
             within = (theta - sector_idx * sector_size) / sector_size
             block_idx = int(within * n_blocks) % n_blocks
 
             cp = phase_colors[sector_idx]
             ch = blocks[block_idx]
 
-            # Add boldness for mid-sector (brighter)
+            # Brighten the middle of each sector.
             attr = curses.color_pair(cp)
             if block_idx >= 2 and block_idx <= 3:
                 attr |= curses.A_BOLD
@@ -352,7 +336,7 @@ def _draw_kuramoto(self, max_y: int, max_x: int):
             except curses.error:
                 pass
 
-    # Order parameter bar (visual sync indicator)
+    # Order parameter bar
     bar_y = max_y - 2
     if bar_y > 1:
         bar_width = min(40, max_x - 20)
