@@ -160,7 +160,7 @@ def _build_walls_and_exits(preset_id, rows, cols):
         for c in range(cols):
             walls.add((0, c))
             walls.add((rows - 1, c))
-        # Left exit for group 0, right exit for group 1
+        # Exit tag = the group that starts at that end (it heads for the far end)
         corridor_h = max(1, rows // 8)
         mid = rows // 2
         for r in range(mid - corridor_h, mid + corridor_h + 1):
@@ -252,27 +252,21 @@ def _spawn_agents(preset_id, rows, cols, walls, exits):
         n_per_side = min(80, int(rows * cols * 0.06))
         mid = rows // 2
         corridor_h = max(1, rows // 8)
-        # Group 0: starts on left, targets right
-        right_exits = [e for e in exits if e[2] == 0]
-        left_exits = [e for e in exits if e[2] == 1]
+        # Group 0 starts left and heads for the right exits (group 1 cells),
+        # and vice versa, so the two streams meet head-on.
+        right_exits = [e for e in exits if e[2] == 1]
+        left_exits = [e for e in exits if e[2] == 0]
         for _ in range(n_per_side):
             r = random.randint(mid - corridor_h + 1, mid + corridor_h - 1)
             c = random.randint(2, cols // 3)
-            if right_exits:
-                tgt = random.choice(right_exits)
-            else:
-                tgt = (mid, 0, 0)
+            tgt = random.choice(right_exits) if right_exits else (mid, cols - 1, 1)
             a = _Agent(float(c), float(r), float(tgt[1]), float(tgt[0]),
                        desired_speed=1.0 + 0.3 * rng(), group=0)
             agents.append(a)
-        # Group 1: starts on right, targets left
         for _ in range(n_per_side):
             r = random.randint(mid - corridor_h + 1, mid + corridor_h - 1)
             c = random.randint(2 * cols // 3, cols - 3)
-            if left_exits:
-                tgt = random.choice(left_exits)
-            else:
-                tgt = (mid, cols - 1, 1)
+            tgt = random.choice(left_exits) if left_exits else (mid, 0, 0)
             a = _Agent(float(c), float(r), float(tgt[1]), float(tgt[0]),
                        desired_speed=1.0 + 0.3 * rng(), group=1)
             agents.append(a)
