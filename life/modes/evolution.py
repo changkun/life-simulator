@@ -553,6 +553,59 @@ def _draw_evo(self, max_y: int, max_x: int):
                         except curses.error:
                             pass
 
+    _draw_evo_scoreboard(self, max_y, max_x, grid_area_h)
+
+
+def _draw_evo_scoreboard(self, max_y, max_x, top):
+    """Draw the status line, ranked scoreboard and hint bar below the tiles."""
+    scored = self.evo_phase == "scored"
+    if scored:
+        progress = "SCORED"
+    else:
+        progress = f"step {self.evo_sim_step}/{self.evo_grid_gens}"
+        progress += "  PLAY" if self.running else "  PAUSE"
+    status = (f" Gen {self.evo_generation}  {progress}  Fitness: {self.evo_fitness_mode}"
+              f"  Mutation: {int(self.evo_mutation_rate * 100)}%")
+    if self.evo_best_ever:
+        status += (f"  Best: {self.evo_best_ever['rule']}"
+                   f" ({self.evo_best_ever.get('total', 0):.0f}pts, gen {self.evo_best_ever['gen']})")
+    try:
+        self.stdscr.addstr(top, 0, status[:max_x - 1], curses.color_pair(7) | curses.A_BOLD)
+    except curses.error:
+        pass
+
+    if scored:
+        slots = max_y - 2 - top
+        first = max(0, self.evo_sel - slots + 1)
+        for k in range(min(slots, len(self.evo_rules) - first)):
+            i = first + k
+            f = self.evo_fitness[i]
+            rs = rule_string(*self.evo_rules[i])
+            line = (f" {'>' if i == self.evo_sel else ' '}{i + 1:>2} {rs:<20s}"
+                    f" {f.get('total', 0):>6.0f}pts"
+                    f"  long {f.get('longevity', 0):.0f}"
+                    f"  stab {f.get('stability', 0):.0f}"
+                    f"  div {f.get('diversity', 0):.0f}"
+                    f"  pop {f.get('population', 0):.0f}")
+            attr = curses.color_pair(6)
+            if i == self.evo_sel:
+                attr = curses.color_pair(7) | curses.A_REVERSE
+            try:
+                self.stdscr.addstr(top + 1 + k, 0, line[:max_x - 1], attr)
+            except curses.error:
+                pass
+
+    if self.message and time.monotonic() - self.message_time < 3.0:
+        hint = f" {self.message}"
+    elif scored:
+        hint = " Space=next gen  Up/Down=select  a=adopt  f=fitness  m=mutation  q=exit"
+    else:
+        hint = " Space=play/pause  n=step  s=skip  </>=speed  f=fitness  m=mutation  q=exit"
+    try:
+        self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
+    except curses.error:
+        pass
+
 
 def register(App):
     """Register evo mode methods on the App class."""

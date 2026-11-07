@@ -386,3 +386,38 @@ class TestEvolution:
         assert len(self.app.evo_history) == 2
         # Best ever should be set
         assert self.app.evo_best_ever is not None
+
+
+class TestEvolutionDrawStatus:
+    def setup_method(self):
+        random.seed(3)
+        self.app = make_mock_app()
+        register(type(self.app))
+        self.lines = []
+        self.app.stdscr.addstr = lambda *a, **k: self.lines.append((a[0], a[2]))
+
+    def _start(self):
+        self.app._enter_evo_mode()
+        self.app.evo_menu_sel = 5
+        self.app._handle_evo_menu_key(10)
+
+    def test_status_and_hint_drawn_while_simulating(self):
+        self._start()
+        self.app._draw_evo(40, 120)
+        text = [s for _, s in self.lines]
+        assert any(s.startswith(" Gen 1") for s in text)
+        assert any("n=step" in s for s in text)
+        assert max(y for y, _ in self.lines) == 39
+
+    def test_scoreboard_lists_every_ranked_rule_when_scored(self):
+        self._start()
+        self.app.evo_grid_gens = 5
+        self.app.message = ""
+        for _ in range(5):
+            self.app._evo_step_sim()
+        self.app.message = ""
+        self.lines.clear()
+        self.app._draw_evo(60, 120)
+        text = [s for _, s in self.lines]
+        assert sum("pts" in s and "long" in s for s in text) == len(self.app.evo_rules)
+        assert any("a=adopt" in s for s in text)
