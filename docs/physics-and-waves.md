@@ -1129,8 +1129,6 @@ Vortex imprinting uses superposed atan2 phase profiles with toroidal wrapping. S
 
 **Background** — Spin ice is a class of geometrically frustrated magnets in which local "ice rules" (analogous to Bernal-Fowler rules in water ice) constrain spin configurations. In a square-ice lattice, each vertex has four edges carrying arrow-spins, and the ground state requires exactly two arrows pointing in and two pointing out (2-in/2-out). Violations of this constraint behave as emergent magnetic monopole quasiparticles — fractionalized excitations that carry effective magnetic charge, are connected by observable Dirac strings, and interact via a Coulomb potential. First identified experimentally in pyrochlore materials like Dy₂Ti₂O₇ (Harris et al. 1997, Castelnovo et al. 2008), spin ice represents one of the most striking examples of emergent fractionalization in condensed matter physics.
 
-This mode is scientifically distinct from the existing Ising Model (which has no geometric frustration or emergent fractionalized excitations) and the Magnetic Field Lines mode (which visualizes classical dipole fields rather than lattice-based emergent phenomena).
-
 **Formulation** — The simulation uses a square-ice lattice where horizontal edges connect vertex (r,c) to (r,c+1) and vertical edges connect vertex (r,c) to (r+1,c). Each edge carries a spin σ = ±1 representing the arrow direction.
 
 ```
@@ -1149,15 +1147,15 @@ Parameters:
   h     — applied magnetic field (−5.0 to 5.0), favors horizontal arrow alignment
 ```
 
-Dynamics proceed via Monte Carlo Metropolis sweeps: each sweep attempts to flip every edge once. A flip is accepted if it lowers the energy; otherwise it is accepted with probability exp(−ΔE/T). The energy change is computed locally from the two vertices sharing the flipped edge, giving O(1) cost per flip attempt.
+Dynamics proceed via Monte Carlo Metropolis sweeps: each sweep makes as many flip attempts as there are edges, each on a randomly chosen edge. A flip is accepted if it lowers the energy; otherwise it is accepted with probability exp(−ΔE/T). The energy change is computed locally from the two vertices sharing the flipped edge, giving O(1) cost per flip attempt.
 
 **Presets** — Six configurations explore different regimes of spin-ice physics:
 - **Equilibrium Ice**: Low temperature (T=0.5) starting from a perfect ice-rule ground state — watch rare thermal fluctuations create and quickly annihilate monopole pairs while the system maintains near-perfect 2-in/2-out order
 - **Monopole Gas**: High temperature (T=8.0) producing a dense Coulomb plasma of monopoles and antimonopoles — the lattice is heavily disordered with ice-rule satisfaction dropping well below 100%
 - **Field Quench**: Starts from an ordered ice state, then at sweep 20 a sudden field (h=3.0) is applied — watch the avalanche of monopole creation as the system reorders to align with the field
-- **Dirac Strings**: Moderate temperature (T=1.5) with 3 injected monopole-antimonopole pairs — Dirac string visualization enabled by default, showing dotted lines connecting paired monopoles
-- **Kagome Ice**: Triangular frustrated variant with random initial conditions — explores ice-rule physics on a different lattice geometry with 2-in/1-out constraints
-- **Pauling Entropy**: Very low temperature (T=0.01) in a perfect ice state — demonstrates the residual entropy of the ice manifold (S/kB ≈ ln(3/2)/ln(2) ≈ 0.585 per vertex), first calculated by Linus Pauling in 1935
+- **Dirac Strings**: Moderate temperature (T=1.5) with 3 randomly flipped horizontal edges (each flip creates a monopole-antimonopole pair) — Dirac string display on by default, showing dotted lines connecting paired monopoles
+- **Kagome Ice**: Random initial arrows at T=1.0 on the same square lattice and 2-in/2-out rule as the other presets; the kagome geometry is not implemented, so this differs from the other presets only in its start state and temperature
+- **Pauling Entropy**: Very low temperature (T=0.01) in a perfect ice state — shows the Pauling estimate of the ice residual entropy, ln(3/2)/ln(2) ≈ 0.585 per vertex (labelled S/kB on screen), once more than 99% of vertices obey the ice rule. Pauling first calculated it in 1935
 
 **Visualization** — The lattice is drawn with Unicode arrows (→←↑↓) on edges colored cyan. Vertices display their charge state: neutral vertices as dim dots (·), positive monopoles as bold red ⊕, and negative antimonopoles as bold blue ⊖. When Dirac string display is enabled, dotted magenta lines (∙) connect nearest monopole-antimonopole pairs via greedy distance matching.
 
