@@ -101,3 +101,20 @@ def test_focus_viewport():
     # Unfocus
     app.obs_focus = -1
     assert app.obs_focus == -1
+
+
+def test_layout_index_fits_viewport_count():
+    from life.modes.observatory import _layout_index
+    assert [_layout_index(n) for n in (2, 3, 4, 5, 6, 7, 9)] == [0, 1, 1, 2, 2, 3, 3]
+
+
+def test_reset_key_keeps_sims_and_unfocuses():
+    app = _make_app()
+    app._observatory_init(["gol", "wave", "rd"], 1)
+    app.obs_focus = 2
+    for _ in range(3):
+        app._observatory_step()
+    app._handle_observatory_key(ord("r"))
+    assert [vp["sim_id"] for vp in app.obs_viewports] == ["gol", "wave", "rd"]
+    assert app.obs_focus == -1
+    assert app.obs_generation == 0

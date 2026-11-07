@@ -1,12 +1,9 @@
-"""Mode: observatory — tiled split-screen running 4-9 simulations simultaneously."""
+"""Simulation Observatory — tiled split-screen view of 2-9 independent simulations."""
 import curses
-import math
-import random
 import time
 
 from life.constants import SPEEDS
 
-# Reuse the mini-simulation engines from mashup mode
 from life.modes.mashup import MASHUP_SIMS, _ENGINES
 
 _DENSITY = " ░▒▓█"
@@ -27,7 +24,7 @@ OBSERVATORY_PRESETS = [
         "name": "Fluid Trio",
         "desc": "Wave Equation, Reaction-Diffusion, Physarum Slime",
         "sims": ["wave", "rd", "physarum"],
-        "layout": 2,  # index into LAYOUTS → 3×2 reduced to 1×3
+        "layout": 2,  # index into LAYOUTS
     },
     {
         "name": "Chaos Theory",
@@ -61,6 +58,14 @@ _VIEWPORT_COLORS = [6, 1, 2, 3, 4, 5, 7, 6, 1]
 _SIM_BY_ID = {s["id"]: s for s in MASHUP_SIMS}
 
 
+def _layout_index(count):
+    """Return the index of the smallest layout that holds count viewports."""
+    for i, layout in enumerate(LAYOUTS):
+        if count <= layout["count"]:
+            return i
+    return len(LAYOUTS) - 1
+
+
 # ════════════════════════════════════════════════════════════════════
 #  Mode entry / exit
 # ════════════════════════════════════════════════════════════════════
@@ -90,21 +95,14 @@ def _exit_observatory_mode(self):
 # ════════════════════════════════════════════════════════════════════
 
 def _observatory_init(self, sim_ids, layout_idx):
-    """Initialize all viewports with the given simulations and layout."""
-    max_y, max_x = self.stdscr.getmaxyx()
-    layout = LAYOUTS[layout_idx]
+    """Initialize all viewports with the given simulations.
 
-    # Adjust layout to fit the number of sims
+    The grid shape comes from the number of sims; layout_idx is not used.
+    """
+    max_y, max_x = self.stdscr.getmaxyx()
     count = len(sim_ids)
-    # Find best fitting layout
-    if count <= 2:
-        grid_r, grid_c = 1, 2
-    elif count <= 4:
-        grid_r, grid_c = 2, 2
-    elif count <= 6:
-        grid_r, grid_c = 2, 3
-    else:
-        grid_r, grid_c = 3, 3
+    layout = LAYOUTS[_layout_index(count)]
+    grid_r, grid_c = layout["rows"], layout["cols"]
 
     self.obs_grid_rows = grid_r
     self.obs_grid_cols = grid_c
@@ -268,7 +266,7 @@ def _draw_observatory_menu(self, max_y, max_x):
     # Hint bar
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [Up/Down]=navigate  [Enter]=select  [Esc]=back/exit"
+        hint = " Up/Down=navigate  Enter=select  Esc=back"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -385,7 +383,7 @@ def _draw_observatory(self, max_y, max_x):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [1-9]=focus [0]=unfocus [R]=menu [q]=exit [>/<]=speed"
+            hint = " Space=play  n=step  1-9=focus  0=unfocus  r=reset  R=menu  >/<=speed  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -455,14 +453,14 @@ def _draw_focused_viewport(self, max_y, max_x):
     title = (f" OBSERVATORY [{self.obs_focus + 1}] {vp['name']}"
              f"  |  gen {self.obs_generation}"
              f"  |  {state}"
-             f"  |  [0]=unfocus")
+             f"  |  0=unfocus")
     try:
         self.stdscr.addstr(0, 0, title[:max_x - 1],
                            curses.color_pair(color) | curses.A_BOLD)
     except curses.error:
         pass
 
-    # Re-render density at full resolution for focused view
+    # The focused view draws the same grid, so it is not higher resolution.
     density = vp["density"]
     sim_rows = vp["sim_rows"]
     sim_cols = vp["sim_cols"]
@@ -501,7 +499,7 @@ def _draw_focused_viewport(self, max_y, max_x):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [0]=unfocus [1-9]=switch [q]=exit [>/<]=speed"
+            hint = " Space=play  n=step  0=unfocus  1-9=switch  r=reset  R=menu  >/<=speed  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -543,17 +541,7 @@ def _handle_observatory_key(self, key):
     if key == ord("r"):
         # Reset all viewports
         sims = [vp["sim_id"] for vp in self.obs_viewports]
-        layout_idx = 0
-        count = len(sims)
-        if count <= 2:
-            layout_idx = 0
-        elif count <= 4:
-            layout_idx = 1
-        elif count <= 6:
-            layout_idx = 2
-        else:
-            layout_idx = 3
-        self._observatory_init(sims, layout_idx)
+        self._observatory_init(sims, _layout_index(len(sims)))
         self._flash("Reset!")
         return True
     if key == ord("R"):
