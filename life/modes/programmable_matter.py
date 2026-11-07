@@ -155,12 +155,11 @@ def _prog_shape_assembly():
     """Program: cells move toward target shape positions via gradient."""
     return [
         (OP_READ, 0),       # 0: read neighbors
-        (OP_IF_DIST, 2),    # 1: skip next if far from target centroid
+        (OP_IF_DIST, 2),    # 1: skip next if far from the target
         (OP_BOND, 0),       # 2: bond if close
-        (OP_IF_BONDED, 0),  # 3: skip move if bonded
-        (OP_MOVE, 0),       # 4: move toward target (dir computed by engine)
-        (OP_SIGNAL, 0),     # 5: broadcast state
-        (OP_GOTO, 0),       # 6: loop
+        (OP_MOVE, 0),       # 3: move toward target (bonded cells stay put)
+        (OP_SIGNAL, 0),     # 4: broadcast state
+        (OP_GOTO, 0),       # 5: loop
     ]
 
 def _prog_self_replicate():
@@ -203,9 +202,9 @@ def _prog_line_formation():
     """Program: cells form a horizontal line through the center."""
     return [
         (OP_READ, 0),       # 0: read neighbors
-        (OP_IF_DIST, 1),    # 1: skip next if close to target
-        (OP_MOVE, 0),       # 2: move toward target
-        (OP_BOND, 0),       # 3: bond
+        (OP_MOVE, 0),       # 1: move toward target
+        (OP_IF_DIST, 1),    # 2: skip next if far from the target
+        (OP_BOND, 0),       # 3: bond if close
         (OP_SIGNAL, 0),     # 4: signal
         (OP_GOTO, 0),       # 5: loop
     ]

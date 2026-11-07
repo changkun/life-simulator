@@ -44,3 +44,24 @@ def test_info_panel_keys_are_lowercase_and_handled():
     assert keys == ["s", "v", "d", "r", "i", "q"]
     for k in "svdri":
         assert app._handle_progmatter_key(ord(k)) is True
+
+
+def test_shape_presets_move_cells_toward_target():
+    """Shape and line programs must actually move cells onto the target."""
+    import random
+
+    def occupied(app):
+        return {(r, c) for r, row in enumerate(app.progmatter_grid)
+                for c, cell in enumerate(row) if cell is not None}
+
+    for idx in (0, 1, 2, 3, 7):
+        random.seed(3)
+        app = _make_app()
+        app._progmatter_init(idx)
+        before = occupied(app)
+        on_target0 = len(before & app.progmatter_target)
+        for _ in range(300):
+            app._progmatter_step()
+        after = occupied(app)
+        assert len(before ^ after) > 20, pm.PM_PRESETS[idx][0]
+        assert len(after & app.progmatter_target) > on_target0 + 3
