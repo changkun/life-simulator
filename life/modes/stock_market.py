@@ -1,6 +1,5 @@
-"""Mode: mkt — Agent-Based Stock Market simulation."""
+"""Stock Market — agent-based market of fundamental, chartist, noise and market-maker traders."""
 import curses
-import math
 import random
 import time
 
@@ -71,14 +70,14 @@ class Order:
 # ════════════════════════════════════════════════════════════════════
 
 def _enter_mkt_mode(self):
-    """Enter Stock Market mode — show preset menu."""
+    """Open the Stock Market preset menu."""
     self.mkt_menu = True
     self.mkt_menu_sel = 0
     self._flash("Stock Market Simulation — select a scenario")
 
 
 def _exit_mkt_mode(self):
-    """Exit Stock Market mode."""
+    """Leave Stock Market mode and clear its state."""
     self.mkt_mode = False
     self.mkt_menu = False
     self.mkt_running = False
@@ -90,7 +89,7 @@ def _exit_mkt_mode(self):
 
 
 def _mkt_init(self, preset_idx):
-    """Initialize simulation from preset."""
+    """Start the simulation from a preset."""
     (name, _desc, n_fund, n_chart, n_noise, n_mm,
      fv, vol, trend, herd) = self.MKT_PRESETS[preset_idx]
 
@@ -102,7 +101,6 @@ def _mkt_init(self, preset_idx):
     self.mkt_trend_strength = trend
     self.mkt_herd_factor = herd
 
-    # Current price
     self.mkt_price = fv
     self.mkt_start_price = fv
     self.mkt_price_history = [fv]
@@ -112,7 +110,6 @@ def _mkt_init(self, preset_idx):
     self.mkt_close_prices = [fv]
     self.mkt_volumes = [0]
 
-    # Create agents
     self.mkt_agents = []
     for _ in range(n_fund):
         a = Agent("fundamental", cash=random.uniform(8000, 15000))
@@ -131,18 +128,12 @@ def _mkt_init(self, preset_idx):
         a.shares = random.randint(50, 200)
         self.mkt_agents.append(a)
 
-    # Order book
-    self.mkt_bids = []  # sorted descending by price
-    self.mkt_asks = []  # sorted ascending by price
+    self.mkt_bids = []  # highest price first
+    self.mkt_asks = []  # lowest price first
 
-    # Volume tracking
     self.mkt_tick_volume = 0
     self.mkt_candle_ticks = 5  # ticks per candle
-
-    # Sentiment tracking
     self.mkt_global_sentiment = 0.0
-
-    # View mode
     self.mkt_view_idx = 0
     self.mkt_view = VIEW_MODES[0]
 
@@ -161,35 +152,30 @@ def _mkt_step(self):
     """Advance the market simulation by one tick."""
     agents = self.mkt_agents
     price = self.mkt_price
-    fv = self.mkt_fundamental_value
     vol = self.mkt_volatility
     trend = self.mkt_trend_strength
     herd = self.mkt_herd_factor
     history = self.mkt_price_history
 
-    # Slowly drift fundamental value (random walk)
+    # Fair value follows a random walk.
     self.mkt_fundamental_value += random.gauss(0, 0.1)
     fv = self.mkt_fundamental_value
 
-    # Compute recent trend from history
     lookback = min(20, len(history))
     if lookback >= 2:
         recent_return = (history[-1] - history[-lookback]) / max(history[-lookback], 0.01)
     else:
         recent_return = 0.0
 
-    # Compute global sentiment (average of all agent sentiments)
     total_sent = sum(a.sentiment for a in agents)
     self.mkt_global_sentiment = total_sent / max(len(agents), 1)
 
-    # Clear order book for this tick
+    # The book is rebuilt each tick.
     self.mkt_bids = []
     self.mkt_asks = []
 
-    # Each agent places orders
     for idx, agent in enumerate(agents):
         if agent.kind == "fundamental":
-            # Buy if price < fv, sell if price > fv
             gap = (fv - price) / max(price, 0.01)
             agent.sentiment = max(-1, min(1, gap * 3.0 + random.gauss(0, 0.1)))
             if gap > 0.02 and agent.cash > price:
@@ -203,7 +189,6 @@ def _mkt_step(self):
                 self.mkt_asks.append(Order("ask", ask_price, qty, idx))
 
         elif agent.kind == "chartist":
-            # Follow trend and momentum
             agent.momentum = trend * recent_return + (1 - trend) * agent.momentum
             agent.sentiment = max(-1, min(1,
                 agent.momentum * 5.0 + herd * self.mkt_global_sentiment
@@ -219,7 +204,6 @@ def _mkt_step(self):
                 self.mkt_asks.append(Order("ask", ask_price, qty, idx))
 
         elif agent.kind == "noise":
-            # Random trading with herd influence
             agent.sentiment = max(-1, min(1,
                 herd * self.mkt_global_sentiment
                 + random.gauss(0, 0.5)))
@@ -232,7 +216,6 @@ def _mkt_step(self):
                     self.mkt_asks.append(Order("ask", ask_price, 1, idx))
 
         elif agent.kind == "market_maker":
-            # Provide liquidity on both sides
             spread = vol * price * 0.5
             mid = price
             agent.sentiment = 0.0  # neutral
@@ -243,11 +226,9 @@ def _mkt_step(self):
                 ask_price = mid + spread * random.uniform(0.5, 1.5)
                 self.mkt_asks.append(Order("ask", ask_price, random.randint(1, 5), idx))
 
-    # Sort order book
     self.mkt_bids.sort(key=lambda o: -o.price)  # highest first
     self.mkt_asks.sort(key=lambda o: o.price)     # lowest first
 
-    # Match orders
     tick_volume = 0
     tick_prices = []
     while self.mkt_bids and self.mkt_asks:
@@ -257,7 +238,6 @@ def _mkt_step(self):
             trade_price = (best_bid.price + best_ask.price) / 2.0
             trade_qty = min(best_bid.qty, best_ask.qty)
 
-            # Execute trade
             buyer = agents[best_bid.agent_idx]
             seller = agents[best_ask.agent_idx]
             cost = trade_price * trade_qty
@@ -282,28 +262,23 @@ def _mkt_step(self):
     if tick_prices:
         self.mkt_price = tick_prices[-1]
     else:
-        # No trades — nudge price by noise
+        # No trades: nudge the price by noise.
         self.mkt_price *= (1.0 + random.gauss(0, vol * 0.1))
 
-    # Clamp price to positive
     self.mkt_price = max(0.01, self.mkt_price)
 
-    # Record history
     self.mkt_price_history.append(self.mkt_price)
     self.mkt_tick_volume = tick_volume
 
-    # Update candle data
     gen = self.mkt_generation
     ct = self.mkt_candle_ticks
     if gen % ct == 0:
-        # New candle
         self.mkt_open_prices.append(self.mkt_price)
         self.mkt_high_prices.append(self.mkt_price)
         self.mkt_low_prices.append(self.mkt_price)
         self.mkt_close_prices.append(self.mkt_price)
         self.mkt_volumes.append(tick_volume)
     else:
-        # Update current candle
         if self.mkt_price > self.mkt_high_prices[-1]:
             self.mkt_high_prices[-1] = self.mkt_price
         if self.mkt_price < self.mkt_low_prices[-1]:
@@ -311,7 +286,6 @@ def _mkt_step(self):
         self.mkt_close_prices[-1] = self.mkt_price
         self.mkt_volumes[-1] += tick_volume
 
-    # Update agent wealth histories
     for agent in agents:
         w = agent.cash + agent.shares * self.mkt_price
         agent.wealth_history.append(w)
@@ -330,7 +304,7 @@ def _mkt_step(self):
 # ════════════════════════════════════════════════════════════════════
 
 def _handle_mkt_menu_key(self, key):
-    """Handle input in preset menu."""
+    """Handle a key in the preset menu."""
     n = len(self.MKT_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.mkt_menu_sel = (self.mkt_menu_sel + 1) % n
@@ -345,7 +319,7 @@ def _handle_mkt_menu_key(self, key):
 
 
 def _handle_mkt_key(self, key):
-    """Handle input in active simulation."""
+    """Handle a key in the running simulation."""
     if key == ord(" "):
         self.mkt_running = not self.mkt_running
     elif key in (ord("n"), ord(".")):
@@ -355,7 +329,6 @@ def _handle_mkt_key(self, key):
         idx = next((i for i, p in enumerate(self.MKT_PRESETS)
                     if p[0] == self.mkt_preset_name), 0)
         self._mkt_init(idx)
-        self.mkt_running = False
     elif key in (ord("R"), ord("m")):
         self.mkt_mode = False
         self.mkt_running = False
@@ -377,8 +350,6 @@ def _handle_mkt_key(self, key):
         self.speed_idx = min(len(SPEEDS) - 1, self.speed_idx + 1)
     elif key in (ord("q"), 27):
         self._exit_mkt_mode()
-    else:
-        return True
     return True
 
 
@@ -387,7 +358,7 @@ def _handle_mkt_key(self, key):
 # ════════════════════════════════════════════════════════════════════
 
 def _draw_mkt_menu(self, max_y, max_x):
-    """Draw preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Agent-Based Stock Market ── Select Scenario ──"
     try:
@@ -423,7 +394,7 @@ def _draw_mkt_menu(self, max_y, max_x):
             except curses.error:
                 pass
 
-    hint = " [j/k]=navigate  [Enter]=select  [q]=cancel"
+    hint = " j/k=navigate  Enter=select  q=cancel"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
                            curses.color_pair(6) | curses.A_DIM)
@@ -436,7 +407,7 @@ def _draw_mkt_menu(self, max_y, max_x):
 # ════════════════════════════════════════════════════════════════════
 
 def _draw_mkt(self, max_y, max_x):
-    """Draw the active stock market simulation."""
+    """Draw the active simulation."""
     self.stdscr.erase()
     view = self.mkt_view
     state = "▶ RUNNING" if self.mkt_running else "⏸ PAUSED"
@@ -494,7 +465,6 @@ def _draw_mkt(self, max_y, max_x):
                 bx += nw
                 if mw > 0:
                     self.stdscr.addstr(pop_y, bx, "█" * mw, curses.color_pair(2))
-                    bx += mw
                 legend = f"  F:{n_fund} C:{n_chart} N:{n_noise} MM:{n_mm}"
                 self.stdscr.addstr(pop_y, bx + 1, legend[:max_x - bx - 2],
                                    curses.color_pair(6))
@@ -523,7 +493,7 @@ def _draw_mkt(self, max_y, max_x):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [v]=view [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  v=view  +/-=steps  </>=speed  r=reset  R=menu  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -536,7 +506,7 @@ def _draw_mkt(self, max_y, max_x):
 # ────────────────────────────────────────────────────────────────────
 
 def _draw_mkt_price_chart(self, max_y, max_x):
-    """Draw ASCII candlestick chart of price history."""
+    """Draw the candlestick chart."""
     chart_top = 2
     chart_bot = max_y - 5
     chart_h = chart_bot - chart_top
@@ -566,11 +536,8 @@ def _draw_mkt_price_chart(self, max_y, max_x):
     vis_lows = lows[start:]
     vis_closes = closes[start:]
 
-    # Price range
-    all_highs = vis_highs
-    all_lows = vis_lows
-    p_max = max(all_highs) if all_highs else 100
-    p_min = min(all_lows) if all_lows else 100
+    p_max = max(vis_highs)
+    p_min = min(vis_lows)
     p_range = p_max - p_min
     if p_range < 0.01:
         p_range = 1.0
@@ -628,7 +595,7 @@ def _draw_mkt_price_chart(self, max_y, max_x):
         if body_top == body_bot:
             # Doji
             try:
-                self.stdscr.addstr(body_top, x, "─" + "─",
+                self.stdscr.addstr(body_top, x, "──",
                                    color | curses.A_BOLD)
             except curses.error:
                 pass
@@ -640,8 +607,7 @@ def _draw_mkt_price_chart(self, max_y, max_x):
                 except curses.error:
                     pass
 
-    # Also draw a simple price line from tick history below if space
-    # (price sparkline on the axis margin)
+    # Sparkline of the last ticks below the chart.
     ph = self.mkt_price_history
     if len(ph) > 1:
         spark_chars = "▁▂▃▄▅▆▇█"
@@ -666,7 +632,7 @@ def _draw_mkt_price_chart(self, max_y, max_x):
 # ────────────────────────────────────────────────────────────────────
 
 def _draw_mkt_orderbook(self, max_y, max_x):
-    """Draw order book depth visualization."""
+    """Draw order book depth."""
     chart_top = 2
     chart_bot = max_y - 5
     chart_h = chart_bot - chart_top
@@ -756,7 +722,7 @@ def _draw_mkt_orderbook(self, max_y, max_x):
 # ────────────────────────────────────────────────────────────────────
 
 def _draw_mkt_wealth(self, max_y, max_x):
-    """Draw agent wealth distribution as a heatmap grid."""
+    """Draw agent wealth as a heatmap grid."""
     chart_top = 2
     chart_bot = max_y - 5
     chart_h = chart_bot - chart_top
@@ -779,7 +745,6 @@ def _draw_mkt_wealth(self, max_y, max_x):
     cols = min((max_x - 2) // 3, n)
     if cols < 1:
         cols = 1
-    rows = min(chart_h, (n + cols - 1) // cols)
 
     heat_chars = " ░▒▓█"
     kind_colors = {
@@ -846,7 +811,7 @@ def _draw_mkt_wealth(self, max_y, max_x):
 # ────────────────────────────────────────────────────────────────────
 
 def _draw_mkt_sentiment(self, max_y, max_x):
-    """Draw agent sentiment visualization."""
+    """Draw agent sentiment as a grid."""
     chart_top = 2
     chart_bot = max_y - 5
     chart_h = chart_bot - chart_top
@@ -945,7 +910,7 @@ def _draw_mkt_sentiment(self, max_y, max_x):
 # ════════════════════════════════════════════════════════════════════
 
 def register(App):
-    """Register stock market mode methods on the App class."""
+    """Register Stock Market methods on the App class."""
     App._enter_mkt_mode = _enter_mkt_mode
     App._exit_mkt_mode = _exit_mkt_mode
     App._mkt_init = _mkt_init
