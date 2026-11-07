@@ -1,6 +1,5 @@
-"""Mode: snowflake — simulation mode for the life package."""
+"""Snowflake Growth — a Reiter-style crystal grows on a hexagonal grid."""
 import curses
-import math
 import random
 import time
 
@@ -28,7 +27,7 @@ SNOWFLAKE_PRESETS = [
 
 
 def _enter_snowflake_mode(self):
-    """Enter Snowflake Growth mode — show preset menu."""
+    """Enter Snowflake Growth mode and show the preset menu."""
     self.snowflake_menu = True
     self.snowflake_menu_sel = 0
     self._flash("Snowflake Growth (Reiter Crystal) — select a scenario")
@@ -64,7 +63,7 @@ def _snowflake_hex_neighbors(self, r: int, c: int) -> list[tuple[int, int]]:
 
 
 def _snowflake_init(self, preset_idx: int):
-    """Initialize Snowflake Growth with the given preset."""
+    """Start the preset at the given index."""
     name, _desc, alpha, beta, gamma, mu, symmetric = self.SNOWFLAKE_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(20, max_y - 4)
@@ -80,7 +79,6 @@ def _snowflake_init(self, preset_idx: int):
     self.snowflake_generation = 0
     self.snowflake_steps_per_frame = 1
 
-    # Initialize vapor field to uniform beta, no frozen cells
     self.snowflake_frozen = [[False] * cols for _ in range(rows)]
     self.snowflake_vapor = [[beta] * cols for _ in range(rows)]
 
@@ -244,7 +242,7 @@ def _snowflake_step(self):
 
 
 def _handle_snowflake_menu_key(self, key: int) -> bool:
-    """Handle input in Snowflake Growth preset menu."""
+    """Handle input in the preset menu."""
     presets = self.SNOWFLAKE_PRESETS
     if key == curses.KEY_DOWN or key == ord("j"):
         self.snowflake_menu_sel = (self.snowflake_menu_sel + 1) % len(presets)
@@ -260,7 +258,7 @@ def _handle_snowflake_menu_key(self, key: int) -> bool:
 
 
 def _handle_snowflake_key(self, key: int) -> bool:
-    """Handle input in active Snowflake Growth simulation."""
+    """Handle input while the simulation is active."""
     if key == ord("q") or key == 27:
         self._exit_snowflake_mode()
         return True
@@ -295,7 +293,6 @@ def _handle_snowflake_key(self, key: int) -> bool:
         self.snowflake_steps_per_frame = choices[max(idx - 1, 0)]
         self._flash(f"Speed: {self.snowflake_steps_per_frame} steps/frame")
         return True
-    # Alpha controls: a/A to decrease/increase deposition rate
     if key == ord("a"):
         self.snowflake_alpha = max(0.01, self.snowflake_alpha - 0.05)
         self._flash(f"Alpha (deposition): {self.snowflake_alpha:.2f}")
@@ -304,7 +301,6 @@ def _handle_snowflake_key(self, key: int) -> bool:
         self.snowflake_alpha = min(1.0, self.snowflake_alpha + 0.05)
         self._flash(f"Alpha (deposition): {self.snowflake_alpha:.2f}")
         return True
-    # Diffusion rate controls: d/D
     if key == ord("d"):
         self.snowflake_mu = max(0.05, self.snowflake_mu - 0.05)
         self._flash(f"Diffusion rate (μ): {self.snowflake_mu:.2f}")
@@ -313,7 +309,6 @@ def _handle_snowflake_key(self, key: int) -> bool:
         self.snowflake_mu = min(1.0, self.snowflake_mu + 0.05)
         self._flash(f"Diffusion rate (μ): {self.snowflake_mu:.2f}")
         return True
-    # Toggle 6-fold symmetry: s
     if key == ord("s"):
         self.snowflake_symmetric = not self.snowflake_symmetric
         label = "ON" if self.snowflake_symmetric else "OFF"
@@ -324,7 +319,7 @@ def _handle_snowflake_key(self, key: int) -> bool:
 
 
 def _draw_snowflake_menu(self, max_y: int, max_x: int):
-    """Draw the Snowflake Growth preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Snowflake Growth (Reiter Crystal) ── Select Scenario ──"
     try:
@@ -348,7 +343,7 @@ def _draw_snowflake_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+        hint = " j/k=select  Enter=start  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
@@ -357,7 +352,7 @@ def _draw_snowflake_menu(self, max_y: int, max_x: int):
 
 
 def _draw_snowflake(self, max_y: int, max_x: int):
-    """Draw the active Snowflake Growth simulation."""
+    """Draw the crystal, vapor haze and status lines."""
     self.stdscr.erase()
     frozen = self.snowflake_frozen
     vapor = self.snowflake_vapor
@@ -365,7 +360,6 @@ def _draw_snowflake(self, max_y: int, max_x: int):
     state = "▶ RUNNING" if self.snowflake_running else "⏸ PAUSED"
     sym_label = "❄ 6-fold" if self.snowflake_symmetric else "~ free"
 
-    # Title bar
     title = (f" ❄ Snowflake: {self.snowflake_preset_name}  |  step {self.snowflake_generation}"
              f"  |  {sym_label}  |  frozen={self.snowflake_frozen_count}"
              f"  |  {state}")
@@ -377,7 +371,7 @@ def _draw_snowflake(self, max_y: int, max_x: int):
     view_rows = max_y - 4
     view_cols = (max_x - 1) // 2
 
-    # Precompute frozen-neighbor counts for crystal edge rendering
+    # Shade frozen cells by frozen-neighbor count: tips and edges stand out from the interior.
     for r in range(min(rows, view_rows)):
         for c in range(min(cols, view_cols)):
             sx = c * 2
@@ -423,7 +417,6 @@ def _draw_snowflake(self, max_y: int, max_x: int):
                         pass
                 # Very low vapor: leave blank (dark background)
 
-    # Info bar
     info_y = max_y - 2
     if info_y > 1:
         info = (f" Step {self.snowflake_generation}  |  α={self.snowflake_alpha:.2f}"
@@ -436,14 +429,13 @@ def _draw_snowflake(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    # Hint bar
     hint_y = max_y - 1
     if hint_y > 0:
         now = time.monotonic()
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [a/A]=α-/+ [d/D]=μ-/+ [s]=symmetry [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  a/A=α-/+  d/D=μ-/+  s=symmetry  +/-=steps/frame  r=reset  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -488,7 +480,7 @@ LV_PRESETS = [
 
 
 def register(App):
-    """Register snowflake mode methods on the App class."""
+    """Register Snowflake Growth methods on the App class."""
     App.SNOWFLAKE_PRESETS = SNOWFLAKE_PRESETS
     App._enter_snowflake_mode = _enter_snowflake_mode
     App._exit_snowflake_mode = _exit_snowflake_mode
