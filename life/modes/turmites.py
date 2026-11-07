@@ -1,21 +1,17 @@
-"""Mode: turmite — simulation mode for the life package."""
+"""Turmites — Langton's ant generalised to an ant with internal states and a transition table."""
 import curses
-import math
-import random
 import time
 
 
 from life.constants import SPEEDS, SPEED_LABELS
 
 def _turmite_step(self):
-    """Advance all turmite ants by one step."""
+    """Advance every ant by one step."""
     for ant in self.turmite_ants:
         r, c = ant["r"], ant["c"]
         color = self.turmite_grid.get((r, c), 0)
         state = ant["state"]
-        # Look up transition
         write_color, turn, new_state = self.turmite_table[state][color]
-        # Write color
         if write_color == 0:
             self.turmite_grid.pop((r, c), None)
         else:
@@ -23,7 +19,6 @@ def _turmite_step(self):
         # Turn: 0=none, 1=right, 2=u-turn, 3=left
         ant["dir"] = (ant["dir"] + turn) % 4
         ant["state"] = new_state
-        # Move forward
         dr = [-1, 0, 1, 0]
         dc = [0, 1, 0, -1]
         ant["r"] = (r + dr[ant["dir"]]) % self.turmite_rows
@@ -33,7 +28,7 @@ def _turmite_step(self):
 
 
 def _turmite_init(self):
-    """Initialize turmite grid and place a single ant at center."""
+    """Clear the grid and place one ant at the centre."""
     max_y, max_x = self.stdscr.getmaxyx()
     self.turmite_rows = max_y - 5
     self.turmite_cols = (max_x - 1) // 2
@@ -242,7 +237,7 @@ def _draw_turmite_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate [Enter]=select [q/Esc]=cancel"
+        hint = " j/k=move  Enter=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
@@ -253,7 +248,6 @@ def _draw_turmite_menu(self, max_y: int, max_x: int):
 def _draw_turmite(self, max_y: int, max_x: int):
     """Draw the Turmites simulation."""
     # Title bar
-    n_ants = len(self.turmite_ants)
     title = f" Turmites [{self.turmite_preset_name}]  States: {self.turmite_num_states}  Colors: {self.turmite_num_colors}  Step: {self.turmite_step_count}  Steps/f: {self.turmite_steps_per_frame}"
     state_str = " PLAY" if self.turmite_running else " PAUSE"
     title += f"  {state_str}"
@@ -332,7 +326,7 @@ def _draw_turmite(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [+/-]=steps/frame [r]=reset [R]=menu [</>]=speed [q]=exit"
+            hint = " Space=play  n=step  +/-=steps/frame  r=reset  R=menu  </>=speed  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
