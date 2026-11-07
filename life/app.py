@@ -5439,6 +5439,13 @@ class App:
                 exit_fn = getattr(self, entry["exit"], None)
                 if exit_fn:
                     exit_fn()
+            elif entry["attr"] and entry["attr"].endswith("_mode"):
+                # Most modes open a menu first and set their flag only after
+                # the user starts the simulation. Close a menu left open.
+                stem = entry["attr"][:-len("_mode")]
+                for menu in (stem + "_menu", stem + "_rule_menu"):
+                    if getattr(self, menu, False) is True:
+                        setattr(self, menu, False)
         # Clear universal time-travel history on mode switch
         self.tt_history.clear()
         self.tt_pos = None
