@@ -247,11 +247,12 @@ def _traffic_step(self):
 
     # ── Lane-changing phase (STCA symmetric rule) ─────────────────────
     if self.traffic_lane_change and rows > 1:
+        moved = set()  # a car changes lane at most once per step
         for r in range(rows):
             for c in range(cols):
                 v = grid[r][c]
-                if v < 0:
-                    continue  # empty or obstacle
+                if v < 0 or (r, c) in moved:
+                    continue  # empty, obstacle or already moved
                 gap_cur = _traffic_gap(grid, r, c, cols)
                 if gap_cur >= v + 1:
                     continue  # enough room, no need to change
@@ -277,6 +278,7 @@ def _traffic_step(self):
                 # Execute lane change
                 grid[nr][c] = v
                 grid[r][c] = -1
+                moved.add((nr, c))
 
     # ── On-ramp injection ─────────────────────────────────────────────
     if kind == "onramp":

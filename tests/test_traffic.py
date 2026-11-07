@@ -47,3 +47,20 @@ class TestTraffic:
         self.app._handle_traffic_key(ord("d"))
         assert cars() == round(self.app.traffic_density * cells)
         assert cars() < before
+
+    def test_car_changes_lane_at_most_once_per_step(self):
+        for seed in range(40):
+            random.seed(seed)
+            self.app._traffic_init(0)
+            self.app.traffic_p_slow = 0.0
+            grid = self.app.traffic_grid
+            for row in grid:
+                row[:] = [-1] * len(row)
+            c = 10
+            grid[0][c] = 1
+            grid[0][c + 1] = -2   # blocks lane 0
+            grid[1][c + 2] = -2   # lane 1 is only a little better
+            self.app._traffic_step()
+            lanes = [r for r in range(self.app.traffic_rows)
+                     for v in self.app.traffic_grid[r] if v >= 0]
+            assert lanes and max(lanes) <= 1
