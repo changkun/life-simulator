@@ -778,6 +778,10 @@ def _handle_angio_menu_key(self, key: int) -> bool:
 
 def _handle_angio_key(self, key: int) -> bool:
     """Handle key input during live simulation."""
+    if key == ord("q") or key == 27:
+        self._exit_angio_mode()
+        return True
+
     if key == ord(" "):
         self.angio_running = not self.angio_running
         self._flash("Running" if self.angio_running else "Paused")
@@ -929,7 +933,7 @@ def _draw_angio(self, max_y: int, max_x: int):
         _draw_angio_graphs(self, max_y, max_x)
 
     # Bottom hints
-    hints = " [Space]Run [v]View [n]Step [+/-]Speed [t]Tumor [d]Drug [r]Reset [m]Menu"
+    hints = " [Space]Run [v]View [n]Step [+/-]Speed [t]Tumor [d]Drug [r]Reset [m]Menu [q]Exit"
     hy = max_y - 1
     if 0 < hy < max_y:
         try:
