@@ -3297,6 +3297,20 @@ class App:
 
     # ── Table-driven mode dispatch ─────────────────────────────────────
 
+    # Screens whose own key handlers bind Tab. While one of them is active,
+    # Tab goes to that screen instead of toggling the global minimap.
+    _TAB_SCREENS = (
+        "re_menu", "re_mode", "symphony_mode", "split_mode", "comp_mode",
+        "adversary_mode", "archaeo_mode", "optics_mode", "orrery_mode",
+        "accretion_mode",
+    )
+
+    def _tab_claimed(self) -> bool:
+        """True if the dashboard, an overlay or the active mode binds Tab."""
+        if self.dashboard or getattr(self, "compdet_active", False):
+            return True
+        return any(getattr(self, attr, False) for attr in self._TAB_SCREENS)
+
     def _dispatch_mode_key(self, key: int) -> bool:
         """Route key input to the active mode via MODE_DISPATCH table.
 
@@ -4259,8 +4273,8 @@ class App:
             if self._cast_handle_key(key):
                 continue
 
-            # ── Minimap toggle (Tab key, global across all modes) ──
-            if key == 9:  # Tab
+            # ── Minimap toggle (Tab key, unless the active screen binds it) ──
+            if key == 9 and not self._tab_claimed():
                 self.show_minimap = not self.show_minimap
                 self._flash("Minimap ON" if self.show_minimap else "Minimap OFF")
                 continue
