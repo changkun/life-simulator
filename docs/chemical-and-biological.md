@@ -1200,6 +1200,8 @@ Ion channel gating (per cell):
 Spatial coupling (4-neighbor Laplacian diffusion):
     V_new[r][c] += dt × Σ_neighbors(D_eff × (V[neighbor] - V[r][c]))
     D_eff = √(D_local × D_neighbor)   (geometric mean)
+    dt = 0.4; if dt × Σ D_eff exceeds 0.5, the coupling term is scaled down to that limit,
+    which keeps the explicit update stable (voltage then peaks near 2, inside the clamp [-2.5, 3.0])
 
 Tissue-specific diffusion coefficients:
     Normal myocyte: 0.8    Purkinje fiber: 3.5    His bundle: 2.5
@@ -1235,7 +1237,7 @@ Defibrillation:
 | Long QT Syndrome | K⁺ modifier 0.4, refractory 20 ticks | Prolonged action potential visible as wide plateau, risk of wavefront catching its own refractory tail (torsades) |
 | Defibrillation Rescue | Starts in VFib — random chaotic activation | Complete electrical chaos → press `d` → massive reset → SA re-establishes sinus rhythm |
 
-**What to look for** — In the Tissue Activation Map, watch the wavefront (█ bright red) sweep from the SA node (♥) across both atria, pause at the AV node (◆), then flash down the His bundle (═) and Purkinje fibers (─) before flooding the ventricles. The plateau phase (▒ yellow) trails behind the wavefront, followed by the refractory period (▒ dim magenta) and finally resting tissue (░ cyan). In VTach, the spiral wave is mesmerizing — watch it spin around the scar tissue (░). Switch to ECG view to see familiar P-QRS-T waveform morphology emerge from the summed dipole vectors. In the Defibrillation Rescue preset, observe chaotic VFib degenerate into disorganized baseline, then deliver the shock with `d` to watch the dramatic reset and return of organized rhythm.
+**What to look for** — In the Tissue Activation Map, watch the wavefront (█ bright red) sweep from the SA node (♥) across both atria, pause at the AV node (◆), then flash down the His bundle (═) and Purkinje fibers (─) before flooding the ventricles. The plateau phase (▒ yellow) trails behind the wavefront, followed by the refractory period (▒ dim magenta) and finally resting tissue (░ cyan). In VTach, the spiral wave is mesmerizing — watch it spin around the scar tissue (░). Switch to ECG view to see familiar P-QRS-T waveform morphology emerge from the summed dipole vectors. In the Defibrillation Rescue preset, observe chaotic VFib degenerate into disorganized baseline, then deliver the shock with `d` to watch the dramatic reset and return of organized rhythm. Other keys: `Space` plays or pauses, `n` steps, `v` cycles the views, `+`/`-` set the speed, `r` resets, `R` opens the menu and `q` exits.
 
 **References**
 - FitzHugh, R. "Impulses and physiological states in theoretical models of nerve membrane." *Biophysical Journal* 1 (1961): 445-466. https://doi.org/10.1016/S0006-3495(61)86902-6
