@@ -218,12 +218,13 @@ def _fluidlife_lbm_step(self):
                 sc = (c - ex[i]) % cols
                 f_new[r][c][i] = f[sr][sc][i]
 
-    # Bounce-back for walls
+    # Bounce-back for walls: reflect the populations that just streamed in.
     for r in range(rows):
         for c in range(cols):
             if objs[r][c] == 1:  # wall
+                arrived = f_new[r][c][:]
                 for i in range(9):
-                    f_new[r][c][i] = f[r][c][opp[i]]
+                    f_new[r][c][i] = arrived[opp[i]]
 
     # Collision + forcing
     for r in range(rows):
