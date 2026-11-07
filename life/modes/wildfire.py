@@ -47,6 +47,9 @@ _FUEL_PROPS = {
                   "crown_thr": 999.0, "ember": 0.0},
 }
 
+# Upper bound on a cell's fire intensity.
+_MAX_INTENSITY = 5.0
+
 
 # ══════════════════════════════════════════════════════════════════════
 #  Presets
@@ -539,8 +542,11 @@ def _wfire_step(self):
                 continue
 
             # ── Spread from neighbors ──
+            # A burning cell only decays.  Feeding it from burning
+            # neighbours made intensity grow without bound and the fire
+            # never went out.
             spread_in = 0.0
-            for dr, dc, dist in neighbors:
+            for dr, dc, dist in (neighbors if cur <= 0.0 else ()):
                 nr, nc = r + dr, c + dc
                 if 0 <= nr < rows and 0 <= nc < cols:
                     ni = intensity[nr][nc]
@@ -586,7 +592,7 @@ def _wfire_step(self):
             # ── Update intensity ──
             if cur > 0.0:
                 # Existing fire: burn and decay
-                new_int = cur + spread_in * 0.3 - burnout * (1.0 + cur * 0.1)
+                new_int = cur - burnout * (1.0 + cur * 0.1)
                 # Fuel exhaustion accelerates burnout
                 if burned[r][c]:
                     new_int -= burnout * 0.5
@@ -594,7 +600,7 @@ def _wfire_step(self):
                 # Potential new ignition from spread
                 ignition_threshold = 0.15 + moisture[r][c] * 0.5
                 if spread_in > ignition_threshold:
-                    new_int = spread_in * 0.5
+                    new_int = min(_MAX_INTENSITY, spread_in)
                 else:
                     new_int = 0.0
 
