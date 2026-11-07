@@ -205,7 +205,7 @@ Over geological epochs, observe the competition between uplift (building mountai
 
 **Background**
 
-First-person terrain flythrough renders procedural landscapes in real-time pseudo-3D using perspective projection and height-field raycasting, a technique pioneered in the Voxel Space engine (Comanche, 1992). This mode generates a 256x256 heightmap with cosine-interpolated layered noise, then renders a first-person view with altitude zones, distance fog, and a day/night cycle.
+First-person terrain flythrough draws procedural landscapes in pseudo-3D, in the spirit of the Voxel Space engine (Comanche, 1992). This mode generates a 256x256 heightmap from cosine-interpolated layered noise. It draws a first-person view with altitude zones, distance fog, and a day/night cycle. It is a simplification: each screen row maps to a ground distance and each column to a ray direction, so nearer ridges do not hide terrain behind them.
 
 **Formulation**
 
@@ -241,7 +241,7 @@ Day/night: time cycles 0.0-1.0 (midnight-midnight), affects sky color and dimmin
 
 **What to look for**
 
-The non-linear depth mapping (square root) gives a natural perspective where nearby terrain has high detail and the horizon fades gradually. Fly over canyon terrain types to see the carved V-shape valleys. The day/night cycle transitions through dawn (yellow), day (cyan sky with sun arc), dusk (red), and night (stars and moon). Different terrain presets (hills, mountains, canyon, islands, glacial, alien) demonstrate how the same noise framework produces vastly different landscapes through post-processing transforms.
+The non-linear depth mapping (square root) gives a natural perspective where nearby terrain has high detail and the horizon fades gradually. Fly over canyon terrain types to see the carved V-shape valleys. The day/night cycle changes the sky colour through dawn, day (with a sun arc), dusk, and night (stars and moon). The presets are Rolling Hills, Mountain Range, Desert Canyon, Volcanic Islands, Glacial Valley and Alien World. They show how one noise framework gives very different landscapes through post-processing transforms. Fly with `WASD`, look with the arrow keys, change altitude with `e`/`c`, and set the speed with `+`/`-`. `t` toggles the automatic clock, and `T` advances it.
 
 **References**
 
