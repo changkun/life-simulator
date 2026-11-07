@@ -504,6 +504,8 @@ def _handle_archaeo_key(self, key):
 
     if key == ord('h'):
         self.archaeo_show_hints = not self.archaeo_show_hints
+        if not self.archaeo_show_hints:
+            self.archaeo_last_result = "Key hints hidden (h to show)"
         return True
 
     if key == ord('a'):
@@ -951,10 +953,14 @@ def _draw_control_panel(self, px, panel_w, max_y, max_x):
 
 
 def _draw_status_bar(self, max_y, max_x):
-    """Draw the bottom status bar."""
+    """Draw the key hints on the bottom row unless the player hid them with h."""
+    if not self.archaeo_show_hints:
+        return
     try:
-        bar = (" SPC:simulate Enter:submit c:clue v:view t:timeline "
-               "d:diff n:new r:reset a:answer q:quit ")
+        full = (" Space=run  Enter=submit  0-8=digit  Tab=B/S  +/-=density  s=seed  c=clue"
+                "  v=view  t=timeline  d=level  n=new  r=reset  a=answer  h=hints  q=quit ")
+        short = " Space=run  Enter=submit  0-8=digit  Tab=B/S  c=clue  v=view  n=new  q=quit "
+        bar = full if len(full) < max_x else short
         self.stdscr.addstr(max_y - 1, 0, bar[:max_x - 1], curses.A_REVERSE)
     except curses.error:
         pass

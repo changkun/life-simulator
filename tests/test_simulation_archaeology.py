@@ -24,3 +24,34 @@ def test_timeline_needs_its_clue():
     assert app.archaeo_show_timeline is True
     app._handle_archaeo_key(ord("t"))
     assert app.archaeo_show_timeline is False
+
+
+class _Screen:
+    def __init__(self):
+        self.writes = []
+
+    def getmaxyx(self):
+        return 24, 80
+
+    def erase(self):
+        self.writes.clear()
+
+    def addstr(self, y, x, text, *attrs):
+        self.writes.append((y, x, text))
+
+
+def test_h_hides_and_shows_key_hints():
+    app = _make_app()
+    app.stdscr = _Screen()
+    sa._generate_puzzle(app)
+
+    def bottom_row():
+        app.stdscr.erase()
+        app._draw_archaeo()
+        return [t for y, x, t in app.stdscr.writes if y == 23]
+
+    assert any("Space=run" in t for t in bottom_row())
+    app._handle_archaeo_key(ord("h"))
+    assert bottom_row() == []
+    app._handle_archaeo_key(ord("h"))
+    assert any("Space=run" in t for t in bottom_row())
