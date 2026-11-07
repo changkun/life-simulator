@@ -1,6 +1,5 @@
-"""Mode: wolfram — simulation mode for the life package."""
+"""Wolfram 1D Automaton — elementary cellular automata (rules 0-255) drawn as a cascade of rows."""
 import curses
-import math
 import random
 import time
 
@@ -10,8 +9,10 @@ from life.constants import SPEEDS, SPEED_LABELS
 WOLFRAM_MAX_ROWS = 1000
 
 def _wolfram_apply_rule(self, rule_num: int, left: int, center: int, right: int) -> int:
-    """Apply a Wolfram elementary rule. The 3-cell neighbourhood (left, center, right)
-    forms a 3-bit index into the 8-bit rule number."""
+    """Return a cell's next state under an elementary rule.
+
+    The neighbourhood (left, center, right) forms a 3-bit index into the rule number.
+    """
     idx = (left << 2) | (center << 1) | right
     return (rule_num >> idx) & 1
 
@@ -64,7 +65,7 @@ def _wolfram_step(self):
 
 
 def _enter_wolfram_mode(self):
-    """Enter the Wolfram 1D automaton mode — show rule menu first."""
+    """Enter Wolfram 1D Automaton mode and show the rule menu."""
     self.wolfram_menu = True
     self.wolfram_menu_sel = 0
     self._flash("Wolfram 1D Automaton — select a rule")
@@ -72,7 +73,7 @@ def _enter_wolfram_mode(self):
 
 
 def _exit_wolfram_mode(self):
-    """Exit Wolfram mode back to normal Game of Life."""
+    """Exit Wolfram 1D Automaton mode."""
     self.wolfram_mode = False
     self.wolfram_menu = False
     self.wolfram_running = False
@@ -82,7 +83,7 @@ def _exit_wolfram_mode(self):
 
 
 def _handle_wolfram_menu_key(self, key: int) -> bool:
-    """Handle keys in the Wolfram rule selection menu."""
+    """Handle keys in the rule selection menu."""
     if key == -1:
         return True
     n_presets = len(self.WOLFRAM_PRESETS)
@@ -100,7 +101,6 @@ def _handle_wolfram_menu_key(self, key: int) -> bool:
         if self.wolfram_menu_sel < n_presets:
             self.wolfram_rule = self.WOLFRAM_PRESETS[self.wolfram_menu_sel][0]
         elif self.wolfram_menu_sel == n_presets:
-            # Custom rule input
             txt = self._prompt_text("Enter rule number (0-255)")
             if txt is not None:
                 try:
@@ -116,14 +116,10 @@ def _handle_wolfram_menu_key(self, key: int) -> bool:
             else:
                 return True
         elif self.wolfram_menu_sel == n_presets + 1:
-            # Toggle seed mode
             modes = ["center", "gol_row", "random"]
             idx = modes.index(self.wolfram_seed_mode)
             self.wolfram_seed_mode = modes[(idx + 1) % len(modes)]
             return True
-        elif self.wolfram_menu_sel == n_presets + 2:
-            # Start with currently selected settings
-            pass
         self.wolfram_menu = False
         self.wolfram_mode = True
         self.wolfram_running = False
@@ -135,7 +131,7 @@ def _handle_wolfram_menu_key(self, key: int) -> bool:
 
 
 def _handle_wolfram_key(self, key: int) -> bool:
-    """Handle keys while in Wolfram 1D automaton mode."""
+    """Handle keys while the automaton is shown."""
     if key == -1:
         return True
     if key == ord("q") or key == 27:
@@ -150,12 +146,10 @@ def _handle_wolfram_key(self, key: int) -> bool:
         self._wolfram_step()
         return True
     if key == ord("r"):
-        # Reset with current rule
         self._wolfram_init()
         self._flash(f"Reset Rule {self.wolfram_rule}")
         return True
     if key == ord("R") or key == ord("m"):
-        # Open rule menu again
         self.wolfram_mode = False
         self.wolfram_running = False
         self.wolfram_menu = True
@@ -222,7 +216,7 @@ def _draw_wolfram_menu(self, max_y: int, max_x: int):
     # Extra menu items
     extra_y = 5 + min(n_presets, max_y - 11)
     extra_items = [
-        f"  [Custom] Enter rule number manually",
+        "  [Custom] Enter rule number manually",
         f"  [Seed: {self.wolfram_seed_mode}] Toggle initial condition (center/GoL row/random)",
         f"  >>> Start with Rule {self.wolfram_rule}, seed={self.wolfram_seed_mode} <<<",
     ]
@@ -257,7 +251,7 @@ def _draw_wolfram_menu(self, max_y: int, max_x: int):
     # Hint
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate [Enter]=select [q/Esc]=cancel"
+        hint = " j/k=move  Enter=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
@@ -266,7 +260,7 @@ def _draw_wolfram_menu(self, max_y: int, max_x: int):
 
 
 def _draw_wolfram(self, max_y: int, max_x: int):
-    """Draw the Wolfram 1D automaton — rows cascade top to bottom."""
+    """Draw the automaton, with rows cascading from top to bottom."""
     # Title bar
     rule_bits = f"{self.wolfram_rule:08b}"
     title = f" Wolfram Rule {self.wolfram_rule} [{rule_bits}]  Gen: {self.wolfram_dropped + len(self.wolfram_rows) - 1}  Seed: {self.wolfram_seed_mode}"
@@ -349,7 +343,7 @@ def _draw_wolfram(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [h/l]=prev/next rule [r]=reset [R]=menu [</>]=speed [q]=exit"
+            hint = " Space=play  n=step  h/l=prev/next rule  r=reset  R=menu  </>=speed  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
