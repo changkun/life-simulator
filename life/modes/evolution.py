@@ -1,9 +1,8 @@
-"""Mode: evo — simulation mode for the life package."""
+"""Evolution / GA — a genetic algorithm that breeds Life-like B/S rulesets scored by simulation."""
 import curses
 import math
 import random
 import time
-
 
 from life.colors import color_for_age
 from life.constants import CELL_CHAR, SPEEDS, SPEED_LABELS
@@ -18,7 +17,6 @@ def _enter_evo_mode(self):
         self._exit_race_mode()
     self.evo_menu = True
     self.evo_menu_sel = 0
-
 
 
 def _exit_evo_mode(self):
@@ -39,12 +37,11 @@ def _exit_evo_mode(self):
     self._flash("Evolution mode OFF")
 
 
-
 def _evo_random_rule(self) -> tuple[set, set]:
-    """Generate a random B/S ruleset."""
+    """Return a random B/S ruleset."""
     birth = {d for d in range(9) if random.random() < 0.3}
     survival = {d for d in range(9) if random.random() < 0.3}
-    # Ensure at least one birth and one survival digit
+    # A ruleset needs at least one birth and one survival digit to be playable.
     if not birth:
         birth.add(random.randint(1, 5))
     if not survival:
@@ -52,9 +49,8 @@ def _evo_random_rule(self) -> tuple[set, set]:
     return birth, survival
 
 
-
 def _evo_mutate(self, birth: set, survival: set) -> tuple[set, set]:
-    """Mutate a ruleset by flipping individual digits."""
+    """Flip each birth and survival digit with the mutation rate."""
     new_birth = set(birth)
     new_survival = set(survival)
     for d in range(9):
@@ -68,31 +64,30 @@ def _evo_mutate(self, birth: set, survival: set) -> tuple[set, set]:
                 new_survival.discard(d)
             else:
                 new_survival.add(d)
-    # Ensure at least one birth digit
+    # Without a birth digit nothing can ever be born.
     if not new_birth:
         new_birth.add(random.randint(1, 5))
     return new_birth, new_survival
 
 
-
 def _evo_crossover(self, parent1: tuple[set, set], parent2: tuple[set, set]) -> tuple[set, set]:
-    """Single-point crossover between two rulesets."""
+    """Cross two rulesets, taking each digit from a randomly chosen parent."""
     b1, s1 = parent1
     b2, s2 = parent2
-    # For each digit, pick from either parent
     child_birth = set()
     child_survival = set()
     for d in range(9):
-        child_birth.add(d) if (d in (b1 if random.random() < 0.5 else b2)) else None
-        child_survival.add(d) if (d in (s1 if random.random() < 0.5 else s2)) else None
+        if d in (b1 if random.random() < 0.5 else b2):
+            child_birth.add(d)
+        if d in (s1 if random.random() < 0.5 else s2):
+            child_survival.add(d)
     if not child_birth:
         child_birth.add(random.randint(1, 5))
     return child_birth, child_survival
 
 
-
 def _evo_init_population(self):
-    """Create initial random population and start simulation."""
+    """Create the next population (random or bred from the elite) and start simulating."""
     self.evo_grids = []
     self.evo_rules = []
     self.evo_fitness = []
@@ -100,12 +95,11 @@ def _evo_init_population(self):
     self.evo_sim_step = 0
     self.evo_generation += 1
 
-    # If we have previous elite, breed from them; otherwise random
+    # Breed from the previous elite when there is one; otherwise start random.
     if self.evo_history and len(self.evo_history[-1].get("elite_rules", [])) >= 2:
         elite_rules = self.evo_history[-1]["elite_rules"]
         new_rules = list(elite_rules)[:self.evo_pop_size]  # keep elites
         while len(new_rules) < self.evo_pop_size:
-            # Crossover two random elites + mutate
             p1 = random.choice(elite_rules)
             p2 = random.choice(elite_rules)
             child = self._evo_crossover(p1, p2)
@@ -114,14 +108,13 @@ def _evo_init_population(self):
     else:
         new_rules = [self._evo_random_rule() for _ in range(self.evo_pop_size)]
 
-    # Create a small grid for each individual with random initial state
+    # Each individual gets a small grid with 20% random fill.
     sub_rows = 30
     sub_cols = 40
     for birth, survival in new_rules:
         g = Grid(sub_rows, sub_cols)
         g.birth = set(birth)
         g.survival = set(survival)
-        # Random 20% fill
         for r in range(sub_rows):
             for c in range(sub_cols):
                 if random.random() < 0.2:
@@ -133,7 +126,6 @@ def _evo_init_population(self):
 
     self.evo_phase = "simulating"
     self.running = True
-
 
 
 def _evo_step_sim(self):
@@ -149,7 +141,6 @@ def _evo_step_sim(self):
         self._evo_score_all()
 
 
-
 def _evo_score_all(self):
     """Compute fitness for all individuals."""
     self.evo_phase = "scored"
@@ -158,7 +149,6 @@ def _evo_score_all(self):
         hist = self.evo_pop_histories[i]
         self.evo_fitness[i] = self._evo_compute_fitness(g, hist)
 
-    # Sort by fitness score (best first)
     order = sorted(range(len(self.evo_fitness)),
                    key=lambda i: self.evo_fitness[i].get("total", 0), reverse=True)
     self.evo_grids = [self.evo_grids[i] for i in order]
@@ -166,14 +156,12 @@ def _evo_score_all(self):
     self.evo_fitness = [self.evo_fitness[i] for i in order]
     self.evo_pop_histories = [self.evo_pop_histories[i] for i in order]
 
-    # Track best ever
     best = self.evo_fitness[0]
     if self.evo_best_ever is None or best.get("total", 0) > self.evo_best_ever.get("total", 0):
         self.evo_best_ever = dict(best)
         self.evo_best_ever["rule"] = rule_string(self.evo_rules[0][0], self.evo_rules[0][1])
         self.evo_best_ever["gen"] = self.evo_generation
 
-    # Record elite rules for next generation
     elite_count = min(self.evo_elite_count, len(self.evo_rules))
     elite_rules = [self.evo_rules[i] for i in range(elite_count)]
     self.evo_history.append({
@@ -187,35 +175,32 @@ def _evo_score_all(self):
     self._flash(f"Gen {self.evo_generation} scored! Best: {rule_string(self.evo_rules[0][0], self.evo_rules[0][1])} ({best.get('total', 0):.0f}pts)")
 
 
-
 def _evo_compute_fitness(self, g: Grid, hist: list[int]) -> dict:
-    """Compute fitness score for a single individual."""
+    """Score one individual from its population history."""
     if not hist:
         return {"total": 0, "longevity": 0, "stability": 0, "diversity": 0, "population": 0}
 
-    # Longevity: how many gens stayed alive (non-zero population)
-    alive_gens = sum(1 for p in hist if p > 0)
-    longevity = alive_gens
+    # Longevity: generations with a non-zero population.
+    longevity = sum(1 for p in hist if p > 0)
 
-    # Population score: average population (normalized)
+    # Population score: average population, capped.
     avg_pop = sum(hist) / len(hist) if hist else 0
     pop_score = min(avg_pop, 200)  # cap at 200
 
-    # Stability: low variance = more stable
+    # Stability: a low coefficient of variation scores high.
     if len(hist) > 1 and avg_pop > 0:
         variance = sum((p - avg_pop) ** 2 for p in hist) / len(hist)
         std = variance ** 0.5
-        # Low std relative to mean = more stable
         cv = std / max(avg_pop, 1)  # coefficient of variation
         stability = max(0, 100 - cv * 100)
     else:
         stability = 0
 
-    # Diversity: count distinct population values (pattern richness)
-    unique_pops = len(set(hist[-100:]))  # last 100 gens
+    # Diversity: distinct population values over the last 100 generations.
+    unique_pops = len(set(hist[-100:]))
     diversity = min(unique_pops * 2, 100)
 
-    # Weight based on fitness mode
+    # The chosen mode triples one component.
     if self.evo_fitness_mode == "longevity":
         total = longevity * 3 + pop_score * 0.5 + stability * 0.5 + diversity * 0.5
     elif self.evo_fitness_mode == "diversity":
@@ -234,11 +219,9 @@ def _evo_compute_fitness(self, g: Grid, hist: list[int]) -> dict:
     }
 
 
-
 def _evo_next_generation(self):
     """Breed the next generation from current elite."""
     self._evo_init_population()
-
 
 
 def _evo_adopt_rule(self):
@@ -252,7 +235,6 @@ def _evo_adopt_rule(self):
     rs = rule_string(birth, survival)
     self._exit_evo_mode()
     self._flash(f"Adopted evolved rule: {rs}")
-
 
 
 def _handle_evo_menu_key(self, key: int) -> bool:
@@ -331,7 +313,6 @@ def _handle_evo_menu_key(self, key: int) -> bool:
     return True
 
 
-
 def _handle_evo_key(self, key: int) -> bool:
     """Handle input during active evolution mode."""
     if key == -1:
@@ -341,7 +322,6 @@ def _handle_evo_key(self, key: int) -> bool:
         return True
     if key == ord(" "):
         if self.evo_phase == "scored":
-            # Start next generation
             self._evo_next_generation()
         else:
             self.running = not self.running
@@ -377,14 +357,12 @@ def _handle_evo_key(self, key: int) -> bool:
         self._flash(f"Speed: {SPEED_LABELS[self.speed_idx]}")
         return True
     if key == ord("f"):
-        # Cycle fitness mode
         modes = ["balanced", "longevity", "diversity", "population"]
         idx = modes.index(self.evo_fitness_mode)
         self.evo_fitness_mode = modes[(idx + 1) % len(modes)]
         self._flash(f"Fitness: {self.evo_fitness_mode}")
         return True
     if key == ord("m"):
-        # Adjust mutation rate interactively
         val = self._prompt_text(f"Mutation rate 0-100% (current: {int(self.evo_mutation_rate * 100)}%)")
         if val:
             try:
@@ -396,7 +374,6 @@ def _handle_evo_key(self, key: int) -> bool:
                 self._flash("Invalid number")
         return True
     if key == ord("s"):
-        # Skip to end of simulation
         if self.evo_phase == "simulating":
             while self.evo_sim_step < self.evo_grid_gens:
                 self.evo_sim_step += 1
@@ -408,9 +385,8 @@ def _handle_evo_key(self, key: int) -> bool:
     return True
 
 
-
 def _draw_evo_menu(self, max_y: int, max_x: int):
-    """Draw the evolution mode settings menu."""
+    """Draw the settings menu."""
     title = "── Evolution Mode: Genetic Algorithm Settings ──"
     try:
         self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
@@ -439,7 +415,6 @@ def _draw_evo_menu(self, max_y: int, max_x: int):
         if y >= max_y - 2:
             break
         if i == len(items) - 1:
-            # Start button
             line = f"  {label}"
             attr = curses.color_pair(3) | curses.A_BOLD
             if i == self.evo_menu_sel:
@@ -457,7 +432,7 @@ def _draw_evo_menu(self, max_y: int, max_x: int):
 
     tip_y = max_y - 1
     if tip_y > 0:
-        tip = " Up/Down=navigate │ Enter/Space=edit/toggle │ q/Esc=cancel"
+        tip = " Up/Down=navigate  Enter/Space=edit/toggle  q/Esc=cancel"
         try:
             self.stdscr.addstr(tip_y, 0, tip[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -465,18 +440,17 @@ def _draw_evo_menu(self, max_y: int, max_x: int):
             pass
 
 
-
 def _draw_evo(self, max_y: int, max_x: int):
-    """Draw the evolution mode view with tiled sub-grids and fitness scoreboard."""
+    """Draw the tiled sub-grids, then the scoreboard below them."""
     n = len(self.evo_grids)
     if n == 0:
         return
 
-    # Compute tile layout: roughly square arrangement
+    # Arrange the tiles in a roughly square grid.
     tile_cols = int(math.ceil(math.sqrt(n)))
     tile_rows = int(math.ceil(n / tile_cols))
 
-    # Reserve space for scoreboard at bottom
+    # The scoreboard takes the bottom third at most.
     scoreboard_lines = min(n + 4, max_y // 3)
     grid_area_h = max_y - scoreboard_lines
     grid_area_w = max_x
@@ -491,7 +465,6 @@ def _draw_evo(self, max_y: int, max_x: int):
     tile_h = max(3, grid_area_h // tile_rows)
     tile_w = max(6, grid_area_w // tile_cols)
 
-    # Draw each individual's grid tile
     for idx in range(n):
         tr = idx // tile_cols
         tc = idx % tile_cols
@@ -522,7 +495,6 @@ def _draw_evo(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-        # Draw cells using density rendering for small tiles
         cell_vis_rows = tile_h - 1
         cell_vis_cols = (tile_w - 1) // 2
 
