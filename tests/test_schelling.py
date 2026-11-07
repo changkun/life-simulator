@@ -359,3 +359,10 @@ class TestSchelling:
         self.app.schelling_steps_per_frame = 10
         self.app._schelling_init(0)
         assert self.app.schelling_steps_per_frame == 1
+
+    def test_counts_history_is_bounded(self):
+        """The counts history keeps only the most recent entries."""
+        self.app._schelling_init(0)
+        for _ in range(2100):
+            self.app._schelling_record_counts()
+        assert len(self.app.schelling_counts) == 2000

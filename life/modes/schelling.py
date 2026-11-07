@@ -7,6 +7,8 @@ import time
 
 from life.constants import SPEEDS
 
+_MAX_HISTORY = 2000
+
 def _enter_schelling_mode(self):
     """Enter Schelling Segregation mode — show preset menu."""
     self.schelling_menu = True
@@ -91,6 +93,8 @@ def _schelling_record_counts(self):
     self.schelling_happy_count = happy
     self.schelling_unhappy_count = unhappy
     self.schelling_counts.append((happy, unhappy))
+    if len(self.schelling_counts) > _MAX_HISTORY:
+        del self.schelling_counts[:-_MAX_HISTORY]
 
 
 
