@@ -46,3 +46,10 @@ def test_pattern_entropy():
     assert phase_space._pattern_entropy(g) == pytest.approx(1.0)
     g.population = 16
     assert phase_space._pattern_entropy(g) == 0.0
+
+
+def test_class_tables_cover_only_returned_classes():
+    """Dead entries 'growing' and 'dying' are gone from both tables."""
+    from life.modes import phase_space as ps
+    assert "growing" not in ps._CLASS_COLORS and "dying" not in ps._CLASS_COLORS
+    assert set(ps._COMPLEXITY_WEIGHTS) <= set(ps._CLASS_COLORS)

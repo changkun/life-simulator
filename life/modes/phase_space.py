@@ -21,13 +21,11 @@ _INITIAL_DENSITY = 0.35
 # Each classification maps to (color_pair, char, extra_attr)
 _CLASS_COLORS = {
     "dead":        (0, "  ", curses.A_DIM),
-    "static":      (5, "░░", 0),           # cyan
-    "oscillating": (7, "▒▒", 0),           # white/grey
-    "complex":     (4, "▓▓", curses.A_BOLD),  # yellow — edge of chaos
-    "chaotic":     (2, "██", 0),            # red
-    "explosive":   (6, "██", curses.A_BOLD),  # magenta
-    "growing":     (3, "▓▓", 0),           # green
-    "dying":       (1, "░░", curses.A_DIM), # blue
+    "static":      (5, "░░", 0),           # red
+    "oscillating": (7, "▒▒", 0),           # cyan
+    "complex":     (4, "▓▓", curses.A_BOLD),  # magenta — edge of chaos
+    "chaotic":     (2, "██", 0),            # cyan
+    "explosive":   (6, "██", curses.A_BOLD),  # white
     "starting":    (0, "··", curses.A_DIM),
     "pending":     (0, "··", curses.A_DIM),
 }
@@ -72,10 +70,8 @@ _AXIS_MODES = [
 _COMPLEXITY_WEIGHTS = {
     "dead": 0.0,
     "static": 0.1,
-    "dying": 0.15,
     "oscillating": 0.5,
     "complex": 0.9,
-    "growing": 0.6,
     "chaotic": 0.7,
     "explosive": 0.3,
     "starting": 0.0,
