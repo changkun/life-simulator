@@ -1172,6 +1172,48 @@ Dynamics proceed via Monte Carlo Metropolis sweeps: each sweep makes as many fli
 
 ---
 
+## Percolation Theory & Critical Phenomena
+
+**Background** — Percolation asks when random local connections link into a path across a whole system. Broadbent and Hammersley introduced the problem in 1957. In Bernoulli percolation on a lattice, each site (or bond) is occupied independently with probability p. Below a threshold p_c, only small clusters exist; above it, one cluster spans the lattice. Near p_c the cluster-size distribution follows a power law and the spanning cluster is fractal. The mode runs six variants on a 2D grid and tracks the clusters live.
+
+**Formulation** — Occupation is regenerated for each p, and clusters are found with union-find on 4-neighbor connections:
+
+```
+Site percolation:       each site occupied with probability p
+Bond percolation:       all sites occupied; each horizontal and vertical bond
+                        open with probability p
+Invasion percolation:   no parameter; every site gets a random weight, and the
+                        cluster grows from the center by invading the
+                        lowest-weight site on its frontier
+Directed percolation:   site occupation with probability p, but clusters join
+                        only through right and down neighbors
+Bootstrap percolation:  site occupation with probability p, then occupied sites
+                        with fewer than k occupied neighbors are removed
+                        repeatedly (k = 3 by default, 1 to 4)
+Continuum percolation:  n = 0.15 * p * rows * cols random discs of fixed radius
+                        (3% of the smaller grid side); overlapping discs join
+
+Observables:
+  spanning        — some cluster touches both the top and bottom rows
+  largest         — size of the largest cluster, and its fraction of all sites
+  tau             — exponent from a log-log fit of the cluster-size
+                    distribution n(s) ~ s^(-tau)
+
+Jump keys (c): p = 0.5927 (site, invasion, continuum), 0.5 (bond),
+               0.6445 (directed), 0.66 (bootstrap)
+```
+
+The sweep presets start at p = 0.30 (Site, Directed, Bootstrap), 0.25 (Bond) or 0.10 (Continuum) and raise p each step by a step size that `+`/`-` change (0.0005 to 0.05). The Invasion preset instead grows from one center site and reports the occupied fraction as p.
+
+**What to look for** — In Site Percolation, watch the largest-cluster fraction jump and the title bar switch to spanning=YES as p crosses about 0.59. Press `c` to freeze p at the critical value and look for the fractal spanning cluster and the many cluster sizes in the τ readout. In Bond Percolation the same transition appears at p = 0.5. Invasion Percolation needs no tuning: the cluster grows as a fractal on its own. Directed Percolation spreads only down and right. In Bootstrap Percolation, press `k`/`K` to change the neighbor threshold k and see how it changes what survives. Continuum Percolation shows overlapping discs forming a spanning blob. Use `p`/`P` to nudge p by 0.01 in either direction.
+
+**References**
+- Broadbent, S.R. and Hammersley, J.M. "Percolation processes: I. Crystals and mazes," *Mathematical Proceedings of the Cambridge Philosophical Society*, 53, 1957.
+- Stauffer, D. and Aharony, A. *Introduction to Percolation Theory*, 2nd ed., Taylor & Francis, 1994.
+
+
+---
+
 ## Earthquake & Seismic Wave Propagation
 
 **Background** — Earthquakes arise from the sudden release of accumulated tectonic stress along faults, where friction locks plates until stress exceeds the fault's yield strength and slip cascades across a rupture zone. The Burridge-Knopoff (1967) spring-block model captures this stick-slip instability with a one- or two-dimensional chain of blocks connected by springs and resting on a frictional surface driven at constant velocity. Despite its simplicity, the model reproduces the key statistical signatures of natural seismicity: the Gutenberg-Richter power-law frequency-magnitude distribution, Omori's law of aftershock decay, and characteristic earthquake recurrence cycles. This places earthquake dynamics squarely within the framework of self-organized criticality — the system naturally evolves toward a critical state where perturbations of all sizes can occur.
