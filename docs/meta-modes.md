@@ -85,12 +85,12 @@ for each generation:
     breed next generation: crossover pairs of parents, mutate offspring
 ```
 
-Crossover is uniform per digit: for each neighbor count 0--8, the child takes the birth and survival bits from a randomly chosen parent. Mutation flips individual digits at the set rate. The first generation uses random rules. Four fitness modes (balanced, longevity, diversity, population) reweight the scoring components.
+Crossover is uniform per digit: for each neighbor count 0--8, the child takes the birth and survival bits from a randomly chosen parent. Mutation flips individual digits at the set rate. The first generation uses random rules. Four fitness modes (balanced, longevity, diversity, population) reweight the scoring components: balanced weights them equally, and each other mode triples one component. After scoring, a ranked scoreboard lists the rules. `Space` plays or pauses and `n` steps; once the generation is scored, either one breeds the next. `s` skips to scoring, `f` cycles the fitness mode, `m` sets the mutation rate, and `<`/`>` change the speed.
 
 ### What to explore
 
 - Set fitness to "diversity" and watch the GA discover chaotic, visually rich rules.
-- Adopt a discovered rule into the main simulator with `a` to explore it at full resolution.
+- Once a generation is scored, pick a rule with the arrow keys and adopt it into the main simulator with `a` to explore it at full resolution.
 - Increase mutation rate to 30%+ for more exploration; decrease to 5% for refinement.
 
 ### References
@@ -130,14 +130,14 @@ Parameter Space Explorer displays a grid of live simulation thumbnails, each run
 
 ### How it works
 
-The explorer supports two engines: Gray-Scott Reaction-Diffusion (feed vs. kill rate) and Smooth Life, a simplified continuous CA with a Gaussian growth function (mu vs. sigma). For an NxM tile grid, parameter values are evenly spaced across the visible range on each axis. Each tile runs its own independent mini-simulation. Zooming in with `Enter` shows 40% of the full range on each axis, centered on the selected tile's parameters. Preset bookmarks jump to known interesting parameter combinations.
+The explorer supports two engines: Gray-Scott Reaction-Diffusion (feed vs. kill rate) and Smooth Life, a simplified continuous CA with a Gaussian growth function (mu vs. sigma). For an NxM tile grid, parameter values are evenly spaced across the visible range on each axis. Each tile runs its own independent mini-simulation. Zooming in with `Enter` shows 40% of the current span on each axis, centered on the selected tile's parameters; `z` or `-` zooms out to 150% of the span around the current center. Preset bookmarks jump to known interesting parameter combinations.
 
 ### What to explore
 
 - In Gray-Scott mode, zoom into the boundary between "spots" and "worms" around feed=0.04, kill=0.063.
-- Use `p` to cycle through the named presets (Coral Growth, Mitosis, Fingerprints, Spots, Worms, Spirals, Maze, Chaos).
-- Raise steps per frame with `+` (lower with `_`) to speed up slow-forming patterns.
-- Press `r` to return to the full range.
+- Use `p` to cycle through the named presets. Gray-Scott has Coral Growth, Mitosis, Fingerprints, Spots, Worms, Spirals, Maze and Chaos; Smooth Life has Orbium, Geminium, Stable Blobs, Oscillators and Chaos.
+- Raise steps per frame with `+` (lower with `_`, range 1--10) to speed up slow-forming patterns.
+- Press `r` to return to the full range and `R` or `m` to go back to the engine menu.
 
 ---
 
@@ -156,7 +156,7 @@ Genomes encode birth/survival sets, neighborhood type, and state count. Fitness 
 ### What to explore
 
 - Use the "beauty" fitness preset to evolve rules that produce symmetric, visually striking patterns.
-- Favorite a promising organism and watch its traits propagate through subsequent generations.
+- Favorite a promising organism (`Enter` or `f` on its tile) and watch its traits propagate through subsequent generations. `a` adopts the organism under the cursor into the main simulator.
 - Save an organism with `s`, then restart with "START (From Saved)" to continue evolving from your best discoveries.
 
 ---
@@ -276,7 +276,7 @@ The terminal is split vertically at the midpoint by a `│` divider. Each pane w
 
 Coupling (`split_coupling`, 0.0--1.0) starts at 0.0. Above 0, each engine receives the *other* pane's density map as input before stepping. Both densities are taken before either pane steps, so neither has priority. The divider then shows a `⇄` arrow at its center, and the title bar shows the coupling percentage.
 
-The menu offers 8 preset pairings (such as "Game of Life vs Lenia-style RD" and "Boids vs N-Body (Physarum)") plus a two-step custom picker for the left and right engines. `Tab` moves focus between panes, `s` swaps the two simulations, and `r` resets only the focused pane.
+The menu offers 8 preset pairings (such as "Game of Life vs Lenia-style RD" and "Boids vs Physarum") plus a two-step custom picker for the left and right engines. `Tab` moves focus between panes, `s` swaps the two simulations, and `r` resets only the focused pane.
 
 ### What to explore
 
@@ -304,7 +304,7 @@ Viewports are arranged in auto-calculated grid layouts (1x2, 2x2, 2x3, or 3x3) b
 ### What to explore
 
 - The "Everything" preset runs all 8 engines, plus a second Game of Life, in a 3x3 grid.
-- Focus on the Physarum viewport (`8`) to see trail networks form at full resolution.
+- Focus on the Physarum viewport (`8`) to see trail networks form in a larger view. The focused viewport draws the same grid bigger, not at a higher resolution.
 - Compare Wave, RD, and Physarum side by side in the "Fluid Trio" preset.
 
 ---
@@ -430,7 +430,7 @@ Scripting & Choreography provides a line-based DSL (`.show` files) for orchestra
 
 ### How it works
 
-The DSL parser tokenizes each line into commands: `mode`, `wait`, `effect`, `topology`, `set`, `sweep`, `transition`, `speed`, `color`, `label`, and `loop`. The execution engine maintains a program counter and processes commands sequentially until it hits a blocking command (`wait` or `sweep`). Sweeps interpolate parameters over time using smooth ease-in-out curves. Crossfade transitions blend the previous simulation's density field with the new one. The `loop` command resets the program counter to zero. Five built-in example scripts are included. Users can also load `.show` files from disk.
+The DSL parser tokenizes each line into commands: `mode`, `wait`, `effect`, `topology`, `set`, `sweep`, `transition`, `speed`, `color`, `label`, and `loop`. The execution engine maintains a program counter and processes commands sequentially until it hits a blocking command (`wait` or `sweep`). Sweeps interpolate a parameter over time using smoothstep easing; a sweep changes only `speed`, and `set` accepts `speed`, plus `feed` and `kill` for Reaction-Diffusion. Crossfade transitions blend the previous simulation's density field with the new one. The `loop` command resets the program counter to zero. Five built-in example scripts are included. Users can also load `.show` files from disk.
 
 ### What to explore
 
@@ -458,13 +458,13 @@ new_state = old_state + update              # residual
 alive_mask: cell dies if no neighbor has alpha > 0.1
 ```
 
-Training uses antithetic Evolution Strategies: generate N/2 random perturbations (and their negatives), grow each candidate from seed for the set number of grow steps (default 20), compute the loss against the target, and estimate a gradient for the weight update. The system has 107 learnable parameters. Users can draw custom target patterns or select from presets (circle, square, diamond, cross, ring, heart).
+Training uses antithetic Evolution Strategies: generate N/2 random perturbations (and their negatives), grow each candidate from seed for the set number of grow steps (default 20), compute the loss against the target, and estimate a gradient for the weight update. The system has 107 learnable parameters. Press `p` to cycle the targets (circle, square, diamond, cross, ring, heart, custom); `custom` appears once you have drawn one.
 
 ### What to explore
 
 - Train on the "heart" target and watch the seed grow into a heart shape over 50+ training generations.
 - Press `g` to regrow from seed with current weights to test robustness.
-- Draw a custom target with `d`, then train -- the NCA will learn to approximate any binary shape.
+- Draw a custom target with `d` (arrows move, `Space` paints a cell, `f` paints a 3×3 block, `e` switches between painting and erasing, `c` clears, `Enter` or `q` finishes), then press `t` to train.
 
 ### References
 
@@ -721,9 +721,9 @@ The engine operates in a two-phase cycle:
    - Otherwise accept with a 5% chance, for exploration.
 
 **Fitness function** — a weighted composite of these signals:
-- **Shannon entropy** (×40): the dominant factor, measuring structural diversity in the density field.
-- **Population dynamics** (up to +35): rewards moderate density (5–60% alive) and population variance (coefficient of variation 0.02–0.5).
-- **Periodicity scoring** (−20 to +10): penalises static grids and short cycles, rewards complex oscillations.
+- **Shannon entropy** (×40): the dominant factor, the mean of the last 20 samples.
+- **Population dynamics** (up to +35): +15 when 5–60% of cells are alive (+5 for 1–85%), plus up to +20 for a changing population (coefficient of variation 0.02–0.5, full bonus from 0.3).
+- **Periodicity scoring** (−20 to +10): penalises static grids (period 1: −20) and short cycles (below 5: −10), rewards longer oscillations (5--19: +5, 20 or more: +10).
 - **Partial symmetry bonus** (+10): rewards average horizontal, vertical, and rotational symmetry of 20--80%, which looks more interesting than none or full symmetry.
 - **Extinction penalty** (−50): applies when the grid is empty.
 
@@ -736,7 +736,7 @@ The engine operates in a two-phase cycle:
 | Entropy Climber | B3/S23 | 0.12 | Start from Conway's Life, hill-climb entropy |
 | Chaos Seeker | Random | 0.25 | Aggressive mutations from a random starting point |
 | Gentle Drift | B36/S23 | 0.06 | Slow, careful evolution from HighLife |
-| Complexity Hunter | B3/S23 | 0.15 | Balanced mutation with diversity bonus |
+| Complexity Hunter | B3/S23 | 0.15 | Moderate mutation from Conway's Life; the same fitness function as the other presets |
 | From Nothing | B/S (empty) | 0.30 | Discover viable rules from an empty ruleset |
 | Day & Night Explorer | B3678/S34678 | 0.10 | Explore the neighborhood of Day & Night |
 
@@ -745,7 +745,7 @@ The engine operates in a two-phase cycle:
 - Run Entropy Climber and watch the rule gradually depart from standard Life, discovering increasingly complex behavior.
 - Try From Nothing to see viable birth/survival rules emerge from a blank ruleset — the lineage sidebar shows the evolutionary path.
 - Use `e` to pause evolution while the simulation keeps running, freezing on a particularly interesting rule to observe its long-term dynamics.
-- Adjust mutation rate with `+`/`-` (0.01--0.50): high for novelty, low for incremental refinement.
+- Adjust mutation rate with `+`/`-` (0.01--0.50): high for novelty, low for incremental refinement. `[` and `]` change the steps per frame; `r` re-seeds the grid and `R` restarts from a random rule.
 - Press `a` to adopt the currently evolved rule into the main Game of Life grid for full-resolution exploration.
 - Compare with Auto-Discovery: Rule Mutation mutates one live simulation in place, while Auto-Discovery evaluates batches with crossover breeding.
 
@@ -1317,12 +1317,12 @@ The mode leverages the analytical infrastructure built by Genesis Protocol, Phas
 | **s** | Cycle seed style guess |
 | **c** | Request a clue (costs 15 points) |
 | **v** | Cycle view mode: artifact → candidate → difference → side-by-side |
-| **t** | Toggle timeline fragment animation |
+| **t** | Toggle timeline fragment animation (only after the timeline clue is revealed with `c`) |
 | **d** | Cycle difficulty level |
 | **n** | Skip to next puzzle |
 | **r** | Reset candidate guess to defaults |
 | **a** | Give up and reveal answer |
-| **h** | Toggle hint overlay |
+| **h** | Show or hide the bottom key-hint bar |
 | **q / Esc** | Exit mode |
 
 ### What to explore
@@ -1352,8 +1352,8 @@ Genesis Protocol *breeds* rules, Phase Space Navigator *maps* rule space, and Ru
 **Distance metrics:** Three complementary distance measures are combined with weights (default 0.4 Hamming, 0.3 Jaccard, 0.3 behavioral; the start menu cycles four weight presets):
 
 - **Hamming distance** — raw bit-level difference between two rule genomes, normalized to [0, 1]. Measures syntactic distance.
-- **Jaccard distance** — set-theoretic (1 − intersection/union) computed separately for birth and survival sets, then averaged. Measures structural similarity of the rule logic.
-- **Behavioral distance** — compares classification labels (glider, oscillator, chaotic, etc.) and behavioral scores from simulation. Measures phenotypic similarity regardless of genotype.
+- **Jaccard distance** — set-theoretic (1 − intersection/union) over the combined set of B and S digits. Measures structural similarity of the rule logic.
+- **Behavioral distance** — adds 0.5 when the classification labels (glider, oscillator, chaotic, etc.) differ, plus up to 0.5 for the relative difference in Hall of Fame score. Measures phenotypic similarity regardless of genotype.
 
 **Phylogenetic tree construction:** UPGMA (Unweighted Pair Group Method with Arithmetic Mean) hierarchical clustering builds a dendrogram from the pairwise distance matrix. The tree is rendered as color-coded ASCII art: green for glider/replicator rules, yellow for oscillators, red for chaotic rules, cyan for stable/still-life rules.
 
@@ -1373,7 +1373,7 @@ Genesis Protocol *breeds* rules, Phase Space Navigator *maps* rule space, and Ru
 
 4. **Lineage (key: 4)** — Breeding history from Genesis Protocol. Shows generation chains with parent→child arrows, mutation annotations, and behavioral classification at each node. Traces how rule families evolved through the breeding process.
 
-5. **Families (key: 5)** — Cluster summary showing rule families grouped by behavioral similarity. Each family lists its members, shared motifs, and the centroid rule that best represents the group.
+5. **Families (key: 5)** — Summary of rule families grouped by classification. Each lists its member count and share, and its top four members by score with up to two motif names each.
 
 ### Key controls
 
@@ -1381,12 +1381,12 @@ Genesis Protocol *breeds* rules, Phase Space Navigator *maps* rule space, and Ru
 |-----|--------|
 | **1–5** | Switch between Tree / Motifs / Diff / Lineage / Families views |
 | **↑/↓** | Move the cursor within the current view |
-| **PgUp/PgDn** | Scroll the view |
-| **Enter** | Preview selected rule as a live mini-simulation |
+| **PgUp/PgDn** | Move the cursor by 10 |
+| **Enter** | Preview the rule under the cursor (tree leaf, motif example, diff-list rule or lineage child) as a live mini-simulation |
 | **Space** | Pause/resume the preview |
 | **a** / **b** / **d** | In the Diff view: mark rule A, mark rule B, compute the diff |
 | **s** | Cycle sort order (score, classification, Hamming distance from Life) |
-| **r** | Re-run the analysis from the Hall of Fame file |
+| **r** | Rebuild the analysis from the already loaded entries |
 | **q / Esc** | Close the preview or diff; otherwise exit the mode |
 
 ### What to explore
@@ -1408,9 +1408,9 @@ Reverse Life runs the Game of Life backwards. Given the pattern on the main grid
 
 ### How it works
 
-A constraint solver assigns each predecessor cell to alive or dead. Constraint propagation prunes impossible values, and backtracking resolves the rest. The solver uses the main grid's current birth/survival rule. The search covers the whole grid, so a pattern with no predecessor on that grid is reported as a Garden of Eden.
+A constraint solver assigns each predecessor cell to alive or dead. Constraint propagation prunes impossible values, and backtracking resolves the rest. The solver uses the main grid's current birth/survival rule. The search covers the bounding box of the live cells grown by a pad of 2 cells (`+`/`-` change it, 0--10, and restart the search); cells outside the box stay dead. A pattern with no predecessor in that region is reported as a Garden of Eden. Rules that include B0 search the whole grid.
 
-The solver runs as a generator, so the search is visible: candidate cells flicker, dead ends flash red, and a solution shows in green. `Space` starts and pauses the search; `s` cycles its speed (slow, medium, fast, instant). `Enter` accepts the solution as the new target, so you can step further back in time. `n` restarts the search for another predecessor.
+The solver runs as a generator, so the search is visible: candidate cells flicker, dead ends flash red, and a solution shows in green. `Space` starts and pauses the search; `s` cycles its speed (slow, medium, fast, instant). `Enter` accepts the solution as the new target, so you can step further back in time. `n` searches for a different predecessor once one is found.
 
 ### Controls
 
@@ -1418,9 +1418,10 @@ The solver runs as a generator, so the search is visible: candidate cells flicke
 |-----|--------|
 | **Space** | Start/pause the solver |
 | **Enter** | Accept the solution as the new target and reverse again |
-| **n** | Restart the search for another predecessor |
+| **n** | Search for a different predecessor (after a solution is found) |
 | **r** | Reset the solver, keeping the pattern |
-| **g** | Run the solver to completion (Garden of Eden check) |
+| **+** / **-** | Grow / shrink the search pad (0--10) and restart |
+| **g** | Run the solver to completion at instant speed (Garden of Eden check) |
 | **s** | Cycle solver speed |
 | **v** | Cycle view: solver, solution, overlay, diff |
 | **c** | Toggle constraint-propagation display |
