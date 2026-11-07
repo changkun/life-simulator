@@ -9,6 +9,9 @@ Keybindings:
     [/]         Decrease/increase exposure window length
     {/}         Cycle blend mode (additive / max / average)
     Ctrl+]      Export frozen composite to file
+
+Ctrl+F, [/] and {/} only act while a capture is running or a composite
+exists; otherwise they go to the active mode or the mode launchers.
 """
 
 import curses
@@ -339,6 +342,16 @@ def _long_exposure_handle_key(self, key):
             )
         return True
 
+    # Ctrl+] (29) — export frozen composite
+    if key == 29:
+        _long_exposure_export(self)
+        return True
+
+    # The other keys only apply while there is an exposure to work on, so
+    # they stay free for modes and launchers (Ctrl+F, [ ], { }) otherwise.
+    if not (self.long_exp_active or self.long_exp_frozen or self._long_exp_composite):
+        return False
+
     # Ctrl+F (6) — freeze/unfreeze composite view
     if key == 6:
         if self.long_exp_frozen:
@@ -352,7 +365,7 @@ def _long_exposure_handle_key(self, key):
             self.long_exp_frozen = True
             self._flash("Long Exposure re-frozen")
         else:
-            self._flash("No exposure data to freeze")
+            self._flash("No frames captured yet")
         return True
 
     # '[' — decrease exposure window
@@ -383,11 +396,6 @@ def _long_exposure_handle_key(self, key):
         idx = BLEND_MODES.index(self.long_exp_blend)
         self.long_exp_blend = BLEND_MODES[(idx + 1) % len(BLEND_MODES)]
         self._flash(f"Exposure blend: {self.long_exp_blend}")
-        return True
-
-    # Ctrl+] (29) — export frozen composite
-    if key == 29:
-        _long_exposure_export(self)
         return True
 
     return False

@@ -93,6 +93,7 @@ def test_ctrl_f_freeze_unfreeze():
 
 def test_bracket_adjust_window():
     app = _make_app()
+    app.long_exp_active = True
     initial = app.long_exp_window
     app._long_exposure_handle_key(ord("]"))
     assert app.long_exp_window == initial + 50
@@ -102,6 +103,7 @@ def test_bracket_adjust_window():
 
 def test_window_min_clamp():
     app = _make_app()
+    app.long_exp_active = True
     app.long_exp_window = 10
     app._long_exposure_handle_key(ord("["))
     assert app.long_exp_window == 10  # can't go below 10
@@ -109,6 +111,7 @@ def test_window_min_clamp():
 
 def test_window_max_clamp():
     app = _make_app()
+    app.long_exp_active = True
     app.long_exp_window = 1000
     app._long_exposure_handle_key(ord("]"))
     assert app.long_exp_window == 1000  # can't go above 1000
@@ -116,6 +119,7 @@ def test_window_max_clamp():
 
 def test_brace_cycle_blend():
     app = _make_app()
+    app.long_exp_active = True
     assert app.long_exp_blend == "additive"
     app._long_exposure_handle_key(ord("}"))
     assert app.long_exp_blend == "max"
@@ -127,8 +131,18 @@ def test_brace_cycle_blend():
 
 def test_brace_cycle_blend_backward():
     app = _make_app()
+    app.long_exp_active = True
     app._long_exposure_handle_key(ord("{"))
     assert app.long_exp_blend == "average"
+
+
+def test_adjust_keys_pass_through_without_an_exposure():
+    """[ ] { } and Ctrl+F belong to modes and launchers until a capture starts."""
+    app = _make_app()
+    window, blend = app.long_exp_window, app.long_exp_blend
+    for key in (ord("["), ord("]"), ord("{"), ord("}"), 6):
+        assert app._long_exposure_handle_key(key) is False
+    assert (app.long_exp_window, app.long_exp_blend) == (window, blend)
 
 
 def test_unhandled_key_returns_false():
