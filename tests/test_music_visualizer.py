@@ -289,6 +289,7 @@ def test_menu_cancel():
     app._enter_musvis_mode()
     app._handle_musvis_menu_key(ord("q"))
     assert app.musvis_menu is False
+    assert app.musvis_mode is False
 
 
 # ── Key handling — active visualizer ─────────────────────────────────────────
@@ -397,7 +398,7 @@ def test_key_m_returns_to_menu():
     app._musvis_init(0)
     app._handle_musvis_key(ord("m"))
     assert app.musvis_menu is True
-    assert app.musvis_mode is False
+    assert app.musvis_mode is True
 
 
 def test_key_q_exits():
@@ -422,3 +423,11 @@ def test_beat_detection_mechanism():
     # With low beat_avg, the total_energy should exceed threshold
     # Check that beat energy was updated (either flash or avg increased)
     assert app.musvis_beat_avg > 0.01 or app.musvis_beat_flash > 0
+
+
+def test_enter_marks_mode_active():
+    """The menu counts as the active mode so a mode switch can exit it."""
+    app = _make_app()
+    app._enter_musvis_mode()
+    assert app.musvis_mode is True
+

@@ -28,8 +28,10 @@ MUSVIS_TONE_PATTERNS = [
 
 def _enter_musvis_mode(self):
     """Enter Music Visualizer mode — show preset menu."""
+    self.musvis_mode = True
     self.musvis_menu = True
     self.musvis_menu_sel = 0
+    self.musvis_running = False
     self._flash("Music Visualizer — select a visualization")
 
 
@@ -216,6 +218,8 @@ def _handle_musvis_menu_key(self, key: int) -> bool:
         self._musvis_init(self.musvis_menu_sel)
     elif key in (ord("q"), 27):
         self.musvis_menu = False
+        self.musvis_mode = False
+        self.musvis_running = False
         self._flash("Music Visualizer cancelled")
     return True
 
@@ -257,7 +261,6 @@ def _handle_musvis_key(self, key: int) -> bool:
     elif key == ord("r"):
         self._musvis_init(self.musvis_preset_idx)
     elif key in (ord("R"), ord("m")):
-        self.musvis_mode = False
         self.musvis_running = False
         self.musvis_menu = True
         self.musvis_menu_sel = 0
