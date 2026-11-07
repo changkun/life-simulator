@@ -395,3 +395,13 @@ def test_fish_species_structure():
         assert "speed" in sp
         assert len(sp["left"]) > 0
         assert len(sp["right"]) > 0
+
+
+def test_bubble_streams_survive_long_run():
+    """Bubble streams keep emitting after their first bubbles reach the surface."""
+    app = _make_app()
+    app._aquarium_init("tropical")
+    for _ in range(1500):
+        app._aquarium_step()
+    assert any(b["stream_x"] is not None for b in app.aquarium_bubbles)
+

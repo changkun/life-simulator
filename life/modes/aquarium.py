@@ -80,7 +80,7 @@ def _aquarium_init(self, preset_key):
     num_seaweed = max(3, cols // 8)
     for _ in range(num_seaweed):
         x = rng.randint(2, cols - 3)
-        height = rng.randint(3, min(8, rows // 3))
+        height = rng.randint(3, max(3, min(8, rows // 3)))
         color = rng.choice([3, 11, 10])  # green variants
         phase = rng.uniform(0, 6.28)
         self.aquarium_seaweed.append({
@@ -220,6 +220,12 @@ def _aquarium_step(self):
             b["char_idx"] = min(b["char_idx"] + 1, len(BUBBLE_CHARS) - 1) if rng.random() < 0.05 else b["char_idx"]
 
         if b["y"] > water_top:
+            new_bubbles.append(b)
+        elif b.get("stream_x") is not None:
+            # Recycle the stream's source bubble so the stream keeps running.
+            b["y"] = float(sand_row - 1)
+            b["age"] = 0
+            b["char_idx"] = 0
             new_bubbles.append(b)
         # Spawn new bubble in stream
         if b.get("stream_x") is not None and b["age"] % max(1, 8 - self.aquarium_speed) == 0:
