@@ -47,8 +47,9 @@ Per-timestep update for particle i:
 
 7. ANGULAR NOISE: θ_new += N(0, η)
 
-8. CROWD SLOWDOWN (when τ > 0 and at least one aligning neighbor was counted in step 2):
-   local_density = n_align / (π * align_r²)
+8. CROWD SLOWDOWN (when τ > 0 and at least one neighbor lies within quorum_r):
+   quorum_r = align_r, or repel_r when align_r = 0
+   local_density = n_quorum / (π * quorum_r²)    (denominator at least 1)
    prop_speed = v₀ / (1 + 5 * local_density)
 
 9. VELOCITY UPDATE:
@@ -63,20 +64,20 @@ Per-timestep update for particle i:
 
 The order parameter ψ quantifies collective alignment: ψ = |Σ exp(iθ)| / N for polar (Vicsek), ψ = |Σ exp(2iθ)| / N for nematic. ψ → 1 indicates long-range order; ψ → 0 indicates disorder. The title bar shows ψ.
 
-The crowd slowdown counts only neighbors inside `align_r` while `align_w > 0`. The **Motility-Induced Clustering** preset has `align_r = 0`, so it never slows down in crowds; its clustering comes from repulsion and tumbling alone. In presets with `align_r > 0`, raising the tumble rate with `t` enables the slowdown.
+The crowd slowdown counts neighbors inside `align_r`, or inside `repel_r` when `align_r` is 0. It applies to every preset once the tumble rate is above 0, including **Motility-Induced Clustering** (tumble rate 0.05). In the other presets the tumble rate starts at 0, so raising it with `t` enables the slowdown.
 
 ### Presets
 
 - **Bacterial Turbulence**: Dense pushers (extensile dipoles, contract = −0.3) with nematic alignment. Produces chaotic vortex streets and jet-like flows characteristic of dense bacterial suspensions like *B. subtilis*.
 - **Active Nematics**: Rod-like extensile particles (contract = −0.5) with strong nematic alignment. Nucleates ±½ topological defect pairs that unbind and annihilate — the hallmark of active nematic turbulence observed in microtubule-kinesin mixtures.
-- **Motility-Induced Clustering**: Run-and-tumble particles (τ = 0.05, v₀ = 1.0) with no alignment and strong repulsion. Particles tumble at random and push each other apart.
+- **Motility-Induced Clustering**: Run-and-tumble particles (τ = 0.05, v₀ = 1.0) with no alignment and strong repulsion. Particles tumble at random, push each other apart and slow down in crowds.
 - **Vicsek Flocking**: Polar aligning particles with moderate noise (η = 0.3). Demonstrates the Vicsek transition: below a critical noise the system orders into a coherent flock.
 - **Active Spinner Gas**: Self-rotating particles (spin_w = 0.3) that turn by a fixed angle each step, so they travel in circles. Collisions are plain repulsion; there is no odd-elastic force.
 - **Contractile Gel**: Puller particles (contract = +0.5) that tend to form asters and contractile networks, as in actomyosin gels where motors pull filaments inward.
 
 ### Controls
 
-`v` cycles the view (Arrows, Density, Vorticity). `s`/`S` change v₀, `e`/`E` the noise η, `a`/`A` the alignment weight, `p`/`P` the repulsion weight, and `t`/`T` the tumble rate. `+`/`-` set steps per frame. A mouse click adds 15 particles.
+`v` cycles the view (Arrows, Density, Vorticity). `s`/`S` change v₀, `e`/`E` the noise η, `a`/`A` the alignment weight, `p`/`P` the repulsion weight, and `t`/`T` the tumble rate. `+`/`-` set steps per frame (1 to 10). A mouse click adds 15 particles, up to 3000 in total.
 
 ### What to look for
 
