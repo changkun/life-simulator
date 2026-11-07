@@ -16,6 +16,8 @@ import math
 import random
 import time
 
+from life.constants import SPEEDS
+
 # ── Biome types ────────────────────────────────────────────────────
 B_OCEAN = 0
 B_GRASSLAND = 1
@@ -586,7 +588,7 @@ def _evoeco_step(self):
                 kill_count += 1
         self.evoeco_log.append(f"Gen {gen}: *** MASS EXTINCTION — 70% of populations wiped out ***")
         self.evoeco_stats["mass_extinctions"] += 1
-        # Increase mutation rate temporarily
+        # Faster mutation for the rest of the run drives the recovery radiation
         settings["mutation_rate"] = min(0.15, settings["mutation_rate"] * 2.5)
 
     # ── Continental drift (barrier formation) ──
@@ -789,8 +791,6 @@ def _evoeco_step(self):
                         break
 
                 # Convert distant populations
-                mid_r = (pop_a["r"] + pop_b["r"]) // 2
-                mid_c = (pop_a["c"] + pop_b["c"]) // 2
                 converted = 0
                 for p in sp_pops:
                     dist_to_b = abs(p["r"] - pop_b["r"]) + abs(p["c"] - pop_b["c"])
@@ -973,7 +973,6 @@ def _handle_evoeco_key(self, key):
     if key == ord("q") or key == 27:
         self._exit_evoeco_mode()
         return True
-    from life.constants import SPEEDS
     if key == ord("["):
         self.speed_idx = max(0, self.speed_idx - 1)
         return True
@@ -1184,7 +1183,7 @@ def _draw_evoeco(self, max_y, max_x):
 
             tree_lines = []
             _build_tree_lines(self.evoeco_phylo, sp_by_id, roots, tree_lines,
-                              self.evoeco_generation, depth=0, max_lines=max_y - 6)
+                              depth=0, max_lines=max_y - 6)
 
             for li, (line_text, line_attr) in enumerate(tree_lines):
                 if 2 + li >= max_y - 3:
@@ -1251,17 +1250,17 @@ def _draw_evoeco(self, max_y, max_x):
             pass
 
 
-def _build_tree_lines(phylo_nodes, sp_by_id, roots, lines, cur_gen, depth, max_lines):
+def _build_tree_lines(phylo_nodes, sp_by_id, roots, lines, depth, max_lines):
     """Recursively build phylogenetic tree display lines."""
     node_map = {pn["species_id"]: pn for pn in phylo_nodes}
 
     for root in roots:
         if len(lines) >= max_lines:
             return
-        _render_phylo_node(node_map, sp_by_id, root, lines, cur_gen, depth, max_lines)
+        _render_phylo_node(node_map, sp_by_id, root, lines, depth, max_lines)
 
 
-def _render_phylo_node(node_map, sp_by_id, node, lines, cur_gen, depth, max_lines):
+def _render_phylo_node(node_map, sp_by_id, node, lines, depth, max_lines):
     """Render a single phylo node and its children."""
     if len(lines) >= max_lines:
         return
@@ -1292,7 +1291,7 @@ def _render_phylo_node(node_map, sp_by_id, node, lines, cur_gen, depth, max_line
     for child_id in children:
         if child_id in node_map:
             _render_phylo_node(node_map, sp_by_id, node_map[child_id],
-                               lines, cur_gen, depth + 1, max_lines)
+                               lines, depth + 1, max_lines)
 
 
 # ══════════════════════════════════════════════════════════════════════
