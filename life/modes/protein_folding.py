@@ -1,19 +1,6 @@
-"""Mode: protein_folding — Protein Folding & Misfolding simulation.
+"""Protein Folding & Misfolding — 2D lattice HP chains that fold, misfold, aggregate into fibrils and get rescued by chaperones.
 
-2D lattice HP (hydrophobic-polar) protein folding with Monte Carlo energy
-minimization, misfolding & prion-like aggregation into amyloid fibrils,
-chaperone rescue (GroEL/GroES analog), and heat shock response.
-
-Three views:
-  1) Spatial fold map — chain topology with residue coloring, contact map
-     overlay, chaperones, fibrils, and heat shock field
-  2) Energy landscape — folding funnel with current state, native energy,
-     contact map matrix
-  3) Time-series sparkline graphs — 10 metrics
-
-Six presets:
-  Normal Folding, Prion Propagation, Heat Shock Stress,
-  Chaperone Deficiency, Amyloid Cascade, Intrinsically Disordered Protein
+Views: fold map, energy landscape, sparkline graphs.
 """
 import curses
 import math
@@ -326,14 +313,14 @@ def _diffuse_field(field, rows, cols, coeff):
 # ══════════════════════════════════════════════════════════════════════
 
 def _enter_protein_folding_mode(self):
-    """Enter protein folding mode — show preset menu."""
+    """Enter Protein Folding & Misfolding mode and show the preset menu."""
     self.protfold_mode = True
     self.protfold_menu = True
     self.protfold_menu_sel = 0
 
 
 def _exit_protein_folding_mode(self):
-    """Exit protein folding mode."""
+    """Exit Protein Folding & Misfolding mode and drop its state."""
     self.protfold_mode = False
     self.protfold_menu = False
     self.protfold_running = False
@@ -350,7 +337,7 @@ def _exit_protein_folding_mode(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _protfold_init(self, preset_idx):
-    """Initialize simulation for the chosen preset."""
+    """Start the simulation from the chosen preset."""
     name, _desc, pid = PROTEIN_FOLDING_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(20, max_y - 4)
@@ -540,7 +527,7 @@ def _radius_of_gyration(residues):
 
 
 def _protfold_step(self):
-    """Advance one tick of the protein folding simulation."""
+    """Advance the simulation by one tick."""
     rows = self.protfold_rows
     cols = self.protfold_cols
 
@@ -646,8 +633,7 @@ def _protfold_step(self):
                         # Extend fibril
                         fib.positions.append((mr, mc))
                         fib.length += 1
-                        mis.state = 'native'  # consumed into fibril
-                        mis.state = 'captured'  # remove from active
+                        mis.state = 'captured'  # consumed into the fibril
                         mis.capture_timer = 9999
                         joined = True
                         break
@@ -890,7 +876,7 @@ def _draw_protfold_menu(self, max_y, max_x):
             pass
         y += 3
 
-    controls = "↑/↓ select  ·  Enter start  ·  q quit"
+    controls = "j/k=navigate  Enter=start  q=cancel"
     try:
         self.stdscr.addstr(max_y - 2, max(0, (max_x - len(controls)) // 2),
                            controls[:max_x - 1], curses.A_DIM)
@@ -938,7 +924,7 @@ def _draw_protfold(self, max_y, max_x):
     except curses.error:
         pass
 
-    hint = "SP:⏯  v:view  c:contacts  t/T:temp±  +/-:speed  r:reset  m:menu"
+    hint = "Space=play  n=step  v=view  c=contacts  t/T=temp  +/-=speed  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(0, 0, hint[:max_x - 1], curses.A_DIM)
     except curses.error:
@@ -1275,7 +1261,7 @@ def _draw_protfold_graphs(self, max_y, max_x):
 # ══════════════════════════════════════════════════════════════════════
 
 def register(App):
-    """Register protein folding mode methods on the App class."""
+    """Register Protein Folding & Misfolding methods on the App class."""
     App.PROTEIN_FOLDING_PRESETS = PROTEIN_FOLDING_PRESETS
     App._enter_protein_folding_mode = _enter_protein_folding_mode
     App._exit_protein_folding_mode = _exit_protein_folding_mode
