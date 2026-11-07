@@ -840,7 +840,7 @@ def _handle_adisco_gallery_key(self, key):
     if key == ord("x"):
         entry = self.adisco_gallery[self.adisco_gallery_sel]
         self.adisco_gallery.pop(self.adisco_gallery_sel)
-        self.adisco_gallery_sel = min(self.adisco_gallery_sel, len(self.adisco_gallery) - 1)
+        self.adisco_gallery_sel = max(0, min(self.adisco_gallery_sel, len(self.adisco_gallery) - 1))
         self._flash(f"Removed {entry['label']} from gallery")
         return True
 

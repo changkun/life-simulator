@@ -75,3 +75,12 @@ def test_crossover_density_stays_in_range():
     for _ in range(500):
         for pair in ((low, low), (high, high)):
             assert 0.02 <= _crossover(*pair)["density"] <= 0.6
+
+
+def test_removing_last_gallery_entry_keeps_selection_valid():
+    app = _make_app()
+    app.adisco_gallery = [{"label": "B3/S23"}]
+    app.adisco_gallery_view = True
+    app._handle_adisco_gallery_key(ord("x"))
+    assert app.adisco_gallery == []
+    assert app.adisco_gallery_sel == 0
