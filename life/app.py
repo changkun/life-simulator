@@ -1415,13 +1415,13 @@ class App:
         self.bz_generation = 0
         self.bz_rows = 0
         self.bz_cols = 0
-        self.bz_a: list[list[float]] = []   # activator concentration
-        self.bz_b: list[list[float]] = []   # inhibitor concentration
-        self.bz_c: list[list[float]] = []   # recovery variable
-        self.bz_alpha: float = 1.0          # activator production rate
-        self.bz_beta: float = 1.0           # inhibitor coupling
-        self.bz_gamma: float = 1.0          # recovery rate
-        self.bz_diffusion: float = 0.2      # diffusion coefficient
+        self.bz_a: list[list[float]] = []   # species a, eats b
+        self.bz_b: list[list[float]] = []   # species b, eats c
+        self.bz_c: list[list[float]] = []   # species c, eats a
+        self.bz_alpha: float = 1.0          # rate a eats b
+        self.bz_beta: float = 1.0           # rate b eats c
+        self.bz_gamma: float = 1.0          # rate c eats a
+        self.bz_diffusion: float = 0.2      # neighbour weight in each cell's mean
         self.bz_steps_per_frame: int = 1
         self.bz_preset_name: str = ""
 

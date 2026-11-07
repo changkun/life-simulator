@@ -353,12 +353,12 @@ def _draw_bz_menu(self, max_y: int, max_x: int):
 def _draw_bz(self, max_y: int, max_x: int):
     """Draw the active BZ Reaction simulation.
 
-    Maps the activator concentration to colorful characters that
-    evoke the vibrant chemical oscillation patterns:
-    - High activator: bright warm colors (yellow/white)
-    - Medium: transitional (cyan/green)
-    - Low/recovering: cool colors (blue/magenta)
-    - Quiescent: dark
+    Species a sets the block and species c picks the shade:
+    - a > 0.7: bright yellow
+    - a 0.4-0.7: green where c > 0.3, otherwise white
+    - a 0.2-0.4: red where c > a, otherwise cyan
+    - a 0.08-0.2: dim magenta where c > 0.15, otherwise dim green
+    - lower a: faint magenta dots, or dark where a and c are both < 0.05
     """
     self.stdscr.erase()
     a = self.bz_a
@@ -387,38 +387,30 @@ def _draw_bz(self, max_y: int, max_x: int):
             av = a_r[col]
             cv = c_r[col]
 
-            # Combine activator and recovery for phase-based coloring
-            # This creates the classic BZ color wheel effect
             if av < 0.05 and cv < 0.05:
-                # Quiescent — dark
                 continue
             elif av > 0.7:
-                # Excited — bright wavefront
                 ch = "██"
                 attr = curses.color_pair(3) | curses.A_BOLD  # bright yellow
             elif av > 0.4:
-                # Active — medium excitation
                 ch = "▓▓"
                 if cv > 0.3:
-                    attr = curses.color_pair(1) | curses.A_BOLD  # red (recovering)
+                    attr = curses.color_pair(1) | curses.A_BOLD  # green
                 else:
-                    attr = curses.color_pair(6) | curses.A_BOLD  # cyan-ish
+                    attr = curses.color_pair(6) | curses.A_BOLD  # white
             elif av > 0.2:
-                # Transitional
                 ch = "▒▒"
                 if cv > av:
-                    attr = curses.color_pair(5)  # magenta (refractory)
+                    attr = curses.color_pair(5)  # red
                 else:
-                    attr = curses.color_pair(2)  # green (rising)
+                    attr = curses.color_pair(2)  # cyan
             elif av > 0.08:
-                # Low activity
                 ch = "░░"
                 if cv > 0.15:
-                    attr = curses.color_pair(4) | curses.A_DIM  # blue (deep refractory)
+                    attr = curses.color_pair(4) | curses.A_DIM  # magenta
                 else:
-                    attr = curses.color_pair(1) | curses.A_DIM  # dim green
+                    attr = curses.color_pair(1) | curses.A_DIM  # green
             else:
-                # Very faint
                 ch = "··"
                 attr = curses.color_pair(4) | curses.A_DIM
 
