@@ -121,3 +121,45 @@ def test_lone_cell_without_padding_is_garden_of_eden():
     solver = _solve(app.reverse_life_solver)
     assert solver.failed
     assert solver.is_garden_of_eden
+
+
+def test_exit_clears_running_and_help():
+    app = _block_app()
+    app.reverse_life_running = True
+    app.reverse_life_help = True
+    app._exit_reverse_life_mode()
+    assert app.reverse_life_running is False
+    assert app.reverse_life_help is False
+
+
+def test_enter_variants_accept_solution_and_update_population():
+    for key in (10, 13):
+        app = _block_app()
+        _solve(app.reverse_life_solver)
+        app._handle_reverse_life_key(key)
+        assert app.reverse_life_steps_back == 1, key
+        live = sum(1 for row in app.grid.cells for v in row if v)
+        assert app.grid.population == live > 0
+
+
+def test_instant_speed_returns_within_budget(monkeypatch):
+    """A hard target must not block the frame loop."""
+    app = _block_app()
+    app.reverse_life_speed_idx = len(rl._SPEEDS) - 1
+    monkeypatch.setattr(rl, "_INSTANT_BUDGET", 0.0)
+    app.reverse_life_running = True
+    app._reverse_life_step()
+    assert app.reverse_life_running is True
+    assert not app.reverse_life_solver.solved
+    monkeypatch.setattr(rl, "_INSTANT_BUDGET", 5.0)
+    app._reverse_life_step()
+    assert app.reverse_life_solver.solved
+    assert app.reverse_life_running is False
+
+
+def test_g_runs_at_instant_speed():
+    app = _block_app()
+    app._handle_reverse_life_key(ord("g"))
+    assert rl._SPEEDS[app.reverse_life_speed_idx][1] == 0
+    assert app.reverse_life_solver.solved
+    assert app.reverse_life_running is False

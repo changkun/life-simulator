@@ -46,6 +46,9 @@ _SPEEDS = [
     ("instant", 0),  # 0 = run to completion
 ]
 
+# Seconds of search per frame at "instant" speed
+_INSTANT_BUDGET = 0.2
+
 _VIEW_MODES = ["solver", "solution", "overlay", "diff"]
 _DISPLAY_MODES = ["cells", "search-tree", "stats"]
 
@@ -542,6 +545,8 @@ def _init_solver(self, exclude=()):
 def _exit_reverse_life_mode(self):
     """Clean up Reverse Life mode."""
     self.reverse_life_mode = False
+    self.reverse_life_running = False
+    self.reverse_life_help = False
     self.reverse_life_solver = None
 
 
@@ -567,7 +572,7 @@ def _handle_reverse_life_key(self, key):
             self.reverse_life_running = not self.reverse_life_running
         return True
 
-    if key == 10:  # Enter — accept solution and reverse again
+    if key in (10, 13, curses.KEY_ENTER):  # accept solution and reverse again
         if solver and solver.solved:
             sol_grid = solver.get_solution_grid()
             if sol_grid:
@@ -582,6 +587,7 @@ def _handle_reverse_life_key(self, key):
                 for r in range(min(self.grid.rows, len(sol_grid))):
                     for c in range(min(self.grid.cols, len(sol_grid[0]))):
                         self.grid.cells[r][c] = sol_grid[r][c]
+                _recount_population(self)
                 self.reverse_life_steps_back += 1
                 _init_solver(self)
         return True
@@ -597,11 +603,11 @@ def _handle_reverse_life_key(self, key):
         return True
 
     if key == ord('g'):
-        # Quick Garden of Eden check — run solver to completion
+        # Garden of Eden check: search at instant speed
         if solver and not solver.solved and not solver.failed:
-            while solver.solve_step():
-                pass
-            self.reverse_life_running = False
+            self.reverse_life_speed_idx = len(_SPEEDS) - 1
+            self.reverse_life_running = True
+            _reverse_life_step(self)
         return True
 
     if key == ord('s'):
@@ -676,8 +682,15 @@ def _load_preset(self):
             if 0 <= r < self.grid.rows and 0 <= c < self.grid.cols:
                 self.grid.cells[r][c] = 1
 
+    _recount_population(self)
     _capture_target(self)
     _init_solver(self)
+
+
+def _recount_population(self):
+    """Recompute the main grid's population after writing cells directly."""
+    g = self.grid
+    g.population = sum(1 for row in g.cells for v in row if v > 0)
 
 
 def _reverse_life_step(self):
@@ -690,10 +703,13 @@ def _reverse_life_step(self):
     speed_label, cells_per_frame = _SPEEDS[self.reverse_life_speed_idx]
 
     if cells_per_frame == 0:
-        # Instant: run to completion
-        while solver.solve_step():
-            pass
-        self.reverse_life_running = False
+        # Instant: search until done, but hand control back each frame so
+        # a hard target cannot freeze the screen.
+        deadline = time.time() + _INSTANT_BUDGET
+        while time.time() < deadline:
+            if not solver.solve_step():
+                self.reverse_life_running = False
+                break
     else:
         for _ in range(cells_per_frame):
             if not solver.solve_step():
@@ -827,6 +843,8 @@ def _draw_grid_view(self, scr, top, rows, cols, view):
     """Draw the grid with solver visualization."""
     solver = self.reverse_life_solver
     target = self.reverse_life_target
+    # With constraints hidden, confirmed and rejected cells look like the rest.
+    show = self.reverse_life_show_constraints
 
     for r in range(rows):
         for c in range(cols):
@@ -844,14 +862,14 @@ def _draw_grid_view(self, scr, top, rows, cols, view):
                 cell_state = solver.pred[r][c] if r < solver.rows and c < solver.cols else _CellState.UNKNOWN
 
                 if cell_state == _CellState.ALIVE:
-                    if (r, c) in solver.confirmed_cells:
+                    if show and (r, c) in solver.confirmed_cells:
                         ch = "██"
                         pair = _PAIR_BASE + _CP_CONFIRMED
                     else:
                         ch = "██"
                         pair = _PAIR_BASE + _CP_SOLUTION
                 elif cell_state == _CellState.DEAD:
-                    if (r, c) in solver.rejected_cells:
+                    if show and (r, c) in solver.rejected_cells:
                         ch = "░░"
                         pair = _PAIR_BASE + _CP_REJECTED
                     else:
@@ -1007,7 +1025,7 @@ def _draw_help(self, scr, max_y, max_x):
         "    Enter   Accept solution, reverse again",
         "    n       Find next alternative predecessor",
         "    r       Reset solver",
-        "    g       Run to completion (Garden of Eden check)",
+        "    g       Search at instant speed (Garden of Eden check)",
         "    s       Cycle speed (slow/med/fast/instant)",
         "    v       Cycle view (solver/solution/overlay/diff)",
         "    c       Toggle constraint visualization",
