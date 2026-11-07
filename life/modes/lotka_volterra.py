@@ -6,6 +6,9 @@ import time
 
 from life.constants import SPEEDS
 
+# Population samples kept; only the latest is drawn, so a long run stays bounded.
+LV_MAX_HISTORY = 1000
+
 def _enter_lv_mode(self):
     """Enter Predator-Prey mode — show preset menu."""
     self.lv_menu = True
@@ -88,6 +91,7 @@ def _lv_record_counts(self):
             elif cell == 2:
                 pred += 1
     self.lv_counts.append((g, prey, pred))
+    del self.lv_counts[:-LV_MAX_HISTORY]
 
 
 

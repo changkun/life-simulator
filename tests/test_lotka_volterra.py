@@ -547,3 +547,10 @@ class TestAllPresetsRun:
                 self.app._lv_step()
             assert self.app.lv_generation == 20
             assert len(self.app.lv_counts) == 21  # 1 init + 20 steps
+
+    def test_count_history_is_bounded(self):
+        self.app._lv_init(0)
+        for _ in range(1500):
+            self.app._lv_record_counts()
+        assert len(self.app.lv_counts) == 1000
+        assert self.app.lv_counts[-1] == self.app.lv_counts[0]
