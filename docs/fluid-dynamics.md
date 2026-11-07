@@ -1,14 +1,14 @@
 # Fluid Dynamics
 
-The motion of liquids, gases, and plasmas — from kitchen honey to interstellar magnetohydrodynamics.
+The motion of liquids, gases, and plasmas, from kitchen honey to magnetohydrodynamics.
 
-This document covers the eleven fluid dynamics simulation modes in Life Simulator. Each mode implements a distinct physical model, discretized for real-time ASCII visualization in the terminal. The models range from kinetic theory (Lattice Boltzmann) to continuum mechanics (Navier-Stokes), from astrophysical plasmas (MHD) to everyday viscous threads (fluid rope coiling).
+This document covers the thirteen Fluid Dynamics modes in Life Simulator. Each mode uses its own physical model, discretized for the terminal. The models range from kinetic theory (Lattice Boltzmann) to continuum mechanics (Navier-Stokes), from plasmas (MHD) to viscous threads (fluid rope coiling), and from global weather to ocean circulation.
 
 ---
 
 ## Lattice Boltzmann Fluid
 
-**Background.** The Lattice Boltzmann Method (LBM) originated in the late 1980s as an alternative to directly solving the Navier-Stokes equations. Instead of tracking macroscopic velocity and pressure, LBM models the fluid as populations of fictitious particles streaming and colliding on a discrete lattice. The method was pioneered by McNamara and Zanetti (1988) and refined by Qian, d'Humieres, and Lallemand into the D2Q9 model used here. LBM is prized for its natural handling of complex boundaries and its inherent parallelism.
+**Background.** The Lattice Boltzmann Method (LBM) originated in the late 1980s as an alternative to solving the Navier-Stokes equations directly. Instead of tracking macroscopic velocity and pressure, LBM models the fluid as populations of fictitious particles streaming and colliding on a discrete lattice. McNamara and Zanetti (1988) pioneered the method, and Qian, d'Humieres, and Lallemand refined it into the D2Q9 model used here. LBM handles complex boundaries naturally and parallelizes well.
 
 **Formulation.** The simulation uses the D2Q9 lattice (2 dimensions, 9 velocity directions) with the BGK (Bhatnagar-Gross-Krook) single-relaxation-time collision operator.
 
@@ -30,15 +30,17 @@ BGK collision:
 where:
   rho = sum_i f_i          (density)
   u   = sum_i e_i * f_i / rho  (macroscopic velocity)
-  omega = relaxation parameter (0.5 < omega < 2.0)
+  omega = relaxation parameter (keys limit it to 0.5 - 1.99)
   nu  = (1/omega - 0.5) / 3    (kinematic viscosity)
 ```
 
-Obstacle boundaries use the bounce-back rule: incoming distributions reverse direction. Inflow uses Zou-He-style equilibrium forcing; outflow copies from the interior. The lid-driven cavity preset instead enforces a moving wall velocity at the top boundary.
+Streaming wraps around the grid edges. Obstacles use the bounce-back rule: incoming distributions reverse direction. The left edge forces an equilibrium inflow (a simplified Zou-He condition) and the right edge copies from its neighbor. The Lid-Driven Cavity preset has no inflow. It forces a moving wall velocity along the top row instead.
 
-**What to look for.** At low omega (high viscosity), flow is smooth and laminar. Increase omega toward 1.9 and the flow transitions to turbulence with vortex shedding visible in the vorticity view. The Von Karman Street preset produces the classic alternating vortex wake behind a cylinder. Switch visualization modes (speed, vorticity, density) to see different aspects of the same flow. The Reynolds number displayed approximates Re = u_0 * L / nu.
+**What to look for.** At low omega (high viscosity), flow is smooth and laminar. Raise omega toward 1.9 and the flow becomes unsteady, with vortex shedding visible in the vorticity view. The Von Kármán Street preset produces the classic alternating vortex wake behind a cylinder. Switch visualization modes (speed, vorticity, density) to see different aspects of the same flow. The status line shows an approximate Reynolds number.
 
-**Presets:** Wind Tunnel (omega=1.4), Von Karman Street (omega=1.85), Lid-Driven Cavity (omega=1.5), Channel Flow (omega=1.6), Obstacle Course (omega=1.5), Turbulence (omega=1.9).
+**Keys.** `Space` play/pause, `n` step, `v` visualization, `w`/`W` raise/lower omega, `u`/`U` raise/lower inflow speed, `+`/`-` steps per frame, `<`/`>` speed, `r` reset, `R` or `m` menu, `q` exit.
+
+**Presets:** Wind Tunnel (omega=1.4), Von Kármán Street (omega=1.85), Lid-Driven Cavity (omega=1.5), Channel Flow (omega=1.6), Obstacle Course (omega=1.5), Turbulence (omega=1.9).
 
 **References.**
 - Qian, Y.H., d'Humieres, D., and Lallemand, P. "Lattice BGK Models for Navier-Stokes Equation." *Europhysics Letters*, 17(6), 1992. https://doi.org/10.1209/0295-5075/17/6/001
