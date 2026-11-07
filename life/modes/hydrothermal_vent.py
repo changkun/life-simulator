@@ -19,6 +19,8 @@ import math
 import random
 import time
 
+from life.constants import SPEEDS, SPEED_LABELS
+
 
 # ══════════════════════════════════════════════════════════════════════
 #  Presets
@@ -775,12 +777,11 @@ def _handle_hvent_key(self, key):
         idx = views.index(self.hvent_view)
         self.hvent_view = views[(idx + 1) % len(views)]
     elif key == ord('+') or key == ord('='):
-        if hasattr(self, 'speed_idx'):
-            self.speed_idx = max(0, self.speed_idx - 1)
+        self.speed_idx = min(len(SPEEDS) - 1, self.speed_idx + 1)
+        self._flash(f"Speed: {SPEED_LABELS[self.speed_idx]}")
     elif key == ord('-'):
-        if hasattr(self, 'speed_idx'):
-            self.speed_idx = min(len(getattr(self, 'SPEEDS', [0.5])) - 1,
-                                 self.speed_idx + 1)
+        self.speed_idx = max(0, self.speed_idx - 1)
+        self._flash(f"Speed: {SPEED_LABELS[self.speed_idx]}")
     elif key == ord('r'):
         self._hvent_init(self.hvent_preset_idx)
     elif key in (ord('R'), ord('m')):
