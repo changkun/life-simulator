@@ -1,8 +1,7 @@
-"""Mode: aurora — simulation mode for the life package."""
+"""Aurora Borealis — drifting curtains of light driven by solar wind particles."""
 import curses
 import math
 import random
-import time
 
 AURORA_PRESETS = [
     ("Quiet Arc", "Gentle green arc across the sky — calm geomagnetic conditions", "quiet"),
@@ -25,8 +24,6 @@ def _enter_aurora_mode(self):
     self.aurora_menu_sel = 0
 
 
-
-
 def _exit_aurora_mode(self):
     """Exit Aurora Borealis mode."""
     self.aurora_mode = False
@@ -37,13 +34,8 @@ def _exit_aurora_mode(self):
     self.aurora_stars = []
 
 
-
-
 def _aurora_init(self, preset: str):
     """Initialize aurora simulation from preset."""
-    import math
-    import random as rng
-
     rows, cols = self.grid.rows, self.grid.cols
     self.aurora_rows = rows
     self.aurora_cols = cols
@@ -87,30 +79,30 @@ def _aurora_init(self, preset: str):
     # Initialize curtains — each is a vertical band that shimmers
     self.aurora_curtains = []
     for i in range(n_curtains):
-        cx = rng.uniform(0, cols)
-        width = rng.uniform(cols * 0.05, cols * 0.15)
-        phase = rng.uniform(0, 2 * math.pi)
+        cx = random.uniform(0, cols)
+        width = random.uniform(cols * 0.05, cols * 0.15)
+        phase = random.uniform(0, 2 * math.pi)
         # Each curtain has a series of control points for its wave shape
-        n_points = rng.randint(5, 10)
+        n_points = random.randint(5, 10)
         points = []
         for j in range(n_points):
             points.append({
-                "offset": rng.uniform(-width * 0.5, width * 0.5),
-                "phase": rng.uniform(0, 2 * math.pi),
-                "freq": rng.uniform(0.3, 1.5),
-                "amp": rng.uniform(1.0, 4.0) * fold_intensity,
+                "offset": random.uniform(-width * 0.5, width * 0.5),
+                "phase": random.uniform(0, 2 * math.pi),
+                "freq": random.uniform(0.3, 1.5),
+                "amp": random.uniform(1.0, 4.0) * fold_intensity,
             })
         curtain = {
             "cx": cx,
             "width": width,
             "phase": phase,
-            "speed": curtain_speed * rng.uniform(0.5, 1.5),
-            "drift": rng.uniform(-0.3, 0.3),
-            "brightness": rng.uniform(0.5, 1.0),
+            "speed": curtain_speed * random.uniform(0.5, 1.5),
+            "drift": random.uniform(-0.3, 0.3),
+            "brightness": random.uniform(0.5, 1.0),
             "points": points,
-            "band_idx": rng.randint(0, len(_AURORA_BANDS) - 1),
-            "pulse_phase": rng.uniform(0, 2 * math.pi),
-            "pulse_freq": rng.uniform(0.5, 2.0) if preset == "pulsating" else 0.0,
+            "band_idx": random.randint(0, len(_AURORA_BANDS) - 1),
+            "pulse_phase": random.uniform(0, 2 * math.pi),
+            "pulse_freq": random.uniform(0.5, 2.0) if preset == "pulsating" else 0.0,
         }
         self.aurora_curtains.append(curtain)
 
@@ -118,36 +110,30 @@ def _aurora_init(self, preset: str):
     self.aurora_particles = []
     for _ in range(min(60, cols // 3)):
         self.aurora_particles.append({
-            "x": rng.uniform(0, cols),
-            "y": rng.uniform(-rows, 0),
-            "vx": rng.uniform(-0.5, 0.5),
-            "vy": rng.uniform(0.3, 1.0) * self.aurora_wind_strength,
-            "life": rng.uniform(0.5, 1.0),
+            "x": random.uniform(0, cols),
+            "y": random.uniform(-rows, 0),
+            "vx": random.uniform(-0.5, 0.5),
+            "vy": random.uniform(0.3, 1.0) * self.aurora_wind_strength,
+            "life": random.uniform(0.5, 1.0),
         })
 
     # Background stars
     star_chars = ['.', '·', '*', '+', '✦']
     self.aurora_stars = []
     for _ in range(min(100, rows * cols // 40)):
-        sr = rng.randint(0, rows - 1)
-        sc = rng.randint(0, cols - 1)
-        ch = rng.choice(star_chars)
+        sr = random.randint(0, rows - 1)
+        sc = random.randint(0, cols - 1)
+        ch = random.choice(star_chars)
         self.aurora_stars.append((sr, sc, ch))
 
     self.aurora_running = True
 
 
-
-
 def _aurora_step(self):
     """Advance the aurora simulation by one time step."""
-    import math
-    import random as rng
-
     self.aurora_generation += 1
     dt = 0.05
     self.aurora_time += dt
-    t = self.aurora_time
     rows = self.aurora_rows
     cols = self.aurora_cols
 
@@ -171,22 +157,20 @@ def _aurora_step(self):
 
         # Reset particles that fall off screen or die
         if p["y"] > rows * 0.4 or p["life"] <= 0 or p["x"] < -5 or p["x"] > cols + 5:
-            p["x"] = rng.uniform(0, cols)
-            p["y"] = rng.uniform(-rows * 0.3, -1)
-            p["vx"] = rng.uniform(-0.5, 0.5)
-            p["vy"] = rng.uniform(0.3, 1.0) * self.aurora_wind_strength
-            p["life"] = rng.uniform(0.5, 1.0)
+            p["x"] = random.uniform(0, cols)
+            p["y"] = random.uniform(-rows * 0.3, -1)
+            p["vx"] = random.uniform(-0.5, 0.5)
+            p["vy"] = random.uniform(0.3, 1.0) * self.aurora_wind_strength
+            p["life"] = random.uniform(0.5, 1.0)
 
     # Occasionally add intensity fluctuations (substorm)
-    if rng.random() < 0.02 * self.aurora_wind_strength:
-        idx = rng.randint(0, len(self.aurora_curtains) - 1)
-        self.aurora_curtains[idx]["brightness"] = min(1.5, self.aurora_curtains[idx]["brightness"] + rng.uniform(0.1, 0.3))
+    if random.random() < 0.02 * self.aurora_wind_strength:
+        idx = random.randint(0, len(self.aurora_curtains) - 1)
+        self.aurora_curtains[idx]["brightness"] = min(1.5, self.aurora_curtains[idx]["brightness"] + random.uniform(0.1, 0.3))
 
     # Decay brightness slowly
     for curtain in self.aurora_curtains:
         curtain["brightness"] = max(0.2, curtain["brightness"] - dt * 0.05)
-
-
 
 
 def _handle_aurora_menu_key(self, key: int) -> bool:
@@ -210,8 +194,6 @@ def _handle_aurora_menu_key(self, key: int) -> bool:
     else:
         return False
     return True
-
-
 
 
 def _handle_aurora_key(self, key: int) -> bool:
@@ -247,8 +229,6 @@ def _handle_aurora_key(self, key: int) -> bool:
     else:
         return False
     return True
-
-
 
 
 def _draw_aurora_menu(self, max_y: int, max_x: int):
@@ -299,12 +279,8 @@ def _draw_aurora_menu(self, max_y: int, max_x: int):
         pass
 
 
-
-
 def _draw_aurora(self, max_y: int, max_x: int):
     """Draw the Aurora Borealis simulation."""
-    import math
-
     self.stdscr.erase()
     rows = min(self.aurora_rows, max_y - 2)
     cols = min(self.aurora_cols, max_x)
@@ -476,13 +452,11 @@ def _draw_aurora(self, max_y: int, max_x: int):
         pass
 
     # Hint bar
-    hint = " Space=play n=step +/-=intensity w/s=wind f=field i=info r=reset R=menu q=exit"
+    hint = " Space=play  n=step  +/-=intensity  w/s=wind  f=field  i=info  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(status_y + 1, 0, hint[:max_x - 1], curses.A_DIM)
     except curses.error:
         pass
-
-
 
 
 def register(App):
