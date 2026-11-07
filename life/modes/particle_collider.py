@@ -1,8 +1,7 @@
-"""Mode: collider — simulation mode for the life package."""
+"""Particle Collider / Hadron Collider — beams circle a ring, collide at detectors and spray decay showers."""
 import curses
 import math
 import random
-import time
 
 COLLIDER_PRESETS = [
     ("LHC (Proton-Proton)", "13.6 TeV proton collisions — Higgs hunting", "lhc"),
@@ -28,7 +27,7 @@ _COLLIDER_PARTICLES = [
 
 
 def _enter_collider_mode(self):
-    """Enter Particle Collider mode — show preset menu."""
+    """Enter Particle Collider mode and show the preset menu."""
     self.collider_mode = True
     self.collider_menu = True
     self.collider_menu_sel = 0
@@ -38,7 +37,7 @@ def _enter_collider_mode(self):
 
 
 def _exit_collider_mode(self):
-    """Exit Particle Collider mode and clean up."""
+    """Leave Particle Collider mode and clear its state."""
     self.collider_mode = False
     self.collider_menu = False
     self.collider_running = False
@@ -52,9 +51,7 @@ def _exit_collider_mode(self):
 
 
 def _collider_init(self, preset_key):
-    """Initialize collider simulation from selected preset."""
-    import random as rng
-    import math
+    """Start a collider simulation from the given preset key."""
     rows, cols = self.stdscr.getmaxyx()
     self.collider_rows = rows
     self.collider_cols = cols
@@ -114,9 +111,9 @@ def _collider_init(self, preset_key):
 
     # Spawn beam particles — half clockwise, half counter-clockwise
     for i in range(num_beams):
-        angle = rng.uniform(0, 2 * math.pi)
+        angle = random.uniform(0, 2 * math.pi)
         direction = 1 if i % 2 == 0 else -1
-        speed_var = rng.uniform(0.8, 1.2)
+        speed_var = random.uniform(0.8, 1.2)
         self.collider_beams.append({
             "angle": angle,
             "speed": beam_speed * speed_var * direction,
@@ -128,25 +125,23 @@ def _collider_init(self, preset_key):
 
 
 def _collider_spawn_shower(self, cx, cy, energy, preset_key):
-    """Create a shower of decay products from a collision."""
-    import random as rng
-    import math
+    """Create a shower of decay products and log one detected particle."""
 
     # Determine how many particles to spawn
     if preset_key == "heavy_ion":
-        num_particles = rng.randint(12, 25)
+        num_particles = random.randint(12, 25)
     elif preset_key == "lepton":
-        num_particles = rng.randint(4, 8)
+        num_particles = random.randint(4, 8)
     else:
-        num_particles = rng.randint(6, 16)
+        num_particles = random.randint(6, 16)
 
     shower_particles = []
     for _ in range(num_particles):
-        angle = rng.uniform(0, 2 * math.pi)
-        speed = rng.uniform(0.3, 1.5)
-        lifetime = rng.randint(8, 30)
-        char_idx = rng.randint(0, len(_COLLIDER_SHOWER_CHARS) - 1)
-        color = rng.choice([2, 3, 4, 5, 6, 7, 10, 11, 13, 14])
+        angle = random.uniform(0, 2 * math.pi)
+        speed = random.uniform(0.3, 1.5)
+        lifetime = random.randint(8, 30)
+        char_idx = random.randint(0, len(_COLLIDER_SHOWER_CHARS) - 1)
+        color = random.choice([2, 3, 4, 5, 6, 7, 10, 11, 13, 14])
         shower_particles.append({
             "x": cx, "y": cy,
             "vx": math.cos(angle) * speed * 1.8,  # wider in x for aspect ratio
@@ -168,14 +163,14 @@ def _collider_spawn_shower(self, cx, cy, energy, preset_key):
         rare_chance = 0.4
     else:
         rare_chance = 0.15
-    candidates = [p for p in _COLLIDER_PARTICLES if not p["rare"] or rng.random() < rare_chance]
-    detected = rng.choice(candidates)
-    mass_measured = detected["mass"] * rng.uniform(0.92, 1.08) if detected["mass"] > 0 else 0.0
+    candidates = [p for p in _COLLIDER_PARTICLES if not p["rare"] or random.random() < rare_chance]
+    detected = random.choice(candidates)
+    mass_measured = detected["mass"] * random.uniform(0.92, 1.08) if detected["mass"] > 0 else 0.0
     event = {
         "name": detected["name"],
         "symbol": detected["symbol"],
         "mass": mass_measured,
-        "energy": energy * rng.uniform(0.3, 0.9),
+        "energy": energy * random.uniform(0.3, 0.9),
         "color": detected["color"],
         "time": self.collider_time,
         "flash": 1.0,
@@ -192,9 +187,7 @@ def _collider_spawn_shower(self, cx, cy, energy, preset_key):
 
 
 def _collider_step(self):
-    """Advance the collider simulation by one step."""
-    import random as rng
-    import math
+    """Advance the simulation by one step."""
 
     self.collider_generation += 1
     self.collider_time += 0.05
@@ -223,7 +216,7 @@ def _collider_step(self):
     for cp in self.collider_collision_points:
         cp["flash"] = max(0, cp["flash"] - 0.05)
 
-        if rng.random() < self.collider_collision_rate:
+        if random.random() < self.collider_collision_rate:
             # Find if opposite-direction beams are near this point
             cw_near = []
             ccw_near = []
@@ -249,13 +242,13 @@ def _collider_step(self):
                 )
 
                 # Add trail flash at collision point
-                for _ in range(rng.randint(3, 8)):
-                    tx = collision_x + rng.uniform(-2, 2)
-                    ty = collision_y + rng.uniform(-1, 1)
+                for _ in range(random.randint(3, 8)):
+                    tx = collision_x + random.uniform(-2, 2)
+                    ty = collision_y + random.uniform(-1, 1)
                     self.collider_trails.append({
-                        "x": tx, "y": ty, "life": rng.randint(5, 15),
-                        "char": rng.choice(["✦", "✧", "⚡", "★", "⊕", "⊗"]),
-                        "color": rng.choice([4, 6, 7, 14]),
+                        "x": tx, "y": ty, "life": random.randint(5, 15),
+                        "char": random.choice(["✦", "✧", "⚡", "★", "⊕", "⊗"]),
+                        "color": random.choice([4, 6, 7, 14]),
                     })
 
     # Update shower particles
@@ -288,7 +281,7 @@ def _collider_step(self):
 
 
 def _handle_collider_menu_key(self, key: int) -> bool:
-    """Handle keys in the collider preset menu."""
+    """Handle keys in the preset menu."""
     n = len(COLLIDER_PRESETS)
     if key in (curses.KEY_DOWN, ord('j')):
         self.collider_menu_sel = (self.collider_menu_sel + 1) % n
@@ -308,7 +301,7 @@ def _handle_collider_menu_key(self, key: int) -> bool:
 
 
 def _handle_collider_key(self, key: int) -> bool:
-    """Handle keys during collider simulation."""
+    """Handle keys in the running simulation."""
     if key in (27, ord('q')):
         self._exit_collider_mode()
         return True
@@ -328,9 +321,7 @@ def _handle_collider_key(self, key: int) -> bool:
         self.collider_show_info = not self.collider_show_info
     elif key == ord('c') or key == ord('C'):
         # Force a collision at a random interaction point
-        import random as rng
-        import math
-        cp = rng.choice(self.collider_collision_points)
+        cp = random.choice(self.collider_collision_points)
         collision_x = self.collider_ring_cx + math.cos(cp["angle"]) * self.collider_ring_rx
         collision_y = self.collider_ring_cy + math.sin(cp["angle"]) * self.collider_ring_ry
         cp["flash"] = 1.0
@@ -343,7 +334,7 @@ def _handle_collider_key(self, key: int) -> bool:
 
 
 def _draw_collider_menu(self, max_y: int, max_x: int):
-    """Draw the collider preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "⚛  Particle Collider / Hadron Collider  ⚛"
     subtitle = "CERN-inspired particle accelerator with collisions and decay showers"
@@ -403,8 +394,7 @@ def _draw_collider_menu(self, max_y: int, max_x: int):
 
 
 def _draw_collider(self, max_y: int, max_x: int):
-    """Draw the full collider simulation."""
-    import math
+    """Draw the ring, beams, showers, readouts and detector log."""
     self.stdscr.erase()
     rows = max_y
     cols = max_x
@@ -582,7 +572,7 @@ def _draw_collider(self, max_y: int, max_x: int):
 
     # ── Status bar ──
     paused = " [PAUSED]" if not self.collider_running else ""
-    status = f" Collider: {self.collider_preset_name}{paused}  Speed:{self.collider_speed}x  |  Space:pause  c:collide  r:reset  R:menu  i:info  q:quit "
+    status = f" Collider: {self.collider_preset_name}{paused}  Speed:{self.collider_speed}x  |  Space=pause  +/-=speed  c=collide  i=info  r=reset  R=menu  q=quit "
     try:
         self.stdscr.addstr(rows - 1, 0, status[:cols - 1], curses.A_REVERSE)
     except curses.error:
