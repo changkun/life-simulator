@@ -1,12 +1,5 @@
-"""Mode: traffic — Nagel-Schreckenberg cellular automaton with multi-lane
-lane-changing, on-ramp merging, and a real-time fundamental diagram overlay.
-
-Vehicles accelerate, brake for gaps, randomly dawdle, and optionally change
-lanes.  Emergent phenomena include phantom traffic jams, stop-and-go waves,
-flow–density phase transitions, and on-ramp bottleneck queuing.
-"""
+"""Traffic Flow — Nagel-Schreckenberg multi-lane traffic with ramps, bottlenecks and a flow-density diagram."""
 import curses
-import math
 import random
 import time
 
@@ -67,12 +60,14 @@ _SPARK = " ▁▂▃▄▅▆▇█"
 # ══════════════════════════════════════════════════════════════════════════
 
 def _enter_traffic_mode(self):
+    """Show the Traffic Flow scenario menu."""
     self.traffic_menu = True
     self.traffic_menu_sel = 0
     self._flash("Traffic Flow (Nagel-Schreckenberg) — select a scenario")
 
 
 def _exit_traffic_mode(self):
+    """Leave Traffic Flow mode."""
     self.traffic_mode = False
     self.traffic_menu = False
     self.traffic_running = False
@@ -81,6 +76,7 @@ def _exit_traffic_mode(self):
 
 
 def _traffic_init(self, preset_idx: int):
+    """Start the chosen scenario with a random initial road."""
     name, _desc, vmax, p_slow, density, lanes, kind = self.TRAFFIC_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
     rows = min(lanes, max(2, max_y - 6))
@@ -146,6 +142,7 @@ def _traffic_init(self, preset_idx: int):
 # ══════════════════════════════════════════════════════════════════════════
 
 def _traffic_compute_stats(self):
+    """Update speed, flow and density, and record the diagram samples."""
     grid = self.traffic_grid
     rows, cols = self.traffic_rows, self.traffic_cols
     total_speed = 0
@@ -232,6 +229,7 @@ def _traffic_gap_back(grid, r, c, cols):
 
 
 def _traffic_step(self):
+    """Advance traffic by one step: lane changes, ramp injection, then NaSch."""
     grid = self.traffic_grid
     rows, cols = self.traffic_rows, self.traffic_cols
     vmax = self.traffic_vmax
@@ -467,7 +465,7 @@ def _draw_traffic_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+        hint = " j/k=navigate  Enter=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
@@ -606,7 +604,7 @@ def _draw_traffic_spacetime(self, max_y: int, max_x: int):
     # Legend
     leg_y = max_y - 2
     if leg_y > 1:
-        legend = " ← time │ x → position │ dark=jam  light=free │ [v]=road view"
+        legend = " x=position  y=time (newest at bottom)  dark=jam  light=free  v=road view"
         try:
             self.stdscr.addstr(leg_y, 0, legend[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
@@ -628,8 +626,8 @@ def _draw_traffic_hint(self, max_y, max_x):
             hint = f" {self.message}"
         else:
             lc = "ON" if self.traffic_lane_change else "OFF"
-            hint = (f" [Space]=play [n]=step [v]=view [f]=diagram [l]=lanes({lc})"
-                    f" [d/D]=ρ [p/P]=brake [+/-]=speed [r]=reset [R]=menu [q]=exit")
+            hint = (f" Space=play  n=step  v=view  f=diagram  l=lanes({lc})"
+                    f"  d/D=density  p/P=p_slow  +/-=speed  r=reset  R=menu  q=exit")
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
