@@ -1,15 +1,4 @@
-"""Mode: firefly — Firefly Synchronization & Bioluminescence Simulation.
-
-Thousands of firefly agents distributed across a nighttime landscape, each with
-an internal integrate-and-fire oscillator.  When a firefly's phase hits threshold
-it flashes, and nearby fireflies who see the flash nudge their own phase forward
-— producing the real-world phenomenon where entire forests of fireflies
-spontaneously synchronize their blinking from initial chaos.
-
-Implements the Peskin / Mirollo-Strogatz integrate-and-fire model with spatial
-coupling, species-specific flash patterns, predator femme-fatale *Photuris*
-fireflies, and a Kuramoto-style order parameter tracking synchronization.
-"""
+"""Firefly Synchronization & Bioluminescence — fireflies flash and nudge each other's phase until the swarm blinks in unison."""
 import curses
 import math
 import random
@@ -25,10 +14,10 @@ FIREFLY_PRESETS = [
      "Dense population in mangrove trees — mass synchrony emerges quickly",
      "mangrove"),
     ("Appalachian Meadow",
-     "Mixed Photinus species with distinct flash patterns in open meadow",
+     "Three Photinus species with different flash rates in an open meadow",
      "meadow"),
     ("Femme Fatale Hunting",
-     "Predator Photuris mimics flash patterns to lure prey fireflies",
+     "Photuris predators home in on prey flashes and eat the prey",
      "femme_fatale"),
     ("Sync Emergence",
      "Watch initial chaos self-organize into global synchronization",
@@ -37,7 +26,7 @@ FIREFLY_PRESETS = [
      "Fully synced swarm hit by a perturbation — recovery dynamics",
      "desync_shock"),
     ("Competitive Signaling",
-     "Males compete via flash brightness and timing for female attention",
+     "Two species, weakly coupled, each pulling toward its own rhythm",
      "competitive"),
 ]
 
@@ -47,20 +36,12 @@ FIREFLY_PRESETS = [
 # ══════════════════════════════════════════════════════════════════════
 
 # Species
-SPECIES_PHOTINUS_A = 0   # single pulse
-SPECIES_PHOTINUS_B = 1   # double blink
-SPECIES_PHOTINUS_C = 2   # rhythmic triplet
-SPECIES_PHOTURIS   = 3   # predator / femme fatale
+SPECIES_PHOTINUS_A = 0
+SPECIES_PHOTINUS_B = 1
+SPECIES_PHOTINUS_C = 2
+SPECIES_PHOTURIS   = 3   # predator
 
 SPECIES_NAMES = ["P. carolinus", "P. pyralis", "P. consimilis", "Photuris (predator)"]
-
-# Flash patterns: list of (on_fraction, off_fraction) within one cycle
-FLASH_PATTERNS = {
-    SPECIES_PHOTINUS_A: [(0.0, 0.12)],                          # single pulse
-    SPECIES_PHOTINUS_B: [(0.0, 0.08), (0.15, 0.23)],            # double blink
-    SPECIES_PHOTINUS_C: [(0.0, 0.06), (0.12, 0.18), (0.24, 0.30)],  # triplet
-    SPECIES_PHOTURIS:   [(0.0, 0.12)],                          # mimics (dynamic)
-}
 
 # Terrain types
 TERRAIN_EMPTY = 0
@@ -92,8 +73,7 @@ class _Firefly:
                  "flash_timer", "flash_bright", "state",
                  "coupling_strength", "perception_radius",
                  "is_predator", "prey_target", "alive",
-                 "energy", "gender", "attracted_to",
-                 "mimic_species", "cooldown")
+                 "energy", "attracted_to", "cooldown")
 
     def __init__(self, x, y, species=SPECIES_PHOTINUS_A):
         self.x = x
@@ -110,9 +90,7 @@ class _Firefly:
         self.prey_target = None
         self.alive = True
         self.energy = 1.0
-        self.gender = random.choice([0, 1])  # 0=male, 1=female
         self.attracted_to = None
-        self.mimic_species = SPECIES_PHOTINUS_A
         self.cooldown = 0.0
 
 
@@ -148,7 +126,7 @@ def _exit_firefly_mode(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _firefly_init(self, preset_idx: int):
-    name, desc, preset_id = FIREFLY_PRESETS[preset_idx]
+    name, _desc, preset_id = FIREFLY_PRESETS[preset_idx]
     self.firefly_preset_name = name
     self.firefly_preset_id = preset_id
     self.firefly_preset_idx = preset_idx
@@ -341,7 +319,6 @@ def _firefly_make_fireflies(self, count, species_mix, pred_count):
         pred.natural_freq = 0.02
         pred.coupling_strength = 0.0  # doesn't sync
         pred.perception_radius = 12.0
-        pred.mimic_species = random.choice(list(species_mix.keys()))
         flies.append(pred)
 
     self.firefly_flies = flies
@@ -398,10 +375,6 @@ def _firefly_step(self):
             f.flash_timer = 0.0
             flashers.append(f)
             flash_count += 1
-            # Set brightness based on pattern
-            pattern = FLASH_PATTERNS.get(
-                f.mimic_species if f.is_predator else f.species,
-                FLASH_PATTERNS[SPECIES_PHOTINUS_A])
             f.flash_bright = 1.0
             f.cooldown = 3  # brief refractory period
         else:
@@ -483,11 +456,6 @@ def _firefly_step(self):
                 f.x = max(0, min(cols - 1, f.x))
                 f.y = max(0, min(rows - 1, f.y))
 
-        # Switch mimic pattern occasionally
-        if random.random() < 0.01:
-            f.mimic_species = random.choice(
-                [SPECIES_PHOTINUS_A, SPECIES_PHOTINUS_B, SPECIES_PHOTINUS_C])
-
     # Phase 4: slight random drift for non-predator fireflies
     for f in flies:
         if not f.alive or f.is_predator:
@@ -543,7 +511,7 @@ def _handle_firefly_key(self, key):
     elif key == ord('r'):
         self.firefly_menu = True
         self.firefly_menu_sel = self.firefly_preset_idx
-    elif key == ord('q'):
+    elif key in (ord('q'), 27):
         self._exit_firefly_mode()
 
 
@@ -584,7 +552,7 @@ def _draw_firefly_menu(self, max_y: int, max_x: int):
                 pass
 
     help_y = max_y - 1
-    help_text = " ↑↓ Select   ENTER Start   Q Quit"
+    help_text = " j/k=select  Enter=start  q=exit"
     try:
         self.stdscr.addstr(help_y, 0, help_text[:max_x - 1],
                            curses.color_pair(7) | curses.A_DIM)
@@ -624,7 +592,7 @@ def _draw_firefly(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    help_line = " SPACE Pause  V View  R Reset  Q Quit"
+    help_line = " Space=pause  v=view  r=menu  q=exit"
     if max_y - 2 > 1:
         try:
             self.stdscr.addstr(max_y - 2, 0, help_line[:max_x - 1],
@@ -787,7 +755,7 @@ def _draw_firefly_phase_map(self, max_y: int, max_x: int):
             except curses.error:
                 pass
 
-    title = f" Phase Map — Oscillator Phases [0→1] "
+    title = " Phase Map — Oscillator Phases [0→1] "
     try:
         self.stdscr.addstr(0, max(0, (max_x - len(title)) // 2),
                            title[:max_x - 1], curses.A_BOLD)
