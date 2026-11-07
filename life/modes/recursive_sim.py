@@ -1,27 +1,13 @@
-"""Mode: recursive_sim — Sim-in-a-Cell recursive nested simulation.
-
-Each cell in a macro-grid contains an independent micro-simulation.
-The micro-simulation's aggregate density determines the macro cell's
-alive/dead state, creating multi-scale emergence.  The user picks
-any two of the 8 mashup engines (one for macro, one for micro),
-enabling thousands of cross-scale combinations.  Navigation lets
-you zoom between the macro overview and any individual cell's
-inner world.
-"""
+"""Sim-in-a-Cell — a macro grid whose every cell runs its own micro-simulation, coupled in both directions."""
 import curses
-import math
-import random
 import time
 
 from life.constants import SPEEDS, SPEED_LABELS
-
-# Reuse the mini-simulation engines from mashup mode
 from life.modes.mashup import MASHUP_SIMS, _ENGINES
 
 _DENSITY = " ░▒▓█"
 _SIM_BY_ID = {s["id"]: s for s in MASHUP_SIMS}
 
-# ── Presets ─────────────────────────────────────────────────────────
 RECURSIVE_PRESETS = [
     ("GoL ← RD Cells", "gol", "rd",
      "Game of Life macro-grid; each cell runs Reaction-Diffusion"),
@@ -41,7 +27,6 @@ RECURSIVE_PRESETS = [
      "Rock-Paper-Scissors macro with wave interference inside cells"),
 ]
 
-# Cell size presets
 CELL_SIZES = [
     (6,  "Tiny (6×6)"),
     (8,  "Small (8×8)"),
@@ -49,16 +34,13 @@ CELL_SIZES = [
     (12, "Large (12×12)"),
 ]
 
-# Density threshold: micro-sim density above this → macro cell alive
-_ALIVE_THRESHOLD = 0.15
-
 
 # ════════════════════════════════════════════════════════════════════
 #  Mode entry / exit
 # ════════════════════════════════════════════════════════════════════
 
 def _enter_recursive_mode(self):
-    """Enter recursive simulation mode — show selection menu."""
+    """Open the Sim-in-a-Cell selection menu."""
     self.rsim_menu = True
     self.rsim_menu_sel = 0
     self.rsim_menu_phase = 0  # 0=presets, 1=pick macro, 2=pick micro, 3=pick cell size
@@ -68,7 +50,7 @@ def _enter_recursive_mode(self):
 
 
 def _exit_recursive_mode(self):
-    """Exit recursive simulation mode and clean up."""
+    """Leave Sim-in-a-Cell and drop all micro-simulations."""
     self.rsim_mode = False
     self.rsim_menu = False
     self.rsim_running = False
@@ -83,18 +65,14 @@ def _exit_recursive_mode(self):
 # ════════════════════════════════════════════════════════════════════
 
 def _rsim_init(self, macro_id, micro_id, cell_size=8):
-    """Initialize the recursive grid: macro engine + micro engines per cell."""
+    """Start a macro engine with one micro engine inside every macro cell."""
     max_y, max_x = self.stdscr.getmaxyx()
 
-    # Macro grid dimensions — fit in terminal
-    # In overview mode each macro cell is rendered as cell_size rows tall
-    # and cell_size*2 cols wide (each sim cell = 2 chars)
-    # But in overview we show a compact view: 1 char per macro cell (2 cols wide)
+    # The overview draws each macro cell as one 2-character block.
     display_rows = max(5, max_y - 4)
     display_cols = max(5, (max_x - 1) // 2)
 
-    # Macro grid can be at most display_rows × display_cols for compact view
-    # but limit so micro sims aren't too many (perf)
+    # Cap the macro grid: every cell runs a full micro-simulation.
     macro_rows = min(display_rows, 30)
     macro_cols = min(display_cols, 40)
 
@@ -106,11 +84,9 @@ def _rsim_init(self, macro_id, micro_id, cell_size=8):
     self.rsim_macro_rows = macro_rows
     self.rsim_macro_cols = macro_cols
 
-    # Initialize macro engine (using the mashup engine at macro scale)
     macro_init, _, _ = _ENGINES[macro_id]
     self.rsim_macro_state = macro_init(macro_rows, macro_cols)
 
-    # Initialize one micro-simulation per macro cell
     micro_init, _, _ = _ENGINES[micro_id]
     cells = []
     for r in range(macro_rows):
@@ -120,10 +96,7 @@ def _rsim_init(self, macro_id, micro_id, cell_size=8):
         cells.append(row)
     self.rsim_cells = cells
 
-    # Density caches
     self.rsim_micro_densities = [[0.0] * macro_cols for _ in range(macro_rows)]
-    self.rsim_macro_density = [[0.0] * macro_cols for _ in range(macro_rows)]
-    # Compute initial densities
     _, _, micro_dens_fn = _ENGINES[micro_id]
     for r in range(macro_rows):
         for c in range(macro_cols):
@@ -132,8 +105,7 @@ def _rsim_init(self, macro_id, micro_id, cell_size=8):
             self.rsim_micro_densities[r][c] = total / max(1, cell_size * cell_size)
 
     _, _, macro_dens_fn = _ENGINES[macro_id]
-    md = macro_dens_fn(self.rsim_macro_state)
-    self.rsim_macro_density = md
+    self.rsim_macro_density = macro_dens_fn(self.rsim_macro_state)
 
     self.rsim_generation = 0
     self.rsim_running = False
@@ -152,7 +124,7 @@ def _rsim_init(self, macro_id, micro_id, cell_size=8):
 # ════════════════════════════════════════════════════════════════════
 
 def _rsim_step(self):
-    """Advance all micro-simulations, then feed density up to macro, then step macro."""
+    """Step every micro-simulation, then step the macro grid on the micro densities."""
     macro_rows = self.rsim_macro_rows
     macro_cols = self.rsim_macro_cols
     cell_size = self.rsim_cell_size
@@ -161,32 +133,23 @@ def _rsim_step(self):
     _, micro_step, micro_dens_fn = _ENGINES[self.rsim_micro_id]
     _, macro_step, macro_dens_fn = _ENGINES[self.rsim_macro_id]
 
-    # Step 1: Step all micro-simulations
-    # Feed macro cell's density as external influence to micro
+    # Each micro-sim sees its macro cell's density as a uniform external field.
     for r in range(macro_rows):
         for c in range(macro_cols):
-            # Macro cell density as external signal to micro
             macro_val = self.rsim_macro_density[r][c] if r < len(self.rsim_macro_density) else 0.0
             if isinstance(macro_val, list):
                 macro_val = 0.0
-            # Build a uniform density field from macro value for the micro sim
             micro_external = [[macro_val * coupling] * cell_size for _ in range(cell_size)]
             micro_step(self.rsim_cells[r][c], micro_external, coupling)
 
-    # Step 2: Compute micro densities → feed into macro
+    # Average each micro-sim's density; the macro engine takes these as its input.
     for r in range(macro_rows):
         for c in range(macro_cols):
             d = micro_dens_fn(self.rsim_cells[r][c])
             total = sum(sum(row) for row in d)
             self.rsim_micro_densities[r][c] = total / max(1, cell_size * cell_size)
 
-    # Step 3: Build density field from micro densities for macro engine coupling
-    micro_dens_field = self.rsim_micro_densities
-
-    # Step 4: Step the macro engine with micro density as external input
-    macro_step(self.rsim_macro_state, micro_dens_field, coupling)
-
-    # Step 5: Refresh macro density
+    macro_step(self.rsim_macro_state, self.rsim_micro_densities, coupling)
     self.rsim_macro_density = macro_dens_fn(self.rsim_macro_state)
 
     self.rsim_generation += 1
@@ -237,7 +200,7 @@ def _draw_rsim_menu(self, max_y, max_x):
                 pass
             if sel:
                 try:
-                    self.stdscr.addstr(y + 0, 40, pdesc[:max_x - 42],
+                    self.stdscr.addstr(y, 40, pdesc[:max_x - 42],
                                        curses.color_pair(6) | curses.A_DIM)
                 except curses.error:
                     pass
@@ -320,7 +283,7 @@ def _draw_rsim_menu(self, max_y, max_x):
     # Hint bar
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [Up/Down]=navigate  [Enter]=select  [Esc]=back/exit"
+        hint = " Up/Down=move  Enter=select  Esc=back"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -497,7 +460,7 @@ def _draw_rsim_overview(self, max_y, max_x):
         status = (f" gen {self.rsim_generation}  |"
                   f"  coupling={self.rsim_coupling:.2f}  |"
                   f"  speed={SPEED_LABELS[self.speed_idx]}  |"
-                  f"  [Enter]=zoom into cell  [arrows]=move cursor")
+                  f"  Enter=zoom  arrows=move cursor")
         try:
             self.stdscr.addstr(status_y, 0, status[:max_x - 1],
                                curses.color_pair(7) | curses.A_BOLD)
@@ -511,7 +474,7 @@ def _draw_rsim_overview(self, max_y, max_x):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [+/-]=coupling [>/<=speed [r]=reset [R]=menu [Enter]=zoom [q]=exit"
+            hint = " Space=play  n=step  +/-=coupling  </>=speed  r=reset  R=menu  Enter=zoom  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -649,7 +612,7 @@ def _draw_rsim_zoom(self, max_y, max_x):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Esc/Backspace]=back to overview  [Space]=play  [n]=step  [arrows]=move to neighbor  [q]=exit"
+            hint = " Esc/Backspace=overview  Space=play  n=step  arrows=neighbor cell  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
