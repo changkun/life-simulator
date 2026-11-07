@@ -239,3 +239,9 @@ class TestRockPaperScissors:
         assert self.app.rps_generation == 5
         self.app._rps_init(1)
         assert self.app.rps_generation == 0
+
+    def test_steps_per_frame_reset_on_init(self):
+        self.app._rps_init(0)
+        self.app.rps_steps_per_frame = 7
+        self.app._rps_init(0)
+        assert self.app.rps_steps_per_frame == 1

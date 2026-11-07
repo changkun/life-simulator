@@ -68,7 +68,7 @@ def _rps_init(self, preset_idx: int):
             for _ in range(rows)
         ]
 
-    self.rps_steps_per_frame = getattr(self, 'rps_steps_per_frame', 1)
+    self.rps_steps_per_frame = 1
     self.rps_menu = False
     self.rps_mode = True
     self.rps_running = True
