@@ -509,17 +509,22 @@ def _psoup_step(self):
 
     # ── 0. Vent activity: emit H2, CO2, minerals ──
     for vr, vc in vents:
-        for dr, dc in _NBRS8:
-            nr, nc = vr + dr, vc + dc
-            if 0 <= nr < rows and 0 <= nc < cols:
-                if grid[nr][nc] == MOL_WATER:
-                    roll = random.random()
-                    if roll < 0.08:
-                        new_grid[nr][nc] = MOL_H2
-                    elif roll < 0.14:
-                        new_grid[nr][nc] = MOL_CO2
-                    elif roll < 0.17:
-                        new_grid[nr][nc] = MOL_NH3
+        # The ring just outside the 3x3 vent block; the vent's own
+        # neighbours are all vent cells.
+        for dr in range(-2, 3):
+            for dc in range(-2, 3):
+                if max(abs(dr), abs(dc)) != 2:
+                    continue
+                nr, nc = vr + dr, vc + dc
+                if 0 <= nr < rows and 0 <= nc < cols:
+                    if grid[nr][nc] == MOL_WATER:
+                        roll = random.random()
+                        if roll < 0.04:
+                            new_grid[nr][nc] = MOL_H2
+                        elif roll < 0.07:
+                            new_grid[nr][nc] = MOL_CO2
+                        elif roll < 0.085:
+                            new_grid[nr][nc] = MOL_NH3
         # Plume: upward mineral/heat dispersal
         for i in range(1, random.randint(2, 5)):
             pr = vr - i

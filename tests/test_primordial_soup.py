@@ -230,3 +230,20 @@ def test_key_quit_exits():
         app._handle_psoup_key(key)
         assert app.psoup_mode is False
         assert app.psoup_running is False
+
+
+def test_vents_emit_gases_beside_the_vent_block():
+    """Gases appear in the water ring beside the 3x3 vent block."""
+    from life.modes.primordial_soup import MOL_H2, MOL_CO2, MOL_NH3
+    random.seed(1)
+    app = _make_app()
+    app._psoup_init(0)
+    gases = {MOL_H2, MOL_CO2, MOL_NH3}
+    seen = 0
+    for _ in range(60):
+        app._psoup_step()
+        for vr, vc in app.psoup_vents:
+            for dc in (-2, 2):
+                if 0 <= vc + dc < app.psoup_cols:
+                    seen += app.psoup_grid[vr][vc + dc] in gases
+    assert seen > 0
