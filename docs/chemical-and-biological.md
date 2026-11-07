@@ -510,6 +510,8 @@ Energy dynamics:
 Autocatalytic cycle detection (every 20 steps):
   Build catalytic graph: A -> B means A catalyzes production of B
   Search for cycles of length 2-4 via DFS
+  Once the catalyst or replicator table exceeds 1000 entries, drop the molecules no
+  longer on the grid, so the counts reflect current molecules
 ```
 
 **What to look for** — "RNA World" (high template bias) favors replication — watch for replicator sequences (marked with diamond glyphs). "Metabolism First" (catalysis only, no templates) emphasizes autocatalytic cycles. Monitor the stats line: species diversity, longest polymer, cycle count, and replicator count chart the soup's chemical evolution. "Lipid World" enables clustering — long polymers attract nearby monomers, forming proto-compartments. Press `v` to cycle the soup view (molecule type), energy view and diversity view (colored by first character). `e`/`E` change reactivity, `f`/`F` the food rate and `u`/`U` the mutation rate. A mouse click drops a short polymer.
