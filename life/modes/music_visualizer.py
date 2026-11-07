@@ -478,7 +478,7 @@ def _draw_musvis_waveform(self, view_h: int, view_w: int):
 
     # Draw waveform
     prev_y = None
-    for x in range(min(view_w, n_samples)):
+    for x in range(view_w):
         sample_idx = int(x * n_samples / view_w)
         if sample_idx >= n_samples:
             sample_idx = n_samples - 1
@@ -591,7 +591,7 @@ def _draw_musvis_combined(self, view_h: int, view_w: int):
     n_samples = len(waveform)
     if n_samples > 0:
         amp = (wave_h - 2) / 2.0
-        for x in range(min(view_w, n_samples)):
+        for x in range(view_w):
             si = int(x * n_samples / view_w)
             if si >= n_samples:
                 si = n_samples - 1

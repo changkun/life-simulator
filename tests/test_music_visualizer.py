@@ -431,3 +431,13 @@ def test_enter_marks_mode_active():
     app._enter_musvis_mode()
     assert app.musvis_mode is True
 
+
+def test_waveform_spans_full_width():
+    """The waveform stretches across a view wider than its sample count."""
+    app = _make_app()
+    app._musvis_init(1)
+    app._musvis_step()
+    xs = set()
+    app.stdscr.addstr = lambda y, x, *a, **k: xs.add(x)
+    app._draw_musvis_waveform(30, 120)
+    assert max(xs) >= 110
