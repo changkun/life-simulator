@@ -627,11 +627,10 @@ def _handle_elab_key(self, key):
 
     # Play/pause
     if key == ord(" "):
-        self.elab_running = not self.elab_running
-        if self.elab_phase == "scored" and self.elab_running:
-            # Restart with breeding
+        if self.elab_phase == "scored":
             self._elab_breed_next()
         else:
+            self.elab_running = not self.elab_running
             self._flash("Running" if self.elab_running else "Paused")
         return True
 

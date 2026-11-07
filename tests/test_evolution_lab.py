@@ -122,3 +122,16 @@ def test_s_saves_and_a_adopts(tmp_path, monkeypatch):
     app._handle_elab_key(ord("a"))
     assert app.elab_mode is False
     assert app.grid.birth == birth
+
+
+def test_space_breeds_next_generation_when_scored_with_auto_advance_off():
+    app = _make_app()
+    app.elab_auto_advance = False
+    app._elab_init()
+    app._elab_score_all()
+    assert app.elab_phase == "scored"
+    gen = app.elab_generation
+    app._handle_elab_key(ord(" "))
+    assert app.elab_generation == gen + 1
+    assert app.elab_phase == "simulating"
+    assert app.elab_running is True
