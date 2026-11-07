@@ -1,15 +1,11 @@
-"""Mode: sand — simulation mode for the life package."""
+"""Falling Sand — a particle sandbox where sand, water, fire, plants, oil and steam interact."""
 import curses
-import math
 import random
 import time
 
-
 from life.constants import SPEEDS, SPEED_LABELS
-from life.grid import Grid
 
-# ── Falling Sand particle simulation ────────────────────────────────────
-# Elements: 0=empty, 1=sand, 2=water, 3=fire, 4=stone, 5=plant
+# Elements, stored in the grid as (element, age) keyed by (row, col).
 SAND_EMPTY = 0
 SAND_SAND = 1
 SAND_WATER = 2
@@ -52,7 +48,7 @@ SAND_PRESETS = [
 
 
 def _sand_build_preset(self, name: str) -> dict[tuple[int, int], tuple[int, int]]:
-    """Build a preset scene for falling sand."""
+    """Build the starting scene for a preset."""
     grid: dict[tuple[int, int], tuple[int, int]] = {}
     mid_r = self.sand_rows // 2
     mid_c = self.sand_cols // 2
@@ -174,7 +170,7 @@ def _sand_build_preset(self, name: str) -> dict[tuple[int, int], tuple[int, int]
 
 
 def _sand_init(self, preset: str | None = None):
-    """Initialize the falling sand grid."""
+    """Reset the grid and load the given preset scene, if any."""
     max_y, max_x = self.stdscr.getmaxyx()
     self.sand_rows = max_y - 3
     self.sand_cols = (max_x - 1) // 2
@@ -192,18 +188,17 @@ def _sand_init(self, preset: str | None = None):
 
 
 def _sand_step(self):
-    """Advance the falling-sand simulation by one tick."""
+    """Advance the simulation by one tick."""
     new_grid: dict[tuple[int, int], tuple[int, int]] = {}
-    # Copy all static elements first (stone)
+    # Stone never moves: carry it over first.
     for (r, c), (elem, age) in self.sand_grid.items():
         if elem == self.SAND_STONE:
             new_grid[(r, c)] = (elem, age)
 
-    # Track which cells are occupied in new_grid as we go
-    # Process from bottom to top so falling works correctly
+    # Cells already claimed in new_grid.  Rows run bottom to top so that
+    # falling elements free their cell before the ones above reach it.
     moved: set[tuple[int, int]] = set()
 
-    # Process rows bottom-to-top for gravity elements
     for r in range(self.sand_rows - 1, -1, -1):
         # Randomize left-right processing to avoid bias
         cols = list(range(self.sand_cols))
@@ -352,8 +347,8 @@ def _sand_step(self):
 
             elif elem == self.SAND_PLANT:
                 # Plant: grows when adjacent to water, burns near fire
-                # Check for fire neighbors (already handled by fire spreading)
-                # Grow into empty adjacent cells if water is nearby
+                # Fire spreads to plants from the fire branch; here a plant
+                # only grows, and only next to water.
                 has_water = False
                 for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                     ar, ac = r + dr, c + dc
@@ -465,7 +460,7 @@ def _sand_step(self):
 
 
 def _enter_sand_mode(self):
-    """Enter falling-sand mode — show preset menu."""
+    """Show the Falling Sand scene menu."""
     self.sand_menu = True
     self.sand_menu_sel = 0
     self._flash("Falling Sand — select a scene")
@@ -473,7 +468,7 @@ def _enter_sand_mode(self):
 
 
 def _exit_sand_mode(self):
-    """Exit falling-sand mode."""
+    """Leave Falling Sand mode and clear the grid."""
     self.sand_mode = False
     self.sand_menu = False
     self.sand_running = False
@@ -483,7 +478,7 @@ def _exit_sand_mode(self):
 
 
 def _handle_sand_menu_key(self, key: int) -> bool:
-    """Handle keys in the falling-sand preset menu."""
+    """Handle keys in the scene menu."""
     if key == -1:
         return True
     n = len(self.SAND_PRESETS)
@@ -510,7 +505,7 @@ def _handle_sand_menu_key(self, key: int) -> bool:
 
 
 def _handle_sand_key(self, key: int) -> bool:
-    """Handle keys while in falling-sand mode."""
+    """Handle keys while the simulation is active."""
     if key == -1:
         return True
     if key == ord("q") or key == 27:
@@ -613,7 +608,7 @@ def _handle_sand_key(self, key: int) -> bool:
 
 
 def _sand_paint(self):
-    """Paint the current brush at cursor position with brush size."""
+    """Paint the current brush around the cursor."""
     sz = self.sand_brush_size
     for dr in range(-sz + 1, sz):
         for dc in range(-sz + 1, sz):
@@ -627,7 +622,7 @@ def _sand_paint(self):
 
 
 def _draw_sand_menu(self, max_y: int, max_x: int):
-    """Draw the falling-sand preset selection menu."""
+    """Draw the scene menu."""
     title = "── Falling Sand ──"
     try:
         self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
@@ -685,8 +680,7 @@ def _draw_sand_menu(self, max_y: int, max_x: int):
 
 
 def _draw_sand(self, max_y: int, max_x: int):
-    """Draw the falling-sand simulation."""
-    # Count elements
+    """Draw the grid, status line and hint bar."""
     counts: dict[int, int] = {}
     for (_, _), (elem, _) in self.sand_grid.items():
         counts[elem] = counts.get(elem, 0) + 1
@@ -702,7 +696,6 @@ def _draw_sand(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    # Draw grid
     draw_start = 1
     draw_rows = max_y - 3
     draw_cols = (max_x - 1) // 2
