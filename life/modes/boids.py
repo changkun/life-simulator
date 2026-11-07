@@ -1,12 +1,10 @@
-"""Mode: boids — simulation mode for the life package."""
+"""Boids Flocking — Reynolds' flocking of agents by separation, alignment and cohesion."""
 import curses
 import math
 import random
 import time
 
-
 from life.constants import SPEEDS
-from life.grid import Grid
 
 BOIDS_PRESETS = [
     # (name, description, num_ratio, sep_r, ali_r, coh_r, sep_w, ali_w, coh_w, max_spd)
@@ -18,12 +16,12 @@ BOIDS_PRESETS = [
     ("Chaos", "High separation, low cohesion", 0.10, 4.0, 6.0, 8.0, 3.0, 0.5, 0.3, 1.8),
 ]
 
-# Direction arrows: 8 directions based on velocity angle
+# Arrows for the 8 heading sectors, clockwise from "up".
 BOIDS_ARROWS = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"]
 
 
 def _enter_boids_mode(self):
-    """Enter Boids mode — show preset menu."""
+    """Show the Boids Flocking preset menu."""
     self.boids_menu = True
     self.boids_menu_sel = 0
     self._flash("Boids — select a configuration")
@@ -31,7 +29,7 @@ def _enter_boids_mode(self):
 
 
 def _exit_boids_mode(self):
-    """Exit Boids mode."""
+    """Leave Boids Flocking mode and clear its state."""
     self.boids_mode = False
     self.boids_menu = False
     self.boids_running = False
@@ -41,7 +39,7 @@ def _exit_boids_mode(self):
 
 
 def _boids_init(self, preset_idx: int):
-    """Initialize Boids simulation with the given preset."""
+    """Start Boids Flocking with the given preset."""
     name, _desc, ratio, sr, ar, cr, sw, aw, cw, ms = self.BOIDS_PRESETS[preset_idx]
     self.boids_preset_name = name
     self.boids_separation_radius = sr
@@ -68,7 +66,6 @@ def _boids_init(self, preset_idx: int):
         r_off = random.random() * radius
         br = cr_center + math.sin(angle) * r_off
         bc = cc_center + math.cos(angle) * r_off
-        # Random initial velocity
         va = random.random() * 2 * math.pi
         spd = random.uniform(0.2, ms)
         vr = math.sin(va) * spd
@@ -82,7 +79,7 @@ def _boids_init(self, preset_idx: int):
 
 
 def _boids_step(self):
-    """Advance Boids simulation by one step (Reynolds' rules)."""
+    """Advance the flock by one step."""
     agents = self.boids_agents
     n = len(agents)
     rows, cols = self.boids_rows, self.boids_cols
@@ -168,7 +165,7 @@ def _boids_step(self):
             nvr = nvr / spd * max_spd
             nvc = nvc / spd * max_spd
         elif spd < 0.1:
-            # Minimum speed to keep boids moving
+            # Kick near-stationary boids in a random direction so they keep moving
             angle = random.random() * 2 * math.pi
             nvr = math.sin(angle) * 0.2
             nvc = math.cos(angle) * 0.2
@@ -184,7 +181,7 @@ def _boids_step(self):
 
 
 def _handle_boids_menu_key(self, key: int) -> bool:
-    """Handle input in Boids preset menu."""
+    """Handle keys in the preset menu."""
     n = len(self.BOIDS_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.boids_menu_sel = (self.boids_menu_sel + 1) % n
@@ -200,7 +197,7 @@ def _handle_boids_menu_key(self, key: int) -> bool:
 
 
 def _handle_boids_key(self, key: int) -> bool:
-    """Handle input in active Boids simulation."""
+    """Handle keys while the simulation is active."""
     if key == ord(" "):
         self.boids_running = not self.boids_running
     elif key in (ord("n"), ord(".")):
@@ -236,7 +233,7 @@ def _handle_boids_key(self, key: int) -> bool:
         self._flash(f"Steps/frame: {self.boids_steps_per_frame}")
     elif key == ord("<") or key == ord(","):
         self.speed_idx = max(0, self.speed_idx - 1)
-    elif key == ord(">") or key == ord("."):
+    elif key == ord(">"):
         self.speed_idx = min(len(SPEEDS) - 1, self.speed_idx + 1)
     elif key in (ord("q"), 27):
         self._exit_boids_mode()
@@ -247,7 +244,7 @@ def _handle_boids_key(self, key: int) -> bool:
 
 
 def _draw_boids_menu(self, max_y: int, max_x: int):
-    """Draw the Boids preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Boids Flocking Simulation ── Select Configuration ──"
     try:
@@ -280,7 +277,7 @@ def _draw_boids_menu(self, max_y: int, max_x: int):
 
 
 def _draw_boids(self, max_y: int, max_x: int):
-    """Draw the active Boids simulation."""
+    """Draw the flock, status line and hint bar."""
     self.stdscr.erase()
     agents = self.boids_agents
     rows, cols = self.boids_rows, self.boids_cols
@@ -312,10 +309,8 @@ def _draw_boids(self, max_y: int, max_x: int):
 
     for (ri, ci), idx in grid.items():
         vr, vc = agents[idx][2], agents[idx][3]
-        # Compute direction from velocity → 8-way arrow
-        angle = math.atan2(vc, vr)  # atan2(x, y) for row=down, col=right
-        # Map angle to 0-7: 0=up, 1=NE, 2=right, 3=SE, 4=down, 5=SW, 6=left, 7=NW
-        # vr positive = moving down, vc positive = moving right
+        # Heading in degrees: 0 = down (+row), 90 = right (+col).  Shifting by
+        # 180 + 22.5 makes sector 0 the "up" arrow.
         angle_deg = math.degrees(math.atan2(vc, vr))
         dir_idx = int((angle_deg + 180 + 22.5) / 45.0) % 8
         arrow = arrows[dir_idx]
