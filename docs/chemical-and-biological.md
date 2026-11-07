@@ -1115,15 +1115,21 @@ All morphogens diffuse via 4-neighbor averaging (coefficient 0.12) with linear d
 Fate determination (applied from blastula stage onward):
     IF Nodal_internal ≥ 0.55:       → Endoderm (committed)
     ELIF Nodal_internal ≥ 0.30:     → Mesoderm (committed)
-        IF Wnt_internal ≥ 0.40:     → Notochord (committed)
+        IF Wnt_internal > 0.35 and Nodal_internal > 0.36:
+                                    → Notochord, with probability 0.15
     ELIF BMP_internal ≥ 0.30:       → Ectoderm (committed)
-    ELIF BMP_internal < 0.12:       → Neural (during neurula stage)
+    ELIF BMP_internal < 0.12 and stage ≥ gastrula:  → Neural (committed)
+    Committed ectoderm becomes neural at the neurula stage when BMP_internal < 0.12
 
 Cell division:
-    Probability = base_rate × slowdown^generation
+    A cell divides when its timer, which gains rate per tick, reaches 1
+    rate = base_rate × speed_mult × slowdown^generation
     base_rate = 0.04/tick, slowdown = 0.92×/generation
-    Daughter placed in random adjacent empty cell
-    Inherits parent morphogen state, lineage, generation+1
+    rate is tripled up to 8 cells and doubled up to 32 cells
+    Daughter placed in a random empty neighboring cell (or 2 cells away)
+    Inherits 80% of the parent's morphogen state, lineage, generation+1;
+    from the blastula stage on, 30% of daughters start uncommitted with half their BMP and Nodal
+    Total cells are capped at 600 (700 in Axis Duplication and Twinning Event)
 
 Morphogen diffusion (per tick, per field):
     new[r][c] = old[r][c] + coeff × (avg_neighbors − old[r][c]) − decay × old[r][c]
@@ -1143,6 +1149,7 @@ Gastrulation movements:
 Stage progression:
     Zygote (n≤1) → Cleavage (n≤8) → Morula (n≤32) → Blastula (gen<80)
     → Gastrula (gen<160) → Neurula
+    Accelerated Gastrulation moves the last two boundaries to 50 and 110
 ```
 
 **Presets** — Six scenarios demonstrate different developmental outcomes:
@@ -1153,7 +1160,7 @@ Stage progression:
 | Axis Duplication (Spemann Organizer) | Second organizer at 80% strength, BMP antagonism from both sites | Two body axes form — conjoined twin-like embryo with duplicated dorsal structures |
 | Neural Tube Defect | BMP multiplier ×2.2, neural threshold lowered to 0.05 | Elevated BMP prevents neural induction — ectoderm cannot transition to neural fate |
 | Morphogen Knockout | Nodal secretion disabled (strength=0) | No mesoderm or endoderm induction — embryo remains ectodermal, gastrulation fails |
-| Twinning Event | Blastomeres separated at 2-cell stage, displaced ±5 columns | Two independent embryos develop from a single zygote — monozygotic twins |
+| Twinning Event | Blastomeres separated at 2-cell stage, displaced by max(8, columns / 4) columns | Two independent embryos develop from a single zygote — monozygotic twins |
 | Accelerated Gastrulation | Division rate 0.07, speed ×1.8, earlier gastrulation at tick 50 | Rapid development with boosted morphogen production and earlier stage transitions |
 
 **What to look for** — In the Cross-Section view, watch the single zygote (@@) undergo rapid cleavage into a growing ball of pluripotent cells (●●), then hollow out as the blastocoel cavity forms. Press `o` to cycle the morphogen overlay (none, BMP, Wnt, Nodal) and see the BMP gradient forming ventrally (bottom), Wnt concentrating at the blastopore, and Nodal radiating from the organizer. As gastrulation begins, endoderm (░░) and mesoderm (▒▒) cells invaginate through the blastopore while ectoderm (▓▓) spreads over the exterior by epiboly. During neurulation, low-BMP dorsal ectoderm transforms to neural fate (NN) and converges toward the midline. Press `g` to jump straight to the gastrulation stage and `v` to cycle the Cross-Section, Fate Map and graph views. The Fate Map view shows lineage relationships (left) and germ layer assignments (right). The sparkline graphs track cell count, fate populations, morphogen levels, cavity size, and developmental stage in real time.
