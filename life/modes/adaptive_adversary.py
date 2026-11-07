@@ -206,7 +206,6 @@ def _empty_player_profile():
         "mutate_used": 0,
         # Outcome metrics
         "turns_to_exit": [],     # list of turn counts per completed level
-        "deaths": 0,
         "wins": 0,
         # Path analysis
         "positions": [],         # (r, c) trail for directional bias
@@ -365,9 +364,6 @@ def _adversary_fitness(genome, player_profile, level_result):
             score *= 0.5  # too easy
         elif turns > 150:
             score *= 0.7  # too tedious
-    elif level_result == "died":
-        # Player died — slight penalty (want challenging but solvable)
-        score *= 0.85
     else:
         # Quit / unknown
         score *= 0.6
@@ -474,7 +470,6 @@ def _adversary_init(self):
     self.adversary_score = 0
     self.adversary_level = 1
     self.adversary_wins = 0
-    self.adversary_deaths = 0
     self.adversary_history = []
     self.adversary_max_history = 10
     self.adversary_show_help = False
@@ -614,7 +609,6 @@ def _enter_adversary_mode(self):
     self.adversary_running = True
     self.adversary_level = 1
     self.adversary_wins = 0
-    self.adversary_deaths = 0
     self.adversary_score = 0
     self.adversary_show_help = False
     self.adversary_show_report = False
@@ -793,16 +787,6 @@ def _adversary_player_turn(self, dr, dc):
     self.adversary_turn += 1
     for _ in range(self.adversary_ca_ticks):
         _adversary_tick_ca(self)
-
-    # Check crush
-    pr, pc = self.adversary_player_r, self.adversary_player_c
-    if self.adversary_cells[pr][pc] > 0 and not self.adversary_game_over:
-        self.adversary_game_over = True
-        self.adversary_won = False
-        self.adversary_deaths += 1
-        self.adversary_player_profile["deaths"] += 1
-        _adversary_end_level(self, "died")
-        _adversary_flash(self, "Crushed! The dungeon learns from your defeat... Press 'n' to continue.")
 
 
 # ── Level end: evolution trigger ──────────────────────────────────────
@@ -1068,7 +1052,7 @@ def _draw_adversary(self, max_y=None, max_x=None):
 
     # Stats line
     stats = (
-        f" W:{self.adversary_wins} D:{self.adversary_deaths} │ "
+        f" W:{self.adversary_wins} │ "
         f"CA/move: {self.adversary_ca_ticks} │ "
         f"?=help  Tab=report  f/v/m=items  n=new  q=quit"
     )
@@ -1101,12 +1085,8 @@ def _draw_adversary(self, max_y=None, max_x=None):
 
     # Game over overlay
     if self.adversary_game_over:
-        if self.adversary_won:
-            msg = f"  ◈ LEVEL {self.adversary_level} COMPLETE! The dungeon evolves... Move or press 'n'.  "
-            attr = curses.color_pair(201) | curses.A_BOLD
-        else:
-            msg = "  ☠ CRUSHED! The dungeon learned from your defeat. Press 'n'.  "
-            attr = curses.color_pair(204) | curses.A_BOLD
+        msg = f"  ◈ LEVEL {self.adversary_level} COMPLETE! The dungeon evolves... Move or press 'n'.  "
+        attr = curses.color_pair(201) | curses.A_BOLD
         msg_x = max(0, (max_w - len(msg)) // 2)
         msg_y = max(0, view_h // 2)
         try:
@@ -1168,8 +1148,7 @@ def _draw_adversary_report(self, scr, max_h, max_w, view_h):
 
     # Player behavior summary
     total = max(1, profile["total_moves"])
-    line = (f"║ Total moves: {profile['total_moves']:>5}  │  Wins: {profile['wins']}"
-            f"  Deaths: {profile['deaths']}")
+    line = (f"║ Total moves: {profile['total_moves']:>5}  │  Wins: {profile['wins']}")
     lines.append(f"{line:<52}║")
     lines.append("║                                                   ║")
 

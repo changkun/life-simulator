@@ -106,3 +106,14 @@ def test_overlay_boxes_are_aligned():
     app.adversary_show_report = True
     app._draw_adversary()
     assert len({len(s) for s in _box_lines(app.stdscr)}) == 1
+
+
+def test_walls_never_close_on_the_player():
+    app = _make_app()
+    app._enter_adversary_mode()
+    for row in app.adversary_cells:
+        row[:] = [adv.WALL] * len(row)
+    app._handle_adversary_key(ord(" "))
+    pr, pc = app.adversary_player_r, app.adversary_player_c
+    assert app.adversary_cells[pr][pc] == adv.FLOOR
+    assert not app.adversary_game_over

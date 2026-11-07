@@ -1181,7 +1181,7 @@ The key addition is the adversary layer, which operates on three timescales:
 **Within a level** — a player behavior profile accumulates statistics:
 - Movement direction counts (up/down/left/right/wait)
 - Item usage by type (freeze, reverse, mutate)
-- Turns to exit, deaths, direction changes
+- Turns to exit, direction changes
 - Position trail for predictability analysis
 
 **Between levels** — the weakness analyzer examines the profile and produces targeted adaptations:

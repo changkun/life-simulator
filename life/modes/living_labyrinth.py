@@ -175,7 +175,6 @@ def _labyrinth_init(self):
     self.labyrinth_score = 0
     self.labyrinth_level = 1
     self.labyrinth_wins = 0
-    self.labyrinth_deaths = 0
     self.labyrinth_history = []        # for reverse item: past cell states
     self.labyrinth_max_history = 10
     self.labyrinth_show_help = False
@@ -268,7 +267,6 @@ def _enter_labyrinth_mode(self):
     self.labyrinth_running = True
     self.labyrinth_level = 1
     self.labyrinth_wins = 0
-    self.labyrinth_deaths = 0
     self.labyrinth_score = 0
     self.labyrinth_show_help = False
     self.labyrinth_rule_idx = 0
@@ -424,15 +422,6 @@ def _labyrinth_player_turn(self, dr, dc):
         for c, t in enumerate(row):
             if t > 0:
                 row[c] = t - 1
-
-    # Check if player got trapped (surrounded by walls)
-    pr, pc = self.labyrinth_player_r, self.labyrinth_player_c
-    if self.labyrinth_cells[pr][pc] > 0 and not self.labyrinth_game_over:
-        # Player got crushed by a wall!
-        self.labyrinth_game_over = True
-        self.labyrinth_won = False
-        self.labyrinth_deaths += 1
-        _labyrinth_flash(self, "Crushed by the living walls! Press 'n' for new dungeon.")
 
 
 # ── Key handler ──
@@ -653,7 +642,7 @@ def _draw_labyrinth(self, max_y=None, max_x=None):
 
     # Stats line
     stats = (
-        f" W:{self.labyrinth_wins} D:{self.labyrinth_deaths} │ "
+        f" W:{self.labyrinth_wins} │ "
         f"Pos: ({pr},{pc}) → Exit: ({er},{ec}) │ "
         f"[?]Help [f]Freeze [v]Reverse [m]Mutate [r]Rule [n]New [q]Quit"
     )
@@ -674,12 +663,8 @@ def _draw_labyrinth(self, max_y=None, max_x=None):
 
     # Game over overlay
     if self.labyrinth_game_over:
-        if self.labyrinth_won:
-            msg = f"  ◈ LEVEL {self.labyrinth_level} COMPLETE! Press any move key to continue.  "
-            attr = curses.color_pair(201) | curses.A_BOLD
-        else:
-            msg = "  ☠ CRUSHED! Press 'n' for new dungeon.  "
-            attr = curses.color_pair(204) | curses.A_BOLD
+        msg = f"  ◈ LEVEL {self.labyrinth_level} COMPLETE! Press any move key to continue.  "
+        attr = curses.color_pair(201) | curses.A_BOLD
         msg_x = max(0, (max_w - len(msg)) // 2)
         msg_y = max(0, view_h // 2)
         try:

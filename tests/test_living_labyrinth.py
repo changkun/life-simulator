@@ -39,3 +39,13 @@ def test_exit_clears_state():
     app._exit_labyrinth_mode()
     assert app.labyrinth_mode is False
     assert app.labyrinth_cells is None
+
+
+def test_walls_never_close_on_the_player():
+    app = _make_app()
+    for row in app.labyrinth_cells:
+        row[:] = [ll.WALL] * len(row)
+    ll._labyrinth_player_turn(app, 0, 0)
+    pr, pc = app.labyrinth_player_r, app.labyrinth_player_c
+    assert app.labyrinth_cells[pr][pc] == ll.FLOOR
+    assert not app.labyrinth_game_over
