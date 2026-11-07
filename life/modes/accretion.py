@@ -1,24 +1,4 @@
-"""Mode: accretion — Planetary Accretion & Solar System Formation.
-
-Simulates the birth of a solar system from a protoplanetary disk:
-- Dust and gas particles coalesce into planetesimals via gravitational accretion
-- Planetesimals clear their orbital lanes and undergo giant impacts/mergers
-- Frost line determines rocky vs. icy composition
-- Inner rocky planets and outer gas giants self-organize from chaos
-- Orbital resonances and planetary migration
-- Moon capture from giant impacts
-- Late Heavy Bombardment phase
-
-Three views:
-  1) Top-down orbital disk map with particle density and forming protoplanets
-  2) Cross-section showing disk thickness, temperature, frost line
-  3) Time-series sparkline graphs for 10 metrics
-
-Six presets:
-  Calm Accretion, Jupiter Migration (Grand Tack), Giant Impact (Moon formation),
-  Resonant Chain (TRAPPIST-1 analog), Hot Jupiter Inward Spiral,
-  Late Heavy Bombardment
-"""
+"""Planetary Accretion & Solar System Formation — dust and planetesimals in a protoplanetary disk merge into planets."""
 import curses
 import math
 import random
@@ -77,7 +57,7 @@ _TYPE_II_MIGRATION = -0.0006 # inward migration rate for gap-opening giants
 _MIGRATION_MASS_THRESH = 50.0 # mass threshold for Type II migration
 
 # Dynamics
-_EJECT_SPEED = 0.8           # ejection velocity threshold
+_EJECT_SPEED = 0.8           # eccentricity above which a body is ejected
 _RESONANCE_LOCK_PROB = 0.02  # probability of locking into resonance per tick
 _COLLISION_DEBRIS_FRAC = 0.1 # fraction of mass becoming debris on impact
 _MOON_CAPTURE_PROB = 0.3     # probability of debris becoming a moon
@@ -86,22 +66,19 @@ _MOON_CAPTURE_PROB = 0.3     # probability of debris becoming a moon
 _LHB_SCATTER_PROB = 0.01     # probability of outer body perturbation per tick
 _LHB_IMPULSE = 0.15          # velocity kick from scattering
 
-_NEIGHBORS_8 = [(-1, -1), (-1, 0), (-1, 1), (0, -1),
-                (0, 1), (1, -1), (1, 0), (1, 1)]
-
 
 # ======================================================================
 #  Mode lifecycle
 # ======================================================================
 
 def _enter_accretion_mode(self):
-    """Enter Planetary Accretion mode — show preset menu."""
+    """Enter Planetary Accretion mode and show the preset menu."""
     self.accretion_menu = True
     self.accretion_menu_sel = 0
 
 
 def _exit_accretion_mode(self):
-    """Exit Planetary Accretion mode."""
+    """Leave Planetary Accretion mode and clear its state."""
     self.accretion_mode = False
     self.accretion_menu = False
     self.accretion_running = False
@@ -116,7 +93,7 @@ def _exit_accretion_mode(self):
 # ======================================================================
 
 def _accretion_init(self, preset):
-    """Initialize accretion simulation from preset."""
+    """Start an accretion simulation from the given preset key."""
     rows, cols = self.grid.rows, self.grid.cols
     self.accretion_rows = rows
     self.accretion_cols = cols
@@ -125,7 +102,6 @@ def _accretion_init(self, preset):
     self.accretion_speed_scale = 1.0
     self.accretion_view = "disk"  # "disk", "cross", "graphs"
     self.accretion_running = True
-    self.accretion_paused = False
     self.accretion_preset = preset
     self.accretion_show_orbits = True
     self.accretion_show_labels = True
@@ -274,8 +250,7 @@ def _init_resonant(self):
     for _ in range(300):
         a = random.uniform(0.01, 5.0)
         self.accretion_dust.append(_make_dust(a))
-    # Small star → closer frost line
-    # 7 embryos migrating inward
+    # Seven embryos migrating inward
     base_a = [0.8, 1.2, 1.6, 2.1, 2.7, 3.4, 4.2]
     for i, a in enumerate(base_a):
         mass = random.uniform(1.5, 4.0)
@@ -341,7 +316,7 @@ def _init_lhb(self):
 # ======================================================================
 
 def _accretion_step(self):
-    """Advance the accretion simulation by one tick."""
+    """Advance the simulation by one tick."""
     self.accretion_generation += 1
     dt = 0.01 * self.accretion_speed_scale
     self.accretion_time += dt
@@ -584,7 +559,7 @@ def _accretion_step(self):
 # ======================================================================
 
 def _handle_accretion_menu_key(self, key):
-    """Handle keys in the accretion preset menu."""
+    """Handle keys in the preset menu."""
     n = len(ACCRETION_PRESETS)
     if key in (curses.KEY_DOWN, ord('j')):
         self.accretion_menu_sel = (self.accretion_menu_sel + 1) % n
@@ -607,7 +582,7 @@ def _handle_accretion_menu_key(self, key):
 
 
 def _handle_accretion_key(self, key):
-    """Handle keys during accretion simulation."""
+    """Handle keys in the running simulation."""
     if key == -1:
         return True
     if key in (27, ord('q')):
@@ -678,7 +653,7 @@ def _accretion_to_screen(self, a, angle):
 # ======================================================================
 
 def _draw_accretion_menu(self, max_y, max_x):
-    """Draw the accretion preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "═══ Planetary Accretion & Solar System Formation ═══"
     try:
@@ -706,7 +681,7 @@ def _draw_accretion_menu(self, max_y, max_x):
 # ======================================================================
 
 def _draw_accretion(self, max_y, max_x):
-    """Draw the accretion simulation — dispatch to active view."""
+    """Draw the active view."""
     if self.accretion_view == "disk":
         _draw_disk_view(self, max_y, max_x)
     elif self.accretion_view == "cross":
@@ -804,9 +779,7 @@ def _draw_disk_view(self, max_y, max_x):
         sr_p = int(round(cy + y * scale * 0.5))
         if 0 <= sr_p < rows and 0 <= sc_p < cols:
             # Size/char based on mass
-            if b["mass"] > 100:
-                ch = 'O'
-            elif b["mass"] > 30:
+            if b["mass"] > 30:
                 ch = 'O'
             elif b["mass"] > 10:
                 ch = 'o'
