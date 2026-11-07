@@ -629,20 +629,20 @@ Algae dynamics:
 
 Mobile entities:
   Herbivorous fish: graze algae (+20 energy), reproduce when energy > 120
-  Predators: hunt herbivores (detection range 2, probability 0.1)
+  Predators: hunt herbivorous fish and cleaner wrasse (range 2, probability 0.1)
   Crown-of-thorns starfish: eat coral directly, reproduce in high nutrients
   Urchins: graze algae (slower but thorough)
   Cleaner wrasse: boost adjacent coral health (+0.02)
   Plankton: drift, feed coral polyps (+0.005 health)
 
 Environmental parameters:
-  temperature = 26-29C at start (with optional warming trend)
-  acidity (pH) = 7.8-8.1 at start (with optional acidification trend)
+  temperature = 26-29C at start (with optional warming trend, capped at 35C)
+  acidity (pH) = 7.8-8.1 at start (with optional acidification trend, floor 7.0)
   light_level = 0.8-1.0
   nutrient_level = 0.3-0.7 (high nutrients favor algae)
 ```
 
-**What to look for** — "Healthy Reef" shows a balanced ecosystem with branching coral (YY) and massive coral (OO) dominating. "Bleaching Event" (starting at 29C with warming trend) triggers white bleached patches ([]); watch whether the reef recovers or flips to dead coral (##) colonized by algae (,,). "Algal Takeover" demonstrates what happens when herbivore fishing removes algae grazers. "Crown-of-Thorns Outbreak" shows coral-eating starfish (XX) devastating reef structure. The other two presets are "Recovery" (a damaged reef with little coral) and "Acidification Crisis" (falling pH and slow warming). Intervene in real time: `h` adds a heat wave (+1.5C), `c` cools by 1C, `f` releases ten herbivorous fish and `N` adds a nutrient pulse. `v` cycles the reef, light and health views.
+**What to look for** — "Healthy Reef" shows a balanced ecosystem with branching coral (YY) and massive coral (OO) dominating. "Bleaching Event" (starting at 29C with warming trend) triggers white bleached patches ([]); watch whether the reef recovers or flips to dead coral (##) colonized by algae (,,). "Algal Takeover" demonstrates what happens when herbivore fishing removes algae grazers. "Crown-of-Thorns Outbreak" shows coral-eating starfish (XX) devastating reef structure. The other two presets are "Recovery" (a damaged reef with little coral) and "Acidification Crisis" (falling pH and slow warming). Intervene in real time: `h` adds a heat wave (+1.5C, up to the 35C cap), `c` cools by 1C (down to 24C), `f` releases ten herbivorous fish and `N` adds a nutrient pulse. `v` cycles the reef, light and health views.
 
 **References**
 - Hughes, T. P. et al. "Global warming and recurrent mass bleaching of corals." *Nature* 543 (2017): 373-377. https://doi.org/10.1038/nature21707
