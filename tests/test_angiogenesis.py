@@ -41,3 +41,11 @@ def test_q_and_escape_exit():
         assert app.angio_mode is False
         assert app.angio_menu is False
         assert not getattr(app, "angio_running", False)
+
+
+def test_step_advances_one_tick_regardless_of_speed():
+    # The app already calls the step function angio_speed times per frame.
+    app = _started()
+    app.angio_speed = 5
+    app._angio_step()
+    assert app.angio_generation == 1

@@ -424,333 +424,332 @@ def _angio_step(self):
     rows = self.angio_rows
     cols = self.angio_cols
 
-    for _ in range(self.angio_speed):
-        self.angio_generation += 1
+    self.angio_generation += 1
 
-        # ── 1. Heartbeat ──
-        self.angio_heart_phase = (self.angio_heart_phase + 1) % self.angio_heart_rate
-        phase_frac = self.angio_heart_phase / self.angio_heart_rate
-        if phase_frac < _SYSTOLE_FRAC:
-            # Systole: rising pressure
-            systole_frac = phase_frac / _SYSTOLE_FRAC
-            base_pressure = 0.5 + 0.5 * math.sin(systole_frac * math.pi)
+    # ── 1. Heartbeat ──
+    self.angio_heart_phase = (self.angio_heart_phase + 1) % self.angio_heart_rate
+    phase_frac = self.angio_heart_phase / self.angio_heart_rate
+    if phase_frac < _SYSTOLE_FRAC:
+        # Systole: rising pressure
+        systole_frac = phase_frac / _SYSTOLE_FRAC
+        base_pressure = 0.5 + 0.5 * math.sin(systole_frac * math.pi)
+    else:
+        # Diastole: declining pressure
+        diast_frac = (phase_frac - _SYSTOLE_FRAC) / (1.0 - _SYSTOLE_FRAC)
+        base_pressure = 0.5 * math.exp(-2.0 * diast_frac)
+
+    # ── 2. Pressure propagation from source nodes ──
+    for node in self.angio_nodes:
+        if node.is_source:
+            node.pressure = base_pressure
         else:
-            # Diastole: declining pressure
-            diast_frac = (phase_frac - _SYSTOLE_FRAC) / (1.0 - _SYSTOLE_FRAC)
-            base_pressure = 0.5 * math.exp(-2.0 * diast_frac)
+            node.pressure *= 0.5  # decay
 
-        # ── 2. Pressure propagation from source nodes ──
-        for node in self.angio_nodes:
-            if node.is_source:
-                node.pressure = base_pressure
-            else:
-                node.pressure *= 0.5  # decay
-
-        # Simple BFS-like pressure propagation (a few iterations)
-        for _iteration in range(3):
-            for edge in self.angio_edges:
-                nd1 = self.angio_nodes[edge.n1]
-                nd2 = self.angio_nodes[edge.n2]
-                # Poiseuille: flow ∝ r^4 / length * ΔP
-                conductance = (edge.radius ** 4) / max(0.5, edge.length)
-                dp = nd1.pressure - nd2.pressure
-                flow = conductance * dp * 0.3
-                edge.flow = flow
-                edge.wall_shear = abs(flow) / max(0.1, edge.radius ** 3)
-                # Transfer pressure
-                if abs(dp) > 0.001:
-                    transfer = dp * 0.15 * min(1.0, conductance)
-                    nd1.pressure -= transfer
-                    nd2.pressure += transfer
-
-        # ── 3. Oxygen delivery ──
-        # Vessels supply O2 to nearby tissue
-        vessel_cells = set()
+    # Simple BFS-like pressure propagation (a few iterations)
+    for _iteration in range(3):
         for edge in self.angio_edges:
             nd1 = self.angio_nodes[edge.n1]
             nd2 = self.angio_nodes[edge.n2]
-            steps = max(1, int(edge.length))
-            for s in range(steps + 1):
-                t = s / max(1, steps)
-                vr = int(nd1.r + t * (nd2.r - nd1.r))
-                vc = int(nd1.c + t * (nd2.c - nd1.c))
-                if 0 <= vr < rows and 0 <= vc < cols:
-                    vessel_cells.add((vr, vc))
-                    supply = _O2_SUPPLY * abs(edge.flow) * (edge.radius / 1.0)
-                    self.angio_oxygen[vr][vc] = min(1.0,
-                        self.angio_oxygen[vr][vc] + supply)
+            # Poiseuille: flow ∝ r^4 / length * ΔP
+            conductance = (edge.radius ** 4) / max(0.5, edge.length)
+            dp = nd1.pressure - nd2.pressure
+            flow = conductance * dp * 0.3
+            edge.flow = flow
+            edge.wall_shear = abs(flow) / max(0.1, edge.radius ** 3)
+            # Transfer pressure
+            if abs(dp) > 0.001:
+                transfer = dp * 0.15 * min(1.0, conductance)
+                nd1.pressure -= transfer
+                nd2.pressure += transfer
 
-        # ── 4. Oxygen diffusion + consumption ──
-        new_o2 = [row[:] for row in self.angio_oxygen]
-        consume_rate = _O2_CONSUME
-        # Exercise preset: higher consumption
-        if self.angio_preset_id == "exercise":
-            consume_rate = _O2_CONSUME * 2.0
+    # ── 3. Oxygen delivery ──
+    # Vessels supply O2 to nearby tissue
+    vessel_cells = set()
+    for edge in self.angio_edges:
+        nd1 = self.angio_nodes[edge.n1]
+        nd2 = self.angio_nodes[edge.n2]
+        steps = max(1, int(edge.length))
+        for s in range(steps + 1):
+            t = s / max(1, steps)
+            vr = int(nd1.r + t * (nd2.r - nd1.r))
+            vc = int(nd1.c + t * (nd2.c - nd1.c))
+            if 0 <= vr < rows and 0 <= vc < cols:
+                vessel_cells.add((vr, vc))
+                supply = _O2_SUPPLY * abs(edge.flow) * (edge.radius / 1.0)
+                self.angio_oxygen[vr][vc] = min(1.0,
+                    self.angio_oxygen[vr][vc] + supply)
 
-        for r in range(rows):
-            for c in range(cols):
-                val = self.angio_oxygen[r][c]
-                # Diffusion (average of neighbors)
-                total = 0.0
-                cnt = 0
-                for dr, dc in _NEIGHBORS_4:
-                    nr, nc = r + dr, c + dc
-                    if 0 <= nr < rows and 0 <= nc < cols:
-                        total += self.angio_oxygen[nr][nc]
-                        cnt += 1
-                if cnt > 0:
-                    avg = total / cnt
-                    val += _O2_DIFFUSE * (avg - val)
-                # Consumption
-                val -= consume_rate
-                # Tumor cells consume more
-                if self.angio_tumor and (r, c) in self.angio_tumor.cells:
-                    val -= consume_rate * 1.5
-                new_o2[r][c] = max(0.0, min(1.0, val))
-        self.angio_oxygen = new_o2
+    # ── 4. Oxygen diffusion + consumption ──
+    new_o2 = [row[:] for row in self.angio_oxygen]
+    consume_rate = _O2_CONSUME
+    # Exercise preset: higher consumption
+    if self.angio_preset_id == "exercise":
+        consume_rate = _O2_CONSUME * 2.0
 
-        # ── 5. VEGF secretion + diffusion ──
-        new_vegf = [row[:] for row in self.angio_vegf]
-        drug_factor = 1.0
-        if self.angio_drug_active:
-            drug_factor = max(0.1, 1.0 - self.angio_drug_strength)
-
-        for r in range(rows):
-            for c in range(cols):
-                val = self.angio_vegf[r][c]
-                # Hypoxic tissue secretes VEGF
-                if self.angio_oxygen[r][c] < _VEGF_SECRETE_THRESH:
-                    deficit = _VEGF_SECRETE_THRESH - self.angio_oxygen[r][c]
-                    val += _VEGF_SECRETE_RATE * deficit * drug_factor
-                # Tumor boost
-                if self.angio_tumor and (r, c) in self.angio_tumor.cells:
-                    val += self.angio_tumor.vegf_boost * 0.05 * drug_factor
-                # Decay
-                val -= _VEGF_DECAY
-                # Diffusion
-                total = 0.0
-                cnt = 0
-                for dr, dc in _NEIGHBORS_4:
-                    nr, nc = r + dr, c + dc
-                    if 0 <= nr < rows and 0 <= nc < cols:
-                        total += self.angio_vegf[nr][nc]
-                        cnt += 1
-                if cnt > 0:
-                    avg = total / cnt
-                    val += _VEGF_DIFFUSE * (avg - val)
-                new_vegf[r][c] = max(0.0, min(1.0, val))
-        self.angio_vegf = new_vegf
-
-        # ── 6. Tip cell migration (chemotaxis toward VEGF) ──
-        new_tips = []
-        for tip in self.angio_tips:
-            tip.age += 1
-            if tip.age > 150:
-                continue  # tip dies
-
-            # Drug suppresses sprouting
-            if self.angio_drug_active and random.random() < self.angio_drug_strength * 0.3:
-                new_tips.append(tip)
-                continue
-
-            # Sense VEGF gradient
-            best_vegf = 0.0
-            best_dr, best_dc = 0, 0
-            for dr, dc in _NEIGHBORS_8:
-                nr, nc = int(tip.r + dr), int(tip.c + dc)
+    for r in range(rows):
+        for c in range(cols):
+            val = self.angio_oxygen[r][c]
+            # Diffusion (average of neighbors)
+            total = 0.0
+            cnt = 0
+            for dr, dc in _NEIGHBORS_4:
+                nr, nc = r + dr, c + dc
                 if 0 <= nr < rows and 0 <= nc < cols:
-                    v = self.angio_vegf[nr][nc]
-                    if v > best_vegf:
-                        best_vegf = v
-                        best_dr, best_dc = dr, dc
+                    total += self.angio_oxygen[nr][nc]
+                    cnt += 1
+            if cnt > 0:
+                avg = total / cnt
+                val += _O2_DIFFUSE * (avg - val)
+            # Consumption
+            val -= consume_rate
+            # Tumor cells consume more
+            if self.angio_tumor and (r, c) in self.angio_tumor.cells:
+                val -= consume_rate * 1.5
+            new_o2[r][c] = max(0.0, min(1.0, val))
+    self.angio_oxygen = new_o2
 
-            # Move toward VEGF gradient with some persistence
-            if best_vegf > 0.01:
-                grad_angle = math.degrees(math.atan2(best_dr, best_dc))
-                # Blend with current heading
-                tip.heading = tip.heading * 0.6 + grad_angle * 0.4
-            else:
-                tip.heading += random.uniform(-15, 15)
+    # ── 5. VEGF secretion + diffusion ──
+    new_vegf = [row[:] for row in self.angio_vegf]
+    drug_factor = 1.0
+    if self.angio_drug_active:
+        drug_factor = max(0.1, 1.0 - self.angio_drug_strength)
 
-            rad = math.radians(tip.heading)
-            new_r = tip.r + math.sin(rad) * tip.speed
-            new_c = tip.c + math.cos(rad) * tip.speed
-            new_r = max(0, min(rows - 1, new_r))
-            new_c = max(0, min(cols - 1, new_c))
+    for r in range(rows):
+        for c in range(cols):
+            val = self.angio_vegf[r][c]
+            # Hypoxic tissue secretes VEGF
+            if self.angio_oxygen[r][c] < _VEGF_SECRETE_THRESH:
+                deficit = _VEGF_SECRETE_THRESH - self.angio_oxygen[r][c]
+                val += _VEGF_SECRETE_RATE * deficit * drug_factor
+            # Tumor boost
+            if self.angio_tumor and (r, c) in self.angio_tumor.cells:
+                val += self.angio_tumor.vegf_boost * 0.05 * drug_factor
+            # Decay
+            val -= _VEGF_DECAY
+            # Diffusion
+            total = 0.0
+            cnt = 0
+            for dr, dc in _NEIGHBORS_4:
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < rows and 0 <= nc < cols:
+                    total += self.angio_vegf[nr][nc]
+                    cnt += 1
+            if cnt > 0:
+                avg = total / cnt
+                val += _VEGF_DIFFUSE * (avg - val)
+            new_vegf[r][c] = max(0.0, min(1.0, val))
+    self.angio_vegf = new_vegf
 
-            # Check for anastomosis (merge with existing vessel)
-            merged = False
-            nr_int, nc_int = int(new_r), int(new_c)
-            for dr in range(-2, 3):
-                if merged:
-                    break
-                for dc in range(-2, 3):
-                    check = (nr_int + dr, nc_int + dc)
-                    if check in self.angio_node_grid:
-                        other_idx = self.angio_node_grid[check]
-                        if other_idx != tip.node_idx:
-                            d = math.hypot(new_r - check[0], new_c - check[1])
-                            if d < _ANASTOMOSE_RADIUS:
-                                # Connect!
-                                _angio_add_edge(self, tip.node_idx, other_idx,
-                                                radius=0.5)
-                                merged = True
-                                break
+    # ── 6. Tip cell migration (chemotaxis toward VEGF) ──
+    new_tips = []
+    for tip in self.angio_tips:
+        tip.age += 1
+        if tip.age > 150:
+            continue  # tip dies
 
-            if merged:
-                continue
-
-            # Create new node at current position and edge from previous
-            if abs(new_r - self.angio_nodes[tip.node_idx].r) >= 1.0 or \
-               abs(new_c - self.angio_nodes[tip.node_idx].c) >= 1.0:
-                ni = _angio_add_node(self, int(new_r), int(new_c))
-                _angio_add_edge(self, tip.node_idx, ni, radius=0.5)
-                tip.node_idx = ni
-
-            tip.r = new_r
-            tip.c = new_c
-
-            # Branching
-            if best_vegf > _SPROUT_VEGF_THRESH and random.random() < _BRANCH_PROB:
-                branch_heading = tip.heading + random.choice([-60, 60]) + random.uniform(-10, 10)
-                new_tip = _TipCell(tip.r, tip.c, tip.node_idx, branch_heading)
-                new_tips.append(new_tip)
-
+        # Drug suppresses sprouting
+        if self.angio_drug_active and random.random() < self.angio_drug_strength * 0.3:
             new_tips.append(tip)
+            continue
 
-        # New sprouts from existing vessels
-        if random.random() < _SPROUT_PROB * drug_factor:
-            if self.angio_nodes:
-                candidates = []
-                for ni, node in enumerate(self.angio_nodes):
-                    if not node.is_tip and not node.is_source:
-                        r, c = node.r, node.c
-                        if 0 <= r < rows and 0 <= c < cols:
-                            if self.angio_vegf[r][c] > _SPROUT_VEGF_THRESH:
-                                candidates.append(ni)
-                if candidates:
-                    chosen = random.choice(candidates)
-                    nd = self.angio_nodes[chosen]
-                    heading = random.uniform(0, 360)
-                    tip = _TipCell(nd.r, nd.c, chosen, heading)
-                    new_tips.append(tip)
+        # Sense VEGF gradient
+        best_vegf = 0.0
+        best_dr, best_dc = 0, 0
+        for dr, dc in _NEIGHBORS_8:
+            nr, nc = int(tip.r + dr), int(tip.c + dc)
+            if 0 <= nr < rows and 0 <= nc < cols:
+                v = self.angio_vegf[nr][nc]
+                if v > best_vegf:
+                    best_vegf = v
+                    best_dr, best_dc = dr, dc
 
-        self.angio_tips = new_tips
+        # Move toward VEGF gradient with some persistence
+        if best_vegf > 0.01:
+            grad_angle = math.degrees(math.atan2(best_dr, best_dc))
+            # Blend with current heading
+            tip.heading = tip.heading * 0.6 + grad_angle * 0.4
+        else:
+            tip.heading += random.uniform(-15, 15)
 
-        # ── 7. Vessel remodeling (Murray's law) ──
-        regression_count = 0
-        for edge in self.angio_edges:
-            edge.age += 1
-            # Murray's law: optimal radius ∝ flow^(1/3)
-            if abs(edge.flow) > 0.001:
-                optimal = min(_MAX_RADIUS, abs(edge.flow) ** (1.0 / _MURRAY_EXP) * 2.0)
-                if edge.radius < optimal:
-                    edge.radius = min(_MAX_RADIUS, edge.radius + _WIDEN_RATE)
-                elif edge.radius > optimal * 1.2:
-                    edge.radius = max(_MIN_RADIUS, edge.radius - _NARROW_RATE)
-            # Regression of unused vessels
-            if abs(edge.flow) < _REGRESS_FLOW_THRESH and edge.age > 50:
-                if random.random() < _REGRESS_PROB:
-                    edge.radius = max(0.0, edge.radius - 0.05)
-                    regression_count += 1
+        rad = math.radians(tip.heading)
+        new_r = tip.r + math.sin(rad) * tip.speed
+        new_c = tip.c + math.cos(rad) * tip.speed
+        new_r = max(0, min(rows - 1, new_r))
+        new_c = max(0, min(cols - 1, new_c))
 
-        # Remove collapsed vessels
-        keep_edges = []
-        for i, edge in enumerate(self.angio_edges):
-            if edge.radius > 0.05:
-                keep_edges.append(edge)
-        if len(keep_edges) < len(self.angio_edges):
-            # Rebuild edge indices
-            self.angio_edges = keep_edges
-            for node in self.angio_nodes:
-                node.neighbors.clear()
-            for ei, edge in enumerate(self.angio_edges):
-                self.angio_nodes[edge.n1].neighbors.append(ei)
-                self.angio_nodes[edge.n2].neighbors.append(ei)
-            # Fix RBC references
-            self.angio_rbc = [p for p in self.angio_rbc
-                              if p.edge_idx < len(self.angio_edges)]
+        # Check for anastomosis (merge with existing vessel)
+        merged = False
+        nr_int, nc_int = int(new_r), int(new_c)
+        for dr in range(-2, 3):
+            if merged:
+                break
+            for dc in range(-2, 3):
+                check = (nr_int + dr, nc_int + dc)
+                if check in self.angio_node_grid:
+                    other_idx = self.angio_node_grid[check]
+                    if other_idx != tip.node_idx:
+                        d = math.hypot(new_r - check[0], new_c - check[1])
+                        if d < _ANASTOMOSE_RADIUS:
+                            # Connect!
+                            _angio_add_edge(self, tip.node_idx, other_idx,
+                                            radius=0.5)
+                            merged = True
+                            break
 
-        # ── 8. Tumor growth ──
-        if self.angio_tumor:
-            tumor = self.angio_tumor
-            # Grow if oxygenated
-            avg_o2 = 0.0
-            if tumor.cells:
-                for tr, tc in tumor.cells:
-                    avg_o2 += self.angio_oxygen[tr][tc]
-                avg_o2 /= len(tumor.cells)
-            if avg_o2 > 0.1:
-                tumor.radius += tumor.growth_rate * avg_o2
-                _tumor_update_cells(tumor, rows, cols)
+        if merged:
+            continue
 
-        # ── 9. RBC particle movement ──
-        for rbc in self.angio_rbc:
-            if rbc.edge_idx >= len(self.angio_edges):
-                continue
-            edge = self.angio_edges[rbc.edge_idx]
-            speed = min(0.15, abs(edge.flow) * 0.5 + 0.02)
-            if rbc.forward:
-                rbc.progress += speed
-                if rbc.progress >= 1.0:
-                    # Move to connected edge
-                    nd = self.angio_nodes[edge.n2]
-                    if nd.neighbors:
-                        new_ei = random.choice(nd.neighbors)
-                        rbc.edge_idx = new_ei
-                        rbc.progress = 0.0
-                        new_e = self.angio_edges[new_ei]
-                        rbc.forward = new_e.n1 == edge.n2
-                    else:
-                        rbc.forward = False
-                        rbc.progress = 1.0
-            else:
-                rbc.progress -= speed
-                if rbc.progress <= 0.0:
-                    nd = self.angio_nodes[edge.n1]
-                    if nd.neighbors:
-                        new_ei = random.choice(nd.neighbors)
-                        rbc.edge_idx = new_ei
-                        rbc.progress = 1.0
-                        new_e = self.angio_edges[new_ei]
-                        rbc.forward = new_e.n1 == edge.n1
-                    else:
-                        rbc.forward = True
-                        rbc.progress = 0.0
+        # Create new node at current position and edge from previous
+        if abs(new_r - self.angio_nodes[tip.node_idx].r) >= 1.0 or \
+           abs(new_c - self.angio_nodes[tip.node_idx].c) >= 1.0:
+            ni = _angio_add_node(self, int(new_r), int(new_c))
+            _angio_add_edge(self, tip.node_idx, ni, radius=0.5)
+            tip.node_idx = ni
 
-        # Maintain RBC count proportional to vessel count
-        target_rbc = max(10, len(self.angio_edges) * 2)
-        while len(self.angio_rbc) < target_rbc and self.angio_edges:
-            ei = random.randint(0, len(self.angio_edges) - 1)
-            self.angio_rbc.append(_RBCParticle(ei, random.random()))
-        if len(self.angio_rbc) > target_rbc * 2:
-            self.angio_rbc = self.angio_rbc[:target_rbc]
+        tip.r = new_r
+        tip.c = new_c
 
-        # ── 10. Record history ──
-        hist = self.angio_history
-        # Perfusion: fraction of tissue with O2 > 0.3
-        o2_ok = sum(1 for r in range(rows) for c in range(cols)
-                     if self.angio_oxygen[r][c] > 0.3)
-        total = rows * cols
-        hist['perfusion'].append(o2_ok / max(1, total))
-        hist['vessel_density'].append(len(self.angio_edges) / max(1, total) * 100)
-        hist['mean_flow'].append(
-            sum(abs(e.flow) for e in self.angio_edges) / max(1, len(self.angio_edges)))
-        hist['o2_coverage'].append(
-            sum(self.angio_oxygen[r][c] for r in range(rows) for c in range(cols)) / total)
-        hist['vegf_level'].append(
-            sum(self.angio_vegf[r][c] for r in range(rows) for c in range(cols)) / total)
-        hist['tumor_size'].append(
-            self.angio_tumor.radius if self.angio_tumor else 0.0)
-        hist['tip_count'].append(len(self.angio_tips))
-        hist['heart_pressure'].append(base_pressure)
-        hist['vessel_count'].append(len(self.angio_edges))
-        hist['regression_events'].append(regression_count)
+        # Branching
+        if best_vegf > _SPROUT_VEGF_THRESH and random.random() < _BRANCH_PROB:
+            branch_heading = tip.heading + random.choice([-60, 60]) + random.uniform(-10, 10)
+            new_tip = _TipCell(tip.r, tip.c, tip.node_idx, branch_heading)
+            new_tips.append(new_tip)
 
-        # Cap history
-        for k in hist:
-            if len(hist[k]) > 200:
-                hist[k] = hist[k][-200:]
+        new_tips.append(tip)
+
+    # New sprouts from existing vessels
+    if random.random() < _SPROUT_PROB * drug_factor:
+        if self.angio_nodes:
+            candidates = []
+            for ni, node in enumerate(self.angio_nodes):
+                if not node.is_tip and not node.is_source:
+                    r, c = node.r, node.c
+                    if 0 <= r < rows and 0 <= c < cols:
+                        if self.angio_vegf[r][c] > _SPROUT_VEGF_THRESH:
+                            candidates.append(ni)
+            if candidates:
+                chosen = random.choice(candidates)
+                nd = self.angio_nodes[chosen]
+                heading = random.uniform(0, 360)
+                tip = _TipCell(nd.r, nd.c, chosen, heading)
+                new_tips.append(tip)
+
+    self.angio_tips = new_tips
+
+    # ── 7. Vessel remodeling (Murray's law) ──
+    regression_count = 0
+    for edge in self.angio_edges:
+        edge.age += 1
+        # Murray's law: optimal radius ∝ flow^(1/3)
+        if abs(edge.flow) > 0.001:
+            optimal = min(_MAX_RADIUS, abs(edge.flow) ** (1.0 / _MURRAY_EXP) * 2.0)
+            if edge.radius < optimal:
+                edge.radius = min(_MAX_RADIUS, edge.radius + _WIDEN_RATE)
+            elif edge.radius > optimal * 1.2:
+                edge.radius = max(_MIN_RADIUS, edge.radius - _NARROW_RATE)
+        # Regression of unused vessels
+        if abs(edge.flow) < _REGRESS_FLOW_THRESH and edge.age > 50:
+            if random.random() < _REGRESS_PROB:
+                edge.radius = max(0.0, edge.radius - 0.05)
+                regression_count += 1
+
+    # Remove collapsed vessels
+    keep_edges = []
+    for i, edge in enumerate(self.angio_edges):
+        if edge.radius > 0.05:
+            keep_edges.append(edge)
+    if len(keep_edges) < len(self.angio_edges):
+        # Rebuild edge indices
+        self.angio_edges = keep_edges
+        for node in self.angio_nodes:
+            node.neighbors.clear()
+        for ei, edge in enumerate(self.angio_edges):
+            self.angio_nodes[edge.n1].neighbors.append(ei)
+            self.angio_nodes[edge.n2].neighbors.append(ei)
+        # Fix RBC references
+        self.angio_rbc = [p for p in self.angio_rbc
+                          if p.edge_idx < len(self.angio_edges)]
+
+    # ── 8. Tumor growth ──
+    if self.angio_tumor:
+        tumor = self.angio_tumor
+        # Grow if oxygenated
+        avg_o2 = 0.0
+        if tumor.cells:
+            for tr, tc in tumor.cells:
+                avg_o2 += self.angio_oxygen[tr][tc]
+            avg_o2 /= len(tumor.cells)
+        if avg_o2 > 0.1:
+            tumor.radius += tumor.growth_rate * avg_o2
+            _tumor_update_cells(tumor, rows, cols)
+
+    # ── 9. RBC particle movement ──
+    for rbc in self.angio_rbc:
+        if rbc.edge_idx >= len(self.angio_edges):
+            continue
+        edge = self.angio_edges[rbc.edge_idx]
+        speed = min(0.15, abs(edge.flow) * 0.5 + 0.02)
+        if rbc.forward:
+            rbc.progress += speed
+            if rbc.progress >= 1.0:
+                # Move to connected edge
+                nd = self.angio_nodes[edge.n2]
+                if nd.neighbors:
+                    new_ei = random.choice(nd.neighbors)
+                    rbc.edge_idx = new_ei
+                    rbc.progress = 0.0
+                    new_e = self.angio_edges[new_ei]
+                    rbc.forward = new_e.n1 == edge.n2
+                else:
+                    rbc.forward = False
+                    rbc.progress = 1.0
+        else:
+            rbc.progress -= speed
+            if rbc.progress <= 0.0:
+                nd = self.angio_nodes[edge.n1]
+                if nd.neighbors:
+                    new_ei = random.choice(nd.neighbors)
+                    rbc.edge_idx = new_ei
+                    rbc.progress = 1.0
+                    new_e = self.angio_edges[new_ei]
+                    rbc.forward = new_e.n1 == edge.n1
+                else:
+                    rbc.forward = True
+                    rbc.progress = 0.0
+
+    # Maintain RBC count proportional to vessel count
+    target_rbc = max(10, len(self.angio_edges) * 2)
+    while len(self.angio_rbc) < target_rbc and self.angio_edges:
+        ei = random.randint(0, len(self.angio_edges) - 1)
+        self.angio_rbc.append(_RBCParticle(ei, random.random()))
+    if len(self.angio_rbc) > target_rbc * 2:
+        self.angio_rbc = self.angio_rbc[:target_rbc]
+
+    # ── 10. Record history ──
+    hist = self.angio_history
+    # Perfusion: fraction of tissue with O2 > 0.3
+    o2_ok = sum(1 for r in range(rows) for c in range(cols)
+                 if self.angio_oxygen[r][c] > 0.3)
+    total = rows * cols
+    hist['perfusion'].append(o2_ok / max(1, total))
+    hist['vessel_density'].append(len(self.angio_edges) / max(1, total) * 100)
+    hist['mean_flow'].append(
+        sum(abs(e.flow) for e in self.angio_edges) / max(1, len(self.angio_edges)))
+    hist['o2_coverage'].append(
+        sum(self.angio_oxygen[r][c] for r in range(rows) for c in range(cols)) / total)
+    hist['vegf_level'].append(
+        sum(self.angio_vegf[r][c] for r in range(rows) for c in range(cols)) / total)
+    hist['tumor_size'].append(
+        self.angio_tumor.radius if self.angio_tumor else 0.0)
+    hist['tip_count'].append(len(self.angio_tips))
+    hist['heart_pressure'].append(base_pressure)
+    hist['vessel_count'].append(len(self.angio_edges))
+    hist['regression_events'].append(regression_count)
+
+    # Cap history
+    for k in hist:
+        if len(hist[k]) > 200:
+            hist[k] = hist[k][-200:]
 
 
 # ══════════════════════════════════════════════════════════════════════
