@@ -570,25 +570,28 @@ def _handle_mp_finished_key(self, key: int) -> bool:
 
 def _draw_mp_lobby(self, max_y: int, max_x: int):
     """Draw the waiting-for-connection lobby screen."""
+    def row(text=""):
+        return "║" + text.ljust(44) + "║"
+
     lines = [
-        "╔════════════════════════════════════════════╗",
-        "║        MULTIPLAYER — Waiting for Player    ║",
-        "╠════════════════════════════════════════════╣",
-        "║                                            ║",
+        "╔" + "═" * 44 + "╗",
+        row("        MULTIPLAYER — Waiting for Player"),
+        "╠" + "═" * 44 + "╣",
+        row(),
     ]
     if self.mp_role == "host":
-        lines.append(f"║  Hosting on port {self.mp_host_port:<25d} ║")
-        lines.append("║  Waiting for opponent to connect...       ║")
+        lines.append(row(f"  Hosting on port {self.mp_host_port}"))
+        lines.append(row("  Waiting for opponent to connect..."))
     else:
-        lines.append("║  Connecting...                            ║")
-        lines.append("║  Waiting for host to start game...        ║")
+        lines.append(row("  Connecting..."))
+        lines.append(row("  Waiting for host to start game..."))
     lines += [
-        "║                                            ║",
-        "║  You are: " + ("Player 1 (BLUE)" if self.mp_player == 1 else "Player 2 (RED) ") + "              ║",
-        "║                                            ║",
-        "║  Press q to cancel                         ║",
-        "║                                            ║",
-        "╚════════════════════════════════════════════╝",
+        row(),
+        row("  You are: " + ("Player 1 (BLUE)" if self.mp_player == 1 else "Player 2 (RED)")),
+        row(),
+        row("  Press q to cancel"),
+        row(),
+        "╚" + "═" * 44 + "╝",
     ]
     start_y = max(0, (max_y - len(lines)) // 2)
     for i, line in enumerate(lines):
@@ -832,26 +835,30 @@ def _draw_mp_finished(self, max_y: int, max_x: int):
         winner_text = "IT'S A TIE!"
         winner_color = curses.color_pair(58)
 
+    def row(text, attr):
+        return ("║" + text.ljust(48) + "║", attr)
+
+    c7 = curses.color_pair(7)
     lines = [
-        ("╔════════════════════════════════════════════════╗", curses.color_pair(7)),
-        ("║           MULTIPLAYER — ROUND OVER            ║", curses.color_pair(7)),
-        ("╠════════════════════════════════════════════════╣", curses.color_pair(7)),
-        ("║                                                ║", curses.color_pair(7)),
-        (f"║  {winner_text:^44s}  ║", winner_color | curses.A_BOLD),
-        ("║                                                ║", curses.color_pair(7)),
-        (f"║  Player 1 (BLUE):                              ║", curses.color_pair(50)),
-        (f"║    Cells alive: {s1:<6d}                         ║", curses.color_pair(51)),
-        (f"║    Territory bonus: {b1:<4d} (x2 = {b1*2:<5d})         ║", curses.color_pair(51)),
-        (f"║    TOTAL: {total1:<8d}                           ║", curses.color_pair(50) | curses.A_BOLD),
-        ("║                                                ║", curses.color_pair(7)),
-        (f"║  Player 2 (RED):                               ║", curses.color_pair(54)),
-        (f"║    Cells alive: {s2:<6d}                         ║", curses.color_pair(55)),
-        (f"║    Territory bonus: {b2:<4d} (x2 = {b2*2:<5d})         ║", curses.color_pair(55)),
-        (f"║    TOTAL: {total2:<8d}                           ║", curses.color_pair(54) | curses.A_BOLD),
-        ("║                                                ║", curses.color_pair(7)),
-        ("║  Enter = play again  │  q/Esc = exit           ║", curses.color_pair(6)),
-        ("║                                                ║", curses.color_pair(7)),
-        ("╚════════════════════════════════════════════════╝", curses.color_pair(7)),
+        ("╔" + "═" * 48 + "╗", c7),
+        row(" " * 11 + "MULTIPLAYER — ROUND OVER", c7),
+        ("╠" + "═" * 48 + "╣", c7),
+        row("", c7),
+        row(f"  {winner_text:^44s}", winner_color | curses.A_BOLD),
+        row("", c7),
+        row("  Player 1 (BLUE):", curses.color_pair(50)),
+        row(f"    Cells alive: {s1}", curses.color_pair(51)),
+        row(f"    Territory bonus: {b1} (x2 = {b1 * 2})", curses.color_pair(51)),
+        row(f"    TOTAL: {total1}", curses.color_pair(50) | curses.A_BOLD),
+        row("", c7),
+        row("  Player 2 (RED):", curses.color_pair(54)),
+        row(f"    Cells alive: {s2}", curses.color_pair(55)),
+        row(f"    Territory bonus: {b2} (x2 = {b2 * 2})", curses.color_pair(55)),
+        row(f"    TOTAL: {total2}", curses.color_pair(54) | curses.A_BOLD),
+        row("", c7),
+        row("  Enter=play again  q/Esc=exit", curses.color_pair(6)),
+        row("", c7),
+        ("╚" + "═" * 48 + "╝", c7),
     ]
     start_y = max(0, (max_y - len(lines)) // 2)
     for i, (line, attr) in enumerate(lines):

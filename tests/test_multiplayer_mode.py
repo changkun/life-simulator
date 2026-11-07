@@ -154,6 +154,23 @@ class TestMultiplayerMode:
         types = [c.args[0]["type"] for c in mock_net.send.call_args_list]
         assert types == ["state", "finished"]
 
+    def test_boxes_have_uniform_width(self):
+        drawn = []
+        self.app.stdscr = MagicMock()
+        self.app.stdscr.getmaxyx.return_value = (40, 120)
+        self.app.stdscr.addstr.side_effect = lambda y, x, text, *a: drawn.append(text)
+        self.app.mp_host_port = 7777
+        self.app.mp_scores = [12, 345]
+        self.app.mp_territory_bonus = [1, 22]
+        for role, player in (("host", 1), ("client", 2)):
+            self.app.mp_role, self.app.mp_player = role, player
+            drawn.clear()
+            self.app._draw_mp_lobby(40, 120)
+            assert len({len(t) for t in drawn}) == 1
+        drawn.clear()
+        self.app._draw_mp_finished(40, 120)
+        assert len({len(t) for t in drawn}) == 1
+
     # ── Territory / cell placement ──────────────────────────────────────
 
     def test_place_cell_p1_left_side(self):
