@@ -1,13 +1,8 @@
-"""Mode: rd — Reaction-Diffusion Texture Generator (Gray-Scott model).
+"""Reaction-Diffusion Textures — Gray-Scott chemistry that self-organises into spots, stripes and coral.
 
-Implements the Gray-Scott reaction-diffusion system:
+The Gray-Scott system:
     dU/dt = Du * nabla^2(U) - U*V^2 + f*(1 - U)
     dV/dt = Dv * nabla^2(V) + U*V^2 - (f + k)*V
-
-Named parameter presets produce the mesmerizing, organic patterns (spots,
-stripes, coral, mitosis, fingerprints, worms) seen in nature.  The user
-picks a preset and watches the pattern self-organise in real-time with
-colored ASCII shading.
 """
 import curses
 import math
@@ -15,7 +10,7 @@ import random
 import time
 
 from life.constants import SPEEDS, SPEED_LABELS
-from life.colors import colormap_addstr, colormap_rgb
+from life.colors import colormap_addstr
 
 
 # ── Color scheme names for cycling ──────────────────────────────────────
@@ -36,8 +31,6 @@ _SCHEME_COLORMAPS = {
     "monochrome": "inferno",
 }
 
-# Map scheme name -> list of (curses color_pair idx, bold flag) for 8 tiers
-# We reuse existing pairs and standard pairs with style flags
 def _get_color_tiers(scheme_idx):
     """Return list of 8 (color_pair_index, extra_attr) tuples for the scheme."""
     s = _COLOR_SCHEMES[scheme_idx % len(_COLOR_SCHEMES)]
@@ -59,14 +52,14 @@ def _get_color_tiers(scheme_idx):
 
 
 def _enter_rd_mode(self):
-    """Enter reaction-diffusion mode -- show preset menu."""
+    """Enter Reaction-Diffusion Textures mode and show the preset menu."""
     self.rd_menu = True
     self.rd_menu_sel = 0
     self._flash("Reaction-Diffusion Texture Generator -- select a pattern")
 
 
 def _exit_rd_mode(self):
-    """Exit reaction-diffusion mode."""
+    """Exit Reaction-Diffusion Textures mode."""
     self.rd_mode = False
     self.rd_menu = False
     self.rd_running = False
@@ -76,7 +69,7 @@ def _exit_rd_mode(self):
 
 
 def _rd_init(self, preset_idx: int | None = None):
-    """Initialize the reaction-diffusion grid with the given preset."""
+    """Seed the grid, loading the preset when one is given."""
     max_y, max_x = self.stdscr.getmaxyx()
     self.rd_rows = max(10, max_y - 3)
     self.rd_cols = max(10, (max_x - 1) // 2)
@@ -180,7 +173,7 @@ def _rd_step(self):
 
 
 def _handle_rd_menu_key(self, key: int) -> bool:
-    """Handle keys in the reaction-diffusion preset menu."""
+    """Handle a key press in the preset menu."""
     if key == -1:
         return True
     n = len(self.RD_PRESETS)
@@ -203,7 +196,7 @@ def _handle_rd_menu_key(self, key: int) -> bool:
 
 
 def _handle_rd_key(self, key: int) -> bool:
-    """Handle keys while in reaction-diffusion mode."""
+    """Handle a key press while the simulation is active."""
     if key == -1:
         return True
     if key == ord("q") or key == 27:
@@ -314,7 +307,7 @@ def _handle_rd_key(self, key: int) -> bool:
 
 
 def _draw_rd_menu(self, max_y: int, max_x: int):
-    """Draw the reaction-diffusion preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Reaction-Diffusion Texture Generator (Gray-Scott) ──"
     try:
@@ -381,7 +374,7 @@ def _draw_rd_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+        hint = " j/k=navigate  Enter=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
@@ -389,7 +382,7 @@ def _draw_rd_menu(self, max_y: int, max_x: int):
 
 
 def _draw_rd(self, max_y: int, max_x: int):
-    """Draw the reaction-diffusion simulation with colored ASCII shading."""
+    """Draw the V concentration as shaded glyphs."""
     self.stdscr.erase()
 
     # Title bar
@@ -488,7 +481,7 @@ def _draw_rd(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [f/F]=feed [k/K]=kill [c]=color [p]=perturb [+/-]=speed [r]=reseed [R]=menu [q]=exit"
+            hint = " Space=play  n=step  f/F=feed  k/K=kill  c=color  p=perturb  +/-=steps/frame  </>=speed  r=reseed  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -497,7 +490,7 @@ def _draw_rd(self, max_y: int, max_x: int):
 
 
 def register(App):
-    """Register rd mode methods on the App class."""
+    """Register Reaction-Diffusion Textures methods on the App class."""
     App._enter_rd_mode = _enter_rd_mode
     App._exit_rd_mode = _exit_rd_mode
     App._rd_init = _rd_init
