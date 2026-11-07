@@ -277,12 +277,13 @@ PML absorbing boundary:
 
 Soft sources inject sinusoidal signals:
   Ez[src] += amp * sin(2*pi*freq*t + phase) * ramp(t)
-  ramp(t) = 1 - exp(-(t/10)^2)   (Gaussian envelope for smooth start)
+  ramp(t) = 1 - exp(-(t/10)^2) for the first 30 steps (smooth start), then 1
 
+Units: dx = 1 and mu0 = 1, so the H update uses dt alone.
 Courant number: dt/dx = 0.5 (stable for 2D)
 ```
 
-**What to look for** — The "Double Slit" preset shows classic wave diffraction with interference fringes behind the barrier. The "Dielectric Lens" preset demonstrates wave focusing by a convex lens (eps=4.0). The "Phased Array" creates a steered beam through progressive phase shifts. Conductors (sigma=100) appear as white blocks that perfectly reflect waves. The PML boundaries absorb outgoing waves with minimal reflection.
+**What to look for** — The "Double Slit" preset shows classic wave diffraction with interference fringes behind the barrier. The "Lens Focusing" preset demonstrates wave focusing by a convex lens (eps=4.0). The "Phased Array" creates a steered beam through progressive phase shifts. Conductors (sigma=100) appear as white blocks that reflect waves. Click or press p to add a source. The PML boundaries absorb outgoing waves with minimal reflection.
 
 **References**
 - Yee, K.S. "Numerical solution of initial boundary value problems involving Maxwell's equations in isotropic media," *IEEE Transactions on Antennas and Propagation*, 1966. https://doi.org/10.1109/TAP.1966.1138693
