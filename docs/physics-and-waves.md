@@ -1097,7 +1097,7 @@ Parameters:
   dt    = 0.15 (integration timestep)
 ```
 
-Vortex imprinting uses superposed atan2 phase profiles with toroidal wrapping. Skyrmion textures are initialized as radial hedgehog profiles with θ varying from π at the core to 0 at the boundary.
+Vortex imprinting uses superposed atan2 phase profiles with toroidal wrapping. Skyrmion textures are initialized as radial Néel-type profiles: θ is the azimuthal angle plus π(1 − d/R), where d is the distance from the core and R the texture radius.
 
 **Presets** — Six configurations explore different regimes of topological defect physics:
 - **Vortex Gas**: Random vortex–antivortex pairs in the XY field (T=0.1, K=1.0) — watch opposite-charge defects orbit each other via the log potential and annihilate on contact
