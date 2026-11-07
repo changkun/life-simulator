@@ -551,7 +551,7 @@ Asteroid belt: a ~ 2.1-3.3 AU, T = a^(3/2)  (Kepler's third law)
 Comets: high eccentricity (e ~ 0.85-0.97), large semi-major axis
 ```
 
-**What to look for** — Mercury's highly eccentric orbit (e=0.206) visibly deviates from circular. The asteroid belt fills the gap between Mars and Jupiter. The "Comet Flyby" preset shows a long-period comet plunging through the inner solar system with a growing tail. The "Grand Alignment" starts all planets near conjunction. Zoom levels let you examine inner planets in detail or see the full system out to Neptune.
+**What to look for** — Mercury's highly eccentric orbit (e=0.206) visibly deviates from circular. The asteroid belt fills the gap between Mars and Jupiter. The "Comet Flyby" preset shows a long-period comet plunging through the inner solar system with a growing tail. The "Grand Alignment" starts all planets near conjunction. Press z to cycle the zoom: "inner" shows out to 2 AU, "full" and "outer" show out to 35 AU (Neptune). The inner presets omit the asteroid belt.
 
 **References**
 - Murray, C.D. and Dermott, S.F. *Solar System Dynamics*, Cambridge University Press, 1999. https://doi.org/10.1017/CBO9781139174817
