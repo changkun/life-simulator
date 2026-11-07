@@ -1306,7 +1306,7 @@ Threads enter STRESSED state when tension > 0.7 × strength. Broken threads are 
 | REPAIRING | Moves to broken threads, repairs (-3.0 silk each, restored at 70% strength) | -0.002/tick |
 | RESTING | Returns to hub, fast regeneration (+0.005 energy, +0.1 silk/tick) | None |
 
-Energy < 0.1 forces RESTING state. A completed wrap counts as a capture, grants +0.2 energy, and records the angular zone (8 bins). The zone counts are kept but do not change the web.
+Silk reserve is capped at 150 and never drops below 0. Energy < 0.1 forces RESTING state. A completed wrap counts as a capture, grants +0.2 energy, and records the angular zone (8 bins). The zone counts are kept but do not change the web.
 
 **Presets (6):**
 
