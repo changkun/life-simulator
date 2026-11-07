@@ -732,7 +732,8 @@ Grid layers (top to bottom):
 
 Cell types:
   HYPHA (~~): fungal strand, grows through soil toward roots and nutrients
-  HYPHA_HUB (@@): thick junction where multiple hyphae meet
+  HYPHA_HUB (@@): thick junction; set up at the start where a hypha has 4+ hypha-type
+                  neighbors, and no new hubs form during the run
   MYCORRHIZA (<>): root-hypha interface (nutrient exchange point)
   ROOT (rr): tree root network
   ROOT_TIP (r>): actively growing root tip
@@ -755,7 +756,8 @@ Seasonal cycle (80 steps per season):
 
 Moisture model:
   moisture_at_depth = min(1.0, base_moisture * (0.5 + 0.8 * depth_fraction))
-  Hypha growth requires moisture > threshold
+  Each hypha tries to grow into adjacent topsoil or subsoil with probability
+  0.03 * season_factor * moisture per step, preferring nutrient-rich cells
   Water pockets scattered in deeper soil
 
 Key parameters per preset:
