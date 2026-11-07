@@ -521,10 +521,8 @@ def _handle_nca_menu_key(self, key):
 def _handle_nca_key(self, key):
     """Handle input in the NCA running mode."""
     if key == 27:  # ESC
-        self.nca_training = False
-        self.nca_running = False
         self.nca_drawing = False
-        self.nca_mode = False
+        self._exit_nca_mode()
         return True
 
     # Drawing mode keys

@@ -171,3 +171,12 @@ def test_preset_key_skips_custom_without_drawing():
     assert _PRESET_NAMES[app.nca_target_idx] != "custom"
     assert app.nca_target == _make_target(_PRESET_NAMES[app.nca_target_idx], 12, 16)
 
+
+def test_escape_cleans_up():
+    app = _make_app()
+    app._nca_init()
+    app.nca_training = True
+    app._handle_nca_key(27)
+    assert app.nca_mode is False
+    assert app.nca_training is False
+    assert app.nca_state is None
