@@ -86,7 +86,7 @@ For agent at (r, c) with group identity g:
   n_groups  in {2, 3, 4, ...}
 ```
 
-Each step, all unsatisfied agents are identified and randomly relocated to random empty cells. The process repeats until equilibrium (all agents satisfied) or indefinitely if churn persists.
+Each step, the mode lists all unsatisfied agents and all empty cells, shuffles both, and moves the first unsatisfied agents to the first empty cells, one agent per cell. If there are more unsatisfied agents than empty cells, the extra agents stay put until the next step. An agent may land where it is still unsatisfied. The process continues until no agent is unsatisfied, or indefinitely if churn persists.
 
 ### Presets
 
@@ -103,11 +103,12 @@ Each step, all unsatisfied agents are identified and randomly relocated to rando
 
 ### What to look for
 
-- **Tipping point**: Even the "Mild Preference" preset (30% tolerance) generates visible clustering. The transition from integrated to segregated is nonlinear.
-- **Density effects**: Compare "Sparse City" (50% occupied) with "Packed Metropolis" (97%). Low density allows fast relocation and quick equilibrium; high density creates slow, frustrated churn with many unhappy agents who cannot find acceptable vacancies.
-- **Multi-group dynamics**: With 3 or 4 groups, boundary geometry becomes more complex. Minority groups tend to form smaller, rounder clusters.
-- **Satisfaction tracking**: The status bar shows the happy/unhappy ratio converging toward 100% satisfaction, typically within 20--50 steps.
-- **Tolerance tuning**: Press `t`/`T` to adjust tolerance in real time and watch segregation intensify or dissolve.
+- **Tipping point**: Try "Mild Preference" (30% tolerance) and compare it with "Strong Preference" (62.5%). Even a mild preference can produce visible clustering.
+- **Density effects**: Compare "Sparse City" (50% occupied) with "Packed Metropolis" (97%). With few empty cells, only a few agents can move per step, so unhappy agents wait their turn.
+- **Multi-group dynamics**: "Three Groups" and "Four Cultures" add more group types and more boundaries between them.
+- **Satisfaction tracking**: The title bar shows happy and unhappy counts and the percentage satisfied. Agents with no neighbors count as happy.
+- **Tolerance tuning**: Press `t` to raise tolerance and `T` to lower it, in steps of 2.5% between 5% and 95%. The change affects the next step.
+- **Keys**: `Space` play/pause, `n` step, `+`/`-` steps per frame, `<`/`>` speed, `r` restart, `R` menu, `q` or `Esc` exit.
 
 ### References
 
