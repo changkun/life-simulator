@@ -118,17 +118,21 @@ def _load_custom_rules():
         with open(_CUSTOM_RULES_FILE) as f:
             data = json.load(f)
         if isinstance(data, list):
-            return data
+            return [r for r in data if isinstance(r, dict)]
     except Exception:
         pass
     return []
 
 
 def _save_custom_rules(rules):
-    """Persist custom rules list to disk."""
-    os.makedirs(SAVE_DIR, exist_ok=True)
-    with open(_CUSTOM_RULES_FILE, "w") as f:
-        json.dump(rules, f, indent=2)
+    """Write the custom rules list to disk.  Return False if that fails."""
+    try:
+        os.makedirs(SAVE_DIR, exist_ok=True)
+        with open(_CUSTOM_RULES_FILE, "w") as f:
+            json.dump(rules, f, indent=2)
+    except OSError:
+        return False
+    return True
 
 # ── Mode functions ───────────────────────────────────────────────────
 
@@ -271,8 +275,10 @@ def _re_save_rule(self):
             break
     if not replaced:
         self.re_saved_rules.append(entry)
-    _save_custom_rules(self.re_saved_rules)
-    self._flash(f"Saved: {self.re_rule_name}")
+    if _save_custom_rules(self.re_saved_rules):
+        self._flash(f"Saved: {self.re_rule_name}")
+    else:
+        self._flash("Could not save the rule")
 
 
 def _re_adopt_to_gol(self):
@@ -370,10 +376,10 @@ def _handle_re_menu_key(self, key):
     # Delete saved rule with 'x'
     if key == ord("x") and self.re_menu_tab == 1 and self.re_saved_rules:
         del self.re_saved_rules[self.re_menu_sel]
-        _save_custom_rules(self.re_saved_rules)
+        saved = _save_custom_rules(self.re_saved_rules)
         if self.re_menu_sel >= len(self.re_saved_rules):
             self.re_menu_sel = max(0, len(self.re_saved_rules) - 1)
-        self._flash("Rule deleted")
+        self._flash("Rule deleted" if saved else "Deleted, but could not save")
         return True
 
     return True

@@ -148,3 +148,21 @@ def test_hint_bar_fits_80_columns_and_lists_every_key():
                 "+/-=Speed", "r=Rand", "c=Clear", "S=Save", "a=Adopt",
                 "i=EP import", "m=Menu", "q=Quit"):
         assert key in text, key
+
+
+def test_corrupt_and_unwritable_rule_files_do_not_crash(tmp_path, monkeypatch):
+    import json
+    from life.modes import rule_editor as re_mod
+    path = tmp_path / "custom_rules.json"
+    path.write_text(json.dumps(["junk", 3, {"name": "ok", "birth": "False",
+                                              "survival": "False"}]))
+    monkeypatch.setattr(re_mod, "_CUSTOM_RULES_FILE", str(path))
+    assert re_mod._load_custom_rules() == [
+        {"name": "ok", "birth": "False", "survival": "False"}]
+
+    monkeypatch.setattr(re_mod, "SAVE_DIR", str(path))  # a file, not a directory
+    app = _make_app()
+    app._re_init()
+    app._re_save_rule()
+    assert "Could not save" in app.message
+
