@@ -62,3 +62,16 @@ def test_generation_advances():
     for _ in range(5):
         app._evoeco_step()
     assert app.evoeco_generation == 5
+
+
+def test_single_producer_founder_spreads():
+    """Adaptive Radiation starts from one producer, which must disperse."""
+    import random
+    random.seed(2)
+    app = _make_app()
+    app._evoeco_init(2)
+    assert len(app.evoeco_pops) == 1
+    for _ in range(300):
+        app._evoeco_step()
+    assert len(app.evoeco_pops) > 5
+    assert sum(p["size"] for p in app.evoeco_pops) > 100

@@ -57,6 +57,9 @@ TROPHIC_APEX = 3
 TROPHIC_NAMES = ["Producer", "Herbivore", "Predator", "Apex"]
 TROPHIC_CHARS = ["♣ ", "♠ ", "♦ ", "♛ "]
 
+# Effective dispersal speed of producers (seeds and spores)
+PRODUCER_DISPERSAL_SPEED = 1.0
+
 # ── Trait definitions ──────────────────────────────────────────────
 # Each trait is (name, min_val, max_val)
 TRAIT_DEFS = [
@@ -703,7 +706,12 @@ def _evoeco_step(self):
         if sid not in alive_species:
             continue
         sp = alive_species[sid]
-        if random.random() > sp["traits"]["speed"] * 0.15:
+        # Producers have almost no speed trait but still spread by seeds
+        # and spores, so give them a floor on dispersal speed.
+        disp_speed = sp["traits"]["speed"]
+        if sp["trophic"] == TROPHIC_PRODUCER:
+            disp_speed = max(disp_speed, PRODUCER_DISPERSAL_SPEED)
+        if random.random() > disp_speed * 0.15:
             continue
 
         r, c = pop["r"], pop["c"]
@@ -715,7 +723,7 @@ def _evoeco_step(self):
             if 0 <= nr < rows and 0 <= nc < cols:
                 b = biome[nr][nc]
                 move_cost = BIOME_MOVE_COST.get(b, 5)
-                if sp["traits"]["speed"] < move_cost * 0.3:
+                if disp_speed < move_cost * 0.3:
                     continue
                 if pop_grid[nr][nc] == -1:
                     migrants = max(1, pop["size"] // 5)
