@@ -248,6 +248,8 @@ def _morpho_init(self, preset_idx: int):
                     self.morpho_genome_map[nr][nc] = _mutate_genome(og, 0.01)
                     self.morpho_morph_A[nr][nc] = 0.6
 
+    self.morpho_total_cells = sum(
+        1 for row in self.morpho_cells for ct in row if ct != CELL_EMPTY)
     self.morpho_mode = True
     self.morpho_menu = False
     self.morpho_running = False
@@ -340,7 +342,10 @@ def _morpho_step(self):
     for r in range(rows):
         for c in range(cols):
             ct = cells[r][c]
-            if ct == CELL_EMPTY or ct == CELL_DEAD:
+            if ct == CELL_DEAD:
+                age[r][c] += 1  # corpses are cleared once old enough
+                continue
+            if ct == CELL_EMPTY:
                 continue
 
             g = genomes[r][c]
@@ -460,9 +465,10 @@ def _morpho_step(self):
         for r in range(rows):
             for c in range(cc_center, cols):
                 if cells[r][c] != CELL_EMPTY:
+                    if cells[r][c] != CELL_DEAD:
+                        self.morpho_total_cells -= 1
                     cells[r][c] = CELL_EMPTY
                     genomes[r][c] = None
-                    self.morpho_total_cells -= 1
 
     # ── Limb bud outgrowth ──
     if extras.get("limb_bud") and gen == 60:

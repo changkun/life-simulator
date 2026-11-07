@@ -76,3 +76,15 @@ def test_morphogen_diffusion_after_steps():
     # Check a cell near center has non-zero morphogen
     total_mA = sum(app.morpho_morph_A[cr][c] for c in range(max(0, cc-3), min(app.morpho_cols, cc+4)))
     assert total_mA > 0
+
+
+def test_cell_count_matches_grid():
+    """The tracked count equals the live cells on the grid."""
+    import random
+    random.seed(1)
+    app = _make_app()
+    app._morpho_init(5)  # Regeneration also cuts the grid at gen 100
+    for _ in range(300):
+        app._morpho_step()
+    live = sum(1 for row in app.morpho_cells for ct in row if ct not in (0, 7))
+    assert app.morpho_total_cells == live
