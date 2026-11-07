@@ -15,6 +15,10 @@ SPH_PRESETS = [
 
 SPH_CHARS = [" ", "·", "∘", "○", "●", "◉"]
 
+# Range for the +/- gravity keys (default 9.8); param_tuner uses the same max.
+SPH_GRAVITY_MIN = 0.1
+SPH_GRAVITY_MAX = 100.0
+
 
 def _enter_sph_mode(self):
     """Enter SPH mode — show preset menu."""
@@ -324,11 +328,11 @@ def _handle_sph_key(self, key: int) -> bool:
         self._flash(f"Steps/frame: {self.sph_steps_per_frame}")
         return True
     if key == ord("+") or key == ord("="):
-        self.sph_gravity *= 1.2
+        self.sph_gravity = min(SPH_GRAVITY_MAX, max(SPH_GRAVITY_MIN, self.sph_gravity) * 1.2)
         self._flash(f"Gravity = {self.sph_gravity:.1f}")
         return True
     if key == ord("-"):
-        self.sph_gravity = max(0.1, self.sph_gravity / 1.2)
+        self.sph_gravity = max(SPH_GRAVITY_MIN, self.sph_gravity / 1.2)
         self._flash(f"Gravity = {self.sph_gravity:.1f}")
         return True
     if key == ord("r"):

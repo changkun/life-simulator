@@ -101,7 +101,7 @@ TUNABLE_PARAMS: dict[str, list[dict]] = {
         {"attr": "ns_dt", "name": "Time Step", "min": 0.01, "max": 2.0, "step": 0.01, "fmt": ".2f"},
     ],
     "sph": [
-        {"attr": "sph_gravity", "name": "Gravity", "min": 0.0, "max": 2.0, "step": 0.05, "fmt": ".2f"},
+        {"attr": "sph_gravity", "name": "Gravity", "min": 0.0, "max": 100.0, "step": 0.5, "fmt": ".1f"},
         {"attr": "sph_rest_density", "name": "Rest Density", "min": 0.5, "max": 5.0, "step": 0.1, "fmt": ".2f"},
         {"attr": "sph_viscosity", "name": "Viscosity", "min": 0.01, "max": 1.0, "step": 0.01, "fmt": ".2f"},
     ],
