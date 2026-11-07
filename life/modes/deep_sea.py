@@ -1,16 +1,4 @@
-"""Deep-Sea Bioluminescent Abyss simulation mode.
-
-Models an abyssal ocean zone (1000m+ depth) with:
-- Anglerfish lure signaling and predation
-- Bioluminescent plankton disturbance cascades (chain-reaction light bursts)
-- Giant squid chromatophore countershading
-- Marine snow particle drift
-- Hydrostatic pressure zones affecting creature metabolism
-- Predator-prey interactions through light-based deception in total darkness
-
-Three views: dark abyss scene, depth-pressure cross-section, time-series sparklines.
-Six presets.
-"""
+"""Deep-Sea Bioluminescent Abyss — light-based predator-prey ecology in an abyssal ocean."""
 
 import math
 import random
@@ -187,12 +175,6 @@ def _zone_for_row(row, total_rows):
         return ZONE_HADAL
 
 
-def _pressure_at_row(row, total_rows):
-    """Approximate pressure in atm based on depth."""
-    frac = row / max(1, total_rows - 1)
-    return 100 + frac * 1000
-
-
 def _metabolism_factor(row, total_rows):
     """Deeper = slower metabolism due to cold and pressure."""
     frac = row / max(1, total_rows - 1)
@@ -310,14 +292,14 @@ def _sparkline(values, width, height, max_y_scr, max_x_scr, start_y, start_x,
 # ── Mode functions ───────────────────────────────────────────────────────────
 
 def _enter_deepsea_mode(self):
-    """Enter Deep-Sea Bioluminescent Abyss mode — show preset menu."""
+    """Show the preset menu."""
     self.deepsea_mode = True
     self.deepsea_menu = True
     self.deepsea_menu_sel = 0
 
 
 def _exit_deepsea_mode(self):
-    """Exit Deep-Sea mode — cleanup all state."""
+    """Leave the mode and drop all simulation state."""
     for attr in list(vars(self)):
         if attr.startswith('deepsea_'):
             delattr(self, attr)
@@ -329,7 +311,7 @@ def _exit_deepsea_mode(self):
 
 def _deepsea_init(self, preset_idx):
     """Initialize simulation from chosen preset."""
-    name, desc, preset_id = DEEPSEA_PRESETS[preset_idx]
+    name, _desc, preset_id = DEEPSEA_PRESETS[preset_idx]
     self.deepsea_preset_name = name
     self.deepsea_preset_id = preset_id
     self.deepsea_preset_idx = preset_idx
@@ -440,12 +422,9 @@ def _deepsea_init(self, preset_idx):
     for ctype, count in n_creatures.items():
         for _ in range(count):
             cx = random.uniform(1, cols - 2)
-            cy_min = 1
-            cy_max = rows - 2
-            cy = random.uniform(cy_min, cy_max)
-            c = _Creature(cx, cy, ctype)
+            c = _Creature(cx, 0.0, ctype)
             _init_creature(c, ctype, rows, cols, preset_id)
-            # Place in preferred depth zone
+            # Start inside the creature's preferred depth band.
             frac_min = c.depth_pref_min
             frac_max = c.depth_pref_max
             c.y = random.uniform(frac_min * rows, frac_max * rows)
@@ -1117,7 +1096,7 @@ def _draw_deepsea_menu(self, max_y, max_x):
                 pass
 
     help_y = max_y - 1
-    help_text = " ↑↓ Select   ENTER Start   Q Quit"
+    help_text = " j/k=select  Enter=start  q=quit"
     try:
         self.stdscr.addstr(help_y, 0, help_text[:max_x - 1],
                            curses.color_pair(7) | curses.A_DIM)
@@ -1150,7 +1129,7 @@ def _draw_deepsea(self, max_y, max_x):
     except curses.error:
         pass
 
-    help_line = " SPACE Pause  V View  R Reset  Q Quit"
+    help_line = " Space=play  v=view  r=menu  q=exit"
     if max_y - 2 > 1:
         try:
             self.stdscr.addstr(max_y - 2, 0, help_line[:max_x - 1],
@@ -1168,8 +1147,6 @@ def _draw_deepsea_abyss(self, max_y, max_x):
 
     # Background: near-black ocean with subtle depth gradient
     for r in range(rows):
-        zone = _zone_for_row(r, rows)
-        # Darker as we go deeper
         base_attr = curses.color_pair(7) | curses.A_DIM
         line = []
         for c_ in range(cols):
@@ -1201,9 +1178,9 @@ def _draw_deepsea_abyss(self, max_y, max_x):
                 idx = min(idx, len(_FLASH_CHARS) - 1)
                 ch = _FLASH_CHARS[idx]
                 if fm > 0.6:
-                    attr = curses.color_pair(5) | curses.A_BOLD  # cyan/bright
+                    attr = curses.color_pair(5) | curses.A_BOLD
                 elif fm > 0.3:
-                    attr = curses.color_pair(4) | curses.A_BOLD  # blue/green
+                    attr = curses.color_pair(4) | curses.A_BOLD
                 else:
                     attr = curses.color_pair(7)
                 try:
@@ -1312,29 +1289,29 @@ def _draw_deepsea_abyss(self, max_y, max_x):
                 attr = curses.color_pair(7)
         elif c.ctype == CR_SQUID:
             if c.flash_bright > 0.2:
-                attr = curses.color_pair(3) | curses.A_BOLD  # red flash
+                attr = curses.color_pair(3) | curses.A_BOLD
             elif c.chromatophore > 0.3:
                 attr = curses.color_pair(5) | curses.A_BOLD
             else:
                 attr = curses.color_pair(7) | curses.A_DIM
         elif c.ctype == CR_JELLYFISH:
             if c.flash_bright > 0.2:
-                attr = curses.color_pair(5) | curses.A_BOLD  # cyan pulse
+                attr = curses.color_pair(5) | curses.A_BOLD
             else:
                 attr = curses.color_pair(5) | curses.A_DIM
         elif c.ctype == CR_DRAGONFISH:
             if c.flash_bright > 0.2:
-                attr = curses.color_pair(2) | curses.A_BOLD  # red searchlight
+                attr = curses.color_pair(2) | curses.A_BOLD
             else:
                 attr = curses.color_pair(2) | curses.A_DIM
         elif c.ctype in (CR_LANTERNFISH, CR_HATCHETFISH):
             if c.flash_bright > 0.2:
-                attr = curses.color_pair(4) | curses.A_BOLD  # green/yellow
+                attr = curses.color_pair(4) | curses.A_BOLD
             else:
                 attr = curses.color_pair(4) | curses.A_DIM
         elif c.ctype == CR_SHRIMP:
             if c.flash_bright > 0.2:
-                attr = curses.color_pair(3) | curses.A_BOLD  # bright burst
+                attr = curses.color_pair(3) | curses.A_BOLD
             else:
                 attr = curses.color_pair(7) | curses.A_DIM
         elif c.ctype == CR_TUBEWORM:
