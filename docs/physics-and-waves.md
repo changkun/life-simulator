@@ -1176,8 +1176,6 @@ Dynamics proceed via Monte Carlo Metropolis sweeps: each sweep makes as many fli
 
 **Background** — Earthquakes arise from the sudden release of accumulated tectonic stress along faults, where friction locks plates until stress exceeds the fault's yield strength and slip cascades across a rupture zone. The Burridge-Knopoff (1967) spring-block model captures this stick-slip instability with a one- or two-dimensional chain of blocks connected by springs and resting on a frictional surface driven at constant velocity. Despite its simplicity, the model reproduces the key statistical signatures of natural seismicity: the Gutenberg-Richter power-law frequency-magnitude distribution, Omori's law of aftershock decay, and characteristic earthquake recurrence cycles. This places earthquake dynamics squarely within the framework of self-organized criticality — the system naturally evolves toward a critical state where perturbations of all sizes can occur.
 
-This mode fills a gap between the existing Tectonic Plates mode (large-scale plate motion over geological time) and Wave Equation mode (generic wave propagation) by focusing on the fault-scale rupture dynamics and seismic radiation that neither covers.
-
 **Formulation** — The simulation uses a 2D lattice of spring-blocks with heterogeneous static friction thresholds:
 
 ```
@@ -1207,8 +1205,8 @@ Seismic wave propagation (finite-difference wave equation):
 Parameters:
   tectonic_rate  — stress loading per step (0.001 to 0.1)
   base_strength  — mean static friction threshold
-  heterogeneity  — spatial variation in strength (0 to 1)
-  coupling       — fraction of released stress transferred to neighbors
+  heterogeneity  — spatial variation in strength (presets use 0.3 to 0.6)
+  coupling       — fraction of released stress transferred to neighbors (0.01 to 0.5)
   dynamic_drop   — fraction of stress released during slip (0.85)
   damping        — wave energy dissipation per step (0.96)
 ```
@@ -1221,7 +1219,7 @@ Parameters:
 | **Subduction Zone** | High coupling (0.25), high strength (1.4), slow loading | Megathrust earthquakes — long quiet periods punctuated by large cascades |
 | **Swarm Seismicity** | Low strength (0.7), high heterogeneity (0.6), fast loading | Many small events clustering in space and time (volcanic/geothermal) |
 | **Tsunami Generation** | Ruptures inject energy into a shallow-water wave field | Seafloor displacement creates expanding wave rings (separate wave grid) |
-| **Induced Seismicity** | Central injection point raises pore pressure, reducing effective strength | Fluid injection triggers earthquakes near the well, expanding outward |
+| **Induced Seismicity** | A central injection zone adds stress each step, as a stand-in for pore pressure | Fluid injection triggers earthquakes near the well, expanding outward |
 | **Coulomb Stress Transfer** | Ruptures apply angular cos(2θ) stress lobes to surrounding fault | One earthquake loads adjacent segments, triggering cascading sequences |
 
 **Views** — Two display modes toggled with `v`:
@@ -1230,7 +1228,7 @@ Parameters:
 
 **Controls**: `Space` play/pause, `n`/`.` single step, `t`/`T` decrease/increase tectonic loading rate, `c`/`C` decrease/increase spring coupling, `v` toggle fault/wave view, `+`/`-` adjust steps per frame, `r` reset current preset, `R` return to preset menu, `q` exit mode.
 
-**What to look for** — Start with Strike-Slip Fault and watch the characteristic earthquake cycle: uniform green stress buildup, scattered yellow patches approaching failure, then sudden red rupture cascades that release stress and reload the fault. The info bar shows a running b-value estimate from the Gutenberg-Richter distribution — values near 1.0 indicate realistic scaling. Switch to Subduction Zone for dramatic contrast: long quiet intervals followed by massive cascades that rupture most of the fault. In Swarm Seismicity, the high loading rate and low strength produce nearly continuous small events — notice how they cluster spatially. The Tsunami preset is best viewed in wave mode (`v`): watch concentric shallow-water waves expand from submarine ruptures. The Induced Seismicity preset shows earthquakes nucleating near the injection point (◉) and migrating outward as pore pressure diffuses. Coulomb Stress Transfer demonstrates earthquake triggering — one rupture's stress lobes load adjacent fault segments, producing sequences of events that march along the fault.
+**What to look for** — Start with Strike-Slip Fault and watch the characteristic earthquake cycle: uniform green stress buildup, scattered yellow patches approaching failure, then sudden red rupture cascades that release stress and reload the fault. The info bar shows a running b-value estimate from the Gutenberg-Richter distribution — values near 1.0 indicate realistic scaling. Switch to Subduction Zone for dramatic contrast: long quiet intervals followed by massive cascades that rupture most of the fault. In Swarm Seismicity, the high loading rate and low strength produce nearly continuous small events — notice how they cluster spatially. The Tsunami preset starts in wave view: watch concentric shallow-water waves expand from submarine ruptures. The Induced Seismicity preset shows earthquakes nucleating near the injection point (◉) and migrating outward as pore pressure diffuses. Coulomb Stress Transfer demonstrates earthquake triggering — one rupture's stress lobes load adjacent fault segments, producing sequences of events that march along the fault.
 
 **References**
 - Burridge, R. and Knopoff, L. "Model and theoretical seismicity," *Bulletin of the Seismological Society of America*, 57(3), 1967. https://doi.org/10.1785/BSSA0570030341
