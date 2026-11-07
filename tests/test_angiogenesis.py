@@ -70,3 +70,14 @@ def test_tip_count_is_capped():
     for _ in range(250):
         app._angio_step()
         assert len(app.angio_tips) <= _MAX_TIPS * 2
+
+
+def test_rbc_follows_its_edge_when_earlier_edges_collapse():
+    from life.modes.angiogenesis import _RBCParticle
+    app = _started(0)
+    last = app.angio_edges[-1]
+    rbc = _RBCParticle(len(app.angio_edges) - 1, 0.5)
+    app.angio_rbc.append(rbc)
+    app.angio_edges[0].radius = 0.0
+    app._angio_step()
+    assert app.angio_edges[rbc.edge_idx] is last

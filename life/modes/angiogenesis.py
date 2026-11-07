@@ -676,9 +676,11 @@ def _angio_step(self):
                 regression_count += 1
 
     # Remove collapsed vessels
+    remap = {}
     keep_edges = []
     for i, edge in enumerate(self.angio_edges):
         if edge.radius > 0.05:
+            remap[i] = len(keep_edges)
             keep_edges.append(edge)
     if len(keep_edges) < len(self.angio_edges):
         # Rebuild edge indices
@@ -688,9 +690,13 @@ def _angio_step(self):
         for ei, edge in enumerate(self.angio_edges):
             self.angio_nodes[edge.n1].neighbors.append(ei)
             self.angio_nodes[edge.n2].neighbors.append(ei)
-        # Fix RBC references
-        self.angio_rbc = [p for p in self.angio_rbc
-                          if p.edge_idx < len(self.angio_edges)]
+        # Point RBCs at their edge's new index; drop those on removed edges
+        kept_rbc = []
+        for p in self.angio_rbc:
+            if p.edge_idx in remap:
+                p.edge_idx = remap[p.edge_idx]
+                kept_rbc.append(p)
+        self.angio_rbc = kept_rbc
 
     # ── 8. Tumor growth ──
     if self.angio_tumor:
