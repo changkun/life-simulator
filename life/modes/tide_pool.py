@@ -482,6 +482,11 @@ def _tpool_step(self):
     # ── 5. Mobile organisms ──
     new_mobile = []
     dead_mobile = set()
+    # Mobile animals may share a cell, so cap each species by grid area.
+    mobile_cap = max(20, rows * cols // 20)
+    mobile_count = {}
+    for m in self.tpool_mobile:
+        mobile_count[m.kind] = mobile_count.get(m.kind, 0) + 1
     # Build occupancy lookup for sessile
     sessile_pos = {}
     for s in self.tpool_sessile:
@@ -570,7 +575,8 @@ def _tpool_step(self):
             continue
 
         # Reproduction
-        if m.energy > 1.6 and random.random() < 0.008:
+        if (m.energy > 1.6 and mobile_count[m.kind] < mobile_cap
+                and random.random() < 0.008):
             dr, dc = random.choice(_NEIGHBORS_8)
             nr = max(0, min(rows - 1, m.r + dr))
             nc = max(0, min(cols - 1, m.c + dc))
@@ -584,6 +590,7 @@ def _tpool_step(self):
                 else:
                     child.shell_size = 0.2  # tiny makeshift shell
             new_mobile.append(child)
+            mobile_count[m.kind] += 1
             m.energy -= 0.6
 
     self.tpool_mobile = [m for i, m in enumerate(self.tpool_mobile)
