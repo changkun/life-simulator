@@ -1,4 +1,4 @@
-"""Mode: lenia — simulation mode for the life package."""
+"""Lenia — continuous cellular automaton with a smooth ring kernel and Gaussian growth."""
 import curses
 import math
 import random
@@ -6,7 +6,6 @@ import time
 
 
 from life.constants import SPEEDS, SPEED_LABELS
-from life.grid import Grid
 from life.colors import colormap_addstr
 
 def _enter_lenia_mode(self):
@@ -59,10 +58,10 @@ def _lenia_build_kernel(self):
 
 
 def _lenia_growth(self, u: float) -> float:
-    """Growth function: Gaussian bump centered at mu with width sigma.
+    """Map the kernel potential u to a growth rate in [-1, 1].
 
-    Maps kernel convolution potential to growth/decay delta.
-    Returns values in [-1, 1]: positive = growth, negative = decay.
+    The rate is a Gaussian bump centred at mu with width sigma: positive
+    means growth, negative means decay.
     """
     mu = self.lenia_mu
     sigma = self.lenia_sigma
@@ -71,7 +70,7 @@ def _lenia_growth(self, u: float) -> float:
 
 
 def _lenia_init(self, preset_idx: int | None = None):
-    """Initialize the Lenia grid with a preset species."""
+    """Load a preset (if given), rebuild the kernel and seed random blobs."""
     max_y, max_x = self.stdscr.getmaxyx()
     self.lenia_rows = max_y - 3
     self.lenia_cols = (max_x - 1) // 2
@@ -89,10 +88,8 @@ def _lenia_init(self, preset_idx: int | None = None):
         self.lenia_dt = dt
         self.lenia_preset_name = self.LENIA_PRESETS[preset_idx][0]
 
-    # Build kernel
     self._lenia_build_kernel()
 
-    # Initialize grid to zero
     rows, cols = self.lenia_rows, self.lenia_cols
     self.lenia_grid = [[0.0] * cols for _ in range(rows)]
 
@@ -149,10 +146,8 @@ def _lenia_step(self):
                     kc = (c + kx - R) % cols
                     potential += kval * grow[kc]
 
-            # Growth function
             delta = self._lenia_growth(potential)
 
-            # Update cell
             val = grid[r][c] + dt * delta
             if val < 0.0:
                 val = 0.0
@@ -186,7 +181,7 @@ def _handle_lenia_menu_key(self, key: int) -> bool:
         self.lenia_running = False
         self._lenia_init(self.lenia_menu_sel)
         name = self.LENIA_PRESETS[self.lenia_menu_sel][0]
-        self._flash(f"Lenia [{name}] — Space=play, µ/σ=adjust params, q=exit")
+        self._flash(f"Lenia [{name}] — Space=play, u/s/d/t=tune, q=exit")
         return True
     return True
 
@@ -329,7 +324,7 @@ def _draw_lenia_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate [Enter]=select [q/Esc]=cancel"
+        hint = " j/k=move  Enter=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
@@ -434,7 +429,7 @@ def _draw_lenia(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [u/U]=mu+/- [s/S]=sigma+/- [d/D]=radius+/- [t/T]=dt+/- [r]=reseed [R]=menu [q]=exit"
+            hint = " Space=play  n=step  u/U=mu  s/S=sigma  d/D=radius  t/T=dt  +/-=steps/frame  r=reseed  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
