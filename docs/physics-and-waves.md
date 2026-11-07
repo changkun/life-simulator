@@ -1494,7 +1494,7 @@ where:
 
 ## Planetary Accretion & Solar System Formation
 
-**Background** — Every planetary system begins as a swirling disk of gas and dust around a young star. Over millions of years, micron-sized grains stick together into pebbles, pebbles into kilometer-scale planetesimals, and planetesimals into planetary embryos through gravitational accretion. The frost line — where water ice can condense — divides the disk into an inner rocky zone and an outer icy zone, explaining why gas giants form far from the star (their icy cores grow large enough to capture hydrogen/helium envelopes). This simulation bridges the gap between the Solar System Orrery (finished planets in stable orbits) and Galaxy Formation (galactic scale), showing the missing middle chapter of how planets actually form from chaos.
+**Background** — Every planetary system begins as a swirling disk of gas and dust around a young star. Over millions of years, micron-sized grains stick together into pebbles, pebbles into kilometer-scale planetesimals, and planetesimals into planetary embryos through gravitational accretion. The frost line — where water ice can condense — divides the disk into an inner rocky zone and an outer icy zone, explaining why gas giants form far from the star (their icy cores grow large enough to capture hydrogen/helium envelopes). The Solar System Orrery shows finished planets in stable orbits; this mode shows how they form.
 
 **Formulation** — The simulation tracks individual bodies (dust particles, planetesimals, protoplanets) orbiting a central star with Keplerian dynamics:
 
@@ -1528,7 +1528,7 @@ Giant impacts between comparable-mass bodies produce debris (10% × mass ratio),
 
 **What to look for** — In Calm Accretion, watch the disk thin over time as dust is swept up; note how bodies beyond the frost line (marked by the cyan circle) grow faster due to ice availability, eventually triggering runaway gas accretion to become gas giants. The Grand Tack preset shows dramatic clearing of the inner disk as Jupiter plows through. In the Giant Impact scenario, watch for the collision event — the sudden appearance of debris and a moon count incrementing. The Resonant Chain preset demonstrates how migration naturally produces the tightly packed multi-planet systems discovered by Kepler. The Hot Jupiter preset shows the destructive passage of a migrating giant. Switch to the cross-section view (`v`) to see the disk's vertical structure, temperature gradient (red→yellow→white→blue), and frost line position. The sparkline graphs view tracks planet count, largest body mass, disk depletion, eccentricity evolution, and collision rate over time.
 
-**Controls**: `Space` play/pause, `v` cycle views (disk/cross-section/graphs), `z`/`Z` zoom in/out, `o` toggle orbits, `l` toggle labels, `Tab` select body, `u` unselect, `+`/`-` speed, `n` step, `r` restart, `m` menu, `q` exit.
+**Controls**: `Space` play/pause, `v` cycle views (disk/cross-section/graphs), `z`/`Z` zoom in/out, `o` toggle orbits, `l` toggle labels, `Tab` select body, `u` unselect, `+`/`-` speed, `n` step, `r` restart, `R`/`m` menu, `q` exit.
 
 **References**
 - Armitage, P.J. *Astrophysics of Planet Formation*, Cambridge University Press, 2010.
