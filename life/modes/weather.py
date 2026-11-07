@@ -1,8 +1,7 @@
-"""Mode: weather — simulation mode for the life package."""
+"""Atmospheric Weather — pressure systems, fronts, wind, clouds and rain on a map."""
 import curses
 import math
 import random
-import time
 
 WEATHER_PRESETS = [
     ("Tropical Cyclone", "Intense low-pressure system with spiral rain bands", "cyclone"),
@@ -36,11 +35,9 @@ def _exit_weather_mode(self):
 
 
 def _weather_init(self, preset_idx: int):
-    """Initialize weather simulation from preset."""
-    import random as _rand
-    import math as _math
+    """Start the weather simulation from a preset."""
 
-    name, desc, ptype = WEATHER_PRESETS[preset_idx]
+    name, _desc, ptype = WEATHER_PRESETS[preset_idx]
     self.weather_preset_name = name
     self.weather_menu = False
     self.weather_mode = True
@@ -57,7 +54,6 @@ def _weather_init(self, preset_idx: int):
     self.weather_rows = rows
     self.weather_cols = cols
 
-    # Initialize grids
     self.weather_pressure = [[1013.25 for _ in range(cols)] for _ in range(rows)]
     self.weather_temperature = [[15.0 for _ in range(cols)] for _ in range(rows)]
     self.weather_humidity = [[0.5 for _ in range(cols)] for _ in range(rows)]
@@ -75,8 +71,8 @@ def _weather_init(self, preset_idx: int):
         lat_factor = 1.0 - abs(r - mid_r) / mid_r  # 0 at poles, 1 at equator
         base_temp = -20.0 + 50.0 * lat_factor  # -20°C poles to +30°C equator
         for c in range(cols):
-            self.weather_temperature[r][c] = base_temp + _rand.uniform(-2, 2)
-            self.weather_humidity[r][c] = 0.3 + 0.4 * lat_factor + _rand.uniform(-0.05, 0.05)
+            self.weather_temperature[r][c] = base_temp + random.uniform(-2, 2)
+            self.weather_humidity[r][c] = 0.3 + 0.4 * lat_factor + random.uniform(-0.05, 0.05)
 
     if ptype == "cyclone":
         # Intense low-pressure center with high moisture
@@ -90,7 +86,7 @@ def _weather_init(self, preset_idx: int):
             for c in range(cols):
                 dr = r - cr
                 dc = c - cc
-                dist = _math.sqrt(dr * dr + dc * dc)
+                dist = math.sqrt(dr * dr + dc * dc)
                 if dist < min(rows, cols) // 3:
                     self.weather_temperature[r][c] = max(self.weather_temperature[r][c], 25.0)
                     self.weather_humidity[r][c] = min(1.0, 0.8 + 0.2 * (1 - dist / (min(rows, cols) // 3)))
@@ -178,28 +174,28 @@ def _weather_init(self, preset_idx: int):
         # Very cold north
         for r in range(rows // 2):
             for c in range(cols):
-                self.weather_temperature[r][c] = -25.0 + 15.0 * (r / (rows / 2.0)) + _rand.uniform(-2, 2)
-                self.weather_humidity[r][c] = 0.4 + _rand.uniform(-0.05, 0.05)
+                self.weather_temperature[r][c] = -25.0 + 15.0 * (r / (rows / 2.0)) + random.uniform(-2, 2)
+                self.weather_humidity[r][c] = 0.4 + random.uniform(-0.05, 0.05)
 
     else:  # random
-        n_centers = _rand.randint(3, 6)
+        n_centers = random.randint(3, 6)
         for _ in range(n_centers):
-            ctype = _rand.choice(["high", "low"])
-            p = _rand.uniform(1030, 1050) if ctype == "high" else _rand.uniform(975, 1005)
+            ctype = random.choice(["high", "low"])
+            p = random.uniform(1030, 1050) if ctype == "high" else random.uniform(975, 1005)
             self.weather_centers.append({
-                "r": _rand.randint(2, rows - 3), "c": _rand.randint(2, cols - 3),
-                "pressure": p, "radius": _rand.randint(min(rows, cols) // 6, min(rows, cols) // 3),
+                "r": random.randint(2, rows - 3), "c": random.randint(2, cols - 3),
+                "pressure": p, "radius": random.randint(min(rows, cols) // 6, min(rows, cols) // 3),
                 "type": ctype,
-                "vr": _rand.uniform(-0.2, 0.2), "vc": _rand.uniform(0.05, 0.3),
-                "intensity": _rand.uniform(0.4, 1.0),
+                "vr": random.uniform(-0.2, 0.2), "vc": random.uniform(0.05, 0.3),
+                "intensity": random.uniform(0.4, 1.0),
             })
-        if _rand.random() < 0.6:
-            fr = _rand.randint(rows // 4, rows * 3 // 4)
+        if random.random() < 0.6:
+            fr = random.randint(rows // 4, rows * 3 // 4)
             self.weather_fronts.append({
-                "type": _rand.choice(["cold", "warm"]),
+                "type": random.choice(["cold", "warm"]),
                 "points": [(fr, c) for c in range(0, cols, 3)],
-                "vc": _rand.uniform(0.1, 0.3), "vr": _rand.uniform(-0.1, 0.2),
-                "strength": _rand.uniform(0.5, 1.2),
+                "vc": random.uniform(0.1, 0.3), "vr": random.uniform(-0.1, 0.2),
+                "strength": random.uniform(0.5, 1.2),
             })
 
     # Apply pressure centers to grid
@@ -216,13 +212,10 @@ def _weather_init(self, preset_idx: int):
 
 def _weather_apply_pressure_centers(self):
     """Apply pressure centers to the pressure grid using Gaussian falloff."""
-    import math as _math
     rows, cols = self.weather_rows, self.weather_cols
-    # Reset to base
     for r in range(rows):
         for c in range(cols):
             self.weather_pressure[r][c] = 1013.25
-    # Apply each center
     for ctr in self.weather_centers:
         cr, cc = ctr["r"], ctr["c"]
         radius = max(1, ctr["radius"])
@@ -233,7 +226,7 @@ def _weather_apply_pressure_centers(self):
                 dr = r - cr
                 dc = c - cc
                 dist_sq = dr * dr + dc * dc
-                influence = dp * intensity * _math.exp(-dist_sq / (2.0 * radius * radius))
+                influence = dp * intensity * math.exp(-dist_sq / (2.0 * radius * radius))
                 self.weather_pressure[r][c] += influence
 
 
@@ -327,8 +320,6 @@ def _weather_update_clouds(self):
 
 def _weather_step(self):
     """Advance weather simulation by one time step."""
-    import random as _rand
-    import math as _math
 
     self.weather_generation += 1
     self.weather_hour += 1
@@ -343,14 +334,14 @@ def _weather_step(self):
         ctr["r"] = ctr["r"] % rows
         ctr["c"] = ctr["c"] % cols
         # Intensity fluctuation
-        ctr["intensity"] += _rand.uniform(-0.02, 0.02) * speed
+        ctr["intensity"] += random.uniform(-0.02, 0.02) * speed
         ctr["intensity"] = max(0.2, min(1.2, ctr["intensity"]))
         # Slight pressure wandering
         if ctr["type"] == "low":
-            ctr["pressure"] += _rand.uniform(-1.0, 0.8) * speed
+            ctr["pressure"] += random.uniform(-1.0, 0.8) * speed
             ctr["pressure"] = max(950, min(1010, ctr["pressure"]))
         else:
-            ctr["pressure"] += _rand.uniform(-0.8, 1.0) * speed
+            ctr["pressure"] += random.uniform(-0.8, 1.0) * speed
             ctr["pressure"] = max(1015, min(1055, ctr["pressure"]))
 
     # Move fronts
@@ -361,7 +352,7 @@ def _weather_step(self):
             nc = pc + front["vc"] * speed
             new_pts.append((nr % rows, nc % cols))
         front["points"] = new_pts
-        front["strength"] += _rand.uniform(-0.03, 0.02) * speed
+        front["strength"] += random.uniform(-0.03, 0.02) * speed
         front["strength"] = max(0.1, min(1.5, front["strength"]))
 
     # Apply pressure field
@@ -440,15 +431,15 @@ def _weather_step(self):
     _weather_update_clouds(self)
 
     # Occasional new center spawning
-    if _rand.random() < 0.005 * speed and len(self.weather_centers) < 8:
-        ctype = _rand.choice(["high", "low"])
-        p = _rand.uniform(1025, 1045) if ctype == "high" else _rand.uniform(985, 1010)
+    if random.random() < 0.005 * speed and len(self.weather_centers) < 8:
+        ctype = random.choice(["high", "low"])
+        p = random.uniform(1025, 1045) if ctype == "high" else random.uniform(985, 1010)
         self.weather_centers.append({
-            "r": _rand.randint(2, rows - 3), "c": _rand.randint(2, cols - 3),
-            "pressure": p, "radius": _rand.randint(min(rows, cols) // 6, min(rows, cols) // 4),
+            "r": random.randint(2, rows - 3), "c": random.randint(2, cols - 3),
+            "pressure": p, "radius": random.randint(min(rows, cols) // 6, min(rows, cols) // 4),
             "type": ctype,
-            "vr": _rand.uniform(-0.15, 0.15), "vc": _rand.uniform(0.05, 0.25),
-            "intensity": _rand.uniform(0.3, 0.8),
+            "vr": random.uniform(-0.15, 0.15), "vc": random.uniform(0.05, 0.25),
+            "intensity": random.uniform(0.3, 0.8),
         })
 
     # Remove weak/off-screen centers to keep things manageable
@@ -466,7 +457,6 @@ def _weather_wind_arrow(self, u: float, v: float) -> str:
     if speed < 0.5:
         return '·'
     # Quantize to 8 directions
-    import math
     angle = math.atan2(v, u)  # v=south, u=east
     # Map to 8 sectors
     sector = int((angle + math.pi) / (math.pi / 4) + 0.5) % 8
@@ -478,7 +468,6 @@ def _weather_wind_arrow(self, u: float, v: float) -> str:
 
 def _weather_temp_color(self, temp: float) -> int:
     """Return curses color pair for temperature."""
-    import curses
     if temp < -15:
         return curses.color_pair(5) | curses.A_BOLD  # deep blue/magenta
     elif temp < 0:
@@ -497,7 +486,6 @@ def _weather_temp_color(self, temp: float) -> int:
 
 def _weather_pressure_color(self, p: float) -> int:
     """Return curses color pair for pressure."""
-    import curses
     if p < 990:
         return curses.color_pair(2) | curses.A_BOLD  # deep low = red
     elif p < 1005:
@@ -514,7 +502,6 @@ def _weather_pressure_color(self, p: float) -> int:
 
 def _handle_weather_menu_key(self, key: int) -> bool:
     """Handle input in weather preset menu."""
-    import curses
     n = len(WEATHER_PRESETS)
     if key == curses.KEY_DOWN or key == ord('j'):
         self.weather_menu_sel = (self.weather_menu_sel + 1) % n
@@ -573,7 +560,6 @@ def _handle_weather_key(self, key: int) -> bool:
 
 def _draw_weather_menu(self, max_y: int, max_x: int):
     """Draw weather preset selection menu."""
-    import curses
     title = "═══ Atmospheric Weather ═══"
     try:
         self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
@@ -589,7 +575,7 @@ def _draw_weather_menu(self, max_y: int, max_x: int):
             self.stdscr.addstr(y, 3, f"{marker}{name}", attr)
             self.stdscr.addstr(y + 1, 6, desc[:max_x - 8], curses.A_DIM)
         foot_y = min(5 + len(WEATHER_PRESETS) * 2 + 1, max_y - 2)
-        self.stdscr.addstr(foot_y, 3, "Enter=Select  Esc=Cancel",
+        self.stdscr.addstr(foot_y, 3, "j/k=navigate  Enter=select  Esc=cancel",
                            curses.A_DIM | curses.color_pair(6))
     except curses.error:
         pass
@@ -598,9 +584,7 @@ def _draw_weather_menu(self, max_y: int, max_x: int):
 
 
 def _draw_weather(self, max_y: int, max_x: int):
-    """Render weather simulation as ASCII atmospheric map."""
-    import curses
-    import math as _math
+    """Draw the weather map, status bar, legend and help overlay."""
     rows, cols = self.weather_rows, self.weather_cols
     draw_rows = min(rows, max_y - 3)
     draw_cols = min(cols, max_x - 1)
