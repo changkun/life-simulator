@@ -4,7 +4,7 @@ import math
 import random
 import time
 
-from life.colors import colormap_addstr, colormap_rgb
+from life.colors import colormap_addstr
 
 WAVE_PRESETS = [
     # (name, description, c, damping, boundary, init_type)

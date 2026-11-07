@@ -1,6 +1,5 @@
 """Lightning — dielectric breakdown model: a discharge channel grows along the electric field."""
 import curses
-import math
 import random
 import time
 

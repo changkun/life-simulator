@@ -2,7 +2,6 @@
 import curses
 import math
 import random
-import time
 
 TORNADO_PRESETS = [
     ("EF3 Wedge Tornado", "Wide, powerful wedge tornado with heavy debris field", "ef3"),

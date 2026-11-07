@@ -4,7 +4,6 @@ Press z to export the current setup as a shareable code (mode abbreviation, dash
 or to paste a code and reproduce that setup.
 """
 import base64
-import copy
 import hashlib
 import json
 import zlib

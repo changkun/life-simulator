@@ -1,7 +1,5 @@
 """Utility functions: pattern recognition, RLE parsing, GIF encoding, etc."""
-import hashlib
 import json
-import math
 import os
 import struct
 

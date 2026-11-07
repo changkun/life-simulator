@@ -2,7 +2,6 @@
 import curses
 import math
 import random
-import time
 
 
 # ══════════════════════════════════════════════════════════════════════

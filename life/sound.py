@@ -1,11 +1,9 @@
 """Sound engine for procedural audio synthesis."""
 import math
-import os
 import struct
 import subprocess
 import tempfile
 import threading
-import time
 import wave
 
 # Pentatonic scale intervals (semitones from root): C D E G A

@@ -7,7 +7,7 @@ import random
 import time
 
 from life.constants import SAVE_DIR
-from life.registry import MODE_CATEGORIES, MODE_REGISTRY
+from life.registry import MODE_REGISTRY
 
 FAVORITES_FILE = os.path.join(SAVE_DIR, "favorites.json")
 

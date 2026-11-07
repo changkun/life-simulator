@@ -1,30 +1,22 @@
 """Main application class and entry point."""
 import argparse
-import collections
-import copy
 import curses
-import hashlib
 import json
 import math
 import os
 import random
-import struct
 import sys
-import tempfile
 import threading
 import time
 
 from life.constants import (
-    SAVE_DIR, SNAPSHOT_DIR, BLUEPRINT_FILE, SPEEDS, SPEED_LABELS,
-    CELL_CHAR, HEX_CELL, HEX_DEAD, HEX_NEIGHBORS_EVEN, HEX_NEIGHBORS_ODD,
-    ZOOM_LEVELS, DENSITY_CHARS, DEAD_CHAR, SPARKLINE_CHARS,
+    SAVE_DIR, SNAPSHOT_DIR, SPEEDS, SPEED_LABELS,
+    CELL_CHAR, HEX_CELL, HEX_DEAD, ZOOM_LEVELS, DENSITY_CHARS,
 )
-from life.patterns import PATTERNS, PUZZLES
+from life.patterns import PATTERNS
 from life.rules import RULE_PRESETS, rule_string, parse_rule_string
 from life.colors import (
-    AGE_COLORS, _init_colors, color_for_age, color_for_mp, color_for_heat,
-    _GIF_PALETTE, TrueColorBuffer, truecolor_available, colormap_addstr,
-    tc_addstr, colormap_rgb, COLORMAP_NAMES, COLORMAPS,
+    _init_colors, color_for_age, color_for_heat, TrueColorBuffer, COLORMAP_NAMES,
 )
 from life.utils import (
     _load_blueprints, scan_patterns, parse_rle,
@@ -33,7 +25,7 @@ from life.utils import (
 from life.grid import Grid
 from life.sound import SoundEngine
 from life.multiplayer import MultiplayerNet, MP_DEFAULT_PORT, MP_SIM_GENS
-from life.registry import MODE_CATEGORIES, MODE_REGISTRY, MODE_DISPATCH
+from life.registry import MODE_REGISTRY, MODE_DISPATCH
 from life.key_scan import handler_keys
 from life.analytics import AnalyticsState, PhaseTransition, _sparkline as _analytics_sparkline
 from life.modes.sparkline_hud import SparklineHUDState

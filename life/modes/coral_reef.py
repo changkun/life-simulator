@@ -1,6 +1,5 @@
 """Coral Reef Ecosystem — corals, algae, fish and stressors on a depth-lit reef."""
 import curses
-import math
 import random
 import time
 

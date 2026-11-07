@@ -19,7 +19,7 @@ import json
 import os
 import time
 
-from life.colors import colormap_rgb, COLORMAP_NAMES
+from life.colors import colormap_rgb
 
 # Blend modes
 BLEND_MODES = ["additive", "max", "average"]

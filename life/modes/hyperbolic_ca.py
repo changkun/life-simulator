@@ -8,7 +8,6 @@ on flat grids.
 import curses
 import math
 import random
-import time
 
 # ── Hyperbolic geometry helpers ────────────────────────────────────
 
