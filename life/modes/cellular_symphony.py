@@ -412,7 +412,7 @@ def _draw_symphony(self, max_y=None, max_x=None):
     # ── Parameters bar ──
     params = (f" Scale: {scale}  Timbre: {timbre}  "
               f"Octaves: {self.symphony_octave_range}  "
-              f"BPM: {self.symphony_bpm}  Vol: {int(self.symphony_volume * 100)}%  "
+              f"BPM: {self.symphony_bpm}  Vol: {round(self.symphony_volume * 100)}%  "
               f"Gen: {self.symphony_gen_count}")
     try:
         win.addnstr(1, 0, params, max_w - 1, curses.A_DIM)
