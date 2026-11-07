@@ -530,7 +530,7 @@ The eight presets are Primordial Soup, Rich Broth, Sparse Tidepools, RNA World, 
 Antigen recognition:
   Antigens and receptors are 6-bit integers (0-63)
   Match quality = 1.0 - hamming_distance(receptor XOR antigen) / 6
-  Activation threshold: match > 0.67 (at most 2 bits different)
+  Activation threshold: match > 0.5 to 0.65, depending on the cell type
 
 Wound breach:
   Gap in tissue barrier on left edge where pathogens invade
@@ -545,8 +545,8 @@ Diffusible fields (all use 5-point Laplacian diffusion with decay):
                    probabilistically based on local concentration
 
 Fever mechanic:
-  Body temperature = 37.0 + f(mean IL-6 level), range 37-42°C
-  fever_mult = 1.0 + 0.3 × (T - 37) / 5 — boosts immune kinetics
+  Target temperature = 37.0 + min(5, 30 × mean IL-6 level); T moves 5% toward it each step (max 42°C)
+  fever_mult = 1.0 + 0.08 × (T - 37) — boosts immune kinetics
   Tissue damage when T > 40°C — excessive fever is self-destructive
 
 Entity behaviors (15 types):
@@ -576,13 +576,17 @@ Entity behaviors (15 types):
                      (histamine analog), cause allergic tissue damage
   Debris (::)      : dead cell remnants, cleared by macrophages
 
-Vaccination preset: pre-seeds memory cells with receptors matching pathogen antigen
+Presets: Normal Bacterial Infection, Viral Invasion, Cytokine Storm, Immunodeficiency,
+  Allergic Hypersensitivity, Vaccination & Re-exposure
+Vaccination & Re-exposure: pre-seeds memory cells with receptors matching pathogen antigen
 Cytokine storm: TNF-α/IL-6 decay rate 0.005 → runaway positive feedback accumulation
-Immunodeficiency: 80% T-cell depletion at initialization
+Immunodeficiency: each T cell is removed with probability 0.8 at initialization
 Allergic hypersensitivity: pre-sensitized mast cells with matching receptors
 ```
 
 **What to look for** — "Normal Bacterial Infection" shows the full immune cascade: neutrophils rush to the wound, macrophages phagocytose and present antigen, dendritic cells activate naive T cells which differentiate and expand, B cells begin antibody production, and the infection is gradually contained. "Viral Invasion" demonstrates intracellular replication requiring killer T cells to clear infected tissue. "Cytokine Storm" shows immune overreaction: with reduced cytokine decay, TNF-α and IL-6 accumulate without bound, fever spikes above 40°C, and tissue damage from inflammation exceeds pathogen damage — a runaway positive feedback loop. "Immunodeficiency" reveals how T-cell depletion cripples the adaptive response, leaving innate immunity to fight alone. "Allergic Hypersensitivity" shows mast cell degranulation flooding the tissue with histamine-like cytokine bursts causing collateral damage to healthy tissue. "Vaccination & Re-exposure" produces a dramatically faster secondary response — pre-seeded memory cells reactivate with clonal bursts within steps rather than requiring the full naive → dendritic → activation cascade.
+
+Press `v` to cycle the cell map, the cytokine/antibody heatmap and the time-series graphs. `p` injects a pathogen wave at the wound, `i` deploys an immune boost near the lymph node region, and `u` flips one bit of the pathogen antigen so existing receptors match worse.
 
 **References**
 - Perelson, A. S. & Weisbuch, G. "Immunology for physicists." *Reviews of Modern Physics* 69 (1997): 1219-1268. https://doi.org/10.1103/RevModPhys.69.1219
