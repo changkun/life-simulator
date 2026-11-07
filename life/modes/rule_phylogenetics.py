@@ -459,6 +459,7 @@ def _phylo_analyze(self):
     self.phylo_menu = False
     self.phylo_view = 0
     self.phylo_cursor = 0
+    self.phylo_tree_cursor = 0
     self.phylo_scroll = 0
     self._flash(f"Analysis complete — {len(entries)} rules, "
                 f"{len(self.phylo_families)} families, "
@@ -577,6 +578,7 @@ def _handle_phylo_key(self, key):
         if self.phylo_preview:
             self.phylo_preview = None
             self.phylo_preview_running = False
+            self.phylo_running = False
             return True
         if self.phylo_diff_result and self.phylo_view == 2:
             self.phylo_diff_result = None
@@ -587,56 +589,39 @@ def _handle_phylo_key(self, key):
         return True
 
     # View switching: 1-5
-    if key == ord("1"):
-        self.phylo_view = 0
+    if key in _VIEW_KEYS:
+        self.phylo_view, title = _VIEW_KEYS[key]
+        self.phylo_cursor = 0
+        self.phylo_tree_cursor = 0
         self.phylo_scroll = 0
-        self._flash("Phylogenetic Tree")
-        return True
-    if key == ord("2"):
-        self.phylo_view = 1
-        self.phylo_scroll = 0
-        self._flash("Conserved Motifs")
-        return True
-    if key == ord("3"):
-        self.phylo_view = 2
-        self.phylo_scroll = 0
-        self._flash("Rule Diff (select two rules)")
-        return True
-    if key == ord("4"):
-        self.phylo_view = 3
-        self.phylo_scroll = 0
-        self._flash("Lineage Trace")
-        return True
-    if key == ord("5"):
-        self.phylo_view = 4
-        self.phylo_scroll = 0
-        self._flash("Rule Families")
+        self._flash(title)
         return True
 
     # Navigation
     if key == curses.KEY_UP:
-        self.phylo_cursor = max(0, self.phylo_cursor - 1)
+        _move_cursor(self, -1)
         return True
     if key == curses.KEY_DOWN:
-        self.phylo_cursor += 1
+        _move_cursor(self, 1)
         return True
     if key == curses.KEY_PPAGE:
-        self.phylo_scroll = max(0, self.phylo_scroll - 10)
+        _move_cursor(self, -10)
         return True
     if key == curses.KEY_NPAGE:
-        self.phylo_scroll += 10
+        _move_cursor(self, 10)
         return True
 
     # Preview: Enter on a rule
     if key in (10, 13, ord("\n")):
-        entry = _get_selected_entry(self)
-        if entry:
-            label = entry.get("label", "B3/S23")
+        label = _selected_label(self)
+        if label:
             self.phylo_preview = _create_preview_grid(label, 20, 40)
             self.phylo_preview_label = label
             self.phylo_preview_step = 0
             self.phylo_preview_pop_hist = []
             self.phylo_preview_running = True
+            # The main loop steps this mode only while phylo_running is set.
+            self.phylo_running = True
             self._flash(f"Preview: {label}")
         return True
 
@@ -644,8 +629,6 @@ def _handle_phylo_key(self, key):
     if key == ord(" "):
         if self.phylo_preview:
             self.phylo_preview_running = not self.phylo_preview_running
-        else:
-            self.phylo_running = not self.phylo_running
         return True
 
     # Diff mode: 'a' and 'b' to select rules
@@ -679,6 +662,10 @@ def _handle_phylo_key(self, key):
         names = ["Score", "Classification", "Hamming from Life"]
         self._flash(f"Sort: {names[self.phylo_sort_by]}")
         _apply_sort(self)
+        # Diff selections are entry indices, which the sort just reordered.
+        self.phylo_diff_a = -1
+        self.phylo_diff_b = -1
+        self.phylo_diff_result = None
         return True
 
     # Re-analyze with 'r'
@@ -689,14 +676,52 @@ def _handle_phylo_key(self, key):
     return True
 
 
-def _get_selected_entry(self):
-    """Get the entry at current cursor position."""
-    entries = self.phylo_entries
-    if not entries:
-        return None
-    idx = self.phylo_cursor
-    if 0 <= idx < len(entries):
-        return entries[idx]
+_VIEW_KEYS = {
+    ord("1"): (0, "Phylogenetic Tree"),
+    ord("2"): (1, "Conserved Motifs"),
+    ord("3"): (2, "Rule Diff (select two rules)"),
+    ord("4"): (3, "Lineage Trace"),
+    ord("5"): (4, "Rule Families"),
+}
+
+
+def _tree_nodes(node):
+    """List tree nodes in the order _render_tree prints them."""
+    if node is None:
+        return []
+    nodes = [node]
+    for child in node["children"]:
+        nodes.extend(_tree_nodes(child))
+    return nodes
+
+
+def _move_cursor(self, delta):
+    """Move the cursor of the current view, staying inside its list."""
+    if self.phylo_view == 0:
+        n = len(self.phylo_tree_lines)
+        self.phylo_tree_cursor = max(0, min(n - 1, self.phylo_tree_cursor + delta))
+        return
+    n = {1: len(self.phylo_motifs), 2: len(self.phylo_entries),
+         3: len(self.phylo_lineage)}.get(self.phylo_view, 0)
+    self.phylo_cursor = max(0, min(n - 1, self.phylo_cursor + delta))
+
+
+def _selected_label(self):
+    """Return the rule label under the cursor, or None."""
+    view, cur = self.phylo_view, self.phylo_cursor
+    if view == 0:
+        nodes = _tree_nodes(self.phylo_tree)
+        if 0 <= self.phylo_tree_cursor < len(nodes):
+            entry = nodes[self.phylo_tree_cursor]["entry"]
+            if entry:
+                return entry.get("label", "B3/S23")
+    elif view == 1 and 0 <= cur < len(self.phylo_motifs):
+        examples = self.phylo_motifs[cur]["examples"]
+        return examples[0] if examples else None
+    elif view == 2 and 0 <= cur < len(self.phylo_entries):
+        return self.phylo_entries[cur].get("label", "B3/S23")
+    elif view == 3 and 0 <= cur < len(self.phylo_lineage):
+        return self.phylo_lineage[cur]["child"]
     return None
 
 
@@ -828,9 +853,12 @@ def _draw_tree_view(self, start_y, height, max_x):
             pass
         return
 
-    # Clamp scroll
-    max_scroll = max(0, len(lines) - height)
-    self.phylo_scroll = min(self.phylo_scroll, max_scroll)
+    # Keep the cursor line visible.
+    rows = max(1, height - 1)
+    if self.phylo_tree_cursor < self.phylo_scroll:
+        self.phylo_scroll = self.phylo_tree_cursor
+    elif self.phylo_tree_cursor >= self.phylo_scroll + rows:
+        self.phylo_scroll = self.phylo_tree_cursor - rows + 1
 
     try:
         self.stdscr.addstr(start_y, 1, "Phylogenetic Tree (UPGMA clustering)",
@@ -878,7 +906,8 @@ def _draw_motifs_view(self, start_y, height, max_x):
                            curses.color_pair(7) | curses.A_BOLD)
         y = start_y + 1
         total = len(self.phylo_entries) or 1
-        for i, mc in enumerate(motifs):
+        first = max(0, self.phylo_cursor - max(1, (height - 1) // 4) + 1)
+        for i, mc in enumerate(motifs[first:], first):
             if y >= start_y + height - 1:
                 break
             m = mc["motif"]
