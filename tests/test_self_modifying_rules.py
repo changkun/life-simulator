@@ -82,3 +82,16 @@ def test_step_fn_births_and_deaths():
     new_alive, new_age, stats = _smr_step_fn(alive, age, rows, cols, 0.0)
     # With a 3x3 block, some cells survive and some new births should appear
     assert stats["total_alive"] > 0
+
+
+def test_randomize_refreshes_stats():
+    """Randomizing the grid recounts alive cells and species."""
+    app = _make_app()
+    with patch("life.modes.self_modifying_rules._init_smr_colors"):
+        app._smr_init(0)
+    app._smr_step()
+    app._smr_randomize()
+    alive = sum(g is not None for row in app.smr_alive for g in row)
+    assert app.smr_stats["total_alive"] == alive
+    assert app.smr_peak_species == len(app.smr_stats["species_count"])
+    assert app.smr_stats["births"] == 0

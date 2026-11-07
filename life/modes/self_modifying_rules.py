@@ -294,6 +294,28 @@ def _exit_smr_mode(self):
     self._flash("Self-Modifying Rules mode OFF")
 
 
+def _smr_reset_stats(self):
+    """Clear the history and recount the species on the current grid."""
+    species = {}
+    total = 0
+    for row in self.smr_alive:
+        for g in row:
+            if g is not None:
+                species[g] = species.get(g, 0) + 1
+                total += 1
+    self.smr_stats = {
+        "species_count": species,
+        "births": 0,
+        "deaths": 0,
+        "mutations": 0,
+        "total_alive": total,
+    }
+    self.smr_total_mutations = 0
+    self.smr_peak_species = len(species)
+    self.smr_species_history = []
+    self.smr_pop_history = []
+
+
 def _smr_init(self, preset_idx):
     """Initialize simulation from a preset."""
     _init_smr_colors()
@@ -312,32 +334,9 @@ def _smr_init(self, preset_idx):
     self.smr_mutation_rate = mutation_rate
     self.smr_density = density
     self.smr_running = False
-    self.smr_stats = {
-        "species_count": {},
-        "births": 0,
-        "deaths": 0,
-        "mutations": 0,
-        "total_alive": 0,
-    }
-    self.smr_total_mutations = 0
-    self.smr_peak_species = 0
-    self.smr_species_history = []
-    self.smr_pop_history = []
+    _smr_reset_stats(self)
     self.smr_speed_mult = 1
     self.smr_preset_name = name
-
-    # Count initial state
-    species = {}
-    total = 0
-    for r in range(self.smr_rows):
-        for c in range(self.smr_cols):
-            g = self.smr_alive[r][c]
-            if g is not None:
-                species[g] = species.get(g, 0) + 1
-                total += 1
-    self.smr_stats["species_count"] = species
-    self.smr_stats["total_alive"] = total
-    self.smr_peak_species = len(species)
 
     self.smr_menu = False
     self.smr_mode = True
@@ -374,10 +373,7 @@ def _smr_randomize(self):
         self.smr_rows, self.smr_cols, genomes, self.smr_density
     )
     self.smr_generation = 0
-    self.smr_total_mutations = 0
-    self.smr_peak_species = 0
-    self.smr_species_history = []
-    self.smr_pop_history = []
+    _smr_reset_stats(self)
 
 
 def _handle_smr_menu_key(self, key):
