@@ -1,15 +1,4 @@
-"""Mode: perc — Percolation Theory & Critical Phenomena simulation.
-
-Site/bond percolation on a 2D lattice with real-time cluster identification,
-order-parameter tracking (spanning probability, largest-cluster fraction),
-and fractal geometry at the critical threshold.
-
-Emergent phenomena:
-  - Sharp phase transition at p_c ≈ 0.5927 (site) / 0.5 (bond)
-  - Fractal cluster geometry at criticality
-  - Power-law cluster-size distribution
-  - Universality class behavior
-"""
+"""Percolation Theory & Critical Phenomena — site, bond, invasion, directed, bootstrap and continuum percolation with live cluster statistics."""
 import curses
 import math
 import random
@@ -101,18 +90,9 @@ def _perc_build_clusters(self):
                 # Down neighbor via vertical bond
                 if r + 1 < rows and grid[r + 1][c] and vbonds[r][c]:
                     uf.union(idx, (r + 1) * cols + c)
-    elif preset_id == "directed":
-        for r in range(rows):
-            for c in range(cols):
-                if not grid[r][c]:
-                    continue
-                idx = r * cols + c
-                # Only connect downward and right (directed)
-                if c + 1 < cols and grid[r][c + 1]:
-                    uf.union(idx, idx + 1)
-                if r + 1 < rows and grid[r + 1][c]:
-                    uf.union(idx, (r + 1) * cols + c)
     else:
+        # Site-type clusters: each pair of adjacent occupied sites is visited
+        # once, from its top or left member.
         for r in range(rows):
             for c in range(cols):
                 if not grid[r][c]:
@@ -679,6 +659,8 @@ def _draw_perc(self, max_y: int, max_x: int):
             hint = f" {self.message}"
         else:
             hint = " [Space]=play [n]=step [p/P]=±p [c]=p_c [+/-]=Δp [r]=reset [R]=menu [q]=exit"
+            if self.perc_preset_id == "bootstrap":
+                hint += " [k/K]=±k"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
