@@ -126,39 +126,44 @@ Contact force between grains i and j (if overlapping):
     Apply equal and opposite forces to i and j.
 
 Wall collisions:
-    Axis-aligned walls: same Hertzian + friction formulation
+    Axis-aligned walls: Hertzian normal force k * overlap^1.5, plus friction
+        mu * F_n opposing the sliding velocity (no dashpot; the ceiling has no friction)
     Line-segment walls (hopper funnel): project particle center onto segment,
         compute overlap from closest point, apply normal + friction forces
 
 Velocity and position update (symplectic Euler):
-    a = gravity + F_contact / mass + shake_oscillation
+    a = gravity + F_contact / mass + shake_offset / mass
     v_new = (v + a) * (1 - damping)
     |v_new| clamped to 3.0
     r_new = r + v_new
     Hard boundary clamp with restitution coefficient
 
-Shaking (Brazil nut):
-    shake_offset = A * sin(gen * ω * 2π)         (sinusoidal vertical oscillation)
+Shaking (Brazil Nut Effect preset):
+    shake_offset = A * sin(gen * ω * 2π)         (vertical force term)
 
-Drum rotation:
-    gravity direction rotates: θ += ω_drum per step
+Drum rotation (Drum Rotation preset):
+    gravity direction rotates: θ += 0.01 per step
     g_r = |g| * cos(θ),  g_c = |g| * sin(θ)
 ```
 
-Force chain visualization accumulates contact force magnitudes on a grid with 0.7× decay per step for visual persistence.
+The Force Chains view shows the largest normal force at each contact midpoint, decayed by 0.7 per step so the pattern persists.
 
 ### Presets
 
-- **Hopper Flow**: Funnel geometry with converging walls and a narrow outlet. Grains arch and clog at the aperture — tilt gravity laterally (t/T) to restart flow. Demonstrates the Beverloo scaling law for granular discharge and the intermittent clog-flow transition.
-- **Avalanche Slope**: Sandpile initialized near the angle of repose. Adding grains (click) triggers cascading avalanches with power-law size distributions characteristic of self-organized criticality (Bak-Tang-Wiesenfeld).
-- **Brazil Nut Effect**: Mixed small and large grains under vertical shaking. Large grains (shown as yellow diamonds) migrate to the surface via granular convection cells — the same mechanism that sorts breakfast cereal in the box.
-- **Force Chain Network**: Densely packed grains under strong gravity with high stiffness. Switch to Force Chains view (v) to see the branching stress network — bright filaments carry most of the load while many grains bear almost none, as observed in photoelastic disk experiments.
-- **Granular Gas**: Dilute inelastic particles with no gravity and high restitution. Exhibits clustering instability — initially uniform particles spontaneously form dense clumps separated by voids, driven by the inelastic collapse mechanism where energy dissipation concentrates particles.
-- **Drum Rotation**: Grains in a container with slowly rotating gravity direction, modeling a rotating drum. Produces radial segregation (large grains migrate outward), avalanching surface flow, and S-shaped dynamic angle of repose.
+- **Hopper Flow**: Funnel of two converging walls with a narrow outlet. Grains can arch and clog at the aperture; tilt gravity sideways (`t`/`T`) to restart flow.
+- **Avalanche Slope**: A pile of grains at the bottom centre, settling toward the angle of repose. Add grains with a click to trigger avalanches, as in self-organized criticality models (Bak-Tang-Wiesenfeld).
+- **Brazil Nut Effect**: Mixed small and large grains under vertical shaking. Large grains (yellow diamonds) tend to rise to the surface through granular convection.
+- **Force Chain Network**: Densely packed grains under strong gravity with high stiffness. Switch to the Force Chains view (`v`) to see the stress network: a few contacts carry most of the load while many grains bear almost none.
+- **Granular Gas**: Dilute, highly elastic grains (restitution 0.9) with no gravity and random initial velocities. Dissipation can cause dense clumps to form, separated by voids.
+- **Drum Rotation**: Grains in a container whose gravity direction rotates slowly, as in a rotating drum. Expect an avalanching surface flow.
+
+### Controls
+
+`v` cycles the view (Grains, Force Chains, Density). `g`/`G` change gravity strength, `t`/`T` tilt gravity sideways, `f`/`F` friction, `e`/`E` restitution, `s`/`S` shake amplitude, and `k`/`K` contact stiffness. `+`/`-` set steps per frame. A mouse click drops 12 grains.
 
 ### What to look for
 
-In **Hopper Flow**, watch for the dramatic transition between free flow and complete arrest — a single arch of 5–8 grains spanning the aperture can halt all flow. Tilting gravity breaks the arch and restarts discharge. In **Force Chain Network**, the force chains view reveals that stress transmission in granular matter is highly heterogeneous: a few branching filaments carry enormous loads while adjacent grains are nearly stress-free. The **Brazil Nut** preset shows convection-driven size segregation developing over ~100 generations of shaking — large grains ride convection cells upward. **Granular Gas** starts uniform but rapidly develops dense clusters separated by expanding voids, a hallmark of inelastic collapse. **Avalanche Slope** demonstrates self-organized criticality: small grain additions produce avalanches spanning a wide range of sizes.
+In **Hopper Flow**, watch free flow give way to complete arrest when an arch forms across the aperture. Tilting gravity can break the arch. In **Force Chain Network**, the Force Chains view shows that stress is carried unevenly: a few branching chains hold large forces while neighbors are nearly stress-free. The **Brazil Nut** preset shows size segregation: large grains work their way upward as the box shakes. **Granular Gas** starts uniform and can develop dense clusters separated by voids. **Avalanche Slope** produces avalanches of varying size when grains are added.
 
 ### References
 
