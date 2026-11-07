@@ -503,6 +503,8 @@ Genetic algorithms (GAs), introduced by John Holland in 1975, optimize by mimick
 Genome: binary string of length L (32, 48, 64, or 128 bits)
 Population: N individuals (10 to 60)
 
+Target: random bits, except OneMax Challenge and Royal Road (all ones)
+
 Fitness functions:
   Standard:   f(genome) = (matching bits with target) / L
   Royal Road:  block_size = 8;  n_blocks = L / 8
@@ -522,17 +524,17 @@ Mutation (per-bit, rate = mutation_rate):
 Elitism: best individual always survives to next generation
 
 Preset configurations:
-  Classic:      L=32,  N=40,  mutation=0.02,  crossover=0.7
-  OneMax:       L=64,  N=50,  mutation=0.015, crossover=0.8
-  Long Strand:  L=128, N=60,  mutation=0.005, crossover=0.7
-  Hyper-Mutate: L=32,  N=40,  mutation=0.10,  crossover=0.6
-  Minimal Pop:  L=48,  N=10,  mutation=0.03,  crossover=0.7
-  Royal Road:   L=64,  N=50,  mutation=0.02,  crossover=0.75
+  Classic Binary GA: L=32,  N=40,  mutation=0.02,  crossover=0.7
+  OneMax Challenge:  L=64,  N=50,  mutation=0.015, crossover=0.8
+  Long Strand:       L=128, N=60,  mutation=0.005, crossover=0.7
+  Hyper-Mutation:    L=32,  N=40,  mutation=0.10,  crossover=0.6
+  Minimal Pop:       L=48,  N=10,  mutation=0.03,  crossover=0.7
+  Royal Road:        L=64,  N=50,  mutation=0.02,  crossover=0.75
 ```
 
 **What to look for**
 
-The fitness history curve reveals the characteristic GA trajectory: rapid initial improvement as easy bits are found, followed by a plateau as the algorithm searches for remaining mismatches. The Hyper-Mutation preset shows how excessive mutation (10%) prevents convergence -- fitness oscillates chaotically. The Minimal Population preset demonstrates genetic drift in small populations. The Royal Road fitness function produces staircase-like jumps as complete 8-bit schema blocks snap into place, illustrating Holland's building block hypothesis.
+The fitness sparkline plots the best fitness of each generation. Elitism keeps it from falling. It typically rises fast while easy bits are found, then slows as the last mismatches are fixed. The Hyper-Mutation preset flips 10% of bits per child, which keeps breaking good genomes and works against convergence. The Minimal Pop preset has only 10 individuals, so drift is strong. The Royal Road fitness function produces staircase-like jumps as complete 8-bit schema blocks snap into place, illustrating Holland's building block hypothesis. `Space` plays, `n` steps one generation, `+`/`-` change the speed, and `i` toggles the info panel.
 
 **References**
 
