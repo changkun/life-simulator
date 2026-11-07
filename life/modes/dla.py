@@ -1,15 +1,10 @@
-"""Mode: dla — simulation mode for the life package."""
+"""Diffusion-Limited Aggregation — random walkers stick to a growing crystal."""
 import curses
 import math
 import random
 import time
 
-
 from life.constants import SPEEDS
-
-# ══════════════════════════════════════════════════════════════════════
-#  Diffusion-Limited Aggregation (DLA) — Mode D
-# ══════════════════════════════════════════════════════════════════════
 
 DLA_PRESETS = [
     # (name, description, setup_key)
@@ -21,9 +16,6 @@ DLA_PRESETS = [
     ("Ring Seed", "Circular ring seed — inward/outward growth", "ring"),
 ]
 
-# Characters for crystal age visualization (oldest -> newest)
-DLA_CRYSTAL_CHARS = ["█", "▓", "▒", "░", "∙"]
-DLA_WALKER_CHAR = "·"
 # Steps without any attachment after which the crystal counts as complete.
 DLA_IDLE_LIMIT = 400
 # A walker that has not attached after DLA_LIFE_PER_CELL moves per grid cell
@@ -46,7 +38,7 @@ DLA_FALLBACK_CLEARANCE = 2
 DLA_RING_CLEARANCE = 2
 
 def _enter_dla_mode(self):
-    """Enter DLA mode — show preset menu."""
+    """Show the Diffusion-Limited Aggregation preset menu."""
     self.dla_menu = True
     self.dla_menu_sel = 0
     self._flash("Diffusion-Limited Aggregation — select a configuration")
@@ -54,7 +46,7 @@ def _enter_dla_mode(self):
 
 
 def _exit_dla_mode(self):
-    """Exit DLA mode."""
+    """Leave Diffusion-Limited Aggregation mode and clear its state."""
     self.dla_mode = False
     self.dla_menu = False
     self.dla_running = False
@@ -65,7 +57,7 @@ def _exit_dla_mode(self):
 
 
 def _dla_init(self, preset_idx: int):
-    """Initialize DLA simulation with the given preset."""
+    """Start Diffusion-Limited Aggregation with the given preset."""
     name, _desc, setup_key = self.DLA_PRESETS[preset_idx]
     self.dla_preset_name = name
     self.dla_generation = 0
@@ -84,7 +76,6 @@ def _dla_init(self, preset_idx: int):
     rows, cols = self.dla_rows, self.dla_cols
     cr, cc = rows // 2, cols // 2
 
-    # Initialize empty grid
     self.dla_grid = [[0] * cols for _ in range(rows)]
     self.dla_seeds = []
     self.dla_walkers = []
@@ -290,7 +281,7 @@ def _dla_reachable(self):
 
 
 def _dla_step(self):
-    """Advance DLA simulation by one step."""
+    """Advance every walker by one move and attach those that touch the crystal."""
     if getattr(self, "dla_complete", False):
         return
     rows, cols = self.dla_rows, self.dla_cols
@@ -403,8 +394,7 @@ def _dla_step(self):
 
 
 def _dla_symmetric_images(self, r: int, c: int):
-    """Return the distinct cells that are images of (r, c) under the preset's
-    symmetry group, the cell itself first.
+    """Return the distinct images of (r, c) under the preset's symmetry, itself first.
 
     Six-fold: the lattice is hexagonal (odd-r offset rows), so the six 60
     degree rotations and the mirror images are exact in cube coordinates --
@@ -479,7 +469,7 @@ def _dla_attach_symmetric(self, r: int, c: int, gen: int):
 
 
 def _handle_dla_menu_key(self, key: int) -> bool:
-    """Handle input in DLA preset menu."""
+    """Handle keys in the preset menu."""
     n = len(self.DLA_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.dla_menu_sel = (self.dla_menu_sel + 1) % n
@@ -495,7 +485,7 @@ def _handle_dla_menu_key(self, key: int) -> bool:
 
 
 def _handle_dla_key(self, key: int) -> bool:
-    """Handle input in active DLA simulation."""
+    """Handle keys while the simulation is active."""
     if key == ord(" "):
         if getattr(self, "dla_complete", False):
             self._flash("Crystal complete — r=restart, R=menu")
@@ -532,7 +522,7 @@ def _handle_dla_key(self, key: int) -> bool:
         self._flash(f"Steps/frame: {self.dla_steps_per_frame}")
     elif key == ord("<") or key == ord(","):
         self.speed_idx = max(0, self.speed_idx - 1)
-    elif key == ord(">") or key == ord("."):
+    elif key == ord(">"):
         self.speed_idx = min(len(SPEEDS) - 1, self.speed_idx + 1)
     elif key in (ord("q"), 27):
         self._exit_dla_mode()
@@ -543,7 +533,7 @@ def _handle_dla_key(self, key: int) -> bool:
 
 
 def _draw_dla_menu(self, max_y: int, max_x: int):
-    """Draw the DLA preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Diffusion-Limited Aggregation ── Select Configuration ──"
     try:
@@ -574,7 +564,7 @@ def _draw_dla_menu(self, max_y: int, max_x: int):
 
 
 def _draw_dla(self, max_y: int, max_x: int):
-    """Draw the active DLA simulation."""
+    """Draw the crystal, walkers, status line and hint bar."""
     self.stdscr.erase()
     grid = self.dla_grid
     rows, cols = self.dla_rows, self.dla_cols
@@ -596,8 +586,6 @@ def _draw_dla(self, max_y: int, max_x: int):
     view_rows = max_y - 3
     view_cols = (max_x - 1) // 2
 
-    # Color palette for crystal age: older=dimmer, newer=brighter
-    # Use color pairs: 1=red, 2=green, 3=yellow, 4=blue, 5=magenta, 6=cyan, 7=white
     max_gen = max(gen, 1)
 
     hexlat = self.dla_symmetry == 6
@@ -607,9 +595,8 @@ def _draw_dla(self, max_y: int, max_x: int):
         for c in range(min(cols, view_cols)):
             val = grid[r][c]
             if val > 0:
-                # Color based on age (when it was attached)
-                age_frac = val / max_gen if max_gen > 0 else 0.0
-                # Older cells: cool colors (blue/cyan), newer: warm (yellow/white)
+                # Older cells are cool and dim, newer ones warm and bright.
+                age_frac = val / max_gen
                 if age_frac < 0.2:
                     cp = 4  # blue (oldest)
                     attr_extra = curses.A_DIM
@@ -626,7 +613,7 @@ def _draw_dla(self, max_y: int, max_x: int):
                     cp = 7  # white (newest)
                     attr_extra = curses.A_BOLD
 
-                # Character based on density of neighbors
+                # Glyph density follows the number of crystal neighbours.
                 neighbors = 0
                 for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                     nr, nc = r + dr, c + dc
@@ -647,7 +634,7 @@ def _draw_dla(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    # Draw walkers (dim dots)
+    # Walkers
     for w in self.dla_walkers:
         wr, wc = w[0], w[1]
         if 0 <= wr < view_rows and 0 <= wc < view_cols:
@@ -677,7 +664,7 @@ def _draw_dla(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [s/S]=sticky+/- [w/W]=walkers+/- [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " [Space]=play [n]=step [s/S]=sticky+/- [w/W]=walkers+/- [+/-]=steps/frame [r]=reset [R]=menu [q]=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
