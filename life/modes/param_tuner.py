@@ -280,6 +280,7 @@ def _toggle_param_tuner(self):
     self.param_tuner_active = not self.param_tuner_active
     if self.param_tuner_active:
         self.param_tuner_params = self._get_tunable_params()
+        self._param_tuner_prefix = self._get_active_mode_prefix()
         self.param_tuner_sel = 0
         if not self.param_tuner_params:
             self.param_tuner_active = False
@@ -296,6 +297,11 @@ def _handle_param_tuner_key(self, key: int) -> bool:
     Returns True if the key was consumed, False otherwise.
     """
     if not self.param_tuner_active:
+        return False
+
+    # The mode changed since the overlay opened; its parameter list is stale.
+    if self._get_active_mode_prefix() != getattr(self, '_param_tuner_prefix', None):
+        self.param_tuner_active = False
         return False
 
     params = self.param_tuner_params
@@ -369,8 +375,8 @@ def _draw_param_tuner_overlay(self, max_y: int, max_x: int):
     if not self.param_tuner_active:
         return
 
-    # Auto-close if mode changed or exited
-    if self._get_active_mode_prefix() is None:
+    # Auto-close if the mode exited or changed
+    if self._get_active_mode_prefix() != getattr(self, '_param_tuner_prefix', None):
         self.param_tuner_active = False
         return
 

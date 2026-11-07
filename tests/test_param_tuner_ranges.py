@@ -59,3 +59,23 @@ def test_descriptor_well_formed(prefix, p):
         assert all(isinstance(p[k], int) for k in ("min", "max", "step"))
     else:
         format(1.0, p["fmt"])  # raises on a bad format spec
+
+
+def test_overlay_closes_when_mode_changes():
+    """Keys must not edit the previous mode's parameters after a mode switch."""
+    from life.modes.param_tuner import register
+    from tests.conftest import make_mock_app
+
+    app = make_mock_app()
+    register(type(app))
+    app.wave_mode = True
+    app.wave_c = 0.2
+    app.param_tuner_active = False
+    app._toggle_param_tuner()
+    assert app.param_tuner_active
+
+    app.wave_mode = False
+    app.ising_mode = True
+    assert app._handle_param_tuner_key(ord("l")) is False
+    assert app.param_tuner_active is False
+    assert app.wave_c == 0.2
