@@ -65,3 +65,13 @@ def test_skip_feeds_period_detectors_and_scores():
     assert app.adisco_sim_step == app.adisco_eval_steps
     assert all(d.hashes for d in app.adisco_period_detectors)
     assert all("total" in f for f in app.adisco_fitness)
+
+
+def test_crossover_density_stays_in_range():
+    from life.modes.auto_discovery import _crossover
+    low = {"birth": {3}, "survival": {2}, "neighborhood": "moore",
+           "density": 0.02, "seed_style": "random"}
+    high = dict(low, density=0.6)
+    for _ in range(500):
+        for pair in ((low, low), (high, high)):
+            assert 0.02 <= _crossover(*pair)["density"] <= 0.6

@@ -74,7 +74,7 @@ def _crossover(g1, g2):
         "birth": child_birth,
         "survival": child_survival,
         "neighborhood": g1["neighborhood"] if random.random() < 0.5 else g2["neighborhood"],
-        "density": (g1["density"] + g2["density"]) / 2 + random.gauss(0, 0.03),
+        "density": max(0.02, min(0.6, (g1["density"] + g2["density"]) / 2 + random.gauss(0, 0.03))),
         "seed_style": g1["seed_style"] if random.random() < 0.5 else g2["seed_style"],
     }
 
