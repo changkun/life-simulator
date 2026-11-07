@@ -80,7 +80,7 @@ dtheta_i/dt = omega_i + (K/4) * sum_j sin(theta_j - theta_i) + noise
   omega_i  — natural frequency, drawn from N(0, freq_spread)
   K        — coupling strength (0.0 to 10.0)
   sum_j    — over 4 nearest neighbors (von Neumann neighborhood, periodic)
-  noise    — Gaussian noise with amplitude noise_amp
+  noise    — Gaussian noise with amplitude noise_amp (0.0 to 5.0)
   dt       — integration time step (0.01 to 0.5)
 
 Order parameter:
@@ -90,7 +90,7 @@ Order parameter:
 
 Natural frequencies are drawn from a Gaussian distribution. Special initializations include linear phase gradients (traveling waves), spiral patterns (vortex dynamics), and chimera states (half synchronized, half random with different frequency distributions).
 
-**What to look for** — Watch the order parameter r climb as coupling K increases. With "Gentle Sync" (K=0.5), coherent islands slowly emerge. With "Strong Sync" (K=3.0), global synchronization is rapid. The "Chimera State" preset shows the remarkable coexistence of synchronized and desynchronized regions. Phase is rendered as a rainbow color wheel.
+**What to look for** — Watch the order parameter r climb as coupling K increases. With "Gentle Sync" (K=0.5), coherent islands slowly emerge. With "Strong Sync" (K=3.0), global synchronization is rapid. The "Chimera State" preset starts the left half in phase with a narrow frequency spread and the right half random with a wide one, so synchronized and desynchronized regions coexist. Phase is rendered as a rainbow color wheel.
 
 **References**
 - Kuramoto, Y. "Self-entrainment of a population of coupled nonlinear oscillators," *International Symposium on Mathematical Problems in Theoretical Physics*, Springer, 1975. https://doi.org/10.1007/BFb0013365
