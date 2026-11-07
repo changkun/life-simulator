@@ -391,3 +391,15 @@ def test_no_aurora_leakage():
     import life.modes.orrery as om
     assert not hasattr(om, 'AURORA_PRESETS'), "Stale aurora data in orrery.py"
     assert not hasattr(om, '_AURORA_BANDS'), "Stale aurora data in orrery.py"
+
+
+def test_zoom_clears_stale_trails():
+    app = _make_app()
+    app.orrery_preset_name = "full"
+    app._orrery_init("full")
+    for _ in range(5):
+        app._orrery_step()
+    assert all(p["trail"] for p in app.orrery_planets)
+    app._handle_orrery_key(ord('z'))
+    assert all(p["trail"] == [] for p in app.orrery_planets)
+    assert all(c["trail"] == [] for c in app.orrery_comets)

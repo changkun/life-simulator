@@ -291,6 +291,9 @@ def _handle_orrery_key(self, key: int) -> bool:
             self.orrery_zoom = "outer"
         else:
             self.orrery_zoom = "full"
+        # Trails hold screen cells, which are wrong at the new scale.
+        for body in self.orrery_planets + self.orrery_comets:
+            body["trail"] = []
     elif key == ord('o'):
         self.orrery_show_orbits = not self.orrery_show_orbits
     elif key == ord('l'):
