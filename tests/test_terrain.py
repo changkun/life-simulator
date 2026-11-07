@@ -19,6 +19,13 @@ class TestTerrain:
         assert self.app.terrain_menu is True
         assert self.app.terrain_menu_sel == 0
 
+    def test_menu_keypad_enter_starts(self):
+        import curses
+        self.app._enter_terrain_mode()
+        self.app._handle_terrain_menu_key(curses.KEY_ENTER)
+        assert self.app.terrain_mode is True
+        assert self.app.terrain_menu is False
+
     def test_step_no_crash(self):
         self.app.terrain_mode = True
         self.app._terrain_init(0)

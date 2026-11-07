@@ -292,7 +292,7 @@ def _handle_terrain_menu_key(self, key: int) -> bool:
         self.terrain_menu_sel = (self.terrain_menu_sel + 1) % n
     elif key in (ord("k"), curses.KEY_UP):
         self.terrain_menu_sel = (self.terrain_menu_sel - 1) % n
-    elif key in (ord("\n"), ord("\r")):
+    elif key in (ord("\n"), ord("\r"), curses.KEY_ENTER):
         self._terrain_init(self.terrain_menu_sel)
     elif key in (ord("q"), 27):
         self.terrain_menu = False
