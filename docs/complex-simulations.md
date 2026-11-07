@@ -178,7 +178,7 @@ Presets:           buoyancy  turbulence  cooling  smoke_rate  wind
 
 ## Fireworks
 
-**Background.** This particle system simulates pyrotechnic displays using Newtonian projectile dynamics. Rockets launch upward against gravity, explode at apogee into bursts of sparks following various geometric patterns, and fade with trailing afterimages. The simulation captures the physics of ballistic trajectories, air drag, and gravitational settling that give real fireworks their characteristic arc and droop.
+**Background.** This particle system simulates pyrotechnic displays using Newtonian projectile dynamics. Rockets launch upward against gravity, explode into bursts of sparks in several patterns, and fade with short trails. Ballistic motion, drag, and gravity give the sparks their arc and droop.
 
 **Formulation.** Two entity types are simulated: rockets and spark particles.
 
@@ -203,19 +203,24 @@ Burst patterns:
   Ring:       N=24-40 sparks, angle = 2*pi*i/N, uniform speed
               Optional inner ring at 50% radius
   Willow:     N=40-70 sparks, long life (30-55 ticks), high gravity
-  Crossette:  4-6 sub-rockets that each re-explode as spherical bursts
+  Crossette:  4-6 sub-sparks (life 10-16 ticks) that each re-explode as a
+              spherical burst when they die
 
 Parameters:
-  gravity     — downward acceleration (default 0.05)
-  launch_rate — probability of auto-launch per tick (0.04-0.18)
+  gravity     — downward acceleration (0.04-0.06 in the presets)
+  launch_rate — probability of auto-launch per tick (0.04-0.18 in the presets)
   wind        — horizontal drift per tick
-  fuse        — random height in [rows/4, rows*2/3]
+  fuse        — ticks before a rocket explodes, random in [rows/4, rows*2/3]
 
-Trail rendering: 6-element position history, oldest entries dimmer
+Trail rendering: 6-element position history for sparks, oldest entries dimmer
 Life fraction:   life / max_life determines spark brightness
 ```
 
-**What to look for.** The Finale preset uses a high launch rate with all burst patterns randomized, creating dense overlapping displays. Willow shells produce long, drooping trails that trace parabolic arcs under high gravity multiplier. Crossette shells create a cascade effect: each sub-rocket travels outward before detonating into its own secondary burst. Increasing gravity shortens burst radius and makes sparks fall faster; wind causes coherent lateral drift across all active particles. Trail rendering creates persistence-of-vision streaks.
+**Presets (6):** Grand Finale, Gentle Evening, Crossette Show, Willow Garden, Ring Parade, Random Mix.
+
+**Controls:** `Space`=play/pause, `n`=step, `f` or `Enter`=launch a rocket, `a`=auto-launch on/off, `g/G`=gravity up/down, `w/W`=wind up/down, `l/L`=launch rate up/down, `+/-` or `>/<`=steps per frame (1-10), `r`=reset, `R`=menu, `q`=exit.
+
+**What to look for.** Grand Finale has the highest launch rate (0.18) and mixes all patterns. Willow shells leave long, drooping trails because their gravity multiplier is higher. Crossette shells cascade: each sub-spark flies outward, then bursts into its own secondary burst. Higher gravity pulls sparks down faster. Wind drifts all active particles sideways. The preset's pattern applies to the three opening rockets and to manual launches. Auto-launched rockets pick a random pattern.
 
 **References.**
 - Reeves, W.T. "Particle Systems -- A Technique for Modeling a Class of Fuzzy Objects." *ACM Transactions on Graphics*, 2(2), 91-108, 1983. https://doi.org/10.1145/357318.357320
