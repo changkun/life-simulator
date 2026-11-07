@@ -1,6 +1,5 @@
-"""Mode: cloth — simulation mode for the life package."""
+"""Cloth Simulation — a Verlet point-mass fabric with pins, wind and tearing."""
 import curses
-import math
 import random
 import time
 
@@ -122,7 +121,6 @@ def _cloth_build_points(self, preset: str):
             self.cloth_points[c][4] = 1.0
 
 
-
 def _cloth_init(self, preset: str):
     """Initialize cloth simulation for a given preset."""
     max_y, max_x = self.stdscr.getmaxyx()
@@ -137,7 +135,6 @@ def _cloth_init(self, preset: str):
     self.cloth_cursor_c = 0
     self.cloth_constraint_iters = 5
     self._cloth_build_points(preset)
-
 
 
 def _cloth_step(self):
@@ -226,12 +223,10 @@ def _cloth_step(self):
     self.cloth_generation += 1
 
 
-
 def _enter_cloth_mode(self):
     """Enter cloth simulation mode."""
     self.cloth_menu = True
     self.cloth_menu_sel = 0
-
 
 
 def _exit_cloth_mode(self):
@@ -241,7 +236,6 @@ def _exit_cloth_mode(self):
     self.cloth_running = False
     self.cloth_points = []
     self.cloth_constraints = []
-
 
 
 def _handle_cloth_menu_key(self, key: int) -> bool:
@@ -262,7 +256,6 @@ def _handle_cloth_menu_key(self, key: int) -> bool:
         self.cloth_preset_name = name
         self._cloth_init(preset_id)
     return True
-
 
 
 def _handle_cloth_key(self, key: int) -> bool:
@@ -342,7 +335,6 @@ def _handle_cloth_key(self, key: int) -> bool:
     return True
 
 
-
 def _draw_cloth_menu(self, max_y: int, max_x: int):
     """Draw the cloth simulation preset selection menu."""
     self.stdscr.erase()
@@ -399,7 +391,6 @@ def _draw_cloth_menu(self, max_y: int, max_x: int):
                            curses.color_pair(6) | curses.A_DIM)
     except curses.error:
         pass
-
 
 
 def _draw_cloth(self, max_y: int, max_x: int):
@@ -515,7 +506,7 @@ def _draw_cloth(self, max_y: int, max_x: int):
     if self.message and time.monotonic() - self.message_time < 3.0:
         hint = f" {self.message}"
     else:
-        hint = " [Space]=play [n]=step [p]=pin [x]=tear [g/G]=grav [w/W]=wind [d/D]=damp [t/T]=tear [R]=menu [q]=exit"
+        hint = " Space=run  n=step  p=pin  x=tear  g/G=grav  w/W=wind  d/D=damp  R=menu  q=exit"
     hint_y = max_y - 2
     try:
         self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
