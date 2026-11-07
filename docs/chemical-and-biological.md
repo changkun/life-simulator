@@ -134,7 +134,7 @@ Parameters:
 
 Cells outside the grid count as not burning (no wrapping). Presets: Classic, Dense Forest, Dry Season, Regrowth, Tinderbox, Savanna, Rainforest, Firestorm, Critical Density and Slow Burn.
 
-**What to look for** — Watch the forest cycle between dense canopy and catastrophic burns. The tree density sparkline at the bottom reveals oscillatory dynamics: long growth phases punctuated by sudden crashes. Raise p_grow (`p`/`P`) to speed recovery; raise p_lightning (`l`/`L`) to trigger more frequent, smaller fires; `a`/`A` change the ash decay. The "Dense Forest" and "Rainforest" presets (high density, rare lightning) produce rare but large fires, the signature of self-organised criticality.
+**What to look for** — Watch the forest cycle between dense canopy and catastrophic burns. The tree density sparkline at the bottom reveals oscillatory dynamics: long growth phases punctuated by sudden crashes. Raise p_grow (`p`/`P`) to speed recovery; raise p_lightning (`l`/`L`) to trigger more frequent, smaller fires; `a`/`A` change the ash decay. Rainforest and Dense Forest have the highest ratio of p_grow to p_lightning (600 and 250; the other presets are 80 or below), the regime where the Background expects a power law of fire sizes.
 
 **References**
 - Drossel, B. & Schwabl, F. "Self-organized critical forest-fire model." *Physical Review Letters* 69 (1992): 1629-1632. https://doi.org/10.1103/PhysRevLett.69.1629
