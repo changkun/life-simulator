@@ -1,31 +1,10 @@
-"""Mode: nuclear_reactor — Nuclear Reactor Physics & Meltdown Dynamics.
+"""Nuclear Reactor Physics & Meltdown Dynamics — PWR core with fission, xenon, thermal hydraulics and accidents.
 
-Simulates a pressurized water reactor (PWR) cross-section with neutron transport,
-fission chain reactions, control rod mechanics, xenon poisoning, thermal hydraulics,
-and failure cascades including loss-of-coolant accidents and core meltdown.
+Models a 2D reactor cross-section: neutron diffusion with delayed neutrons, control rods,
+xenon-135 poisoning, Doppler and void feedback, coolant boiling, LOCA, hydrogen
+generation, fuel melting and corium slumping.
 
-Physics modeled:
-  - Neutron transport & fission: 2D diffusion on fuel/moderator/coolant lattice,
-    U-235 absorption spawning 2-3 daughter neutrons, k-eff from geometry
-  - Control rods: player-adjustable (+/-) neutron absorbers controlling reactivity
-  - Xenon-135 poisoning: fission product buildup suppressing reactivity, dangerous
-    xenon pit rebound on shutdown (Chernobyl mechanism)
-  - Thermal hydraulics: fuel rod heat generation coupled to coolant flow, convective
-    heat transfer, temperature-dependent reactivity feedback
-  - Void coefficient: negative (PWR safe) or positive (RBMK dangerous) feedback
-  - Failure cascades: LOCA, steam void formation, fuel rod melting, hydrogen
-    generation, corium pooling
-
-Three views:
-  1) Reactor cross-section map — fuel rods, control rods, coolant channels,
-     neutron flux density overlay, melted/damaged indicators
-  2) Temperature/pressure heatmap — fuel & coolant temperature with flow vectors,
-     void fraction overlay, containment pressure
-  3) Time-series sparkline graphs — 10 key metrics
-
-Six presets:
-  Normal Power Operation, Control Rod Withdrawal Accident, Xenon Poisoning Restart,
-  Loss-of-Coolant Accident, Station Blackout, Breeder Reactor Fast Spectrum
+Views: 1) cross-section with flux, 2) temperature and void map, 3) metric sparklines.
 """
 
 import curses
@@ -64,7 +43,6 @@ NUCLEAR_REACTOR_PRESETS = [
 # ======================================================================
 
 _NEIGHBORS_4 = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-_NEIGHBORS_8 = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 
 # Cell types
 _CELL_EMPTY = 0
@@ -85,7 +63,6 @@ _SIGMA_ABSORB_ROD = 0.85      # control rod absorption
 _SIGMA_ABSORB_XE = 0.60       # xenon-135 absorption (huge!)
 _SIGMA_SCATTER_MOD = 0.30     # moderator scattering (thermalization)
 _NEUTRON_DIFFUSION = 0.25     # diffusion coefficient
-_NEUTRON_SPEED = 1.0          # normalized speed
 _DELAYED_FRAC = 0.0065        # delayed neutron fraction (beta)
 _DELAYED_DECAY = 0.08         # precursor decay rate
 
@@ -119,12 +96,7 @@ _DECAY_HEAT_HALFLIFE = 300     # ticks for decay heat to halve
 _H2_GEN_TEMP = 0.75           # temperature threshold for Zr-steam reaction
 _H2_GEN_RATE = 0.005          # hydrogen generation rate above threshold
 
-# Containment
-_CONTAINMENT_VOLUME = 1.0
-_CONTAINMENT_FAIL_P = 0.95    # containment failure pressure
-
 _MAX_HIST = 300
-_MAX_NEUTRONS = 2000
 
 
 # ======================================================================
@@ -137,7 +109,6 @@ def _get_reactor_params(preset_id):
         "control_rod_pos": 0.5,       # 0=fully inserted, 1=fully withdrawn
         "void_coeff": _VOID_COEFF_PWR,
         "initial_power": 0.5,
-        "coolant_available": True,
         "pumps_running": True,
         "scram_enabled": True,
         "has_moderator": True,
@@ -145,7 +116,6 @@ def _get_reactor_params(preset_id):
         "initial_iodine": 0.3,
         "decay_heat_level": 0.0,
         "breach_loca": False,
-        "k_eff_target": 1.0,
         "fuel_enrichment": 1.0,
     }
     overrides = {
@@ -173,14 +143,12 @@ def _get_reactor_params(preset_id):
             "control_rod_pos": 0.45,
             "initial_power": 0.5,
             "breach_loca": True,
-            "coolant_available": True,
         },
         "blackout": {
             "control_rod_pos": 0.10,
             "initial_power": 0.08,
             "pumps_running": False,
             "decay_heat_level": 0.06,
-            "coolant_available": True,
         },
         "breeder": {
             "control_rod_pos": 0.55,
@@ -392,7 +360,6 @@ def _nuclear_reactor_step(self):
     damaged = self.nuclear_reactor_damaged
 
     # --- Rebuild control rods each tick ---
-    # First clear old rod cells
     for r in range(rows):
         for c in range(cols):
             if grid[r][c] == _CELL_CONTROL_ROD:
@@ -711,7 +678,7 @@ def _handle_nuclear_reactor_key(self, key):
         # Toggle pumps
         self.nuclear_reactor_pumps = not self.nuclear_reactor_pumps
     elif key == ord("l"):
-        # Trigger LOCA
+        # Toggle LOCA (coolant loss)
         self.nuclear_reactor_loca_active = not self.nuclear_reactor_loca_active
     elif key == ord("r"):
         idx = next((i for i, p in enumerate(NUCLEAR_REACTOR_PRESETS)
@@ -757,7 +724,7 @@ def _draw_nuclear_reactor_menu(self, max_y, max_x):
         except curses.error:
             pass
 
-    hint = " [j/k]=navigate  [Enter]=select  [q]=cancel"
+    hint = " j/k=navigate  Enter=select  q=exit"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:
@@ -877,8 +844,8 @@ def _draw_reactor_crosssection(self, max_y, max_x):
     cool_lvl = self.nuclear_reactor_coolant_level
     pumps = "ON" if self.nuclear_reactor_pumps else "OFF"
     loca = " LOCA!" if self.nuclear_reactor_loca_active else ""
-    status = (f" [v]iew [+/-]rods [s]cram [p]umps:{pumps} [l]oca{loca}"
-              f" | H2={h2:.2f} P={cont_p:.2f} Cool={cool_lvl:.0%} [r]eset [q]uit")
+    status = (f" q=exit  r=reset  v=view  +/-=rods  s=scram  p=pumps:{pumps}  l=loca{loca}"
+              f"  n=step | H2={h2:.2f} P={cont_p:.2f} Cool={cool_lvl:.0%}")
     try:
         self.stdscr.addstr(max_y - 1, 0, status[:max_x - 1], curses.color_pair(7))
     except curses.error:
@@ -960,7 +927,7 @@ def _draw_reactor_thermal(self, max_y, max_x):
     except curses.error:
         pass
 
-    status = f" [v]iew [+/-]rods [s]cram [p]umps [l]oca [r]eset [q]uit"
+    status = " q=exit  r=reset  v=view  +/-=rods  s=scram  p=pumps  l=loca  n=step"
     try:
         self.stdscr.addstr(max_y - 1, 0, status[:max_x - 1], curses.color_pair(7))
     except curses.error:
@@ -1031,7 +998,7 @@ def _draw_reactor_graphs(self, max_y, max_x):
                 except curses.error:
                     pass
 
-    status = " [v]iew [+/-]rods [s]cram [p]umps [l]oca [space]pause [r]eset [q]uit"
+    status = " q=exit  r=reset  v=view  +/-=rods  s=scram  p=pumps  l=loca  Space=pause  n=step"
     try:
         self.stdscr.addstr(max_y - 1, 0, status[:max_x - 1], curses.color_pair(7))
     except curses.error:
