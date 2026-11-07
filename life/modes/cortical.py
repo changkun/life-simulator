@@ -1,26 +1,4 @@
-"""Mode: cortical — Cortical Neural Dynamics & Seizure Propagation.
-
-Simulates a 2D cortical sheet with excitatory/inhibitory (E/I) neuron
-populations using Wilson-Cowan dynamics.  Models emergent neural oscillations
-(theta 4-8 Hz, alpha 8-13 Hz, beta 13-30 Hz, gamma 30-80 Hz), GABAergic
-inhibition, STDP synaptic plasticity, focal seizure initiation from E/I
-imbalance, seizure wavefront propagation, spreading cortical depression,
-and anticonvulsant drug mechanics.
-
-Wilson-Cowan population model:
-  tau_E * dE/dt = -E + S(w_EE*E - w_IE*I + I_ext + noise)
-  tau_I * dI/dt = -I + S(w_EI*E - w_II*I + noise)
-where S(x) = 1/(1+exp(-a*(x-theta))) is a sigmoid transfer function.
-
-Three views:
-  1) Cortical activation map — E/I cell coloring with wavefront glyphs
-  2) Real-time multi-channel EEG strip with frequency band decomposition
-  3) Time-series sparkline graphs — 10 metrics
-
-Six presets:
-  Normal Resting State, Gamma Burst Working Memory, Focal Seizure Onset,
-  Generalized Tonic-Clonic, Spreading Depression, Drug Intervention
-"""
+"""Cortical Neural Dynamics & Seizure Propagation — a Wilson-Cowan excitatory/inhibitory cortical sheet."""
 import curses
 import math
 import random
@@ -92,7 +70,6 @@ _STDP_MIN_W = 2.0    # min weight
 # Spreading depression
 _CSD_SPEED = 0.04    # CSD wave propagation coefficient
 _CSD_DURATION = 60   # ticks of suppression after CSD wave passes
-_CSD_RECOVERY = 120  # full recovery ticks
 
 # Drug parameters
 _DRUG_DIFFUSION = 0.08     # drug field diffusion rate
@@ -126,14 +103,14 @@ def _sigmoid(x, a=_SIG_A, theta=_SIG_THETA):
 # ======================================================================
 
 def _enter_cortical_mode(self):
-    """Enter cortical neural dynamics mode — show preset menu."""
+    """Enter Cortical Neural Dynamics mode and show the preset menu."""
     self.cortical_mode = True
     self.cortical_menu = True
     self.cortical_menu_sel = 0
 
 
 def _exit_cortical_mode(self):
-    """Exit cortical mode."""
+    """Exit Cortical Neural Dynamics mode and drop its state."""
     self.cortical_mode = False
     self.cortical_menu = False
     self.cortical_running = False
@@ -150,7 +127,7 @@ def _exit_cortical_mode(self):
 # ======================================================================
 
 def _cortical_init(self, preset_idx: int):
-    """Initialize cortical simulation for chosen preset."""
+    """Start the cortical simulation with the chosen preset."""
     name, _desc, pid = CORTICAL_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(16, max_y - 4)
@@ -190,9 +167,6 @@ def _cortical_init(self, preset_idx: int):
 
     # STDP: last spike times for E population
     self.cortical_last_spike_E = [[-999] * cols for _ in range(rows)]
-
-    # Phase tracking for oscillation detection
-    self.cortical_phase_acc = [[0.0] * cols for _ in range(rows)]
 
     # EEG channels — electrodes placed across cortex
     self.cortical_eeg = [[] for _ in range(_EEG_CHANNELS)]
@@ -330,7 +304,7 @@ def _cortical_apply_preset(self, pid, rows, cols):
 # ======================================================================
 
 def _cortical_step(self):
-    """One tick of cortical neural dynamics simulation."""
+    """Advance the cortical simulation by one tick."""
     rows = self.cortical_rows
     cols = self.cortical_cols
     E = self.cortical_E
@@ -582,7 +556,6 @@ def _cortical_record_metrics(self, seizure_count, csd_count):
     total = rows * cols
     sum_e = 0.0
     sum_i = 0.0
-    sum_sync = 0.0
 
     for r in range(rows):
         for c in range(cols):
@@ -641,7 +614,7 @@ def _cortical_record_metrics(self, seizure_count, csd_count):
 # ======================================================================
 
 def _handle_cortical_menu_key(self, key: int) -> bool:
-    """Handle keys in preset menu."""
+    """Handle keys in the preset menu."""
     if key == curses.KEY_UP or key == ord('k'):
         self.cortical_menu_sel = (self.cortical_menu_sel - 1) % len(CORTICAL_PRESETS)
         return True
@@ -659,7 +632,7 @@ def _handle_cortical_menu_key(self, key: int) -> bool:
 
 
 def _handle_cortical_key(self, key: int) -> bool:
-    """Handle keys during simulation."""
+    """Handle keys in the running simulation."""
     if key == ord(' '):
         self.cortical_running = not self.cortical_running
         return True
@@ -690,14 +663,14 @@ def _handle_cortical_key(self, key: int) -> bool:
         self.cortical_menu = True
         self.cortical_menu_sel = 0
         return True
-    if key == ord('q'):
+    if key == ord('q') or key == 27:
         self._exit_cortical_mode()
         return True
     return False
 
 
 def _cortical_apply_drug(self):
-    """Apply GABAergic anticonvulsant — flood drug field from center."""
+    """Apply the GABAergic anticonvulsant, peaking at the center."""
     rows = self.cortical_rows
     cols = self.cortical_cols
     cr, cc = rows // 2, cols // 2
@@ -747,7 +720,7 @@ def _draw_cortical_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hint = "[up/dn] select  [Enter] start  [q] back"
+    hint = "j/k=navigate  Enter=start  q/Esc=exit"
     try:
         self.stdscr.addstr(max_y - 2, max(0, (max_x - len(hint)) // 2), hint,
                            curses.color_pair(7))
@@ -871,7 +844,7 @@ def _draw_cortical_cortex(self, max_y: int, max_x: int):
 
     status = (f" {self.cortical_preset_name} | tick {gen} | E/I:{ei:.2f} | "
               f"seizure:{sz:.1f}%{phase_str}{drug_str} | "
-              f"[v]iew [g]ABA [space]pause [r]estart [q]uit")
+              f"v=view  g=drug  Space=pause  n=step  +/-=speed  r=restart  q=exit")
     try:
         self.stdscr.addstr(max_y - 2, 0, status[:max_x - 1],
                            curses.color_pair(7) | curses.A_BOLD)
@@ -987,7 +960,7 @@ def _draw_cortical_eeg(self, max_y: int, max_x: int):
                 break
 
     # Status
-    status = "[v]iew [g]ABA [space]pause [r]estart [q]uit"
+    status = "v=view  g=drug  Space=pause  n=step  +/-=speed  r=restart  q=exit"
     try:
         self.stdscr.addstr(max_y - 1, 2, status[:max_x - 3], curses.color_pair(7))
     except curses.error:
@@ -1060,7 +1033,7 @@ def _draw_cortical_graphs(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    status = "[v]iew [g]ABA [space]pause [r]estart [q]uit"
+    status = "v=view  g=drug  Space=pause  n=step  +/-=speed  r=restart  q=exit"
     try:
         self.stdscr.addstr(max_y - 1, 2, status[:max_x - 3], curses.color_pair(7))
     except curses.error:
