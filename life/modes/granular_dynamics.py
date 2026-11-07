@@ -1,6 +1,4 @@
-"""Mode: granular_dynamics — 2D granular material simulation with contact forces,
-friction, jamming transitions, force chains, avalanche cascades, and granular
-convection (Brazil nut effect)."""
+"""Granular Dynamics — 2D grains with contact forces and friction: jamming, force chains, avalanches."""
 import curses
 import math
 import random
@@ -40,7 +38,7 @@ _DENSITY_CHARS = ["  ", "· ", "░░", "▒▒", "▓▓", "██"]
 
 
 def _grain_color(force_mag, is_large=False):
-    """Map contact force magnitude to color pair."""
+    """Map contact force to a color pair."""
     if is_large:
         return 3  # yellow for large grains
     if force_mag < 0.1:
@@ -89,14 +87,14 @@ def _force_char(force_mag):
 
 # ── Lifecycle ────────────────────────────────────────────────────────────
 def _enter_granular_mode(self):
-    """Enter Granular Dynamics mode — show preset menu."""
+    """Show the Granular Dynamics preset menu."""
     self.granular_menu = True
     self.granular_menu_sel = 0
     self._flash("Granular Dynamics — select a configuration")
 
 
 def _exit_granular_mode(self):
-    """Exit Granular Dynamics mode."""
+    """Leave Granular Dynamics mode and clear its state."""
     self.granular_mode = False
     self.granular_menu = False
     self.granular_running = False
@@ -106,7 +104,7 @@ def _exit_granular_mode(self):
 
 
 def _granular_init(self, preset_idx: int):
-    """Initialize simulation with chosen preset."""
+    """Start Granular Dynamics with the given preset."""
     name, _desc, kind = self.GRANULAR_PRESETS[preset_idx]
     self.granular_preset_name = name
     self.granular_kind = kind
@@ -267,8 +265,11 @@ def _granular_init(self, preset_idx: int):
 
 # ── Simulation step ─────────────────────────────────────────────────────
 def _granular_step(self):
-    """Advance granular simulation by one timestep using DEM
-    (Discrete Element Method) with Hertzian contact + Coulomb friction."""
+    """Advance the grains by one step.
+
+    Uses the discrete element method with Hertzian contacts and regularized
+    Coulomb friction.
+    """
     particles = self.granular_particles
     n = len(particles)
     rows = self.granular_rows
@@ -508,7 +509,7 @@ def _granular_step(self):
 
 def _wall_collision(pr, pc, vr, vc, rad, wr1, wc1, wr2, wc2,
                     stiff, mu, fr_arr, fc_arr, idx):
-    """Compute collision between a particle and a line-segment wall."""
+    """Add the force from a line-segment wall on one particle."""
     # Vector along wall
     wr = wr2 - wr1
     wc = wc2 - wc1
@@ -548,7 +549,7 @@ def _wall_collision(pr, pc, vr, vc, rad, wr1, wc1, wr2, wc2,
 
 # ── Input handling ───────────────────────────────────────────────────────
 def _handle_granular_menu_key(self, key: int) -> bool:
-    """Handle input in Granular Dynamics preset menu."""
+    """Handle keys in the preset menu."""
     n = len(self.GRANULAR_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.granular_menu_sel = (self.granular_menu_sel + 1) % n
@@ -563,7 +564,7 @@ def _handle_granular_menu_key(self, key: int) -> bool:
 
 
 def _handle_granular_key(self, key: int) -> bool:
-    """Handle input in active Granular Dynamics simulation."""
+    """Handle keys while the simulation is active."""
     if key == ord(" "):
         self.granular_running = not self.granular_running
     elif key in (ord("n"), ord(".")):
@@ -623,7 +624,7 @@ def _handle_granular_key(self, key: int) -> bool:
         self._flash(f"Steps/frame: {self.granular_steps_per_frame}")
     elif key == ord("<") or key == ord(","):
         self.speed_idx = max(0, self.speed_idx - 1)
-    elif key == ord(">") or key == ord("."):
+    elif key == ord(">"):
         self.speed_idx = min(len(SPEEDS) - 1, self.speed_idx + 1)
     elif key == curses.KEY_MOUSE:
         try:
@@ -656,7 +657,7 @@ def _handle_granular_key(self, key: int) -> bool:
 
 # ── Drawing ──────────────────────────────────────────────────────────────
 def _draw_granular_menu(self, max_y: int, max_x: int):
-    """Draw the Granular Dynamics preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Granular Dynamics ── Select Configuration ──"
     try:
@@ -686,7 +687,7 @@ def _draw_granular_menu(self, max_y: int, max_x: int):
 
 
 def _draw_granular(self, max_y: int, max_x: int):
-    """Draw the active Granular Dynamics simulation."""
+    """Draw the grains, status line and hint bars."""
     self.stdscr.erase()
     particles = self.granular_particles
     rows = self.granular_rows
@@ -836,7 +837,7 @@ def _draw_granular(self, max_y: int, max_x: int):
     # Bottom line
     bot_y = max_y - 1
     if bot_y > 0:
-        bot = f" steps/frame={self.granular_steps_per_frame}  |  [+/-]=steps/frame  [</>]=delay  [k/K]=stiffness  [R]=menu"
+        bot = f" steps/frame={self.granular_steps_per_frame}  |  [+/-]=steps/frame  [</>]=speed  [k/K]=stiffness  [R]=menu"
         try:
             self.stdscr.addstr(bot_y, 0, bot[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
@@ -844,7 +845,7 @@ def _draw_granular(self, max_y: int, max_x: int):
 
 
 def _draw_wall_segment(self, wall, view_rows, view_cols):
-    """Draw a wall segment on screen using Bresenham-style line."""
+    """Draw a wall segment as a line of blocks."""
     wr1, wc1, wr2, wc2 = wall
     steps = max(abs(wr2 - wr1), abs(wc2 - wc1), 1)
     for s in range(steps + 1):
