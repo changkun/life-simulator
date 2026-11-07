@@ -1,19 +1,4 @@
-"""Mode: hvent — Deep Sea Hydrothermal Vent Ecosystem.
-
-Black smoker chimneys ejecting superheated mineral-rich fluid into frigid
-deep-ocean water, with chemosynthetic bacteria forming the base of a food
-web that includes tube worms, vent shrimp, crabs, and octopuses — all
-without sunlight.
-
-Emergent phenomena:
-  - Chimney growth from mineral precipitation (iron sulfide, calcium sulfate)
-  - Buoyancy-driven thermal plumes with temperature diffusion
-  - Chemosynthetic microbe colonies metabolizing hydrogen sulfide
-  - Symbiotic/grazing/predatory food-web dynamics
-  - Tectonic vent activation/deactivation, fissure opening, chimney collapse
-  - Ocean current drift affecting plume dispersion and larval transport
-  - Bioluminescent creatures glowing in the abyss
-"""
+"""Deep Sea Hydrothermal Vent Ecosystem — black smoker chimneys, thermal plumes and a chemosynthetic food web."""
 import curses
 import math
 import random
@@ -94,14 +79,14 @@ class _VentCreature:
 # ══════════════════════════════════════════════════════════════════════
 
 def _enter_hvent_mode(self):
-    """Enter the hydrothermal vent ecosystem mode (show preset menu)."""
+    """Enter Deep Sea Hydrothermal Vent Ecosystem and show the preset menu."""
     self.hvent_mode = True
     self.hvent_menu = True
     self.hvent_menu_sel = 0
 
 
 def _exit_hvent_mode(self):
-    """Exit hydrothermal vent mode."""
+    """Exit Deep Sea Hydrothermal Vent Ecosystem and free its state."""
     self.hvent_mode = False
     self.hvent_menu = False
     self.hvent_running = False
@@ -118,8 +103,8 @@ def _exit_hvent_mode(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _hvent_init(self, preset_idx: int):
-    """Initialize vent simulation for the chosen preset."""
-    name, desc, pid = HVENT_PRESETS[preset_idx]
+    """Initialize the simulation for a preset."""
+    name, _desc, pid = HVENT_PRESETS[preset_idx]
     self.hvent_preset_name = name
     self.hvent_preset_id = pid
     self.hvent_preset_idx = preset_idx
@@ -127,7 +112,6 @@ def _hvent_init(self, preset_idx: int):
     max_y, max_x = self.stdscr.getmaxyx()
     self.hvent_rows = max(20, max_y - 4)
     self.hvent_cols = max(40, max_x - 1)
-    rows, cols = self.hvent_rows, self.hvent_cols
 
     self.hvent_generation = 0
     self.hvent_view = "ecosystem"   # ecosystem, thermal, chemistry
@@ -373,7 +357,7 @@ def _hvent_make_fauna(self):
 
 
 def _hvent_update_stats(self):
-    """Recount statistics."""
+    """Recount chimney, mineral, vent and fauna totals."""
     rows, cols = self.hvent_rows, self.hvent_cols
     chimney = mineral = 0
     for r in range(rows):
@@ -394,7 +378,7 @@ def _hvent_update_stats(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _hvent_step(self):
-    """Advance the hydrothermal vent simulation by one tick."""
+    """Advance the simulation by one tick."""
     rows, cols = self.hvent_rows, self.hvent_cols
     tiles = self.hvent_tiles
     temp = self.hvent_temperature
@@ -660,13 +644,10 @@ def _hvent_step(self):
         # ── Crab behavior ──
         elif f.kind == FAUNA_CRAB:
             # Scavenge / eat microbes, mussels, dead things
-            neighbors = fauna_grid.get((r, c), [])
-            ate = False
-            for other in neighbors:
+            for other in fauna_grid.get((r, c), []):
                 if other.kind in (FAUNA_MICROBE, FAUNA_MUSSEL) and other.energy > 0:
                     f.energy += 0.2
                     other.energy -= 0.5
-                    ate = True
                     break
             f.energy -= 0.012
             # Wander along seafloor
@@ -755,7 +736,7 @@ def _hvent_step(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _handle_hvent_menu_key(self, key):
-    """Handle key input on the preset selection menu."""
+    """Handle a key press in the preset menu."""
     if key in (curses.KEY_UP, ord('k')):
         self.hvent_menu_sel = (self.hvent_menu_sel - 1) % len(HVENT_PRESETS)
     elif key in (curses.KEY_DOWN, ord('j')):
@@ -767,7 +748,7 @@ def _handle_hvent_menu_key(self, key):
 
 
 def _handle_hvent_key(self, key):
-    """Handle key input during simulation."""
+    """Handle a key press during the simulation."""
     if key == ord(' '):
         self.hvent_running = not self.hvent_running
     elif key in (ord('n'), ord('.')):
@@ -835,7 +816,7 @@ def _draw_hvent_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 3
     hints = [
-        " [↑/↓] Navigate   [Enter] Select   [q/Esc] Back",
+        " ↑/↓=select  Enter=start  q=back",
         " Chemosynthetic ecosystems in the deep ocean abyss",
     ]
     for i, h in enumerate(hints):
@@ -894,10 +875,10 @@ def _draw_hvent(self, max_y: int, max_x: int):
     hint_y = max_y - 1
     if hint_y > 0:
         now = time.monotonic()
-        if hasattr(self, 'message') and self.message and now - self.message_time < 3.0:
+        if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [v]=view [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  r=reset  R=menu  q=exit  v=view  +/-=speed"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -1136,7 +1117,7 @@ def _draw_hvent_chemistry(self, max_y: int, max_x: int):
 # ══════════════════════════════════════════════════════════════════════
 
 def register(App):
-    """Register hydrothermal vent mode methods on the App class."""
+    """Register Deep Sea Hydrothermal Vent Ecosystem methods on the App class."""
     App.HVENT_PRESETS = HVENT_PRESETS
     App._enter_hvent_mode = _enter_hvent_mode
     App._exit_hvent_mode = _exit_hvent_mode
