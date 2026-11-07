@@ -184,7 +184,7 @@ The eight presets are Seasonal Flu, COVID-like, Deadly Plague, Measles, Reinfect
 
 ## Lotka-Volterra
 
-**Background** — The Lotka-Volterra predator-prey model, independently developed by Alfred Lotka (1925) and Vito Volterra (1926), describes the cyclic population dynamics of interacting species. This spatial, agent-based implementation places grass, prey (herbivores), and predators on a grid. Each agent moves, eats, loses energy, reproduces when well-fed, and dies when starved. The emergent population oscillations — prey boom, predator boom, prey crash, predator crash — reproduce the classic Lotka-Volterra cycles without any explicit differential equations.
+**Background** — The Lotka-Volterra predator-prey model, independently developed by Alfred Lotka (1925) and Vito Volterra (1926), describes the cyclic population dynamics of interacting species. This spatial, agent-based implementation places grass, prey (herbivores), and predators on a grid. Each agent moves, eats, loses energy, reproduces when well-fed, and dies when starved. The prey and predator counts rise and fall against each other, in the spirit of the Lotka-Volterra cycles, without any explicit differential equations.
 
 **Formulation** — Three entity types interact on a toroidal grid:
 
@@ -209,18 +209,18 @@ Predators:
     split energy equally, offspring placed at the vacated cell
 
 Parameters (preset ranges):
-  grass_regrow    = steps for grass to regrow (2-12)
-  prey_gain       = energy gained from eating grass (3-6)
-  pred_gain       = energy gained from eating prey (6-10)
-  prey_breed      = energy threshold for prey reproduction (4-8)
-  pred_breed      = energy threshold for predator reproduction (7-14)
+  grass_regrow    = steps for grass to regrow (2-8)
+  prey_gain       = energy gained from eating grass (2-3)
+  pred_gain       = energy gained from eating prey (4-6)
+  prey_breed      = energy threshold for prey reproduction (6-8)
+  pred_breed      = energy threshold for predator reproduction (10-14)
   prey_density    = initial fraction of prey (0.15-0.35)
   pred_density    = initial fraction of predators (0.03-0.15)
 ```
 
 Presets: Classic Oscillation, Predator Boom, Prey Paradise, Fast Dynamics, Sparse Savanna, Dense Jungle, Extinction Edge and Stable Coexistence.
 
-**What to look for** — A stacked bar shows the current share of grass, prey and predators, and the title bar shows the counts. With the current presets both animal populations die out within a few dozen steps, so the classic cycles do not appear yet. The preset menu describes the intent: "Predator Boom" is meant to crash the prey and then the predators, and "Stable Coexistence" to hold long oscillations. Press `g`/`G` to change the grass regrowth time and `p`/`P` the predator breeding threshold; `b`/`B` change the prey breeding threshold. `+`/`-` set the steps per frame and `<`/`>` the speed.
+**What to look for** — A stacked bar shows the current share of grass, prey and predators, and the title bar shows the counts. Both species survive 1000-step runs in every preset, but the counts swing irregularly rather than in clean cycles. Prey usually drop in the first 50 steps from their high starting density. "Extinction Edge" keeps the fewest predators, and on a small terminal "Dense Jungle" can fall to one or two. Press `g`/`G` to change the grass regrowth time and `p`/`P` the predator breeding threshold; `b`/`B` change the prey breeding threshold. `+`/`-` set the steps per frame and `<`/`>` the speed.
 
 **References**
 - Lotka, A. J. *Elements of Physical Biology.* Williams & Wilkins, 1925. https://archive.org/details/elementsofphysic017171mbp

@@ -22,6 +22,12 @@ def _make_tiny_app(rows=5, cols=5):
 def _setup_empty_grid(app, rows=5, cols=5):
     """Initialize LV with an empty grid (all grass, no creatures)."""
     app._lv_init(0)
+    # Pin the rates so these rule tests do not depend on the preset values.
+    app.lv_grass_regrow = 5
+    app.lv_prey_gain = 4
+    app.lv_pred_gain = 8
+    app.lv_prey_breed = 6
+    app.lv_pred_breed = 10
     # Override grid dimensions and clear everything
     app.lv_rows = rows
     app.lv_cols = cols
@@ -554,3 +560,13 @@ class TestAllPresetsRun:
             self.app._lv_record_counts()
         assert len(self.app.lv_counts) == 1000
         assert self.app.lv_counts[-1] == self.app.lv_counts[0]
+
+    def test_every_preset_keeps_both_species_for_400_steps(self):
+        """No preset may die out: prey and predators survive a long run."""
+        for i, preset in enumerate(self.app.LV_PRESETS):
+            random.seed(7 + i)
+            self.app._lv_init(i)
+            for _ in range(400):
+                self.app._lv_step()
+            _grass, prey, pred = self.app.lv_counts[-1]
+            assert prey > 0 and pred > 0, preset[0]
