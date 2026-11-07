@@ -295,6 +295,8 @@ def _enter_labyrinth_mode(self):
     self.labyrinth_deaths = 0
     self.labyrinth_score = 0
     self.labyrinth_show_help = False
+    self.labyrinth_rule_idx = 0
+    self.labyrinth_ca_ticks = 1
     _labyrinth_generate(self)
     _labyrinth_flash(self, "Welcome to the Living Labyrinth! Reach ◈ to escape. Press ? for help.")
 
