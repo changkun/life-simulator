@@ -33,20 +33,23 @@ Identity element computation:
 
 Parameters by preset:
 
-| Preset         | Drop Mode    | Drop Amount | Initial Pile | Steps/Frame |
-|----------------|-------------|-------------|-------------|-------------|
-| Single Tower   | center      | 1           | 0           | 1           |
-| Big Pile       | center      | 0           | 10000       | 10          |
-| Random Rain    | random      | 1           | 0           | 1           |
-| Four Corners   | corners     | 1           | 0           | 1           |
-| Diamond Seed   | diamond     | 1           | 0           | 1           |
-| Checkerboard   | checkerboard| 0           | 0           | 5           |
-| Max Stable     | max_stable  | 0           | 0           | 5           |
-| Identity       | identity    | 0           | 0           | 10          |
+| Preset           | Drop Mode    | Drop Amount | Initial Pile | Steps/Frame |
+|------------------|--------------|-------------|--------------|-------------|
+| Single Tower     | center       | 1           | 0            | 1           |
+| Big Pile         | center       | 0           | 10000        | 10          |
+| Random Rain      | random       | 1           | 0            | 1           |
+| Four Corners     | corners      | 1           | 0            | 1           |
+| Diamond Seed     | diamond      | 1           | 0            | 1           |
+| Checkerboard     | checkerboard | 0           | 0            | 5           |
+| Max Stable       | max_stable   | 0           | 0            | 5           |
+| Identity Element | identity     | 0           | 0            | 10          |
+| Random Fill      | random_fill  | 0           | 0            | 5           |
+
+Diamond Seed, Checkerboard, Max Stable and Random Fill start from a pre-filled grid. Max Stable and Random Fill then add one grain at the center. Drop Amount is the grains added per step. Press `d` to cycle the drop mode through center, random and cursor.
 
 ### What to look for
 
-The "Big Pile" preset produces a striking fractal pattern as 10,000 grains cascade outward from the center. Watch how the diamond-shaped boundary of the avalanche contains self-similar internal structure with four-fold symmetry. In "Random Rain" mode, the system self-organizes to a critical state where most of the grid sits at 3 grains, and single additions trigger cascading avalanches of all sizes. The Identity Element preset reveals the unique sandpile configuration that acts as a mathematical identity under the sandpile addition operation -- a beautiful fractal in its own right.
+The "Big Pile" preset produces a striking fractal pattern as 10,000 grains cascade outward from the center. Watch how the diamond-shaped boundary of the avalanche contains self-similar internal structure with four-fold symmetry. In "Random Rain" mode, the system self-organizes to a critical state, and single additions trigger avalanches of all sizes. The Identity Element preset reveals the unique sandpile configuration that acts as a mathematical identity under the sandpile addition operation -- a beautiful fractal in its own right.
 
 ### References
 
@@ -71,7 +74,7 @@ Lorenz system (sigma, rho, beta):
     dy/dt = x * (rho - z) - y
     dz/dt = x * y - beta * z
 
-Roessler system (a, b, c):
+Rossler system (a, b, c):
     dx/dt = -y - z
     dy/dt = x + a * y
     dz/dt = b + z * (x - c)
@@ -99,18 +102,22 @@ Chen system (a, b, c):
 
 Default parameters:
 
-| Attractor   | Key Parameters                              |
-|-------------|---------------------------------------------|
-| Lorenz      | sigma=10.0, rho=28.0, beta=8/3              |
-| Roessler    | a=0.2, b=0.2, c=5.7                         |
-| Thomas      | b=0.208186                                   |
-| Aizawa      | a=0.95, b=0.7, c=0.6, d=3.5, e=0.25, f=0.1 |
-| Halvorsen   | a=1.89                                       |
-| Chen        | a=35.0, b=3.0, c=28.0                        |
+| Preset                        | Parameters                                  |
+|-------------------------------|---------------------------------------------|
+| Lorenz — Classic Butterfly    | sigma=10.0, rho=28.0, beta=8/3              |
+| Lorenz — High Rho             | sigma=10.0, rho=99.96, beta=8/3             |
+| Rössler — Spiral              | a=0.2, b=0.2, c=5.7                         |
+| Rössler — Funnel              | a=0.5, b=1.0, c=3.0                         |
+| Thomas — Cyclically Symmetric | b=0.208186                                  |
+| Aizawa — Torus Knot           | a=0.95, b=0.7, c=0.6, d=3.5, e=0.25, f=0.1  |
+| Halvorsen — Symmetric         | a=1.89                                      |
+| Chen — Double Scroll          | a=35.0, b=3.0, c=28.0                       |
+
+Press `1`/`2` and `3`/`4` to lower or raise the first and second tunable parameter, and `d`/`D` to change dt.
 
 ### What to look for
 
-The Lorenz attractor's iconic butterfly shape emerges as particles trace two lobes, switching unpredictably between them. Increase rho to 99.96 ("High Rho" preset) for a more chaotic regime with finer structure. The Thomas attractor has cyclically symmetric equations producing a smooth helical shape. The Halvorsen attractor exhibits three-fold rotational symmetry. Rotate the view with arrow keys to see the full 3D structure projected through two rotation angles (x-axis and z-axis). The density heatmap uses logarithmic scaling, so the most-visited regions glow brightest.
+The Lorenz attractor's iconic butterfly shape emerges as particles trace two lobes, switching unpredictably between them. The "Lorenz — High Rho" preset (rho=99.96) shows a more chaotic regime. The Thomas attractor has cyclically symmetric equations producing a smooth helical shape. The Halvorsen attractor exhibits three-fold rotational symmetry. Rotate the view with the arrow keys; the 3D trajectory is projected through two rotation angles (about the z-axis and the x-axis). The density heatmap uses logarithmic scaling, so the most-visited regions glow brightest.
 
 ### References
 
@@ -149,21 +156,24 @@ Viewport mapping:
     half_width  = half_height * (cols / (rows * 2.0))
 ```
 
-Selected presets:
+Presets (Julia views are centered on 0 + 0i):
 
-| Preset            | Type       | Center / c               | Zoom  | Max Iter |
-|-------------------|-----------|--------------------------|-------|----------|
-| Classic           | Mandelbrot | (-0.5, 0.0)             | 1x    | 80       |
-| Seahorse Valley   | Mandelbrot | (-0.745, 0.113)         | 50x   | 200      |
-| Elephant Valley   | Mandelbrot | (0.282, 0.01)           | 20x   | 200      |
-| Minibrot          | Mandelbrot | (-1.749, 0.0)           | 500x  | 500      |
-| Dendrite Julia    | Julia      | c = 0.0 + 1.0i          | 1x    | 100      |
-| Douady Rabbit     | Julia      | c = -0.123 + 0.745i     | 1x    | 100      |
-| Dragon Julia      | Julia      | c = -0.8 + 0.156i       | 1x    | 100      |
+| Preset                | Type       | Center / c              | Zoom  | Max Iter |
+|-----------------------|------------|-------------------------|-------|----------|
+| Classic Mandelbrot    | Mandelbrot | (-0.5, 0.0)             | 1x    | 80       |
+| Seahorse Valley       | Mandelbrot | (-0.745, 0.113)         | 50x   | 200      |
+| Elephant Valley       | Mandelbrot | (0.282, 0.01)           | 20x   | 200      |
+| Mini-brot             | Mandelbrot | (-1.749, 0.0)           | 500x  | 500      |
+| Spiral                | Mandelbrot | (-0.7463, 0.1102)       | 200x  | 300      |
+| Julia — Dendrite      | Julia      | c = 0.0 + 1.0i          | 1x    | 100      |
+| Julia — Douady Rabbit | Julia      | c = -0.123 + 0.745i     | 1x    | 100      |
+| Julia — San Marco     | Julia      | c = -0.75 + 0.0i        | 1x    | 100      |
+| Julia — Siegel Disk   | Julia      | c = -0.391 - 0.587i     | 1x    | 120      |
+| Julia — Dragon        | Julia      | c = -0.8 + 0.156i       | 1x    | 100      |
 
 ### What to look for
 
-Zoom into the boundary of the Mandelbrot set to discover miniature copies of the full set (minibrots) embedded at every scale. The Seahorse Valley preset reveals spiral structures where the main cardioid meets the period-2 bulb. Each Julia set preset shows a different topology determined by where c lies relative to the Mandelbrot set: connected sets (c inside) versus Cantor-dust disconnected sets (c outside). Use the `a/A` and `s/S` keys to continuously vary the Julia parameter c and watch the set deform in real time.
+Zoom into the boundary of the Mandelbrot set to discover miniature copies of the full set (minibrots) embedded at every scale. The Seahorse Valley preset reveals spiral structures where the main cardioid meets the period-2 bulb. Each Julia set preset shows a different topology determined by where c lies relative to the Mandelbrot set: connected sets (c inside) versus Cantor-dust disconnected sets (c outside). Press `a`/`A` to raise or lower the real part of the Julia c, `s`/`S` for the imaginary part, and `1`-`5` to jump to named values. Press `t` to switch between Mandelbrot and Julia, `z`/`x` to zoom and `i`/`I` to change the iteration limit.
 
 ### References
 
@@ -186,7 +196,7 @@ Each cell has: frozen (boolean), vapor (float).
 
 Parameters:
     alpha (deposition rate)  -- vapor added to receptive cells per step
-    beta  (initial vapor)    -- background supersaturation level
+    beta  (initial vapor)    -- starting vapor level of every cell
     gamma (noise amplitude)  -- random perturbation on deposition
     mu    (diffusion rate)   -- fraction of vapor exchanged with neighbors
 
@@ -196,26 +206,33 @@ Algorithm per step (Reiter 2005):
        for each receptive cell.
     3. Diffusion among non-frozen, non-receptive cells:
        vapor_new(r,c) = (1 - mu) * vapor(r,c) + mu * avg(neighbors)
+       where neighbors are the non-frozen, non-receptive hex neighbors.
     4. Freezing: if vapor(r,c) >= 1.0 for a receptive cell, freeze it.
     5. Symmetry enforcement: newly frozen cells are mirrored
        across all 12 symmetry operations (6 rotations x 2 reflections)
        when 6-fold symmetric mode is enabled.
 ```
 
-Selected presets:
+Every preset starts from one frozen cell at the center.
 
-| Preset           | alpha | beta | mu   | Symmetric |
-|------------------|-------|------|------|-----------|
-| Classic Dendrite | 0.40  | 0.40 | 0.80 | Yes       |
-| Thin Needles     | 0.30  | 0.30 | 0.90 | Yes       |
-| Broad Plates     | 0.50  | 0.55 | 0.50 | Yes       |
-| Fernlike         | 0.65  | 0.35 | 0.70 | Yes       |
-| Simple Hexagon   | 0.15  | 0.70 | 0.40 | Yes       |
-| Noisy Crystal    | 0.40  | 0.40 | 0.80 | No        |
+| Preset            | alpha | beta | gamma  | mu   | Symmetric |
+|-------------------|-------|------|--------|------|-----------|
+| Classic Dendrite  | 0.40  | 0.40 | 0.0001 | 0.80 | Yes       |
+| Thin Needles      | 0.30  | 0.30 | 0.0001 | 0.90 | Yes       |
+| Broad Plates      | 0.50  | 0.55 | 0.0001 | 0.50 | Yes       |
+| Fernlike          | 0.65  | 0.35 | 0.0001 | 0.70 | Yes       |
+| Stellar Dendrite  | 0.45  | 0.45 | 0.0001 | 0.85 | Yes       |
+| Sectored Plate    | 0.20  | 0.60 | 0.0001 | 0.60 | Yes       |
+| Simple Hexagon    | 0.15  | 0.70 | 0      | 0.40 | Yes       |
+| Hollow Columns    | 0.35  | 0.50 | 0      | 0.75 | Yes       |
+| Noisy Crystal     | 0.40  | 0.40 | 0.005  | 0.80 | No        |
+| Asymmetric Growth | 0.40  | 0.40 | 0.001  | 0.80 | No        |
+| Fast Dendrite     | 0.55  | 0.35 | 0.0001 | 0.50 | Yes       |
+| Sparse Frost      | 0.25  | 0.25 | 0.0001 | 0.90 | Yes       |
 
 ### What to look for
 
-The interplay between alpha and beta determines crystal morphology. High beta (supersaturation) with low alpha produces broad plates; low beta with high alpha yields thin dendritic arms. The mu parameter controls diffusion: high mu smooths the vapor field and produces simpler shapes, while low mu creates steeper gradients and more branching. Disable symmetry (`s` key) to see naturalistic asymmetric crystals. The "Fernlike" preset (alpha=0.65) generates highly branched structures resembling biological ferns -- demonstrating that similar growth rules underlie both ice crystals and plant morphology.
+Compare presets to see how the parameters shape the crystal. Simple Hexagon (high beta, low alpha) grows a compact hexagonal prism, while Fernlike (high alpha, low beta) grows highly branched arms. Press `s` to turn off six-fold symmetry and see asymmetric, more natural crystals; the "Noisy Crystal" and "Asymmetric Growth" presets start that way. Press `a`/`A` to lower or raise alpha, `d`/`D` to lower or raise mu, and `+`/`-` to change the steps per frame.
 
 ### References
 
@@ -265,17 +282,22 @@ Erosion step:
 
 Presets:
 
-| Preset         | Rain   | Evap   | Solubility | Deposition | Terrain  |
-|----------------|--------|--------|-----------|-----------|----------|
-| River Valley   | 0.012  | 0.004  | 0.008     | 0.015     | gentle   |
-| Mountain Gorge | 0.015  | 0.003  | 0.015     | 0.010     | steep    |
-| Badlands       | 0.020  | 0.003  | 0.020     | 0.008     | rough    |
-| Alpine Peaks   | 0.008  | 0.002  | 0.012     | 0.012     | alpine   |
-| Volcanic Island| 0.014  | 0.004  | 0.014     | 0.012     | volcano  |
+| Preset          | Rain   | Evap   | Solubility | Deposition | Terrain  |
+|-----------------|--------|--------|------------|------------|----------|
+| River Valley    | 0.012  | 0.004  | 0.008      | 0.015      | gentle   |
+| Mountain Gorge  | 0.015  | 0.003  | 0.015      | 0.010      | steep    |
+| Coastal Plateau | 0.010  | 0.005  | 0.010      | 0.020      | plateau  |
+| Badlands        | 0.020  | 0.003  | 0.020      | 0.008      | rough    |
+| Alpine Peaks    | 0.008  | 0.002  | 0.012      | 0.012      | alpine   |
+| Rolling Hills   | 0.010  | 0.006  | 0.006      | 0.025      | hills    |
+| Canyon Lands    | 0.018  | 0.003  | 0.018      | 0.010      | mesa     |
+| Volcanic Island | 0.014  | 0.004  | 0.014      | 0.012      | volcano  |
+
+Press `w`/`W` to raise or lower the rain rate and `e`/`E` to raise or lower solubility.
 
 ### What to look for
 
-Watch dendritic drainage networks emerge as water finds optimal paths downhill. The "Badlands" preset has high solubility and rainfall, producing dense branching channel systems reminiscent of aerial photographs of eroded landscapes. The "Volcanic Island" preset starts with a central peak and develops radial drainage patterns. Compare "River Valley" (gentle terrain, wide meandering rivers) with "Mountain Gorge" (steep terrain, narrow deep canyons) to see how slope controls erosion morphology. Blue cells indicate water depth; terrain is color-coded by elevation from dark lowlands to bright peaks.
+Watch dendritic drainage networks emerge as water finds optimal paths downhill. The "Badlands" preset has high solubility and rainfall, producing dense branching channel systems reminiscent of aerial photographs of eroded landscapes. The "Volcanic Island" preset starts with a central peak and develops radial drainage patterns. Compare "River Valley" (gentle terrain, wide meandering rivers) with "Mountain Gorge" (steep terrain, narrow deep canyons) to see how slope controls erosion morphology. Blue cells show water depth; the rest of the grid is colored by elevation, from dark lowlands to bright peaks.
 
 ### References
 
@@ -304,7 +326,7 @@ Algorithm (Chaos Game):
     4. Plot (x, y) on the density grid.
     5. Repeat from step 2.
 
-    50 initial iterations are discarded (transient warm-up).
+    The first 50 iterations are not plotted (transient warm-up).
 ```
 
 IFS transform tables:
@@ -326,11 +348,11 @@ IFS transform tables:
 | Bottom-R  | 0.5 | 0.0 | 0.0 | 0.5 | 0.5  | 0.0 |
 | Top       | 0.5 | 0.0 | 0.0 | 0.5 | 0.25 | 0.5 |
 
-Other presets include: Sierpinski Carpet (8 transforms), Vicsek Snowflake (5 transforms), Heighway Dragon (2 transforms), Maple Leaf (4 transforms), Koch Snowflake (4 transforms with rotation), and Crystal (6 rotated arms + center).
+The other presets are Vicsek Snowflake (5 transforms), Sierpinski Carpet (8), Dragon Curve (2, the Heighway dragon), Maple Leaf (4), Koch Snowflake (4, two of them rotated) and Crystal (6 rotated arms plus a center map).
 
 ### What to look for
 
-Enable color mode (`c` key) to see which transform produced each point -- this reveals the recursive decomposition of the fractal. In the Barnsley Fern, the green "main" transform (probability 0.85) draws the overall frond shape, while the left and right transforms create the sub-fronds. The Heighway Dragon uses only two transforms, both involving 45-degree rotations, producing a space-filling curve. Increase the point rate (`>` key) to watch structure emerge faster. The density field uses logarithmic scaling: regions visited by many transforms overlap and glow brighter, highlighting the invariant measure of the IFS.
+Color mode (`c` key, on by default) colors each point by the last transform that plotted it, which shows the recursive decomposition of the fractal. In the Barnsley Fern, the main transform (probability 0.85) draws the overall frond shape, while the left and right transforms create the sub-fronds. The Dragon Curve uses only two transforms, each scaling by 1/sqrt(2) with a rotation (45 and 135 degrees). Press `>` or `<` to double or halve the points plotted per frame, and `x` to clear the canvas. The density field uses logarithmic scaling, so points visited more often glow brighter, which shows the invariant measure of the IFS.
 
 ### References
 
@@ -360,25 +382,35 @@ Expansion: apply all rules in parallel to every character in the string.
 Turtle interpretation:
     heading starts at -pi/2 (upward) + light_bias
     F: draw line segment of length base_len * length_scale^depth
+    f: move forward without drawing
     +: heading += angle (degrees)
     -: heading -= angle (degrees)
     [: push (x, y, heading, length, depth) onto stack; depth += 1
     ]: pop state; mark leaf/flower at current position
+    light_bias = radians(light_dir) * 0.15 (left/right arrow keys turn light_dir)
 
 Wind model:
     wind_bend = wind * height_fraction * 0.4 * sin(wind_phase + y * 0.1)
     Applied to heading when drawing F segments.
 
-Growth rate per season:
-    Spring: 1.0, Summer: 0.7, Autumn: 0.2, Winter: 0.0
-    Effective rate = growth_rate * season_factor * plant_health
+Growth (one expansion = one generation, up to max depth):
+    Season factor: Spring 1.0, Summer 0.7, Autumn 0.2, Winter 0.0
+    Each step a plant expands with probability
+        growth_rate * season_factor * plant_health
+    Seasons last 30 steps and cycle automatically (S toggles, s advances).
 
 Light competition:
-    For each x-column, the plant with the topmost segment gets full light.
-    Shaded plants receive 30% light, reducing their health.
+    Each column collects sampled points of every plant's branches.
+    Points within 2 rows of the topmost point count 1.0, lower points 0.3.
+    Plant health = mean of these weights over the plant's points.
+
+Mutation (m key):
+    Plants grown from seeds get a random angle and length scale,
+    and sometimes a mutated rule. Plants drop seeds in summer and autumn
+    only while mutation is on; seeds sprout the next spring.
 ```
 
-Selected species grammars:
+Selected species grammars (angle and depth are the species values; depth is capped so strings stay under 20000 characters):
 
 | Species      | Axiom | Rule for F/X                           | Angle | Depth |
 |-------------|-------|----------------------------------------|-------|-------|
@@ -391,7 +423,7 @@ Selected species grammars:
 
 ### What to look for
 
-In the "Garden" preset, multiple species compete for light: taller trees shade smaller plants, reducing their health and growth rate. Enable mutation (`m` key) to introduce random changes to branching rules and angles -- over many generations, plants evolve adapted forms. Watch the seasonal cycle: flowers bloom in spring and summer, leaves turn yellow and fall in autumn, deciduous trees stand bare in winter while evergreens persist. Wind (`w/W` keys) bends branches proportionally to their height, creating naturalistic swaying. The "Competition" preset with seven species shows ecological dynamics: some species thrive while others are outcompeted.
+In the "Garden" preset, five species compete for light: taller trees shade smaller plants, reducing their health and growth rate. Press `m` to toggle mutation, which lets plants seed offspring with changed angles, lengths and rules. Watch the seasonal cycle: flowering species bloom in spring and summer, deciduous trees shed leaves in autumn and stand bare in winter, and evergreens keep theirs. Wind (`w` lowers, `W` raises, range -1 to 1) bends branches in proportion to their height. Press `a`/`A` to lower or raise the branch angle and `g`/`G` to slow or speed growth. The "Competition" preset with seven species shows ecological dynamics: some species thrive while others are outcompeted.
 
 ### References
 
@@ -427,24 +459,28 @@ Parameters:
     damping           -- exponential decay rate (0 = no decay)
     A_x, A_y          -- amplitudes (default 0.9)
     dt                 -- time step (0.02)
+
+Each point is scaled to the screen by the largest possible amplitude.
 ```
 
 Presets:
 
-| Preset        | freq_a | freq_b | freq_c | freq_d | phase    | damping | Trail  |
-|--------------|--------|--------|--------|--------|----------|---------|--------|
-| Classic 3:2  | 3.0    | 2.0    | --     | --     | pi/4     | 0       | 4000   |
-| Figure Eight | 2.0    | 1.0    | --     | --     | pi/2     | 0       | 4000   |
-| Star         | 5.0    | 4.0    | --     | --     | pi/4     | 0       | 4000   |
-| Harmonograph | 2.01   | 3.0    | --     | --     | pi/6     | 0.003   | 8000   |
-| Lateral      | 2.0    | 3.0    | 2.005  | 3.003  | pi/4     | 0.002   | 10000  |
-| Rose         | 7.0    | 4.0    | --     | --     | 0        | 0       | 4000   |
-| Decay Spiral | 10.0   | 9.0    | --     | --     | pi/3     | 0.008   | 6000   |
-| Knot         | 5.0    | 3.0    | --     | --     | pi/7     | 0.001   | 8000   |
+| Preset       | freq_a | freq_b | freq_c | freq_d | phase | phase2 | damping | Trail |
+|--------------|--------|--------|--------|--------|-------|--------|---------|-------|
+| Classic 3:2  | 3.0    | 2.0    | --     | --     | pi/4  | --     | 0       | 4000  |
+| Figure Eight | 2.0    | 1.0    | --     | --     | pi/2  | --     | 0       | 4000  |
+| Star         | 5.0    | 4.0    | --     | --     | pi/4  | --     | 0       | 4000  |
+| Harmonograph | 2.01   | 3.0    | --     | --     | pi/6  | --     | 0.003   | 8000  |
+| Lateral      | 2.0    | 3.0    | 2.005  | 3.003  | pi/4  | pi/3   | 0.002   | 10000 |
+| Rose Curve   | 7.0    | 4.0    | --     | --     | 0     | --     | 0       | 4000  |
+| Decay Spiral | 10.0   | 9.0    | --     | --     | pi/3  | --     | 0.008   | 6000  |
+| Knot         | 5.0    | 3.0    | --     | --     | pi/7  | --     | 0.001   | 8000  |
+
+Trail is the number of recent points kept.
 
 ### What to look for
 
-The frequency ratio determines the curve's topology: the "Classic 3:2" preset traces a closed figure with 3 lobes horizontally and 2 vertically. The "Harmonograph" preset uses a slightly irrational ratio (2.01:3.0) with damping, so the curve slowly shifts phase as it decays, filling a region before fading to stillness -- this mimics a real physical harmonograph. The "Lateral" preset adds secondary oscillators at frequencies very close to the primaries (2.005 and 3.003), creating intricate beating patterns and slowly evolving interference figures. Adjust `a/A` and `b/B` to change frequency ratios interactively and watch the figure restructure. The intensity accumulation on the canvas reveals which regions the curve visits most frequently.
+The frequency ratio determines the curve's topology: the "Classic 3:2" preset traces a closed figure with a 3:2 ratio. The "Harmonograph" preset uses a near-integer ratio (2.01:3.0) with damping, so the curve slowly shifts phase while its amplitude shrinks -- this mimics a physical harmonograph. The "Lateral" preset adds secondary oscillators at frequencies very close to the primaries (2.005 and 3.003), creating intricate beating patterns and slowly evolving interference figures. Press `a`/`A` and `b`/`B` to raise or lower freq_a and freq_b, `p`/`P` for the phase and `d`/`D` for the damping, and watch the figure restructure. The intensity accumulation on the canvas reveals which regions the curve visits most frequently.
 
 ### References
 
