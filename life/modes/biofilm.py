@@ -1,22 +1,4 @@
-"""Mode: biofilm — Bacterial Quorum Sensing & Biofilm Formation.
-
-Bacteria swim freely as planktonic individuals at low density.  As population
-grows they secrete and detect autoinducer (AI) signaling molecules — when local
-concentration crosses a threshold each bacterium switches phenotype: stops
-swimming, secretes extracellular polymeric substance (EPS), and assembles into
-a structured biofilm with water channels, nutrient gradients, and persister
-cells.
-
-Three views:
-  1) Spatial biofilm cross-section — EPS matrix, water channels, cell types
-     (planktonic / biofilm / persister), nutrient & oxygen shading
-  2) Autoinducer concentration heatmap — diffusible QS signal field
-  3) Time-series sparkline graphs — 10 metrics
-
-Six presets:
-  Wound Infection, Dental Plaque, Catheter Colonization,
-  Quorum Quenching Therapy, Nutrient-Rich Bloom, Antibiotic Pulse
-"""
+"""Bacterial Quorum Sensing & Biofilm Formation — bacteria that sense density and switch from swimming to an EPS-embedded biofilm."""
 import curses
 import math
 import random
@@ -76,7 +58,6 @@ _NUTRIENT_CHANNEL_BOOST = 0.015  # extra delivery through water channels
 # Oxygen
 _O2_DIFFUSE = 0.12
 _O2_CONSUME = 0.010
-_O2_SURFACE = 1.0            # oxygen at bulk fluid surface
 
 # EPS (extracellular polymeric substance)
 _EPS_SECRETE_RATE = 0.015
