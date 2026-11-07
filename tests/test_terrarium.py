@@ -87,3 +87,14 @@ def test_catchup_summary_stays_bounded(paths, monkeypatch):
     app._terrarium_catchup(100000, {"speed_idx": 2})
     assert len(app.terrarium_catchup_summary) < terrarium.MAX_SUMMARY_EVENTS + 30
     assert any("more" in line for line in app.terrarium_catchup_summary)
+
+
+def test_enter_resets_chronicle_view(paths):
+    """Re-entering must not reopen the chronicle viewer left open last time."""
+    app = _make_app()
+    app._terrarium_chronicle_view = True
+    app._enter_terrarium_mode()
+    assert app._terrarium_chronicle_view is False
+    app._exit_terrarium_mode()
+    assert app.terrarium_mode is False
+    assert app.terrarium_show_summary is False

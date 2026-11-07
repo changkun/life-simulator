@@ -43,6 +43,8 @@ def _terrarium_init(self):
     self.terrarium_show_summary = False
     self.terrarium_summary_scroll = 0
     self.terrarium_away_gens = 0
+    self._terrarium_chronicle_view = False  # chronicle viewer open over the summary
+    self._terrarium_last_pt_gen = -1        # newest phase transition already chronicled
 
 
 def _enter_terrarium_mode(self):
@@ -54,6 +56,8 @@ def _enter_terrarium_mode(self):
     self.terrarium_show_summary = False
     self.terrarium_summary_scroll = 0
     self.terrarium_away_gens = 0
+    self._terrarium_chronicle_view = False
+    self._terrarium_last_pt_gen = -1
 
     loaded = _terrarium_load_state(self)
     if loaded:
@@ -131,8 +135,6 @@ def _terrarium_record_event(self):
     if hasattr(self, 'phase_transition_log') and self.phase_transition_log:
         last_pt = self.phase_transition_log[-1]
         # Check if this is a new transition we haven't chronicled
-        if not hasattr(self, '_terrarium_last_pt_gen'):
-            self._terrarium_last_pt_gen = -1
         if last_pt.generation > self._terrarium_last_pt_gen:
             self._terrarium_last_pt_gen = last_pt.generation
             _terrarium_chronicle_add(self, f"phase_{last_pt.kind}",
@@ -284,7 +286,6 @@ def _terrarium_load_state(self) -> bool:
     self.history.clear()
     self.timeline_pos = None
     self.running = False
-    self._terrarium_last_pt_gen = -1
 
     # Enable phase detector for chronicle logging
     self.analytics.phase_detector.enabled = True
@@ -572,7 +573,7 @@ def _handle_terrarium_summary_key(self, key: int) -> bool:
 
     if self.terrarium_show_summary:
         if key in (10, 13, curses.KEY_ENTER, 27):  # Enter or Esc
-            if hasattr(self, '_terrarium_chronicle_view') and self._terrarium_chronicle_view:
+            if self._terrarium_chronicle_view:
                 # Return from chronicle to summary
                 self._terrarium_chronicle_view = False
                 self.terrarium_summary_scroll = 0
@@ -584,14 +585,14 @@ def _handle_terrarium_summary_key(self, key: int) -> bool:
             return True
         if key == ord('c'):
             # Toggle chronicle view
-            if hasattr(self, '_terrarium_chronicle_view') and self._terrarium_chronicle_view:
+            if self._terrarium_chronicle_view:
                 self._terrarium_chronicle_view = False
             else:
                 self._terrarium_chronicle_view = True
             self.terrarium_summary_scroll = 0
             return True
         if key == ord('q'):
-            if hasattr(self, '_terrarium_chronicle_view') and self._terrarium_chronicle_view:
+            if self._terrarium_chronicle_view:
                 self._terrarium_chronicle_view = False
                 self.terrarium_summary_scroll = 0
                 return True
