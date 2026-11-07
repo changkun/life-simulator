@@ -110,18 +110,18 @@ Boussinesq equations (simplified):
 
   Velocity:
     dvx/dt = nu * laplacian(vx) - (u . grad)vx
-    dvy/dt = nu * laplacian(vy) - (u . grad)vy - Ra * C * (T - T_ref)
+    dvy/dt = nu * laplacian(vy) - (u . grad)vy - C * (T - T_ref)
 
   Divergence reduction:
     4 Gauss-Seidel iterations pushing divergence to neighbors
 
 where:
-  Ra     = Rayleigh number (500 to 10000, controls convective vigor)
+  Ra     = Rayleigh number (presets use 500 to 10000; keys allow 100 and up)
   Pr     = Prandtl number (nu/kappa: 0.025 for plasma, 0.71 for air, 10 for mantle)
   kappa  = 1.0 (thermal diffusivity, normalized)
   nu     = Pr  (kinematic viscosity)
   T_ref  = 0.5 * (T_hot + T_cold)
-  C      = Ra * dt * 0.0001 (scaled buoyancy coefficient)
+  C      = Ra * dt * 0.0001 (scaled buoyancy per step)
 
 Boundary conditions:
   Top:    T = T_cold = 0.0, no-slip (vx = vy = 0)
@@ -132,9 +132,11 @@ Advection uses first-order upwind differencing.
 Velocities are clamped to [-5, 5] for stability.
 ```
 
-**What to look for.** The Classic preset (Ra=2000, Pr=0.71) produces steady convection rolls that emerge from small sinusoidal perturbations. Increase Ra with the +/- keys to see rolls become unsteady and eventually turbulent. The Mantle preset (Pr=10) models Earth's interior: high viscosity produces broad, slow-moving cells. The Solar preset (Pr=0.025, Ra=10000) simulates stellar convection with vigorous, small-scale turbulence. Switch to vorticity view to see the roll boundaries where shear is strongest.
+**What to look for.** The Classic Rolls preset (Ra=2000, Pr=0.71) produces convection rolls that grow from a small sinusoidal perturbation. Raise Ra with `+` to see the rolls become unsteady. The Mantle Convection preset (Pr=10) models Earth's interior: high viscosity produces broad, slow-moving cells. The Solar Convection preset (Pr=0.025, Ra=10000) models stellar convection with vigorous, small-scale motion. Switch to the vorticity view to see the roll boundaries where shear is strongest.
 
-**Presets:** Classic Rolls (Ra=2000), Gentle Flow (Ra=500), Turbulent (Ra=8000), Hexagonal Cells (Ra=3000), Mantle Convection (Ra=1200, Pr=10), Solar Convection (Ra=10000, Pr=0.025), Asymmetric Heating (Ra=3000), Random (Ra=4000).
+**Keys.** `Space` play/pause, `n` step, `v` cycles temperature, velocity and vorticity views, `+`/`-` change Ra (by a factor of 1.2), `<`/`>` steps per frame, `r` reset, `R` menu, `q` exit.
+
+**Presets:** Classic Rolls (Ra=2000), Gentle Convection (Ra=500), Turbulent Cells (Ra=8000), Bénard Hexagons (Ra=3000), Mantle Convection (Ra=1200, Pr=10), Solar Granulation (Ra=10000, Pr=0.025), Asymmetric Heating (Ra=3000), Random Perturbation (Ra=4000).
 
 **References.**
 - Rayleigh, Lord. "On Convection Currents in a Horizontal Layer of Fluid, When the Higher Temperature Is on the Under Side." *Philosophical Magazine*, 32(192), 1916. https://doi.org/10.1080/14786441608635602
@@ -144,7 +146,7 @@ Velocities are clamped to [-5, 5] for stability.
 
 ## SPH Fluid
 
-**Background.** Smoothed Particle Hydrodynamics (SPH) represents a fluid as a collection of discrete particles, each carrying mass, velocity, and thermodynamic quantities. Originally invented by Gingold and Monaghan (1977) for astrophysical simulations, SPH was adapted for free-surface flows by Muller, Charypar, and Gross (2003). Unlike grid-based methods, SPH naturally handles splashing, fragmentation, and topological changes -- making it ideal for dam breaks, droplets, and fountains.
+**Background.** Smoothed Particle Hydrodynamics (SPH) represents a fluid as a collection of discrete particles, each carrying mass, velocity, and thermodynamic quantities. Originally invented by Gingold and Monaghan (1977) for astrophysical simulations, SPH was adapted for free-surface flows by Muller, Charypar, and Gross (2003). Unlike grid-based methods, SPH handles splashing, fragmentation, and topology changes naturally, which suits dam breaks, droplets, and fountains.
 
 **Formulation.** Each particle stores position (x, y), velocity (vx, vy), density (rho), and pressure (P). The algorithm proceeds in five stages per timestep.
 
@@ -182,11 +184,13 @@ Default parameters:
   damping               = 0.5
 ```
 
-The Fountain preset applies a continuous upward velocity kick to particles near the bottom center, creating a sustained jet that falls back under gravity.
+The Fountain preset sets a strong upward velocity (-15) on particles within two cells of the bottom center each step, creating a sustained jet that falls back under gravity.
 
-**What to look for.** The Dam Break preset shows a column of water collapsing under gravity and splashing against the far wall. Watch for the wavefront, the splashback, and eventual sloshing equilibrium. The Drop preset shows a dense block falling into a pool, generating a crown splash. Increase gravity with +/- to see more energetic dynamics; the particles respond immediately because SPH is a Lagrangian method. The density visualization reveals pressure waves propagating through the fluid.
+**What to look for.** The Dam Break preset shows a column of water collapsing under gravity and splashing against the far wall. Watch for the wavefront, the splashback, and the eventual sloshing equilibrium. The Dropping Block preset drops a dense block of fluid into a pool. Raise gravity with `+` (lower it with `-`) for more energetic motion. The density view shows pressure waves propagating through the fluid.
 
-**Presets:** Dam Break, Double Dam, Drop Impact, Rainfall, Wave, Fountain.
+**Keys.** `Space` play/pause, `n` step, `v` cycles density, velocity and pressure views, `+`/`-` change gravity (by a factor of 1.2), `<`/`>` steps per frame, `r` reset, `R` menu, `q` exit.
+
+**Presets:** Dam Break, Double Dam, Dropping Block, Rain, Wave Tank, Fountain.
 
 **References.**
 - Muller, M., Charypar, D., and Gross, M. "Particle-Based Fluid Simulation for Interactive Applications." *Proceedings of the 2003 ACM SIGGRAPH/Eurographics Symposium on Computer Animation*, 2003. https://doi.org/10.2312/SCA03/154-159
