@@ -1029,13 +1029,12 @@ def _handle_genesis_key(self, key):
     # Skip to scoring
     if key == ord("S"):
         if self.genesis_phase == "simulating":
-            remaining = self.genesis_eval_steps - self.genesis_sim_step
-            for _ in range(remaining):
-                for i, grid in enumerate(self.genesis_sims):
-                    _step_sim(grid)
-                    self.genesis_pop_histories[i].append(grid.population)
-                self.genesis_sim_step += 1
-            _genesis_score_and_rank(self)
+            # Use the normal step so periodicity and transfer-entropy samples
+            # are collected. With auto-continue the next round starts right
+            # after scoring, so stop when the round number changes.
+            rnd = self.genesis_round
+            while self.genesis_phase == "simulating" and self.genesis_round == rnd:
+                _genesis_step(self)
         return True
 
     # Force breed
@@ -1061,8 +1060,8 @@ def _handle_genesis_key(self, key):
             self._flash("Hall of Fame empty — nothing to save")
         return True
 
-    # Adopt current cursor's rule
-    if key == ord("a"):
+    # Adopt current cursor's rule ("a" is taken by cursor-left)
+    if key in (10, 13, curses.KEY_ENTER):
         if 0 <= self.genesis_cursor < pop_size:
             genome = self.genesis_genomes[self.genesis_cursor]
             self.grid.birth = set(genome["birth"])
@@ -1450,7 +1449,7 @@ def _draw_genesis_status(self, max_y, max_x):
         state = "▶ RUN" if self.genesis_running else "⏸ STOP"
         auto = "auto:ON" if self.genesis_auto_continue else "auto:OFF"
         bar = (f" {state} {auto} │ SPC:play h:hall W:save "
-               f"S:skip b:breed r:reset A:auto a:adopt q:quit ")
+               f"S:skip b:breed r:reset A:auto Enter:adopt R:menu q:quit ")
         self.stdscr.addstr(status_y, 0, bar[:max_x - 1], curses.A_REVERSE)
     except curses.error:
         pass
