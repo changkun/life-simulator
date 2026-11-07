@@ -1118,7 +1118,7 @@ def _draw_adversary(self, max_y=None, max_x=None):
     # Game over overlay
     if self.adversary_game_over:
         if self.adversary_won:
-            msg = f"  ◈ LEVEL {self.adversary_level} COMPLETE! The dungeon evolves... Press any key.  "
+            msg = f"  ◈ LEVEL {self.adversary_level} COMPLETE! The dungeon evolves... Move or press 'n'.  "
             attr = curses.color_pair(201) | curses.A_BOLD
         else:
             msg = "  ☠ CRUSHED! The dungeon learned from your defeat. Press 'n'.  "
@@ -1179,7 +1179,7 @@ def _draw_adversary_report(self, scr, max_h, max_w, view_h):
 
     # Player behavior summary
     total = max(1, profile["total_moves"])
-    lines.append(f"║ Total moves: {total:>5}  │  Wins: {profile['wins']}  Deaths: {profile['deaths']:<5}  ║")
+    lines.append(f"║ Total moves: {profile['total_moves']:>5}  │  Wins: {profile['wins']}  Deaths: {profile['deaths']:<5}  ║")
     lines.append("║                                                   ║")
 
     # Direction breakdown
