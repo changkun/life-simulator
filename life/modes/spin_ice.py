@@ -233,33 +233,21 @@ def _spinice_init_random(self):
 
 
 def _spinice_init_ice_state(self):
-    """Initialize in a perfect ice-rule ground state (2-in/2-out everywhere).
+    """Initialize in a 2-in/2-out ice-rule state.
 
-    Uses a simple pattern: alternating rows of right/left arrows,
-    with vertical arrows chosen to satisfy ice rules.
+    Horizontal arrows alternate direction by row and vertical arrows by
+    column, so every interior vertex has one arrow in and one out along each axis.
     """
     rows = self.spinice_vrows
     cols = self.spinice_vcols
-    # Horizontal: alternate direction by row
-    self.spinice_hedge = []
-    for r in range(rows):
-        row_edges = []
-        for c in range(cols - 1):
-            if (r + c) % 2 == 0:
-                row_edges.append(1)   # right
-            else:
-                row_edges.append(-1)  # left
-        self.spinice_hedge.append(row_edges)
-    # Vertical: choose to satisfy ice rules
-    self.spinice_vedge = []
-    for r in range(rows - 1):
-        row_edges = []
-        for c in range(cols):
-            if (r + c) % 2 == 0:
-                row_edges.append(1)   # down
-            else:
-                row_edges.append(-1)  # up
-        self.spinice_vedge.append(row_edges)
+    self.spinice_hedge = [
+        [1 if r % 2 == 0 else -1 for _ in range(cols - 1)]
+        for r in range(rows)
+    ]
+    self.spinice_vedge = [
+        [1 if c % 2 == 0 else -1 for c in range(cols)]
+        for _ in range(rows - 1)
+    ]
 
 
 def _spinice_inject_pairs(self, n_pairs):
