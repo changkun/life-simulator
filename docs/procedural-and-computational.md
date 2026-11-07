@@ -135,6 +135,7 @@ Grain boundary detection:
   Cell (r, c) is a boundary if any 8-neighbor belongs to a different grain.
 
 Seed placement modes: random, edge, bicrystal, center
+  (random and center retry occupied cells so each grain gets its own cell)
 ```
 
 **What to look for**
@@ -241,7 +242,7 @@ Day/night: time cycles 0.0-1.0 (midnight-midnight), affects sky color and dimmin
 
 **What to look for**
 
-The non-linear depth mapping (square root) gives a natural perspective where nearby terrain has high detail and the horizon fades gradually. Fly over canyon terrain types to see the carved V-shape valleys. The day/night cycle changes the sky colour through dawn, day (with a sun arc), dusk, and night (stars and moon). The presets are Rolling Hills, Mountain Range, Desert Canyon, Volcanic Islands, Glacial Valley and Alien World. They show how one noise framework gives very different landscapes through post-processing transforms. Fly with `WASD`, look with the arrow keys, change altitude with `e`/`c`, and set the speed with `+`/`-`. `t` toggles the automatic clock, and `T` advances it.
+The non-linear depth mapping (square root) gives a natural perspective where nearby terrain has high detail and the horizon fades gradually. Fly over canyon terrain types to see the carved V-shape valleys. The day/night cycle changes the sky colour through dawn, day (with a sun arc), dusk, and night (stars and moon). The presets are Rolling Hills, Mountain Range, Desert Canyon, Volcanic Islands, Glacial Valley and Alien World. They show how one noise framework gives very different landscapes through post-processing transforms. Fly with `WASD`, look with the arrow keys, change altitude with `e`/`c`, and set the speed with `+`/`-`. `t` toggles the automatic clock, and `T` advances it. `Space` pauses, `f`/`F` widen or narrow the field of view, `r` resets, and `q` or `Esc` exits.
 
 **References**
 
@@ -311,7 +312,7 @@ Soft shadows (32 steps, k = 8):
 
 **What to look for**
 
-The Mandelbulb preset shows self-similar detail as you zoom in with `+`/`-`. Press `p` or `P` to lower or raise the power (default 8, range 2 to 16) and the shape changes. The Smooth Blend scene shows how SDFs join two shapes with a smooth transition. Soft shadows (toggle with `s`) fade gradually near the edges of occluders. `l`/`L` move the light, `a` toggles auto-rotation, and the arrow keys orbit the camera. The color mapping uses surface normal direction: green for Y-facing, cyan for Z-facing, magenta for X-facing surfaces.
+The Mandelbulb preset shows self-similar detail as you zoom in with `+`/`-`. Press `p` or `P` to lower or raise the power (default 8, range 2 to 16) and the shape changes. The Smooth Blend scene shows how SDFs join two shapes with a smooth transition. Soft shadows (toggle with `s`) fade gradually near the edges of occluders. `l` turns the light around the object, `L` raises it (and wraps back to the horizon after the cap), `Space` pauses, `a` toggles auto-rotation, and the arrow keys orbit the camera. The color mapping uses surface normal direction: green for Y-facing, cyan for Z-facing, magenta for X-facing surfaces.
 
 **References**
 
@@ -426,7 +427,7 @@ Collision detection with wall sliding:
 
 **What to look for**
 
-The fisheye correction eliminates the barrel distortion that would otherwise occur when projecting rays at angles away from the view center. Notice how wall shading characters transition from solid blocks at close range to sparse dots at distance, creating a convincing depth effect in pure ASCII. Wall sliding allows smooth movement along walls instead of abrupt stops. The presets are Dungeon, Office, Outdoor Ruins, Arena, Maze and Fortress. `W`/`S` or the up/down arrows move, `A`/`D` strafe, `Q`/`E` or the left/right arrows turn, and `Esc` exits.
+The fisheye correction eliminates the barrel distortion that would otherwise occur when projecting rays at angles away from the view center. Notice how wall shading characters transition from solid blocks at close range to sparse dots at distance, creating a convincing depth effect in pure ASCII. Wall sliding allows smooth movement along walls instead of abrupt stops. The presets are Dungeon, Office, Outdoor Ruins, Arena, Maze and Fortress. `W`/`S` or the up/down arrows move, `A`/`D` strafe, `Q`/`E` or the left/right arrows turn, `m` toggles the minimap, `?` toggles the hint bar, and `Esc` exits.
 
 **References**
 
@@ -553,7 +554,8 @@ Fourier epicycles demonstrate that any closed curve can be approximated by a sum
 
 ```
 Input: N sample points P[n] = (x_n, y_n) along a closed curve
-  (presets use N = 128; a free-drawn path uses the points you drew)
+  (presets use N = 128; a free-drawn path uses the points you drew,
+  thinned to at most 512 points before the DFT)
 
 Discrete Fourier Transform:
   For each frequency k in [0, N):
