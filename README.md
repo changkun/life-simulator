@@ -42,12 +42,14 @@ behind each simulation mode, see the **[Scientific Guide](docs/README.md)**.
   - [Drawing & Editing](#drawing--editing)
   - [Navigation & View](#navigation--view)
   - [Mode Shortcuts](#mode-shortcuts)
+  - [Timeline & Replay](#timeline--replay)
   - [File I/O](#file-io)
 - [Features](#features)
   - [Mode Browser](#mode-browser)
   - [Pattern Library](#pattern-library)
   - [Rule Editor](#rule-editor)
   - [Timeline & Branching](#timeline--branching)
+  - [Snapshots](#snapshots)
   - [Heatmap & Overlays](#heatmap--overlays)
   - [Truecolor & Colormaps](#truecolor--colormaps)
   - [3D Isometric View](#3d-isometric-view)
@@ -153,16 +155,19 @@ categories:
 |-----|--------|
 | `Space` | Play / pause |
 | `n` / `.` | Step one generation |
-| `< ` / `>` | Decrease / increase speed |
+| `<` / `>` | Decrease / increase speed |
 | `q` | Quit |
 | `?` / `h` | Help screen |
 | `m` | Mode browser |
+| `M` | Toggle sound |
+| `N` | Multiplayer (prompts to host or connect) |
+| `Ctrl+K` | Toggle analytics overlay |
 
 ### Drawing & Editing
 
 | Key | Action |
 |-----|--------|
-| Arrow keys / `hjkl` | Move cursor |
+| Arrow keys / `k` `j` `l` | Move cursor (`k` up, `j` down, `l` right; `h` opens help) |
 | `e` | Toggle cell under cursor |
 | `d` | Draw mode (paint while moving) |
 | `x` | Erase mode (erase while moving) |
@@ -177,11 +182,13 @@ categories:
 
 | Key | Action |
 |-----|--------|
-| `+` / `-` | Zoom in / out (density glyphs) |
+| `+` / `-` | Zoom in / out (density glyphs); mouse wheel also zooms |
 | `0` | Reset zoom to 1:1 |
 | `Tab` | Toggle minimap overlay |
-| `H` | Toggle heatmap (cell activity coloring) |
+| `H` | Toggle heatmap (cumulative cell activity) |
 | `I` | Toggle 3D isometric view |
+| `K` | Cycle colormap |
+| `W` | Save a region as a blueprint |
 | `V` | Compare two rules side-by-side |
 | `Z` | Race 2-4 rules with scoreboard |
 | `f` | Pattern search (find known shapes) |
@@ -195,17 +202,16 @@ categories:
 | `3` | Hexagonal Grid |
 | `4` | Wireworld |
 | `5` | Falling Sand |
-| `6` | Reaction-Diffusion |
+| `6` | Reaction-Diffusion Textures |
 | `7` | Lenia |
-| `8` | Physarum |
+| `8` | Physarum Slime Mold |
 | `9` | Boids Flocking |
-| `0` | Particle Life |
-| `A` | Ant Colony |
-| `D` | DLA |
-| `E` | SIR Epidemic |
+| `A` | Ant Colony Optimization |
+| `C` | Puzzle / Challenge |
+| `D` | Diffusion-Limited Aggregation |
+| `E` | Evolution / GA |
 | `F` | Lattice Boltzmann Fluid |
-| `J` | Predator-Prey |
-| `K` | Schelling Segregation |
+| `J` | Lotka-Volterra |
 | `L` | Maze Generation |
 | `O` | Forest Fire |
 | `P` | Abelian Sandpile |
@@ -216,7 +222,7 @@ categories:
 | `X` | Wave Function Collapse |
 | `Y` | N-Body Gravity |
 | `#` | Ising Model |
-| `@` | Prisoner's Dilemma |
+| `@` | Spatial Prisoner's Dilemma |
 | `&` | Rock-Paper-Scissors |
 | `!` | Wave Equation |
 | `(` | Kuramoto Oscillators |
@@ -225,7 +231,7 @@ categories:
 | `{` | Chemotaxis |
 | `}` | MHD Plasma |
 | `\|` | Strange Attractors |
-| `^` | Quantum Walk |
+| `^` | Lightning |
 | `"` | Galaxy Formation |
 | `*` | Snowflake Growth |
 | `$` | Erosion Patterns |
@@ -236,8 +242,14 @@ categories:
 | `/` | L-System Fractal Garden |
 | `\` | Smoke & Fire |
 
-Many more modes are accessible via `Ctrl+` and `Ctrl+Shift+` combinations,
-or through the mode browser (`m`).
+The remaining modes have `Ctrl+` or `Ctrl+Shift+` shortcuts, or none.
+The mode browser (`m`) lists every mode with its key.
+
+Some registry keys are taken by earlier bindings in Game of Life, so they do
+not enter their mode: `0` (zoom reset, not Particle Life), `K` (colormap, not
+Schelling Segregation), `E` (Evolution / GA, not SIR Epidemic), `^` (Lightning,
+not Quantum Walk), `I` (isometric view) and `G` (GIF recording). Open those
+modes from the mode browser.
 
 ### Timeline & Replay
 
