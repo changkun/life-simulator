@@ -865,7 +865,7 @@ Preset energies:
 
 ## Spacetime Fabric
 
-**Background** — In general relativity, spacetime is not a fixed stage on which physics plays out — it is a dynamic participant, curving and warping in response to the matter and energy it contains. Einstein's field equations couple the geometry of spacetime (the metric tensor) to the stress-energy tensor of matter. This mode brings that idea into the cellular automaton domain: the grid itself is no longer a passive backdrop but a dynamical entity that curves around live cell clusters, producing gravitational lensing, time dilation, geodesic motion, frame dragging, and gravitational waves. Every other mode in the project treats the grid as flat and fixed; this is the first where the topology responds to the simulation state.
+**Background** — In general relativity, spacetime is not a fixed stage on which physics plays out — it is a dynamic participant, curving and warping in response to the matter and energy it contains. Einstein's field equations couple the geometry of spacetime (the metric tensor) to the stress-energy tensor of matter. This mode brings that idea into the cellular automaton domain: the grid itself is no longer a passive backdrop but a dynamical entity that curves around live cell clusters, producing gravitational lensing, time dilation, geodesic motion, frame dragging, and gravitational waves.
 
 **Formulation** — The simulation couples a standard Game of Life (B3/S23) cellular automaton to a scalar approximation of curved spacetime:
 
@@ -904,13 +904,15 @@ Combined step order: mass → curvature → dilation → angular momentum →
   gravitational waves → geodesic advection → CA update (every ca_interval steps)
 ```
 
-Presets configure four parameters — gravity (G), lensing strength, frame drag coefficient, and gravitational wave amplitude — to highlight different GR phenomena:
-- **Binary Orbit**: Two dense clusters with strong gravity, moderate lensing
-- **Gravitational Lens**: Central mass with approaching gliders that curve around it
-- **Spacetime Soup**: Random fill with strong gravity — structure emerges from curvature
-- **Glider Geodesics**: Still-life masses with gliders following curved paths
-- **Frame Drag Vortex**: Rotating pattern that drags neighbors into co-rotation
-- **Gravitational Waves**: Collapsing clusters that emit metric ripples
+Presets set four parameters (gravity G, lensing strength, frame drag coefficient, gravitational wave amplitude) and a starting pattern:
+- **Binary Orbit** (0.6, 0.15, 0.8, 0.3): two dense random clusters
+- **Gravitational Lens** (0.8, 0.20, 0.5, 0.2): a central mass with four gliders approaching from the left
+- **Spacetime Soup** (0.5, 0.10, 0.7, 0.4): random fill at 18% density
+- **Glider Geodesics** (0.7, 0.18, 0.6, 0.2): five block-shaped masses and six gliders
+- **Frame Drag Vortex** (0.6, 0.12, 0.9, 0.5): a rotating ring pattern with loose cells around it
+- **Gravitational Waves** (0.5, 0.15, 0.7, 0.6): five dense random clusters that collapse and emit ripples
+
+Press v to cycle four views: fabric, curvature, time dilation, and CA only. Keys g/G, l/L, f/F and c/C change gravity, lensing, frame drag and the CA interval (1 to 10). The arrow keys (or w/a/s/d) move a cursor, and Enter or e toggles the cell under it.
 
 **What to look for** — In the Fabric visualization, watch for directional arrows (→↗↑ etc.) showing the gravitational pull field around dense clusters. Gravitational waves appear as blue/cyan ripples expanding from sudden mass changes (cell death events). In the Time Dilation view, cells near massive regions glow red (nearly frozen) while isolated cells remain cyan (full speed) — you can see the CA evolving at different rates across the grid. The Curvature heatmap reveals the gravitational potential wells. Try the Binary Orbit preset to watch two clusters warp the space between them, or Glider Geodesics to see gliders bend around massive still lifes.
 
