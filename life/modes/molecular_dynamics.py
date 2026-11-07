@@ -1,21 +1,7 @@
-"""Molecular Dynamics / Phase Transitions — Lennard-Jones particles self-organizing
-into solid, liquid, and gas phases with real-time temperature control.
+"""Molecular Dynamics / Phase Transitions — Lennard-Jones particles that freeze, melt and boil.
 
-Particles interact via the Lennard-Jones 6-12 potential:
-    V(r) = 4ε[(σ/r)¹² - (σ/r)⁶]
-
-producing short-range repulsion and long-range attraction.  A velocity-rescaling
-thermostat controls temperature, letting you watch crystals melt, liquids boil,
-and gases condense — all from the same simple force law.
-
-Presets
--------
-1. Crystal Growth      — cold start, particles freeze into hexagonal lattice
-2. Melting Point       — crystal just above melting → watch order break down
-3. Supercooling        — quench hot gas → nucleation & crystal island growth
-4. Triple Point        — near coexistence of solid, liquid, and gas
-5. Boiling             — liquid heated past boiling → explosive evaporation
-6. Gas / Ideal Gas     — high temperature, dilute → random ballistic motion
+Particles interact through V(r) = 4ε[(σ/r)¹² - (σ/r)⁶], integrated with velocity Verlet
+in a periodic box.  A velocity-rescaling thermostat sets the temperature.
 """
 import curses
 import math
@@ -27,7 +13,6 @@ EPSILON = 1.0
 CUTOFF = 2.5 * SIGMA      # truncation radius
 CUTOFF2 = CUTOFF * CUTOFF
 DT = 0.005                 # integration time step
-PARTICLE_MASS = 1.0
 
 # ── Presets ──────────────────────────────────────────────────────────────
 MOLDYN_PRESETS = [
@@ -77,9 +62,7 @@ def _init_sim(settings):
     vy = [0.0] * n
 
     if settings["init"] == "lattice":
-        # Hexagonal close-packed lattice
-        cols = max(1, int(math.sqrt(n * box_l / box_l)))  # approx square
-        spacing = box_l / (cols + 1)
+        # Hexagonal lattice, rows offset by half a spacing
         cols = max(1, int(box_l / (SIGMA * 1.12)))
         spacing = box_l / cols
         row = 0
@@ -295,9 +278,8 @@ def _accumulate_rdf(sim):
 
 
 def _classify_phase(sim):
-    """Heuristic phase classification based on temperature and structure."""
+    """Classify the phase from temperature and RDF peak height."""
     t = sim["temp"]
-    # Use RDF peak height as order parameter
     if sim["rdf_count"] > 0:
         bins = sim["rdf_bins"]
         max_val = max(bins) if bins else 0
@@ -392,28 +374,23 @@ def _handle_moldyn_key(self, key):
         self.moldyn_view = (self.moldyn_view + 1) % 3
         return True
     if key == ord('t') or key == ord('T'):
-        # Toggle thermostat
         self.moldyn_sim["thermostat"] = not self.moldyn_sim["thermostat"]
         self._flash("Thermostat " + ("ON" if self.moldyn_sim["thermostat"] else "OFF"))
         return True
     if key == curses.KEY_UP:
-        # Raise target temperature
         self.moldyn_sim["target_temp"] = min(
             self.moldyn_sim["target_temp"] + 0.05, 10.0)
         self._flash(f"T_target = {self.moldyn_sim['target_temp']:.2f}")
         return True
     if key == curses.KEY_DOWN:
-        # Lower target temperature
         self.moldyn_sim["target_temp"] = max(
             self.moldyn_sim["target_temp"] - 0.05, 0.01)
         self._flash(f"T_target = {self.moldyn_sim['target_temp']:.2f}")
         return True
     if key == ord('r'):
-        # Reset with current preset
         _moldyn_init(self, self.moldyn_menu_sel)
         return True
     if key == ord('R'):
-        # Back to menu
         self.moldyn_menu = True
         self.moldyn_running = False
         return True
@@ -461,12 +438,7 @@ def _draw_moldyn(self, max_y, max_x):
     if not sim:
         return
 
-    n = sim["n"]
-    box_l = sim["box_l"]
-    x_arr, y_arr = sim["x"], sim["y"]
-    vx_arr, vy_arr = sim["vx"], sim["vy"]
-
-    # Layout: particle view on left, stats on right
+    # Particle view on the left, stats on the right
     stats_w = 32
     view_w = max(10, max_x - stats_w - 2)
     view_h = max(5, max_y - 3)
@@ -496,7 +468,8 @@ def _draw_moldyn(self, max_y, max_x):
     # ── Footer ──
     paused = " PAUSED" if not self.moldyn_running else ""
     thermo = "ON" if sim["thermostat"] else "OFF"
-    hint = f" ↑↓ temp · space pause · v view · t thermostat({thermo}) · +/- speed · r reset · q quit{paused}"
+    hint = (f" ↑↓=temp  Space=pause  n=step  v=view  t=thermostat({thermo})"
+            f"  +/-=speed  r=reset  R=menu  q=exit{paused}")
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
                            curses.A_DIM | curses.color_pair(7))
