@@ -1,16 +1,4 @@
-"""Mode: ecosystem evolution & speciation — landscape-scale macro-evolution.
-
-Populations evolve across varied biomes, speciate through geographic isolation
-(allopatric) and niche divergence (sympatric), develop novel traits via
-mutation/recombination, compete for ecological niches, form emergent food webs,
-and go extinct under environmental pressure.
-
-A real-time phylogenetic tree is rendered alongside the spatial map showing
-species branching, radiation events, and mass extinctions.
-
-Presets: Continental Drift, Island Archipelago, Adaptive Radiation,
-Mass Extinction & Recovery, Pangaea Supercontinent, Random Landscape.
-"""
+"""Ecosystem Evolution & Speciation — species evolve, branch and go extinct across a biome map."""
 import curses
 import math
 import random
@@ -382,14 +370,14 @@ def _make_phylo_node(species_id, parent_id, born_gen, name, trophic):
 # ══════════════════════════════════════════════════════════════════════
 
 def _enter_evoeco_mode(self):
-    """Enter Ecosystem Evolution mode — show preset menu."""
+    """Show the Ecosystem Evolution preset menu."""
     self.evoeco_menu = True
     self.evoeco_menu_sel = 0
     self._flash("Ecosystem Evolution & Speciation — select a scenario")
 
 
 def _exit_evoeco_mode(self):
-    """Exit Ecosystem Evolution mode."""
+    """Leave Ecosystem Evolution mode and free its simulation state."""
     self.evoeco_mode = False
     self.evoeco_menu = False
     self.evoeco_running = False
@@ -402,7 +390,7 @@ def _exit_evoeco_mode(self):
 
 
 def _evoeco_init(self, preset_idx):
-    """Initialize the ecosystem evolution simulation."""
+    """Start the simulation with the given preset."""
     global _next_species_id
     _next_species_id = 0
 
@@ -958,7 +946,6 @@ def _handle_evoeco_key(self, key):
         self.evoeco_show_log = not self.evoeco_show_log
         return True
     if key == ord("t"):
-        # Toggle phylogenetic tree panel
         self.evoeco_show_tree = not self.evoeco_show_tree
         self._flash(f"Phylo tree: {'ON' if self.evoeco_show_tree else 'OFF'}")
         return True
@@ -1015,7 +1002,7 @@ def _draw_evoeco_menu(self, max_y, max_x):
             pass
         y += 3
 
-    hint = " [↑↓]=select [Enter]=start [Esc]=cancel"
+    hint = " ↑/↓/j/k=select  Enter=start  Esc=cancel"
     if max_y - 1 > 0:
         try:
             self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
@@ -1242,7 +1229,7 @@ def _draw_evoeco(self, max_y, max_x):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [v]=view [t]=tree [l]=log [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  v=view  t=tree  l=log  +/-=speed  r=reset  R=menu  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
