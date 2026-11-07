@@ -1,13 +1,7 @@
-"""2D Spatial Frequency Spectrum overlay.
+"""Spectrum overlay — 2D Fourier magnitude of the running simulation, drawn as a corner panel.
 
-Performs a discrete Fourier transform on the current simulation grid and
-displays the frequency-domain magnitude as a secondary panel, revealing
-hidden periodic structures, symmetry, and standing waves in any running
-simulation.
-
-Toggle with 'y'.  Works universally across all 130+ modes via the same
-_get_minimap_data() sampling interface used by the minimap overlay.
-Pure Python — no external dependencies.
+Toggle with 'y'; '{' and '}' halve and double the DFT size (8 to 64).
+Samples the grid through _get_minimap_data(), so it works with any mode.
 """
 
 import math
@@ -18,17 +12,13 @@ from life.colors import colormap_rgb
 # ── DFT implementation ───────────────────────────────────────────────────
 
 def _dft_2d(data, N):
-    """Compute 2D DFT magnitude spectrum on an NxN real-valued grid.
+    """Return the NxN log-magnitude spectrum of a real NxN grid, DC-centered, in [0, 1].
 
-    Returns NxN list of log-magnitude values, DC-centered (shifted so that
-    the zero-frequency component is in the middle of the panel).
-
-    Uses a separable approach: 1D DFT along rows, then 1D DFT along columns,
-    for O(N^3) instead of O(N^4).
+    Transforms rows, then columns, which costs O(N^3) instead of O(N^4).
     """
     two_pi = 2.0 * math.pi
 
-    # Pre-compute twiddle factors for size N
+    # Twiddle factors for size N.
     cos_table = [0.0] * N
     sin_table = [0.0] * N
     for k in range(N):
@@ -36,9 +26,8 @@ def _dft_2d(data, N):
         cos_table[k] = math.cos(angle)
         sin_table[k] = math.sin(angle)
 
-    # 1D DFT helper using pre-computed twiddles
     def dft_1d_rows(matrix):
-        """Apply 1D DFT along each row, returning (real, imag) pair of 2D lists."""
+        """Apply a 1D DFT along each row; return (real, imag) 2D lists."""
         out_re = [[0.0] * N for _ in range(N)]
         out_im = [[0.0] * N for _ in range(N)]
         for r in range(N):
@@ -55,16 +44,13 @@ def _dft_2d(data, N):
                 out_im[r][k] = im
         return out_re, out_im
 
-    # Step 1: DFT along rows
     row_re, row_im = dft_1d_rows(data)
 
-    # Step 2: DFT along columns (transpose, DFT rows, transpose back)
-    # Transpose
+    # Transpose so the column pass can read contiguous lists.
     t_re = [[row_re[r][c] for r in range(N)] for c in range(N)]
     t_im = [[row_im[r][c] for r in range(N)] for c in range(N)]
 
-    # DFT along what were columns (now rows of transposed)
-    # We need to handle complex input this time
+    # The column pass takes complex input from the row pass.
     mag = [[0.0] * N for _ in range(N)]
 
     for k_col in range(N):
@@ -80,10 +66,9 @@ def _dft_2d(data, N):
                 # (a + bi)(cos - i*sin) = a*cos + b*sin + i*(b*cos - a*sin)
                 re += col_re_in[n] * c_cos + col_im_in[n] * c_sin
                 im += col_im_in[n] * c_cos - col_re_in[n] * c_sin
-            # Result goes to mag[k_row][k_col]
             mag[k_row][k_col] = math.sqrt(re * re + im * im)
 
-    # DC-center shift: swap quadrants
+    # Swap quadrants so the zero frequency sits in the middle.
     half = N // 2
     shifted = [[0.0] * N for _ in range(N)]
     for r in range(N):
@@ -92,7 +77,7 @@ def _dft_2d(data, N):
             sc = (c + half) % N
             shifted[sr][sc] = mag[r][c]
 
-    # Log-scale for better visibility
+    # Log scale compresses the dynamic range.
     log_mag = [[0.0] * N for _ in range(N)]
     max_val = 0.0
     for r in range(N):
@@ -102,7 +87,6 @@ def _dft_2d(data, N):
             if v > max_val:
                 max_val = v
 
-    # Normalise to [0, 1]
     if max_val > 0:
         inv = 1.0 / max_val
         for r in range(N):
@@ -115,7 +99,7 @@ def _dft_2d(data, N):
 # ── State initialisation ─────────────────────────────────────────────────
 
 def _spectrum_init(self):
-    """Initialise spectrum overlay state variables."""
+    """Set the spectrum overlay state."""
     self.spectrum_active = False
     self._spectrum_cache = None       # cached magnitude grid
     self._spectrum_frame = -1         # draw frame when cache was computed
@@ -126,10 +110,7 @@ def _spectrum_init(self):
 # ── Sampling ─────────────────────────────────────────────────────────────
 
 def _spectrum_sample_grid(self, N):
-    """Sample the current simulation into an NxN grid of floats [0,1].
-
-    Reuses _get_minimap_data() for universal mode support.
-    """
+    """Sample the active mode into an NxN grid of floats in [0, 1], or None."""
     data = self._get_minimap_data()
     if data is None:
         return None
@@ -138,7 +119,6 @@ def _spectrum_sample_grid(self, N):
     if grid_rows <= 0 or grid_cols <= 0:
         return None
 
-    # Down/up-sample into NxN
     result = [[0.0] * N for _ in range(N)]
     for r in range(N):
         gr = int(r * grid_rows / N) % grid_rows
@@ -154,8 +134,7 @@ def _spectrum_sample_grid(self, N):
 # ── Compute spectrum ─────────────────────────────────────────────────────
 
 def _spectrum_compute(self):
-    """Compute the 2D DFT spectrum, with caching per generation."""
-    # Recompute every 3 draw frames to keep responsive without lagging
+    """Return the cached spectrum, recomputing it every 3 draw frames."""
     frame = getattr(self, 'pp_frame_count', 0)
     if self._spectrum_cache is not None and (frame - self._spectrum_frame) < 3:
         return self._spectrum_cache
@@ -173,7 +152,7 @@ def _spectrum_compute(self):
 # ── Draw spectrum panel ──────────────────────────────────────────────────
 
 def _spectrum_draw_panel(self):
-    """Draw the frequency spectrum as a panel in the bottom-left corner."""
+    """Draw the spectrum panel in the bottom-left corner."""
     if not self.spectrum_active:
         return
 
@@ -184,31 +163,26 @@ def _spectrum_draw_panel(self):
     my, mx = self.stdscr.getmaxyx()
     N = len(mag)
 
-    # Panel size: fit into bottom-left, max 1/3 screen
+    # At most a third of the screen in each direction.
     panel_h = min(N, max(6, my // 3))
     panel_w = min(N * 2, max(12, mx // 3))  # 2 chars per cell
     cell_w = 2
 
-    # Position: bottom-left with 1 row/col margin
     start_y = my - panel_h - 2
     start_x = 1
 
     if start_y < 2 or start_x + panel_w + 2 >= mx:
         return
 
-    # Draw border
     title = " SPECTRUM (2D DFT) "
     border_w = panel_w + 2
     try:
-        # Top border
         top = "\u250c" + title + "\u2500" * max(0, border_w - 2 - len(title)) + "\u2510"
         self.stdscr.addstr(start_y - 1, start_x - 1, top[:mx - start_x],
                            curses.color_pair(0) | curses.A_DIM)
-        # Bottom border
         bot = "\u2514" + "\u2500" * (border_w - 2) + "\u2518"
         self.stdscr.addstr(start_y + panel_h, start_x - 1, bot[:mx - start_x],
                            curses.color_pair(0) | curses.A_DIM)
-        # Side borders
         for dy in range(panel_h):
             self.stdscr.addstr(start_y + dy, start_x - 1, "\u2502",
                                curses.color_pair(0) | curses.A_DIM)
@@ -219,13 +193,11 @@ def _spectrum_draw_panel(self):
     except curses.error:
         pass
 
-    # Render spectrum cells
     cells_h = panel_h
     cells_w = panel_w // cell_w
     cmap = self._spectrum_colormap
 
     for dy in range(cells_h):
-        # Map panel row to spectrum row
         sr = int(dy * N / cells_h) % N
         py = start_y + dy
         if py >= my - 1:
@@ -244,12 +216,11 @@ def _spectrum_draw_panel(self):
 # ── Indicator badge ──────────────────────────────────────────────────────
 
 def _spectrum_draw_indicator(self):
-    """Draw a compact status badge when spectrum overlay is active."""
+    """Draw the status badge in the top-right corner."""
     if not self.spectrum_active:
         return
     my, mx = self.stdscr.getmaxyx()
     label = f" SPECTRUM {self._spectrum_size}x{self._spectrum_size} "
-    # Position after ghost trail badge area
     col = max(1, mx - len(label) - 2)
     row = 0
     if col + len(label) >= mx:
@@ -264,8 +235,7 @@ def _spectrum_draw_indicator(self):
 # ── Key handling ─────────────────────────────────────────────────────────
 
 def _spectrum_handle_key(self, key):
-    """Handle spectrum overlay key bindings.  Returns True if consumed."""
-    # 'y' — toggle spectrum on/off
+    """Handle spectrum keys.  Return True if the key was consumed."""
     if key == ord("y"):
         self.spectrum_active = not self.spectrum_active
         if not self.spectrum_active:
@@ -279,8 +249,7 @@ def _spectrum_handle_key(self, key):
     if not self.spectrum_active:
         return False
 
-    # '[' / ']' when spectrum active — adjust DFT resolution
-    # (These don't conflict since we only capture them when spectrum is on)
+    # '{' and '}' change the DFT size, and only while the overlay is on.
     if key == ord("{"):
         old = self._spectrum_size
         self._spectrum_size = max(8, self._spectrum_size // 2)
@@ -302,7 +271,7 @@ def _spectrum_handle_key(self, key):
 # ── Registration ─────────────────────────────────────────────────────────
 
 def register(App):
-    """Attach spectrum overlay methods and state initialiser to App."""
+    """Attach the spectrum overlay methods to App."""
     App._spectrum_init = _spectrum_init
     App._spectrum_draw_panel = _spectrum_draw_panel
     App._spectrum_draw_indicator = _spectrum_draw_indicator
