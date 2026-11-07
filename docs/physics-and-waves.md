@@ -132,9 +132,9 @@ Decoherence: with probability p, collapse amplitude to random phase
 
 ---
 
-## Lightning (Dielectric Breakdown)
+## Lightning
 
-**Background** — The Dielectric Breakdown Model (DBM), introduced by Niemeyer, Pietronero, and Wiesmann in 1984, simulates how electrical discharge channels grow through an insulating medium. It explains the branching fractal structure of lightning bolts, electrical treeing in power cables, and Lichtenberg figures. The parameter eta controls the fractal dimension of the resulting pattern.
+**Background** — The mode uses the Dielectric Breakdown Model (DBM), introduced by Niemeyer, Pietronero, and Wiesmann in 1984, simulates how electrical discharge channels grow through an insulating medium. It explains the branching fractal structure of lightning bolts, electrical treeing in power cables, and Lichtenberg figures. The parameter eta controls the fractal dimension of the resulting pattern.
 
 **Formulation** — The simulation solves for the electrostatic potential and grows the discharge channel probabilistically:
 
@@ -1125,7 +1125,7 @@ Vortex imprinting uses superposed atan2 phase profiles with toroidal wrapping. S
 
 ---
 
-## Spin Ice & Emergent Magnetic Monopoles
+## Spin Ice & Emergent Monopoles
 
 **Background** — Spin ice is a class of geometrically frustrated magnets in which local "ice rules" (analogous to Bernal-Fowler rules in water ice) constrain spin configurations. In a square-ice lattice, each vertex has four edges carrying arrow-spins, and the ground state requires exactly two arrows pointing in and two pointing out (2-in/2-out). Violations of this constraint behave as emergent magnetic monopole quasiparticles — fractionalized excitations that carry effective magnetic charge, are connected by observable Dirac strings, and interact via a Coulomb potential. First identified experimentally in pyrochlore materials like Dy₂Ti₂O₇ (Harris et al. 1997, Castelnovo et al. 2008), spin ice represents one of the most striking examples of emergent fractionalization in condensed matter physics.
 
@@ -1214,7 +1214,7 @@ The sweep presets start at p = 0.30 (Site, Directed, Bootstrap), 0.25 (Bond) or 
 
 ---
 
-## Earthquake & Seismic Wave Propagation
+## Earthquake & Seismic Waves
 
 **Background** — Earthquakes arise from the sudden release of accumulated tectonic stress along faults, where friction locks plates until stress exceeds the fault's yield strength and slip cascades across a rupture zone. The Burridge-Knopoff (1967) spring-block model captures this stick-slip instability with a one- or two-dimensional chain of blocks connected by springs and resting on a frictional surface driven at constant velocity. Despite its simplicity, the model reproduces the key statistical signatures of natural seismicity: the Gutenberg-Richter power-law frequency-magnitude distribution, Omori's law of aftershock decay, and characteristic earthquake recurrence cycles. This places earthquake dynamics squarely within the framework of self-organized criticality — the system naturally evolves toward a critical state where perturbations of all sizes can occur.
 
