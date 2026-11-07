@@ -254,10 +254,9 @@ def _butterfly_handle_run_key(self, key: int) -> bool:
         self.cursor_c = min(self.grid.cols - 1, self.cursor_c + 1)
         return True
 
-    # q = quit app
     if key == ord("q"):
-        import sys
-        sys.exit(0)
+        self._exit_butterfly_mode()
+        return True
 
     return True  # consume all keys in butterfly mode
 
@@ -747,7 +746,7 @@ def _butterfly_draw_status(self, max_y: int, max_x: int):
         if hasattr(self, 'message') and self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [d]=view [h]=heat [c]=scale [r]=reset [Ctrl+B]=exit [q]=quit"
+            hint = " [Space]=play [n]=step [d]=view [h]=heat [c]=scale [r]=reset [Ctrl+B]=exit [q]=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
