@@ -773,7 +773,7 @@ The Bell State circuit produces exactly two outcomes (|00> and |11>) with 50% pr
 
 **Background**
 
-Tierra, created by ecologist Thomas Ray in 1990, is a landmark artificial life system where self-replicating machine-code programs compete for memory and CPU time in a shared "primordial soup." Programs mutate during replication, leading to the spontaneous emergence of parasites (programs that exploit others' copy routines), immunity, and hyper-parasites. This implementation faithfully reproduces the Tierran instruction set, virtual machine, and reaper queue in a terminal-based visualization.
+Tierra, created by ecologist Thomas Ray in 1990, is a landmark artificial life system where self-replicating machine-code programs compete for memory and CPU time in a shared "primordial soup." In Ray's runs, mutation led to parasites (programs that exploit others' copy routines), immunity, and hyper-parasites. This mode is a simplified Tierra-style system: a 16-opcode virtual machine, a shared memory, a reaper queue, and a terminal view. Each organism executes only its own code, so Ray's host-parasite interactions are not modelled.
 
 **Formulation**
 
@@ -792,25 +792,27 @@ Instruction set (16 opcodes):
   PUSH(11), POP(12): stack operations
   SWAP(13), CALL(14), RET(15): register/subroutine operations
 
-Ancestor genome (~36 instructions): minimal self-copier
-  1. Find own start template (1111)
-  2. Allocate daughter space (ALLOC)
-  3. Find end template, set copy limit
-  4. Copy loop: COPY, INC read, INC write, DEC counter, JMPZ exit, JMP loop
-  5. SPLIT to create independent daughter
-  6. JMP back to start
+Ancestor genome (42 instructions): minimal self-copier
+  1. Start template (1111), then ALLOC for the daughter space
+  2. PUSH, FIND the end template, MOV_H to set the read head, POP
+  3. Copy loop: COPY, INC, INC, DEC counter, JMPZ exit, JMP loop
+  4. SPLIT to create an independent daughter
+  5. JMP back to start
+  Parasite World uses a 30-instruction ancestor; Symbiosis Lab seeds both.
 
 Mutation:
   Copy mutation: during COPY, each instruction has probability P_mut of being
     replaced by random opcode (0.002 to 0.015 depending on preset)
-  Cosmic rays: per step, P_cosmic * mem_size random memory cells are overwritten
+  Cosmic rays: per step, int(P_cosmic * mem_size) random memory cells are
+    overwritten with random opcodes (Genesis rounds down to none)
 
-Reaper queue (population control, when max_organisms reached):
+Reaper queue (population control, when max_organisms is reached):
   "oldest":       kill organism with highest age
   "large_first":  kill organism with largest genome
   "errors_first": kill organism with most execution errors
+  Organisms with more than 200 errors die regardless of the reaper.
 
-Species identification: hash(genome) = sum(op_i * 31^i) mod 2^32
+Species identification: h = (h * 31 + op_i + i) mod 2^32, folded over the genome
 
 Presets:
   Genesis:        mutation=0.002, cosmic=0.0001, reaper=oldest
@@ -822,7 +824,7 @@ Presets:
 
 **What to look for**
 
-In the memory view, watch colored blocks expand as organisms replicate and fill free space (shown as dim dots). Species diversity (shown in stats view) typically follows a pattern: initial monoculture, then diversification as mutations accumulate, then possible mass extinction events when a successful parasite emerges. The Parasite World preset with its small ancestor and high mutation rate produces parasites rapidly -- these are short programs that lack their own copy loop but hijack a host's COPY instruction. The Arms Race preset with large-first reaping creates evolutionary pressure toward genome compaction. The phylogenetic view shows genome-length distributions, revealing whether evolution is driving toward shorter (parasitic) or longer (complex) programs.
+In the memory view, watch colored blocks expand as organisms replicate and fill free space (shown as dim dots). Species diversity (shown in stats view) typically follows a pattern: initial monoculture, then diversification as mutations accumulate, then possible mass extinction events when a successful parasite emerges. The Parasite World preset starts from the small ancestor with a higher mutation rate. The Arms Race preset reaps the largest genomes first, which favors smaller ones. The phylogenetic view shows the genome-length distribution, so you can see whether lengths drift shorter or longer. `v` cycles memory, stats and phylogeny views, `m` mutates 20 random cells, `r` reaps one organism, `Space` pauses, `n` steps while paused, and `+`/`-` set the speed.
 
 **References**
 
