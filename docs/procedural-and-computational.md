@@ -186,12 +186,13 @@ Vegetation dynamics:
   Below sea level:      v = 0 (submerged)
   Coastal (< sea+0.05): v grows slowly, max 0.2
   Alpine (> 0.85):      v decays (too cold)
+  High (0.7-0.85):      v grows slowly, max 0.4
   Temperate:            v grows proportional to (1 - slope_penalty)
 ```
 
 **What to look for**
 
-Over geological epochs, observe the competition between uplift (building mountains) and erosion (wearing them down). Vegetation stabilizes slopes -- increasing vegetation growth rate dramatically reduces erosion. Toggle between four views: topographic (elevation bands with vegetation overlay), raw elevation, vegetation density, and erosion activity (red = steep active slopes, blue = stable flats). Terrain types include continental shelves, archipelagos, alpine ranges, rift valleys, and coastal gradients.
+Over geological epochs, observe the competition between uplift (building mountains) and erosion (wearing them down). Vegetation stabilizes slopes, so a higher vegetation growth rate reduces erosion. `v` cycles four views: topographic (elevation bands with vegetation), raw elevation, vegetation density, and erosion (slope steepness in four colour bands). The presets are Continental, Archipelago, Alpine Peaks, Rolling Plains, Great Rift and Coastal Erosion. While running, `u`/`U` change uplift, `t`/`T` thermal erosion, `w`/`W` rain, `g`/`G` vegetation growth and `s`/`S` sea level.
 
 **References**
 
