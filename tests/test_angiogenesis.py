@@ -49,3 +49,15 @@ def test_step_advances_one_tick_regardless_of_speed():
     app.angio_speed = 5
     app._angio_step()
     assert app.angio_generation == 1
+
+
+def test_tips_grow_instead_of_fusing_with_their_own_stalk():
+    import random
+    random.seed(1)
+    app = _started(0)
+    nodes0 = len(app.angio_nodes)
+    for _ in range(30):
+        app._angio_step()
+    assert len(app.angio_tips) > 0
+    assert len(app.angio_nodes) > nodes0
+

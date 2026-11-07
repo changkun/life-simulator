@@ -79,6 +79,7 @@ _SPROUT_VEGF_THRESH = 0.15  # VEGF level for tip cell activation
 _SPROUT_PROB = 0.08
 _BRANCH_PROB = 0.03
 _ANASTOMOSE_RADIUS = 2.5    # merge distance for tip meeting vessel
+_STALK_HOPS = 4             # segments behind a tip that it cannot merge with
 
 # Vessel remodeling
 _REGRESS_FLOW_THRESH = 0.01
@@ -402,6 +403,23 @@ def _angio_add_edge(self, n1, n2, radius=0.8):
     return ei
 
 
+def _angio_stalk_nodes(self, node_idx, hops=_STALK_HOPS):
+    """Return the nodes within a few vessel segments of node_idx."""
+    seen = {node_idx}
+    frontier = [node_idx]
+    for _ in range(hops):
+        nxt = []
+        for ni in frontier:
+            for ei in self.angio_nodes[ni].neighbors:
+                edge = self.angio_edges[ei]
+                for other in (edge.n1, edge.n2):
+                    if other not in seen:
+                        seen.add(other)
+                        nxt.append(other)
+        frontier = nxt
+    return seen
+
+
 def _tumor_update_cells(tumor, rows, cols):
     """Recompute the set of cells covered by tumor."""
     tumor.cells.clear()
@@ -577,7 +595,9 @@ def _angio_step(self):
         new_r = max(0, min(rows - 1, new_r))
         new_c = max(0, min(cols - 1, new_c))
 
-        # Check for anastomosis (merge with existing vessel)
+        # Check for anastomosis (merge with existing vessel). Skip the
+        # tip's own stalk, or it fuses with it on the first step.
+        stalk = _angio_stalk_nodes(self, tip.node_idx)
         merged = False
         nr_int, nc_int = int(new_r), int(new_c)
         for dr in range(-2, 3):
@@ -587,7 +607,7 @@ def _angio_step(self):
                 check = (nr_int + dr, nc_int + dc)
                 if check in self.angio_node_grid:
                     other_idx = self.angio_node_grid[check]
-                    if other_idx != tip.node_idx:
+                    if other_idx not in stalk:
                         d = math.hypot(new_r - check[0], new_c - check[1])
                         if d < _ANASTOMOSE_RADIUS:
                             # Connect!
@@ -610,7 +630,7 @@ def _angio_step(self):
         tip.c = new_c
 
         # Branching
-        if best_vegf > _SPROUT_VEGF_THRESH and random.random() < _BRANCH_PROB:
+        if (best_vegf > _SPROUT_VEGF_THRESH and random.random() < _BRANCH_PROB):
             branch_heading = tip.heading + random.choice([-60, 60]) + random.uniform(-10, 10)
             new_tip = _TipCell(tip.r, tip.c, tip.node_idx, branch_heading)
             new_tips.append(new_tip)
