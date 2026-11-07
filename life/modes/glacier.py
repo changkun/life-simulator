@@ -1,28 +1,4 @@
-"""Mode: glacier — Glacier Dynamics & Ice Age Cycles.
-
-Simulates deep-time climate with:
-- Milankovitch orbital forcing (eccentricity ~100kyr, obliquity ~41kyr, precession ~23kyr)
-  driving insolation variations at high latitudes
-- Ice-albedo feedback (ice reflects sunlight → cooling → more ice → runaway glaciation)
-- CO2 greenhouse coupling (volcanic outgassing vs silicate weathering sink vs ocean absorption)
-- Ice sheet advance/retreat across a latitudinal cross-section (pole-to-equator)
-- Sea level change from ice volume (ice growth lowers sea level, melting raises it)
-- Isostatic crustal rebound (lithosphere depresses under ice load, rebounds when ice retreats)
-- Heinrich events (iceberg armada calving surges from ice sheet instability)
-- Dansgaard-Oeschger rapid warming oscillations (abrupt ~10°C jumps in decades)
-- Interglacial/glacial state transitions driven by orbital + feedback coupling
-
-Three views:
-  1) Polar-to-equatorial cross-section with advancing/retreating ice sheets,
-     bedrock depression, sea level line, albedo overlay
-  2) Time-series dashboard: temperature/CO2/ice volume/sea level/insolation over deep time
-  3) Orbital parameter phase space + feedback strength diagram
-
-Six presets:
-  Last Glacial Maximum, Holocene Optimum, Snowball Earth Onset,
-  PETM Hothouse, Anthropogenic Rapid CO2 Injection,
-  Dansgaard-Oeschger Oscillations
-"""
+"""Glacier Dynamics & Ice Age Cycles — Milankovitch forcing, ice-albedo and CO2 feedbacks, and ice sheets along a pole-to-equator cross-section."""
 import curses
 import math
 import random
@@ -132,20 +108,17 @@ def _base_insolation(lat_idx, n_lats):
     return _SOLAR_CONST * (0.2 + 0.8 * lat_frac)
 
 
-def _milankovitch(tick, eccen_phase=0.0, obliq_phase=0.0, preces_phase=0.0):
-    """Compute Milankovitch orbital forcing anomaly."""
-    e = _ECCEN_AMP * math.sin(2 * math.pi * tick / _ECCEN_PERIOD + eccen_phase)
-    o = _OBLIQ_AMP * math.sin(2 * math.pi * tick / _OBLIQ_PERIOD + obliq_phase)
-    p = _PRECES_AMP * math.sin(2 * math.pi * tick / _PRECES_PERIOD + preces_phase)
-    return e + o + p
-
-
 def _milankovitch_components(tick, eccen_phase=0.0, obliq_phase=0.0, preces_phase=0.0):
-    """Return individual Milankovitch components."""
+    """Return the eccentricity, obliquity and precession terms of the orbital forcing."""
     e = _ECCEN_AMP * math.sin(2 * math.pi * tick / _ECCEN_PERIOD + eccen_phase)
     o = _OBLIQ_AMP * math.sin(2 * math.pi * tick / _OBLIQ_PERIOD + obliq_phase)
     p = _PRECES_AMP * math.sin(2 * math.pi * tick / _PRECES_PERIOD + preces_phase)
     return e, o, p
+
+
+def _milankovitch(tick, eccen_phase=0.0, obliq_phase=0.0, preces_phase=0.0):
+    """Return the combined Milankovitch forcing anomaly."""
+    return sum(_milankovitch_components(tick, eccen_phase, obliq_phase, preces_phase))
 
 
 def _append_metric(hist, key, val):
@@ -161,14 +134,14 @@ def _append_metric(hist, key, val):
 # ======================================================================
 
 def _enter_glacier_mode(self):
-    """Enter glacier dynamics mode — show preset menu."""
+    """Enter Glacier Dynamics and show the preset menu."""
     self.glacier_mode = True
     self.glacier_menu = True
     self.glacier_menu_sel = 0
 
 
 def _exit_glacier_mode(self):
-    """Exit glacier dynamics mode."""
+    """Exit Glacier Dynamics and free its state."""
     self.glacier_mode = False
     self.glacier_menu = False
     self.glacier_running = False
@@ -185,7 +158,7 @@ def _exit_glacier_mode(self):
 # ======================================================================
 
 def _glacier_init(self, preset_idx: int):
-    """Initialize glacier dynamics simulation for chosen preset."""
+    """Initialize the simulation for a preset."""
     name, _desc, pid = GLACIER_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
 
@@ -243,7 +216,6 @@ def _glacier_init(self, preset_idx: int):
         'heinrich': [],
     }
 
-    # Apply preset
     _apply_preset(self, pid, n_lats)
     self._flash(f"Glacier Dynamics: {name}")
 
@@ -352,7 +324,7 @@ def _apply_preset(self, pid, n_lats):
 # ======================================================================
 
 def _glacier_step(self):
-    """Advance glacier simulation by one tick."""
+    """Advance the simulation by one tick."""
     n_lats = self.glacier_n_lats
     temp = self.glacier_temp
     ice = self.glacier_ice
@@ -365,8 +337,6 @@ def _glacier_step(self):
     tick = self.glacier_generation
 
     # --- Milankovitch insolation update ---
-    mk_total = _milankovitch(tick, self.glacier_eccen_phase,
-                              self.glacier_obliq_phase, self.glacier_preces_phase)
     mk_e, mk_o, mk_p = _milankovitch_components(tick, self.glacier_eccen_phase,
                                                    self.glacier_obliq_phase,
                                                    self.glacier_preces_phase)
@@ -566,7 +536,7 @@ def _glacier_step(self):
 # ======================================================================
 
 def _handle_glacier_menu_key(self, key: int) -> bool:
-    """Handle keys in preset menu."""
+    """Handle a key press in the preset menu."""
     if key == curses.KEY_UP or key == ord('k'):
         self.glacier_menu_sel = (self.glacier_menu_sel - 1) % len(GLACIER_PRESETS)
         return True
@@ -584,7 +554,7 @@ def _handle_glacier_menu_key(self, key: int) -> bool:
 
 
 def _handle_glacier_key(self, key: int) -> bool:
-    """Handle keys during simulation."""
+    """Handle a key press during the simulation."""
     if key == ord(' '):
         self.glacier_running = not self.glacier_running
         return True
@@ -699,6 +669,8 @@ def _draw_glacier(self, max_y: int, max_x: int):
 #  Drawing — Polar-to-Equatorial Cross-Section
 # ======================================================================
 
+_HINT = ("Space=play  n=step  r=reset  R=menu  q=exit  v=view  +/-=CO2  "
+         "V/B=volcanic  h=Heinrich  d=D-O event")
 _ICE_GLYPHS = ' .:-=*#%@'
 _TEMP_COLORS = {
     'hot': 1,       # red
@@ -884,8 +856,7 @@ def _draw_crosssection_view(self, max_y: int, max_x: int):
 
     # Status bar
     state = "RUNNING" if self.glacier_running else "PAUSED"
-    status = (f" {state} | [v]iew [+/-]CO2 [V/B]volcanic [h]einrich [d]O event "
-              f"[space] [r]eset [q]uit")
+    status = f" {state}  {_HINT}"
     try:
         self.stdscr.addstr(max_y - 2, 0, status[:max_x - 1],
                            curses.color_pair(7) | curses.A_BOLD)
@@ -966,8 +937,7 @@ def _draw_graphs_view(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    status = (f" [v]iew [+/-]CO2 [V/B]volcanic [h]einrich [d]O event "
-              f"[space]pause [r]estart [q]uit")
+    status = f" {_HINT}"
     try:
         self.stdscr.addstr(max_y - 1, 2, status[:max_x - 3], curses.color_pair(7))
     except curses.error:
@@ -1111,8 +1081,7 @@ def _draw_orbital_view(self, max_y: int, max_x: int):
             except curses.error:
                 pass
 
-    status = (f" [v]iew [+/-]CO2 [V/B]volcanic [h]einrich [d]O event "
-              f"[space]pause [r]estart [q]uit")
+    status = f" {_HINT}"
     try:
         self.stdscr.addstr(max_y - 1, 2, status[:max_x - 3], curses.color_pair(7))
     except curses.error:
@@ -1124,7 +1093,7 @@ def _draw_orbital_view(self, max_y: int, max_x: int):
 # ======================================================================
 
 def register(App):
-    """Register glacier dynamics mode methods on the App class."""
+    """Register Glacier Dynamics methods on the App class."""
     App.GLACIER_PRESETS = GLACIER_PRESETS
     App._enter_glacier_mode = _enter_glacier_mode
     App._exit_glacier_mode = _exit_glacier_mode
