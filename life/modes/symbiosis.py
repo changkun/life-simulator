@@ -1,4 +1,4 @@
-"""Mode: symbiosis — multi-physics co-simulation with 3+ engines on shared environmental fields."""
+"""Symbiosis Multi-Physics — three or more engines co-simulated on shared environmental fields."""
 import curses
 import math
 import time
@@ -6,13 +6,9 @@ import time
 from life.constants import SPEEDS
 from life.modes.mashup import MASHUP_SIMS, _ENGINES, _SIM_BY_ID
 
-# Density visualization characters (5 levels)
 _DENSITY = " ░▒▓█"
 
-# ── Shared environmental field names ──────────────────────────────────
 FIELD_NAMES = ["temperature", "chemical", "flow_u", "flow_v"]
-
-# ── Preset combinations ──────────────────────────────────────────────
 
 SYMBIOSIS_PRESETS = [
     {
@@ -53,7 +49,7 @@ SYMBIOSIS_PRESETS = [
     },
 ]
 
-# Color channel assignments for visualization
+# Channel letter -> (curses color pair, color name)
 _CHANNEL_COLORS = {
     "R": (1, "red"),
     "G": (2, "green"),
@@ -63,7 +59,7 @@ _CHANNEL_COLORS = {
     "W": (7, "white"),
 }
 
-# All available channels (for 3-8 engines)
+# Default channel per engine slot (up to 8 engines)
 _ALL_CHANNELS = ["R", "G", "B", "Y", "M", "W", "R", "G"]
 
 
@@ -78,7 +74,7 @@ _ALL_CHANNELS = ["R", "G", "B", "Y", "M", "W", "R", "G"]
 # ════════════════════════════════════════════════════════════════════
 
 def _init_fields(rows, cols):
-    """Create empty shared environmental fields."""
+    """Create empty shared fields."""
     return {
         "temperature": [[0.0] * cols for _ in range(rows)],
         "chemical": [[0.0] * cols for _ in range(rows)],
@@ -88,9 +84,9 @@ def _init_fields(rows, cols):
 
 
 def _update_fields(fields, layers, rows, cols):
-    """Update shared fields from all engine densities.
+    """Decay the shared fields, then add each engine's contribution.
 
-    Each engine type contributes to different fields:
+    Contributions by engine:
       wave     → temperature (kinetic energy), flow_u/v (wave gradient)
       rd       → chemical (reaction product concentration)
       fire     → temperature (combustion heat)
@@ -105,7 +101,6 @@ def _update_fields(fields, layers, rows, cols):
     fu = fields["flow_u"]
     fv = fields["flow_v"]
 
-    # Decay existing fields
     for r in range(rows):
         for c in range(cols):
             temp[r][c] *= 0.92
@@ -123,7 +118,6 @@ def _update_fields(fields, layers, rows, cols):
             for r in range(rows):
                 for c in range(cols):
                     temp[r][c] = min(1.0, temp[r][c] + d[r][c] * w * 0.5)
-                    # Wave gradient as flow
                     dr = (d[(r + 1) % rows][c] - d[(r - 1) % rows][c]) * 0.5
                     dc = (d[r][(c + 1) % cols] - d[r][(c - 1) % cols]) * 0.5
                     fu[r][c] = max(-1.0, min(1.0, fu[r][c] + dr * w))
@@ -160,7 +154,7 @@ def _update_fields(fields, layers, rows, cols):
                 for c in range(cols):
                     temp[r][c] = min(1.0, temp[r][c] + d[r][c] * w * 0.4)
 
-    # Diffuse fields slightly for spatial smoothness
+    # Diffusion smooths the fields spatially.
     _diffuse_field(temp, rows, cols, 0.1)
     _diffuse_field(chem, rows, cols, 0.08)
     _diffuse_field(fu, rows, cols, 0.05)
@@ -168,7 +162,7 @@ def _update_fields(fields, layers, rows, cols):
 
 
 def _diffuse_field(field, rows, cols, rate):
-    """Simple 4-neighbor diffusion pass."""
+    """Diffuse a field to its four neighbors on a torus."""
     buf = [[0.0] * cols for _ in range(rows)]
     keep = 1.0 - rate
     spread = rate / 4.0
@@ -183,9 +177,9 @@ def _diffuse_field(field, rows, cols, rate):
 
 
 def _field_coupling_density(fields, engine_id, rows, cols):
-    """Build a coupling density for an engine from the shared fields.
+    """Build the density an engine receives as coupling input.
 
-    Each engine type responds to different fields:
+    Each engine responds to different fields:
       wave     ← chemical (reactions create wave sources)
       rd       ← temperature (heat accelerates reactions)
       fire     ← chemical (fuel from chemicals), flow (wind spreads fire)
@@ -243,7 +237,7 @@ def _field_coupling_density(fields, engine_id, rows, cols):
 # ════════════════════════════════════════════════════════════════════
 
 def _enter_symbiosis_mode(self):
-    """Enter Symbiosis mode — show engine selection menu."""
+    """Open the symbiosis preset menu."""
     self.symbiosis_menu = True
     self.symbiosis_menu_sel = 0
     self.symbiosis_menu_phase = 0  # 0=presets, 1=custom pick
@@ -252,7 +246,7 @@ def _enter_symbiosis_mode(self):
 
 
 def _exit_symbiosis_mode(self):
-    """Exit Symbiosis mode and clean up."""
+    """Leave Symbiosis mode."""
     self.symbiosis_mode = False
     self.symbiosis_menu = False
     self.symbiosis_running = False
@@ -266,7 +260,7 @@ def _exit_symbiosis_mode(self):
 # ════════════════════════════════════════════════════════════════════
 
 def _symbiosis_init(self, engine_ids, channel_map=None):
-    """Initialize N simulation engines on a shared grid with environmental fields."""
+    """Start the given engines on one grid with shared environmental fields."""
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(16, max_y - 5)
     cols = max(16, (max_x - 1) // 2)
@@ -274,7 +268,6 @@ def _symbiosis_init(self, engine_ids, channel_map=None):
     self.symbiosis_cols = cols
     self.symbiosis_engine_ids = engine_ids
 
-    # Initialize each engine as a layer
     self.symbiosis_layers = []
     for i, eid in enumerate(engine_ids):
         init_fn, _, dens_fn = _ENGINES[eid]
@@ -292,13 +285,12 @@ def _symbiosis_init(self, engine_ids, channel_map=None):
             "field_weight": 0.3,
         })
 
-    # Shared environmental fields
     self.symbiosis_fields = _init_fields(rows, cols)
     self.symbiosis_generation = 0
     self.symbiosis_running = False
     self.symbiosis_coupling = 0.5
-    self.symbiosis_show_fields = False  # Toggle field overlay
-    self.symbiosis_field_view = 0       # Which field to show (0-3)
+    self.symbiosis_show_fields = False
+    self.symbiosis_field_view = 0       # index into FIELD_NAMES
 
     self.symbiosis_menu = False
     self.symbiosis_mode = True
@@ -311,22 +303,19 @@ def _symbiosis_init(self, engine_ids, channel_map=None):
 # ════════════════════════════════════════════════════════════════════
 
 def _symbiosis_step(self):
-    """Advance all engines by one step with shared-field coupling."""
+    """Advance every engine one step, coupled through the shared fields."""
     rows = self.symbiosis_rows
     cols = self.symbiosis_cols
     layers = self.symbiosis_layers
     fields = self.symbiosis_fields
     coupling = self.symbiosis_coupling
 
-    # Update shared environmental fields from current densities
     _update_fields(fields, layers, rows, cols)
 
-    # Step each engine with field-derived coupling
     for layer in layers:
         eid = layer["id"]
         _, step_fn, dens_fn = _ENGINES[eid]
 
-        # Build coupling input from shared fields
         od = _field_coupling_density(fields, eid, rows, cols)
 
         step_fn(layer["state"], od, coupling)
@@ -340,7 +329,7 @@ def _symbiosis_step(self):
 # ════════════════════════════════════════════════════════════════════
 
 def _draw_symbiosis_menu(self, max_y, max_x):
-    """Draw the symbiosis mode selection menu."""
+    """Draw the preset and custom-engine menu."""
     self.stdscr.erase()
     phase = self.symbiosis_menu_phase
 
@@ -407,7 +396,7 @@ def _draw_symbiosis_menu(self, max_y, max_x):
         except curses.error:
             pass
 
-        help_text = "[Enter]=toggle  [G]=go (need 3+)  [Esc]=back"
+        help_text = "Enter=toggle  G=go (need 3+)  Esc=back"
         try:
             self.stdscr.addstr(4, 2, help_text[:max_x - 4],
                                curses.color_pair(6) | curses.A_DIM)
@@ -439,9 +428,9 @@ def _draw_symbiosis_menu(self, max_y, max_x):
     hint_y = max_y - 1
     if hint_y > 0:
         if phase == 0:
-            hint = " [Up/Down]=navigate  [Enter]=select  [Esc]=exit"
+            hint = " Up/Down=navigate  Enter=select  Esc=exit"
         else:
-            hint = " [Up/Down]=navigate  [Enter]=toggle  [G]=launch  [Esc]=back"
+            hint = " Up/Down=navigate  Enter=toggle  G=launch  Esc=back"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -454,7 +443,7 @@ def _draw_symbiosis_menu(self, max_y, max_x):
 # ════════════════════════════════════════════════════════════════════
 
 def _handle_symbiosis_menu_key(self, key):
-    """Handle input in the symbiosis selection menu."""
+    """Handle keys in the preset and custom-engine menu."""
     if key == -1:
         return True
     phase = self.symbiosis_menu_phase
@@ -495,7 +484,6 @@ def _handle_symbiosis_menu_key(self, key):
             self.symbiosis_menu_sel = 0
             return True
         if key in (10, 13, curses.KEY_ENTER):
-            # Toggle selection
             eid = MASHUP_SIMS[self.symbiosis_menu_sel]["id"]
             if eid in self.symbiosis_custom_picks:
                 self.symbiosis_custom_picks.remove(eid)
@@ -520,7 +508,7 @@ def _handle_symbiosis_menu_key(self, key):
 # ════════════════════════════════════════════════════════════════════
 
 def _draw_symbiosis(self, max_y, max_x):
-    """Draw the overlaid multi-physics simulation with RGB-layered channels."""
+    """Draw the engine layers overlaid in color, or one shared field."""
     self.stdscr.erase()
     layers = self.symbiosis_layers
     rows = self.symbiosis_rows
@@ -658,7 +646,7 @@ def _draw_symbiosis(self, max_y, max_x):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [1-8]=solo [!-*]=mute [f]=fields [+/-]=coupling [r]=reset [q]=exit"
+            hint = " Space=play  n=step  1-8=solo  !-*=mute  f=fields  +/-=coupling  r=reset  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -667,7 +655,7 @@ def _draw_symbiosis(self, max_y, max_x):
 
 
 def _draw_field_overlay(self, max_y, max_x, view_rows, view_cols):
-    """Draw the currently selected environmental field as a heatmap."""
+    """Draw the selected shared field as a heatmap."""
     fields = self.symbiosis_fields
     field_name = FIELD_NAMES[self.symbiosis_field_view]
     field = fields[field_name]
@@ -718,7 +706,7 @@ _MUTE_KEYS = {ord("!"): 0, ord("@"): 1, ord("#"): 2, ord("$"): 3,
 
 
 def _handle_symbiosis_key(self, key):
-    """Handle input during active symbiosis simulation."""
+    """Handle keys while the simulation is shown."""
     if key == -1:
         return True
     layers = self.symbiosis_layers
@@ -735,12 +723,11 @@ def _handle_symbiosis_key(self, key):
         self._symbiosis_step()
         return True
 
-    # Solo: press 1-8 to solo a layer (press again to unsolo)
+    # 1-8 solo a layer; pressing it again clears the solo.
     if ord("1") <= key <= ord("8"):
         idx = key - ord("1")
         if idx < len(layers):
             was_solo = layers[idx]["solo"]
-            # Clear all solos
             for l in layers:
                 l["solo"] = False
             if not was_solo:
@@ -750,7 +737,7 @@ def _handle_symbiosis_key(self, key):
                 self._flash("All layers visible")
         return True
 
-    # Mute: Shift+1-8
+    # Shift+1-8 mute or unmute a layer.
     if key in _MUTE_KEYS:
         idx = _MUTE_KEYS[key]
         if idx < len(layers):
@@ -759,7 +746,6 @@ def _handle_symbiosis_key(self, key):
             self._flash(f"{layers[idx]['name']}: {state_str}")
         return True
 
-    # Show all layers
     if key == ord("a"):
         for l in layers:
             l["visible"] = True
@@ -767,7 +753,6 @@ def _handle_symbiosis_key(self, key):
         self._flash("All layers visible")
         return True
 
-    # Toggle field overlay
     if key == ord("f"):
         self.symbiosis_show_fields = not self.symbiosis_show_fields
         if self.symbiosis_show_fields:
@@ -776,14 +761,12 @@ def _handle_symbiosis_key(self, key):
             self._flash("Field view OFF")
         return True
 
-    # Cycle field view
     if key == ord("F"):
         self.symbiosis_field_view = (self.symbiosis_field_view + 1) % len(FIELD_NAMES)
         self.symbiosis_show_fields = True
         self._flash(f"Field: {FIELD_NAMES[self.symbiosis_field_view]}")
         return True
 
-    # Coupling adjustment
     if key in (ord("+"), ord("=")):
         self.symbiosis_coupling = min(1.0, self.symbiosis_coupling + 0.05)
         self._flash(f"Coupling: {self.symbiosis_coupling:.2f}")
@@ -797,14 +780,12 @@ def _handle_symbiosis_key(self, key):
         self._flash("Coupling: OFF (independent)")
         return True
 
-    # Reset
     if key == ord("r"):
         ch_map = [l["channel"] for l in layers]
         self._symbiosis_init(self.symbiosis_engine_ids, ch_map)
         self._flash("Reset!")
         return True
 
-    # Back to menu
     if key == ord("R"):
         self.symbiosis_mode = False
         self.symbiosis_running = False
@@ -813,7 +794,6 @@ def _handle_symbiosis_key(self, key):
         self.symbiosis_menu_sel = 0
         return True
 
-    # Speed
     if key == ord(">"):
         if self.speed_idx < len(SPEEDS) - 1:
             self.speed_idx += 1
@@ -831,7 +811,7 @@ def _handle_symbiosis_key(self, key):
 # ════════════════════════════════════════════════════════════════════
 
 def register(App):
-    """Register symbiosis mode methods on the App class."""
+    """Bind the Symbiosis methods and presets to App."""
     App._enter_symbiosis_mode = _enter_symbiosis_mode
     App._exit_symbiosis_mode = _exit_symbiosis_mode
     App._symbiosis_init = _symbiosis_init
