@@ -132,8 +132,9 @@ def _exit_planetary_atmos_mode(self):
     self.planetary_atmos_mode = False
     self.planetary_atmos_menu = False
     self.planetary_atmos_running = False
+    keep = ('planetary_atmos_mode', 'planetary_atmos_menu', 'planetary_atmos_running')
     for attr in list(vars(self)):
-        if attr.startswith('planetary_atmos_') and attr not in ('planetary_atmos_mode',):
+        if attr.startswith('planetary_atmos_') and attr not in keep:
             try:
                 delattr(self, attr)
             except AttributeError:

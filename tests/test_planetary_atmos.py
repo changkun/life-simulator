@@ -27,6 +27,18 @@ def test_enter_shows_menu():
     assert app.planetary_atmos_menu is True
 
 
+def test_exit_keeps_flags_defined():
+    app = _make_app()
+    app._enter_planetary_atmos_mode()
+    app._planetary_atmos_init(0)
+    app._exit_planetary_atmos_mode()
+    flags = vars(app)
+    assert flags["planetary_atmos_mode"] is False
+    assert flags["planetary_atmos_menu"] is False
+    assert flags["planetary_atmos_running"] is False
+    assert "planetary_atmos_temp" not in flags
+
+
 @pytest.mark.parametrize("idx", range(len(PLANETARY_ATMOS_PRESETS)))
 def test_temperature_does_not_saturate(idx):
     """Radiative cooling balances heating, so the planet does not hit the temperature clamp."""
