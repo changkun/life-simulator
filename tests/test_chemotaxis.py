@@ -270,3 +270,17 @@ class TestChemotaxis:
         for r in range(rows):
             for c in range(cols):
                 assert 0.0 <= self.app.chemo_bacteria[r][c] <= 1.0
+
+
+def test_view_resets_on_enter_and_exit():
+    random.seed(1)
+    app = make_mock_app()
+    register(type(app))
+    app._chemo_init(0)
+    app._handle_chemo_key(ord("v"))
+    assert app._chemo_view == "nutrient"
+    app._exit_chemo_mode()
+    assert app._chemo_view == "bacteria"
+    app._chemo_view = "signal"
+    app._enter_chemo_mode()
+    assert app._chemo_view == "bacteria"

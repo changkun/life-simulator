@@ -30,6 +30,7 @@ def _enter_chemo_mode(self):
     """Enter Chemotaxis & Bacterial Colony Growth mode — show preset menu."""
     self.chemo_menu = True
     self.chemo_menu_sel = 0
+    self._chemo_view = "bacteria"
     self._flash("Chemotaxis & Bacterial Colony Growth — select a scenario")
 
 
@@ -42,6 +43,7 @@ def _exit_chemo_mode(self):
     self.chemo_bacteria = []
     self.chemo_nutrient = []
     self.chemo_signal = []
+    self._chemo_view = "bacteria"
     self._flash("Chemotaxis mode OFF")
 
 
