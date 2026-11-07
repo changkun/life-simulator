@@ -343,7 +343,7 @@ Verlet integration (for each non-pinned point):
   old_position = position
   position += velocity + gravity_vector + wind_vector
 
-Constraint relaxation (iterated 5 times per step):
+Constraint relaxation (iterated 5 times per step, 8 for Silk Sheet):
   For each spring connecting points p1 and p2 with rest length L:
     dist = |p2 - p1|
     if dist > L * tear_threshold:
@@ -360,9 +360,9 @@ Parameters:
   tear_threshold — maximum stretch ratio before breaking (1.5 to 10.0)
 ```
 
-Presets include hanging cloth (top row pinned), curtain (two corners), flag (left edge pinned, strong wind), hammock (four corners), net (wide spacing), and silk (fine mesh, low tear threshold).
+Presets: Hanging Cloth (top row pinned), Curtain (two top corners pinned), Flag (left edge pinned, strong wind), Hammock (four corners pinned), Net (spacing 2, top row pinned, tear threshold 5), and Silk Sheet (8 relaxation passes, tear threshold 2.5, lower damping).
 
-**What to look for** — The "Flag" preset shows cloth billowing in the wind with characteristic ripple waves. Use "x" to tear constraints at the cursor and watch the fabric rip realistically. The "Silk" preset tears easily, producing dramatic ripping effects. Constraint colors shift from white (relaxed) through yellow (moderate tension) to red (near breaking point).
+**What to look for** — The "Flag" preset shows cloth billowing in the wind with characteristic ripple waves. Move the cursor with the arrow keys or h/j/k/l, press p to pin or unpin a point, and press x to cut all springs at the cursor point. The "Silk Sheet" preset tears easily. Spring colors shift from white (relaxed) through yellow (stretched over 1.2x rest length) to red (over 1.5x).
 
 **References**
 - Provot, X. "Deformation constraints in a mass-spring model to describe rigid cloth behavior," *Graphics Interface*, 1995. https://doi.org/10.20380/GI1995.31
