@@ -404,7 +404,7 @@ def _handle_archaeo_key(self, key):
 
     if self.archaeo_show_answer:
         # Any key after showing answer goes to next puzzle
-        if key == ord('n') or key == ord(' ') or key == 10:
+        if key in (ord('n'), ord(' '), 10, 13, curses.KEY_ENTER):
             _generate_puzzle(self)
         return True
 
@@ -414,7 +414,7 @@ def _handle_archaeo_key(self, key):
         self.archaeo_last_result = "Candidate simulated"
         return True
 
-    if key == 10:  # Enter
+    if key in (10, 13, curses.KEY_ENTER):
         _run_candidate(self)
         solved = _check_answer(self)
         if solved:
@@ -531,7 +531,7 @@ def _handle_archaeo_menu_key(self, key):
         self.archaeo_menu_sel = min(len(_DIFFICULTIES) - 1, self.archaeo_menu_sel + 1)
         return True
 
-    if key == 10 or key == ord(' '):
+    if key in (10, 13, curses.KEY_ENTER, ord(' ')):
         # Start game with selected difficulty
         self.archaeo_difficulty = _DIFFICULTIES[self.archaeo_menu_sel]
         self.archaeo_menu = False

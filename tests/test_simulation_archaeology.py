@@ -55,3 +55,19 @@ def test_h_hides_and_shows_key_hints():
     assert bottom_row() == []
     app._handle_archaeo_key(ord("h"))
     assert any("Space=run" in t for t in bottom_row())
+
+
+def test_enter_variants_submit_and_start():
+    for enter in (10, 13, 343):  # LF, CR, KEY_ENTER
+        app = make_mock_app()
+        sa.register(type(app))
+        app._enter_archaeo_mode()
+        assert app.archaeo_menu is True
+        app._handle_archaeo_key(enter)
+        assert app.archaeo_menu is False
+        app.archaeo_guess_birth = set(app.archaeo_answer_birth)
+        app.archaeo_guess_survival = set(app.archaeo_answer_survival)
+        app._handle_archaeo_key(enter)
+        assert app.archaeo_solved is True
+        app._handle_archaeo_key(enter)
+        assert app.archaeo_solved is False  # next puzzle
