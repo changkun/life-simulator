@@ -1157,14 +1157,14 @@ def _draw_stellar_core_section(self, max_y: int, max_x: int):
 
     shell_chars = ['H', 'e', 'C', 'O', 'S', 'F']
 
-    # Compute cumulative radii
+    # Cumulative radii, innermost shell (Fe) first, so each shell's width is
+    # proportional to its own share of the star.
     cumulative = []
     running = 0
-    for val in layers:
+    for val in reversed(layers):
         running += val / total
         cumulative.append(running)
 
-    # Draw shells from outside in
     for dy in range(-max_r, max_r + 1):
         for dx in range(-max_r * 2, max_r * 2 + 1):  # wider for aspect ratio
             dist = math.hypot(dy, dx / 2.0)
@@ -1177,21 +1177,15 @@ def _draw_stellar_core_section(self, max_y: int, max_x: int):
             if px < 1 or px >= max_x - 1 or py < 1 or py >= max_y - 3:
                 continue
 
-            # Which shell?
-            shell_idx = 0
+            # Index into the innermost-first cumulative list.
+            shell_idx = len(cumulative) - 1
             for si, cum in enumerate(cumulative):
-                if norm_dist <= cum:
+                if norm_dist <= cum and layers[len(layers) - 1 - si] >= 0.001:
                     shell_idx = si
                     break
-            else:
-                shell_idx = len(cumulative) - 1
 
-            # Reverse: innermost has highest index
+            # layers[] is ordered H..Fe, so the innermost shell is the last.
             display_idx = len(layers) - 1 - shell_idx
-
-            if layers[display_idx] < 0.001:
-                # Skip negligible shells, show next inward
-                continue
 
             ch = shell_chars[display_idx]
             color = shell_colors_pairs[display_idx]
