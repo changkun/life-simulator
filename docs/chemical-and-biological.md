@@ -789,9 +789,9 @@ Chemical synthesis (Fischer-Tropsch type, on mineral surfaces):
   NH₃ + CO₂ + energy  → nucleotide  (P = 0.015 × temp_mod × energy × catalysis_boost)
   Amino + mineral      → lipid       (P = 0.008 × temp_mod)
 
-Vent activity (each tick, per vent neighbor cell):
-  8% → emit H₂, 6% → emit CO₂, 3% → emit NH₃
-  Plume dispersal: upward 2-5 cells with 6% molecule placement
+Vent activity (each tick, per water cell in the ring at distance 2 around the 3x3 vent block):
+  4% → emit H₂, 3% → emit CO₂, 1.5% → emit NH₃
+  Plume dispersal: upward 1-4 cells, each water cell gets H₂ or CO₂ with 6%
 
 Temperature-dependent rate modifier:
   T < 10:    0.3
@@ -813,8 +813,9 @@ RNA fitness function:
     palindrome_score = complementary_palindrome_pairs / (len/2)   (hairpin → ribozyme)
 
 Fitness-proportional replication:
-  RNA with ≥ 1 nucleotide neighbor + energy > 15:
+  RNA with ≥ 1 nucleotide neighbor + energy > 15, a free water cell and a free nucleotide:
     P = replicate_rate × fitness × temp_mod × energy × catalysis_boost
+    Consumes one adjacent nucleotide; the daughter gets 40% of the parent's energy
     Daughter sequence undergoes mutation:
       Point mutation per base: P = mutation_rate
       Insertion (len < 25): P = mutation_rate × 0.3
@@ -822,22 +823,26 @@ Fitness-proportional replication:
 
 Error catastrophe (Eigen threshold):
   When mutation_rate > error_threshold AND sequence length > 3:
-    50% of daughter bases randomized → information meltdown
+    with probability 3 × (mutation_rate - error_threshold), the whole daughter
+    sequence is replaced by random bases → information meltdown
 
 Autocatalytic metabolism:
   Catalytic score = 0.2 + complementary_pair_runs / (len - 1), capped at 1.0
-  RNA near H₂ catalyzes amino acid formation: P = 0.02 × catalytic_eff × energy
+    (0.1 for strands shorter than 4)
+  RNA with score > 0.3 next to both H₂ and CO₂ turns an adjacent H₂ into an amino acid:
+    P = 0.03 × catalytic_eff × catalysis_boost
 
 Lipid protocell formation:
-  Lipid with ≥ 3 lipid neighbors → protocell (P = lipid_assemble_rate × temp_mod)
-  Consumes 2 adjacent lipids
+  Lipid with ≥ 3 lipid neighbors and an RNA strand within 2 cells
+    → protocell (P = lipid_assemble_rate × temp_mod × 0.15)
+  Captures up to 3 nearby RNA strands; consumes the lipid and up to 2 adjacent lipids
 
 Protocell growth & division:
-  Absorb adjacent lipids: +0.3 size per lipid consumed
-  Adjacent RNA captured into protocell interior
-  Metabolic energy: +metabolic_rate × energy × catalysis_boost per tick
-  Division when size > max_size AND energy > 40:
-    Split energy, RNA contents, lipid layers between daughters
+  Eat an adjacent amino acid, nucleotide, H₂ or CO₂: energy += 10 + 15 × metabolic_rate
+  Metabolic energy: +5 × metabolic_rate × local energy per tick; living cost 2 + 0.5 × size
+  With energy > 40: size grows, and with probability 0.1 an adjacent lipid adds +0.1 size
+  Division when size >= max_size AND energy > 60:
+    Daughter takes 45% of the energy; RNA contents and lipid layers are split
     Daughter placed in adjacent water cell
 
 Energy field:
@@ -849,7 +854,7 @@ Phylogenetic tracking:
   Records: parent_uid, generation, sequence, birth_step, alive status
 ```
 
-**What to look for** — "Black Smoker Vent" shows the full abiogenesis pathway: watch H₂ and CO₂ molecules emitted from vent plumes get catalyzed on mineral surfaces (::) into amino acids (aa) and nucleotides (nt), which polymerize into RNA strands displayed with their base sequences. RNA replicators compete — fitter sequences (balanced GC content, palindromic hairpins) replicate faster and outcompete weaker ones. Lipids (oo) aggregate into protocells that pulse as they metabolize and divide. Switch to the phylogenetic tree view to see the ancestor-descendant relationships among replicator lineages. "Error Catastrophe" dramatically demonstrates Eigen's threshold: crank mutation rate past the information limit and watch RNA sequences randomize into noise. "Protocell Competition" seeds pre-formed protocells that compete for resources under Darwinian selection. Track the time-series graphs: molecular counts, replicator diversity, protocell population, average fitness, metabolic efficiency, and RNA complexity reveal whether your primordial soup crosses the threshold from chemistry to life.
+**What to look for** — "Black Smoker Vent" shows the full abiogenesis pathway: watch H₂ and CO₂ molecules emitted from vent plumes get catalyzed on mineral surfaces (::) into amino acids (aa) and nucleotides (nt), which polymerize into RNA strands displayed with their base sequences. RNA replicators compete — fitter sequences (balanced GC content, palindromic hairpins) replicate faster and outcompete weaker ones. Lipids (oo) aggregate into protocells that pulse as they metabolize and divide. Press `v` to cycle the soup, phylogenetic tree and graph views; the tree shows the ancestor-descendant relationships among replicator lineages. "Error Catastrophe" demonstrates Eigen's threshold: it starts with a mutation rate of 0.25, above its 0.12 threshold, so many daughters become random sequences. "Protocell Competition" seeds 15 pre-formed protocells that compete for resources. "Warm Little Pond" is a UV-lit shallow pond, "RNA World Takeover" starts with abundant nucleotides and faster polymerization, and "LUCA Emergence" is a long run with boosted catalysis. Intervene with `l` (lightning drops H₂, CO₂ and NH₃ near the top), `h`/`c` (heat or cool by 15) and `u` (toggle UV). The graph view tracks molecular counts, replicator diversity, protocell population, average fitness, metabolic efficiency and RNA complexity, which show whether your primordial soup crosses the threshold from chemistry to life.
 
 **References**
 - Gilbert, W. "Origin of life: The RNA world." *Nature* 319 (1986): 618. https://doi.org/10.1038/319618a0
