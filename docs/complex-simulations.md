@@ -495,7 +495,7 @@ Presets:         density  speed  chars
 
 ## Kaleidoscope / Symmetry Patterns
 
-**Background.** This mode generates mesmerizing symmetry patterns by plotting procedural seed elements and reflecting them across N-fold rotational symmetry axes. Drawing from mathematical concepts in group theory (dihedral groups D_n), each point is replicated N times around the center with additional mirror reflections, producing the characteristic symmetry of physical kaleidoscopes. Seven procedural animation styles and an interactive paint mode are available.
+**Background.** This mode draws symmetric patterns by plotting animated seed elements and reflecting them across N-fold symmetry axes. Each point is copied N times around the center, plus mirror copies, like the dihedral group D_n and a physical kaleidoscope. It has seven animation styles and a paint mode.
 
 **Formulation.** The core symmetry operation maps a single plotted point to 2N reflected copies:
 
@@ -518,7 +518,7 @@ Procedural seed styles:
   Ring:      concentric pulsing rings with sinusoidal gating
 
 Fade: intensity -= 0.04 per step (toggleable)
-Color shift: palette index drifts continuously at 0.01/step
+Color shift: a color-shift value grows by 0.01 per step; the palette index moves by 10x that (0.1 per step)
 
 Symmetry orders: 4, 6, 8, 12
 Palettes: Jewel Tones, Ice, Fire, Forest, Neon, Monochrome
@@ -531,10 +531,12 @@ Presets:      symmetry  style     palette
   Flower      6-fold    petal     Forest
   Vortex      8-fold    spiral    Fire
   Hypnotic    4-fold    ring      Monochrome
-  Paint       6-fold    manual    Jewel Tones (no auto, no fade)
+  Paint Mode  6-fold    manual    Jewel Tones (no auto, no fade)
 ```
 
-**What to look for.** Higher symmetry orders (8, 12) produce dense, mandala-like patterns, while 4-fold symmetry creates simpler diamond grids. The Petal style traces rose curves whose lobe count depends on the frequency parameter, producing flower-like forms. Spiral seeds wind outward in Archimedean paths replicated across all axes. Enabling fade creates a trailing afterimage effect; disabling it builds up persistent structures. In Paint mode, cursor movement is mirrored in real time across all symmetry axes, allowing interactive pattern creation.
+**Controls:** `Space`=play/pause, `+/-`=speed (1-10), `s`=cycle symmetry (4, 6, 8, 12), `c`=cycle palette, `f`=fade on/off, `p`=paint on/off, arrows=move the paint cursor and paint (paint on), `Enter`=paint at the cursor, `b`=brush size (1-3), `i`=info overlay, `r`=clear canvas, `Esc`=back to the menu.
+
+**What to look for.** Higher symmetry orders (8, 12) give dense, mandala-like patterns. 4-fold symmetry gives simpler diamond grids. The petal style draws rose curves whose lobe count depends on the seed's frequency. Spiral seeds wind outward and are copied across all axes. With fade on, old marks leave trails. With fade off, structure builds up. In Paint Mode, each cursor move paints and is mirrored across all axes.
 
 **References.**
 - Coxeter, H.S.M. *Regular Polytopes*, 3rd ed. Dover Publications, 1973. https://store.doverpublications.com/products/9780486614809
