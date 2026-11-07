@@ -1,17 +1,8 @@
-"""Mode: spacetime_fabric — general-relativistic cellular automaton.
-
-The grid itself curves and warps in response to live cell density.
-Dense clusters warp spacetime, causing gravitational lensing, time dilation,
-geodesic motion, frame dragging, and gravitational waves.
-"""
+"""Spacetime Fabric — a Game of Life whose cells curve the grid, slow time, bend motion and radiate gravitational waves."""
 import curses
 import math
 import random
 import time
-
-# ══════════════════════════════════════════════════════════════════════
-#  Spacetime Fabric — GR-coupled cellular automaton
-# ══════════════════════════════════════════════════════════════════════
 
 STF_PRESETS = [
     ("Binary Orbit",
@@ -36,10 +27,6 @@ STF_PRESETS = [
 
 # Glider (SE direction)
 _GLIDER = [(0, 1), (1, 2), (2, 0), (2, 1), (2, 2)]
-# Block (still life)
-_BLOCK = [(0, 0), (0, 1), (1, 0), (1, 1)]
-# Blinker
-_BLINKER = [(0, 0), (0, 1), (0, 2)]
 # Pulsar-like rotator (simplified)
 _ROTATOR = [
     (0, 1), (0, 2), (0, 3),
@@ -50,7 +37,7 @@ _ROTATOR = [
 
 
 def _enter_spacetime_mode(self):
-    """Enter Spacetime Fabric — show preset menu."""
+    """Enter Spacetime Fabric and show the preset menu."""
     self.spacetime_menu = True
     self.spacetime_menu_sel = 0
     self._flash("Spacetime Fabric — select a configuration")
@@ -65,7 +52,7 @@ def _exit_spacetime_mode(self):
 
 
 def _spacetime_init(self, preset_idx: int):
-    """Initialize the GR-coupled CA simulation."""
+    """Initialize the grid, fields and parameters for a preset."""
     name, _desc, gravity_str, lens_str, drag_str, wave_str = STF_PRESETS[preset_idx]
     self.spacetime_preset_name = name
     self.spacetime_preset_idx = preset_idx
@@ -118,7 +105,7 @@ def _spacetime_init(self, preset_idx: int):
 
 
 def _spacetime_seed(self, preset_idx: int):
-    """Seed initial CA patterns based on preset."""
+    """Place the starting cells for a preset."""
     rows = self.spacetime_rows
     cols = self.spacetime_cols
     cells = self.spacetime_cells
@@ -199,7 +186,7 @@ def _spacetime_seed(self, preset_idx: int):
 
 
 def _spacetime_compute_mass(self):
-    """Compute smoothed mass density from cell pattern using Gaussian blur."""
+    """Spread live cells into a smoothed mass density (radius 4, 1/(1+d^2) falloff)."""
     rows = self.spacetime_rows
     cols = self.spacetime_cols
     cells = self.spacetime_cells
@@ -216,8 +203,6 @@ def _spacetime_compute_mass(self):
         for c in range(cols):
             mass[r][c] = 0.0
 
-    # Accumulate mass with Gaussian-like kernel (radius 5)
-    # Use a simple box blur approximation for speed
     radius = 4
     for r in range(rows):
         for c in range(cols):
@@ -235,7 +220,7 @@ def _spacetime_compute_mass(self):
 
 
 def _spacetime_compute_curvature(self):
-    """Compute spacetime curvature from mass density (Poisson equation approx)."""
+    """Scale mass density into curvature, normalized to the densest point."""
     rows = self.spacetime_rows
     cols = self.spacetime_cols
     mass = self.spacetime_mass
@@ -459,7 +444,7 @@ def _spacetime_advect(self):
 
 
 def _spacetime_step(self):
-    """One combined step of the spacetime simulation."""
+    """Advance the simulation by one step."""
     gen = self.spacetime_generation
 
     # 1. Compute mass density from cells
@@ -496,7 +481,7 @@ def _spacetime_count_population(self):
 # ── Key handling ──────────────────────────────────────────────────────
 
 def _handle_spacetime_menu_key(self, key: int) -> bool:
-    """Handle input in preset selection menu."""
+    """Handle input in the preset menu."""
     n = len(STF_PRESETS)
     if key in (ord('j'), curses.KEY_DOWN):
         self.spacetime_menu_sel = (self.spacetime_menu_sel + 1) % n
@@ -511,7 +496,7 @@ def _handle_spacetime_menu_key(self, key: int) -> bool:
 
 
 def _handle_spacetime_key(self, key: int) -> bool:
-    """Handle input in active simulation."""
+    """Handle input in the running simulation."""
     rows = self.spacetime_rows
     cols = self.spacetime_cols
 
@@ -569,7 +554,7 @@ def _handle_spacetime_key(self, key: int) -> bool:
 # ── Drawing ───────────────────────────────────────────────────────────
 
 def _draw_spacetime_menu(self, max_y: int, max_x: int):
-    """Draw preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Spacetime Fabric ── General-Relativistic Cellular Automaton ──"
     try:
@@ -610,7 +595,7 @@ def _draw_spacetime_menu(self, max_y: int, max_x: int):
 
 
 def _draw_spacetime(self, max_y: int, max_x: int):
-    """Draw the spacetime fabric simulation."""
+    """Draw the active simulation."""
     self.stdscr.erase()
     rows = self.spacetime_rows
     cols = self.spacetime_cols
@@ -805,7 +790,6 @@ def _draw_spacetime(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    # Status bar
     status_y = max_y - 2
     if status_y > 1:
         avg_dil = 0.0
@@ -825,7 +809,6 @@ def _draw_spacetime(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    # Hint bar
     hint_y = max_y - 1
     if hint_y > 0:
         now = time.monotonic()
@@ -840,14 +823,14 @@ def _draw_spacetime(self, max_y: int, max_x: int):
 
 
 def _is_spacetime_auto_stepping(self) -> bool:
-    """Return True if auto-stepping."""
+    """Return True while the simulation is auto-stepping."""
     return self.spacetime_running
 
 
 # ── Registration ──────────────────────────────────────────────────────
 
 def register(App):
-    """Register Spacetime Fabric mode methods on the App class."""
+    """Register Spacetime Fabric methods on the App class."""
     App._enter_spacetime_mode = _enter_spacetime_mode
     App._exit_spacetime_mode = _exit_spacetime_mode
     App._spacetime_init = _spacetime_init
