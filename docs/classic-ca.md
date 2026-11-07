@@ -27,7 +27,7 @@ Parameters:
   survival  = {2, 3}   — set of neighbor counts that permit survival
 ```
 
-**What to look for.** Stable structures (blocks, beehives), oscillators (blinkers, pulsars), and gliders that translate across the grid. Glider guns emit an endless stream of gliders, so the population can grow without bound. Random initial densities near 37% produce the richest transient dynamics. B3/S23 sits between rules that die out and rules that fill the plane, which makes it so generative.
+**What to look for.** Stable structures (blocks, beehives), oscillators (blinkers, pulsars), and gliders that translate across the grid. Glider guns emit an endless stream of gliders, so the population can grow without bound. B3/S23 sits between rules that die out and rules that fill the plane, which makes it so generative.
 
 **References.**
 - Gardner, M. "Mathematical Games: The Fantastic Combinations of John Conway's New Solitaire Game 'Life'." *Scientific American*, 223(4), 1970. https://doi.org/10.1038/scientificamerican1070-120
@@ -58,6 +58,8 @@ The 8-bit binary representation of R is the complete lookup table:
 
 Seed modes: "center" (single 1 in middle), "gol_row" (middle row of the Game of Life grid; center cell if empty), "random"
 Each new row is the next generation and is drawn below the previous one.
+History keeps the newest 1000 rows; Gen still counts every generation.
+Keys: Left/Right (or h/l) previous/next rule, r reset, R or m menu, n step, Space play/pause
 ```
 
 **What to look for.** Rule 30 produces pseudorandom output from a single seed — Wolfram used it in Mathematica's random number generator. Rule 90 generates a perfect Sierpinski triangle (the XOR rule). Rule 110 supports gliders and localized structures that interact to perform computation. Rule 184 models single-lane traffic flow. Stepping through rules with Left/Right (or h/l) reveals the four Wolfram classes: fixed point, periodic, chaotic, and complex.
@@ -194,6 +196,8 @@ Transition rule:
   Else:
     cell remains in state s
 
+Keys: t/T threshold (1-8), s/S states (2-16), +/- steps per frame
+
 Presets:            states  threshold  neighborhood
   Classic Spirals     8        1         Moore
   Fine Spirals       14        1         Moore
@@ -205,7 +209,7 @@ Presets:            states  threshold  neighborhood
   Crystalline         6        2         Von Neumann
 ```
 
-**What to look for.** With threshold=1 and Moore neighborhood, beautiful rotating spirals emerge from random initial conditions within 50-100 generations. More states produce thinner, more intricate spiral arms. Higher thresholds require more neighbors to advance, producing blocky, crystalline patterns. Von Neumann neighborhoods give diamond-shaped wavefronts. Change the threshold (t/T) and the number of states (s/S) while running to move between spiral, turbulent, and frozen regimes.
+**What to look for.** With threshold=1 and Moore neighborhood, rotating spirals emerge from random initial conditions. More states produce thinner, more intricate spiral arms. Higher thresholds require more neighbors to advance, producing blocky, crystalline patterns. Von Neumann neighborhoods give diamond-shaped wavefronts. Change the threshold (t/T) and the number of states (s/S) while running to move between spiral, turbulent, and frozen regimes.
 
 **References.**
 - Fisch, R., Gravner, J., & Griffeath, D. "Cyclic Cellular Automata in Two Dimensions." In *Spatial Stochastic Processes*, Birkhäuser, 1991. https://doi.org/10.1007/978-1-4612-0451-0_11
@@ -239,6 +243,8 @@ Three rules based on current state s:
 
   Ill (s = n-1):
     new_state = 0   (recovery to healthy)
+
+Keys: g/G change g (1-200), s/S change n_states by 10 (10-255), +/- steps per frame
 
 Presets:         n_states   k1   k2    g
   Classic Spirals   100      2    3    28
@@ -289,11 +295,14 @@ Presets (name, R, mu, sigma, dt):
   Geminium          10   0.140   0.014   0.10
   Scutium           12   0.160   0.016   0.10
   Hydrogeminium     15   0.150   0.017   0.05
-  Pentadecathlon     8   0.120   0.012   0.10
+  Pentadecathlon     8   0.120   0.020   0.10
   Wanderer          10   0.130   0.020   0.08
 
-Start: a few random smooth blobs near the center. Presets set only the
-parameters, so a given species may not appear from every seed.
+Start: random smooth blobs in the central half of the grid (at least 2,
+more on larger grids). Presets set only the parameters, so a given
+species may not appear from every seed.
+Keys: u/U mu (0.010-0.500), s/S sigma (0.001-0.100), d/D radius (3-25),
+  t/T dt (0.01-0.50), +/- steps per frame (1-10), r reseed
 ```
 
 **What to look for.** The parameter `mu` sets the target local density for growth — cells with neighborhood potential near `mu` grow, others decay. Sigma controls the tolerance width. Orbium is the classic glider, a smooth moving organism. Geminium is known for splitting in two. Raising `mu` (u/U) favors denser patterns; widening `sigma` (s/S) tolerates more variation. The kernel radius R (d/D) sets the spatial scale of interaction, and dt (t/T) the step size.
@@ -326,7 +335,7 @@ At each step:
   5. Update state: s = new_state
   6. Move forward one step in direction d
 
-Presets (name, colors, states, table), first five shown:
+Presets (name, colors, states, table), five of ten shown:
   Langton's Ant    2C 1S  [[(1,1,0), (0,3,0)]]
   Fibonacci Spiral 2C 2S  [[(1,1,1), (1,1,0)], [(1,0,0), (0,0,1)]]
   Square Builder   2C 2S  [[(1,1,0), (0,1,1)], [(1,3,1), (0,3,0)]]
@@ -378,7 +387,9 @@ Presets (birth / survival):
   Diamoeba 3D    B5-7 / S5-8     Sparse    B6-8 / S5-7
   Pulse          B4 / S34        Builder   B6 / S456
 
-Keys: arrows orbit, a toggles auto-rotate, +/- zoom, n steps
+Starts running with auto-rotate on.
+Keys: arrows orbit, a toggles auto-rotate, +/- zoom, n steps,
+  Space play/pause, r reset, R or m menu
 ```
 
 **What to look for.** 3D rules behave very differently from 2D due to the 26-neighbor count. Survival sets use higher counts (for example {4,5} rather than {2,3}) to suit the larger neighborhood. Watch for hollow shells, oscillators, and crystalline growth. Orbiting the camera reveals structure hidden from a single angle. Ambient occlusion darkens the inside of dense clusters, which gives depth cues in ASCII.
@@ -402,9 +413,6 @@ Adjacency:  graph built via BFS with Mobius translation:
               z' = (z + a) / (1 + conj(a) * z)
             Center-to-center distance: r = tanh(acosh(cos(pi/q) / sin(pi/p)))
 
-Hyperbolic distance (with w = |(z1 - z2) / (1 - conj(z1)*z2)|):
-  d(z1, z2) = acosh(1 + 2 w^2 / (1 - w^2))
-
 Available tilings:
   {5,4}  Pentagonal     4 pentagons per vertex
   {7,3}  Heptagonal     3 heptagons per vertex
@@ -419,7 +427,8 @@ CA rule: totalistic (birth/survival sets on neighbor count)
   B2/S23 (Spread), B3/S345 (Hardy), B23/S34 (Wave), B2/S (Seeds)
 
 Start: about 30% of the cells within |z| < 0.5 are alive.
-Keys: n next rule, t next tiling, r randomize, c clear, s step, +/- speed
+Keys: n next rule, t next tiling, r randomize (30% within |z| < 0.6),
+  c clear, s step, Space play/pause, +/- steps per frame (1-10)
 
 Tiling generation: 6 BFS layers, cells clipped at |z| > 0.96
 ```
@@ -439,7 +448,7 @@ Tiling generation: 6 BFS layers, cells clipped at |z| > 0.96
 **Formulation.**
 
 ```
-Graph:      N nodes (30-120 by default, scaled to the terminal; +/- changes it by 10) with adjacency from the topology generator
+Graph:      N nodes (30-120 by default, scaled to the terminal; +/- changes it by 10, range 10-200) with adjacency from the topology generator
 States:     {alive, dead} with age tracking
 Neighborhood: all nodes connected by an edge
 
