@@ -914,7 +914,8 @@ Instruction set (15 opcodes, 2 executed per cell per step):
   NOP        — no operation
   MOVE       — move in direction reg_a; if target shape exists, bias toward
                nearest target cell via Manhattan distance gradient
-  BOND       — bond to adjacent cell (both become bonded state, resist movement)
+  BOND       — bond to the first adjacent cell found (both become bonded and
+               stop moving)
   UNBOND     — release all bonds, return to idle
   SIGNAL     — emit signal value (reg_b or reg_c) into signal field
   READ       — count 4-neighbors, average their signals into reg_c/reg_b
@@ -925,8 +926,8 @@ Instruction set (15 opcodes, 2 executed per cell per step):
   TURN    n  — reg_a = (reg_a + n) mod 4
   IF_BONDED  — skip next instruction if not bonded
   GOTO    n  — set pc = n mod program_length
-  IF_DIST n  — skip next instruction if Manhattan distance to nearest
-               target cell > n
+  IF_DIST n  — skip next instruction if Manhattan distance to the nearest
+               of 30 sampled target cells > n
   INC_REG n  — increment reg[n & 3]
 
 Simulation phases per step:
@@ -936,14 +937,22 @@ Simulation phases per step:
      (max_cells = rows * cols / 3)
   4. DIFFUSE SIGNALS: new_signal[r][c] = 0.6 * signal[r][c]
        + 0.08 * sum(signal[neighbors])
-       Cells emitting signals override with their value
+       A cell with a nonzero signal keeps the field at no less than its value
   5. UPDATE STATS: count cells, bonded cells, on-target cells, max signal
 
+Presets (cells, program):
+  Circle Formation, Square Formation, Letter 'H', Diamond Formation
+                                (80-100 cells, shape assembly)
+  Self-Replicating Cluster      (15 cells, replicate when sparse)
+  Distributed Counter           (40 cells)
+  Random Explorers              (50 cells)
+  Line Formation                (60 cells)
+
 Target shape generators:
-  Circle:   (r - cr)^2 + (c - cc)^2 <= radius^2
-  Square:   |r - cr| <= side/2 and |c - cc| <= side/2
+  Circle:   (r - cr)^2 + (c - cc)^2 <= radius^2, radius = min(rows, cols) / 4
+  Square:   |r - cr| <= side/2 and |c - cc| <= side/2, side = min(rows, cols) / 3
   Diamond:  |r - cr| + |c - cc| <= radius  (L1 norm ball)
-  Letter:   5x5 pixel font scaled by min(rows, cols) / 12
+  Letter:   5x5 pixel font scaled by min(rows, cols) / 12 (the preset uses H)
   Line:     single row at center, cols/4 to 3*cols/4
 
 Gradient-following movement:
@@ -954,7 +963,7 @@ Gradient-following movement:
 
 **What to look for**
 
-Shape assembly presets demonstrate emergent self-organization: cells scattered randomly across the grid gradually converge on the target shape, with bonding creating structural stability once cells reach their positions. The progress bar in the info panel tracks what fraction of target cells are occupied. Try dealing damage with D to remove a 5×5 patch — watch how unbonded nearby cells re-fill the gap, demonstrating decentralized self-repair with no global coordinator. The Self-Replicating Cluster preset shows exponential growth governed by local density: cells replicate only when they have fewer than 3 neighbors, creating an expanding frontier. The Distributed Counter preset illustrates collective computation: cells increment their internal counters and broadcast via signal diffusion, with the signal field visualization (press V) showing information spreading as a diffusion heatmap. Switch between the three visualization modes to understand different aspects: Cells view shows individual state machines, Signal Field reveals the communication layer, and Target Overlay provides ground-truth assembly progress (green = correct placement, red = misplaced, cyan = unfilled).
+Shape assembly presets demonstrate emergent self-organization: cells scattered randomly across the grid gradually converge on the target shape, with bonding creating structural stability once cells reach their positions. The progress bar in the info panel tracks what fraction of target cells are occupied. Move the cursor with the arrow keys and press `d` to remove a 5×5 patch of cells. Removed cells are not replaced, but free cells that are still moving can fill the gap, with no global coordinator. The Self-Replicating Cluster preset shows exponential growth governed by local density: cells replicate only when they have fewer than 3 neighbors, creating an expanding frontier. In the Distributed Counter preset, each cell reads its neighbors (register C = neighbor count, register B = mean neighbor signal), adds one to register C, and signals register B if it is nonzero, else register C. The Signal Field view (`v`) shows these values diffusing, and the info panel shows the maximum signal. `v` cycles three views. Cells shows each state machine (`.` idle, `>` moving, `#` bonded, `*` signaling). Signal Field shows the communication layer. Target Overlay shows assembly progress: `#` is a cell on the target, `o` a cell off it, and `+` an empty target cell. `Space` plays, `s` steps, `+`/`-` set the speed, `i` toggles the info panel, and `r` resets.
 
 **References**
 
