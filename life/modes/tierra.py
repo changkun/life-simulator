@@ -1,26 +1,9 @@
-"""Tierra-style Digital Organisms — self-replicating assembly programs in shared memory.
-
-Inspired by Tom Ray's Tierra (1990), this simulates a "primordial soup" of tiny
-programs that copy themselves into shared memory, mutate during replication, and
-evolve parasitism, immunity, and symbiosis.  The ASCII visualization shows memory
-as a colored grid where each organism's code occupies a contiguous block, with
-real-time stats on species diversity, genome lengths, and population dynamics.
-
-Presets
--------
-1. Genesis          – single ancestor, low mutation
-2. Cambrian Burst   – high mutation, rapid diversification
-3. Arms Race        – moderate mutation, reaper favors large genomes
-4. Parasite World   – tiny ancestor, high copy-error → parasites emerge fast
-5. Symbiosis Lab    – two ancestor species seeded together
-"""
+"""Tierra Digital Organisms — self-replicating programs mutate and compete in shared memory."""
 
 import curses
-import math
 import random
 
-# ── Instruction set (simplified Tierran opcodes) ──────────────────────────
-# Each instruction is an integer 0-15
+# ── Instruction set (simplified Tierran opcodes, integers 0-15) ──────────
 OP_NOP0   = 0   # template marker 0
 OP_NOP1   = 1   # template marker 1
 OP_FIND   = 2   # search for complement template ahead
@@ -41,10 +24,6 @@ OP_RET    = 15  # return from subroutine
 NUM_OPS = 16
 
 OP_CHARS = "01FMCID><ASPRWLR"
-OP_NAMES = [
-    "nop0", "nop1", "find", "movH", "copy", "inc", "dec", "jmp",
-    "jmpz", "alloc", "split", "push", "pop", "swap", "call", "ret",
-]
 
 # ── Ancestor genomes ─────────────────────────────────────────────────────
 # Both are minimal self-copiers.  A jump goes to the first complement of the
@@ -108,13 +87,6 @@ TIERRA_PRESETS = [
       "mem_size": 4096, "max_organisms": 350, "slice_size": 20}),
 ]
 
-# ── Color palette for species (by genome hash) ───────────────────────────
-_SPECIES_COLORS = [
-    curses.COLOR_GREEN, curses.COLOR_CYAN, curses.COLOR_YELLOW,
-    curses.COLOR_MAGENTA, curses.COLOR_RED, curses.COLOR_BLUE,
-    curses.COLOR_WHITE,
-]
-
 # ── Organism class ────────────────────────────────────────────────────────
 class Organism:
     __slots__ = (
@@ -142,7 +114,7 @@ class Organism:
 
 
 def _genome_hash(genome):
-    """Simple hash for species identification."""
+    """Return a 32-bit hash of a genome; equal genomes are one species."""
     h = 0
     for i, op in enumerate(genome):
         h = (h * 31 + op + i) & 0xFFFFFFFF
@@ -170,10 +142,10 @@ def _execute_slice(org, memory, mem_size, mutation_rate, slice_size):
         org.age += 1
 
         if op == OP_NOP0 or op == OP_NOP1:
-            pass  # template markers — no-op during execution
+            pass  # templates only mark addresses
 
         elif op == OP_FIND:
-            # Collect template (sequence of NOP0/NOP1 after this instruction)
+            # The template is the run of NOPs after this instruction.
             tmpl = []
             pos = org.ip
             while pos < org.mem_len:
@@ -187,7 +159,6 @@ def _execute_slice(org, memory, mem_size, mutation_rate, slice_size):
                 org.errors += 1
                 continue
             org.ip = pos  # skip past template
-            # Search forward for complement
             complement = [1 - t for t in tmpl]
             found = False
             for offset in range(1, org.mem_len):
@@ -210,7 +181,6 @@ def _execute_slice(org, memory, mem_size, mutation_rate, slice_size):
         elif op == OP_COPY:
             if org.daughter_start >= 0 and org.wh < org.daughter_len:
                 src = memory[(org.mem_start + org.rh) % mem_size]
-                # Mutation during copy
                 if random.random() < mutation_rate:
                     src = random.randint(0, NUM_OPS - 1)
                 memory[(org.daughter_start + org.wh) % mem_size] = src
@@ -226,7 +196,6 @@ def _execute_slice(org, memory, mem_size, mutation_rate, slice_size):
             org.regs[0] = (org.regs[0] - 1) & 0xFFFF
 
         elif op == OP_JMP:
-            # Jump to template complement
             tmpl = []
             pos = org.ip
             while pos < org.mem_len:
@@ -252,7 +221,6 @@ def _execute_slice(org, memory, mem_size, mutation_rate, slice_size):
                 org.ip = org.regs[0] % org.mem_len
 
         elif op == OP_JMPZ:
-            # Read template for target, jump if counter is zero
             tmpl = []
             pos = org.ip
             while pos < org.mem_len:
@@ -317,7 +285,7 @@ def _execute_slice(org, memory, mem_size, mutation_rate, slice_size):
 # ── Soup manager functions ────────────────────────────────────────────────
 
 def _init_soup(settings):
-    """Initialize the primordial soup."""
+    """Return a new soup seeded with the preset's ancestor(s)."""
     mem_size = settings["mem_size"]
     memory = [random.randint(0, NUM_OPS - 1) for _ in range(mem_size)]
     organisms = []
@@ -367,8 +335,8 @@ def _init_soup(settings):
 
 
 def _find_free_block(owner, mem_size, length):
-    """Find a contiguous free block in memory."""
-    # Try random positions first
+    """Return the start of a free block of `length` cells, or -1 if none fits."""
+    # Random probes are cheap; fall back to a scan when memory is crowded.
     for _ in range(50):
         start = random.randint(0, mem_size - 1)
         ok = True
@@ -378,7 +346,6 @@ def _find_free_block(owner, mem_size, length):
                 break
         if ok:
             return start
-    # Linear scan fallback
     run = 0
     best_start = -1
     for i in range(mem_size * 2):
@@ -394,13 +361,12 @@ def _find_free_block(owner, mem_size, length):
 
 
 def _reap(soup):
-    """Kill an organism to make room (reaper queue)."""
+    """Kill one organism, chosen by the preset's reaper bias."""
     organisms = soup["organisms"]
     if not organisms:
         return
     bias = soup["reaper_bias"]
     if bias == "oldest":
-        # Kill oldest
         idx = 0
         best_age = organisms[0].age
         for i, o in enumerate(organisms):
@@ -408,7 +374,6 @@ def _reap(soup):
                 best_age = o.age
                 idx = i
     elif bias == "large_first":
-        # Kill largest genome
         idx = 0
         best = organisms[0].mem_len
         for i, o in enumerate(organisms):
@@ -416,7 +381,6 @@ def _reap(soup):
                 best = o.mem_len
                 idx = i
     elif bias == "errors_first":
-        # Kill most error-prone
         idx = 0
         best = organisms[0].errors
         for i, o in enumerate(organisms):
@@ -449,7 +413,7 @@ def _kill_organism(soup, idx):
     soup["organisms"].pop(idx)
     soup["deaths"] += 1
 
-    # Re-index owner array
+    # Later organisms shift down one index.
     for i in range(len(owner)):
         if owner[i] > idx:
             owner[i] -= 1
@@ -464,7 +428,7 @@ def _soup_step(soup):
     mem_size = soup["mem_size"]
     owner = soup["owner"]
 
-    # Cosmic rays — random bit flips in memory
+    # Cosmic rays overwrite random cells.
     n_rays = int(mem_size * soup["cosmic_ray_rate"])
     for _ in range(n_rays):
         addr = random.randint(0, mem_size - 1)
@@ -478,7 +442,6 @@ def _soup_step(soup):
         if not org.alive:
             continue
 
-        # Handle pending allocation
         if org.daughter_len > 0 and org.daughter_start < 0:
             block = _find_free_block(owner, mem_size, org.daughter_len)
             if block >= 0:
@@ -495,7 +458,6 @@ def _soup_step(soup):
                                soup["mutation_rate"], soup["slice_size"])
 
         if split and org.daughter_start >= 0:
-            # Harvest daughter genome from memory
             daughter_genome = []
             for i in range(org.daughter_len):
                 daughter_genome.append(
@@ -517,12 +479,11 @@ def _soup_step(soup):
             _reap(soup)
         ci = len(organisms)
         organisms.append(child)
-        # Update owner for child
         for i in range(child.mem_len):
             addr = (child.mem_start + i) % soup["mem_size"]
             owner[addr] = ci
 
-    # Remove dead organisms
+    # Organisms that pile up errors are removed.
     i = 0
     while i < len(organisms):
         if not organisms[i].alive or organisms[i].errors > 200:
@@ -532,14 +493,13 @@ def _soup_step(soup):
 
     soup["generation"] += 1
 
-    # Update species counts
     counts = {}
     for org in organisms:
         sid = org.species_id
         counts[sid] = counts.get(sid, 0) + 1
     soup["species_counts"] = counts
 
-    # Record history snapshot (every 10 generations)
+    # History keeps one sample per 10 generations, newest 200.
     if soup["generation"] % 10 == 0:
         soup["history"].append({
             "gen": soup["generation"],
@@ -555,7 +515,7 @@ def _soup_step(soup):
 # ── Mode integration ─────────────────────────────────────────────────────
 
 def _enter_tierra_mode(self):
-    """Enter Tierra digital organisms mode — show preset menu."""
+    """Enter Tierra Digital Organisms mode and show the preset menu."""
     self.tierra_mode = True
     self.tierra_menu = True
     self.tierra_menu_sel = 0
@@ -566,14 +526,15 @@ def _enter_tierra_mode(self):
 
 
 def _exit_tierra_mode(self):
-    """Exit Tierra mode."""
+    """Exit Tierra Digital Organisms mode."""
     self.tierra_mode = False
     self.tierra_menu = False
+    self.tierra_running = False
     self.tierra_soup = None
 
 
 def _tierra_init(self, preset_idx):
-    """Initialize soup from selected preset."""
+    """Start a soup from the selected preset."""
     _, _, settings = TIERRA_PRESETS[preset_idx]
     self.tierra_soup = _init_soup(settings)
     self.tierra_menu = False
@@ -581,7 +542,7 @@ def _tierra_init(self, preset_idx):
 
 
 def _tierra_step(self):
-    """Advance simulation by one or more steps."""
+    """Advance the soup by its speed setting while running."""
     if not self.tierra_soup or not self.tierra_running:
         return
     for _ in range(self.tierra_soup["speed"]):
@@ -589,7 +550,7 @@ def _tierra_step(self):
 
 
 def _handle_tierra_menu_key(self, key):
-    """Handle keys on the preset selection menu."""
+    """Handle keys in the preset menu."""
     n = len(TIERRA_PRESETS)
     if key == curses.KEY_UP or key == ord('k'):
         self.tierra_menu_sel = (self.tierra_menu_sel - 1) % n
@@ -603,7 +564,7 @@ def _handle_tierra_menu_key(self, key):
 
 
 def _handle_tierra_key(self, key):
-    """Handle keys during simulation."""
+    """Handle keys while the soup runs."""
     if key == ord('q') or key == 27:
         _exit_tierra_mode(self)
         self.mode_browser = True
@@ -621,13 +582,11 @@ def _handle_tierra_key(self, key):
         idx = views.index(self.tierra_view)
         self.tierra_view = views[(idx + 1) % len(views)]
     elif key == ord('m'):
-        # Trigger manual mutation burst
         soup = self.tierra_soup
         for _ in range(20):
             addr = random.randint(0, soup["mem_size"] - 1)
             soup["memory"][addr] = random.randint(0, NUM_OPS - 1)
     elif key == ord('r'):
-        # Reap one organism manually
         if self.tierra_soup["organisms"]:
             _reap(self.tierra_soup)
     elif key == curses.KEY_UP:
@@ -639,7 +598,7 @@ def _handle_tierra_key(self, key):
 # ── Drawing ──────────────────────────────────────────────────────────────
 
 def _draw_tierra_menu(self, max_y, max_x):
-    """Draw the preset selection menu."""
+    """Draw the preset menu."""
     title = "╔══ TIERRA: DIGITAL ORGANISMS ══╗"
     subtitle = "Self-replicating programs in shared memory"
     try:
@@ -660,7 +619,7 @@ def _draw_tierra_menu(self, max_y, max_x):
             self.stdscr.addstr(y, 2, line, attr | curses.color_pair(7))
             y += 1
 
-        hint = "↑/↓ select · Enter start · q back"
+        hint = "↑/↓=select  Enter=start  q=back"
         if y + 2 < max_y:
             self.stdscr.addstr(y + 2, max(0, (max_x - len(hint)) // 2),
                                hint, curses.color_pair(8))
@@ -669,13 +628,12 @@ def _draw_tierra_menu(self, max_y, max_x):
 
 
 def _draw_tierra(self, max_y, max_x):
-    """Draw the active Tierra simulation."""
+    """Draw the title bar, the current view and the hint bar."""
     soup = self.tierra_soup
     if not soup:
         return
 
     try:
-        # Title bar
         gen = soup["generation"]
         pop = len(soup["organisms"])
         n_species = len(soup["species_counts"])
@@ -693,8 +651,7 @@ def _draw_tierra(self, max_y, max_x):
         elif self.tierra_view == "phylo":
             _draw_phylo_view(self, soup, max_y, max_x)
 
-        # Hint bar
-        hint = "SPC:pause n:step +/-:speed v:view m:mutate r:reap q:quit"
+        hint = "Space=pause  n=step  +/-=speed  v=view  m=mutate  r=reap  ↑/↓=scroll  q=exit"
         if max_y > 2:
             self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
                                curses.color_pair(8))
@@ -714,7 +671,6 @@ def _draw_memory_view(self, soup, max_y, max_x):
     total_visible = grid_w * grid_h
     scroll_offset = self.tierra_scroll * grid_w
 
-    # Build species→color mapping
     species_colors = {}
     color_idx = 0
     for org in organisms:
@@ -722,7 +678,6 @@ def _draw_memory_view(self, soup, max_y, max_x):
             species_colors[org.species_id] = (color_idx % 7) + 1
             color_idx += 1
 
-    # Build set of instruction pointers for highlighting
     ip_addrs = set()
     for org in organisms:
         ip_addrs.add((org.mem_start + org.ip) % mem_size)
@@ -746,7 +701,6 @@ def _draw_memory_view(self, soup, max_y, max_x):
                 if addr in ip_addrs:
                     attr |= curses.A_BOLD | curses.A_REVERSE
             else:
-                # Free memory — dim
                 attr = curses.color_pair(8)
                 ch = '·'
 
@@ -760,7 +714,6 @@ def _draw_memory_view(self, soup, max_y, max_x):
             except curses.error:
                 pass
 
-    # Memory utilization bar
     used = sum(1 for o in owner if o >= 0)
     pct = used * 100 // max(1, mem_size)
     bar_y = max_y - 2
@@ -778,7 +731,6 @@ def _draw_stats_view(self, soup, max_y, max_x):
     counts = soup["species_counts"]
 
     y = 2
-    # Population stats
     stats_lines = [
         f"  Generation:     {soup['generation']}",
         f"  Population:     {len(organisms)}",
@@ -800,13 +752,11 @@ def _draw_stats_view(self, soup, max_y, max_x):
             pass
         y += 1
 
-    # Sort species by count
     sorted_species = sorted(counts.items(), key=lambda x: -x[1])
     color_idx = 0
     for sid, cnt in sorted_species[:max_y - y - 4]:
         if y >= max_y - 4:
             break
-        # Find genome length for this species
         glen = 0
         for org in organisms:
             if org.species_id == sid:
@@ -825,7 +775,6 @@ def _draw_stats_view(self, soup, max_y, max_x):
         y += 1
         color_idx += 1
 
-    # Population history sparkline
     if soup["history"] and y + 2 < max_y:
         y += 1
         try:
@@ -851,7 +800,6 @@ def _draw_stats_view(self, soup, max_y, max_x):
                 except curses.error:
                     pass
 
-        # Species diversity sparkline
         y += 1
         if y < max_y - 2 and recent:
             max_sp = max(h["species"] for h in recent)
@@ -887,7 +835,6 @@ def _draw_phylo_view(self, soup, max_y, max_x):
         pass
     y += 1
 
-    # Build histogram of genome lengths
     lengths = {}
     for org in organisms:
         l = org.mem_len
@@ -911,7 +858,6 @@ def _draw_phylo_view(self, soup, max_y, max_x):
             pass
         y += 1
 
-    # Show some individual organisms
     y += 1
     if y < max_y - 3:
         try:
@@ -921,7 +867,7 @@ def _draw_phylo_view(self, soup, max_y, max_x):
             pass
         y += 1
 
-        # Show up to 10 organisms sorted by age (oldest first)
+        # The ten oldest organisms.
         sampled = sorted(organisms, key=lambda o: -o.age)[:min(10, max_y - y - 2)]
         for org in sampled:
             if y >= max_y - 2:
@@ -942,7 +888,7 @@ def _draw_phylo_view(self, soup, max_y, max_x):
 # ── Registration ─────────────────────────────────────────────────────────
 
 def register(App):
-    """Register Tierra digital organisms mode methods on the App class."""
+    """Register Tierra Digital Organisms mode on the App class."""
     App._enter_tierra_mode = _enter_tierra_mode
     App._exit_tierra_mode = _exit_tierra_mode
     App._tierra_init = _tierra_init
