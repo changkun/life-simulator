@@ -724,7 +724,7 @@ Seasonal cycle (80 steps per season):
   Winter: growth_factor=0.15, dormancy, reduced activity
 
 Moisture model:
-  moisture_at_depth = base_moisture * (0.5 + 0.8 * depth_fraction)
+  moisture_at_depth = min(1.0, base_moisture * (0.5 + 0.8 * depth_fraction))
   Hypha growth requires moisture > threshold
   Water pockets scattered in deeper soil
 
@@ -733,7 +733,7 @@ Key parameters per preset:
   soil_moisture (0.2-0.75), decomposer_rate (0.01-0.06), growth_rate (0.5-1.8)
 ```
 
-**What to look for** — "Old-Growth Forest" starts with dense networks already connecting mature trees — watch nutrient packets flow along hyphal highways. "Young Plantation" builds connections from scratch — observe the slow, branching exploration of hyphae seeking root tips. "Drought Stress" triggers distress signals (!) that redirect nutrient flow toward struggling trees. "Fallen Giant" shows decomposers feasting on organic matter, recycling nutrients back into the network. Mushroom fruiting bodies (/\) appear on the surface in autumn when the underground mycelium is well-fed. Toggle views to see moisture distribution and nutrient flow paths.
+**What to look for** — "Old-Growth Forest" starts with dense networks already connecting mature trees — watch nutrient packets flow along hyphal highways. "Young Plantation" builds connections from scratch — observe the slow, branching exploration of hyphae seeking root tips. "Drought Stress" triggers distress signals (!) that redirect nutrient flow toward struggling trees. "Fallen Giant" shows decomposers feasting on organic matter, recycling nutrients back into the network. Mushroom fruiting bodies (/\) appear on the surface in autumn when the underground mycelium is well-fed. The other two presets are "Nutrient Hotspot" (organic-rich, fast growth) and "Four Seasons" (young stand tuned for watching the seasonal cycle). Press `v` to cycle the network, moisture and nutrient views. `w` adds rain, `d` adds drought, `o` drops organic matter on the surface, and `s` jumps to the next season.
 
 **References**
 - Simard, S. W. et al. "Net transfer of carbon between ectomycorrhizal tree species in the field." *Nature* 388 (1997): 579-582. https://doi.org/10.1038/38839
