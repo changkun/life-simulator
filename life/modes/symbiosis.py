@@ -1,7 +1,6 @@
 """Mode: symbiosis — multi-physics co-simulation with 3+ engines on shared environmental fields."""
 import curses
 import math
-import random
 import time
 
 from life.constants import SPEEDS
@@ -529,7 +528,6 @@ def _draw_symbiosis(self, max_y, max_x):
 
     # ── Title bar ──
     state = "▶ RUNNING" if self.symbiosis_running else "⏸ PAUSED"
-    n_vis = sum(1 for l in layers if l["visible"])
     any_solo = any(l["solo"] for l in layers)
     title = (f" SYMBIOSIS: {len(layers)} engines"
              f"  |  gen {self.symbiosis_generation}"
@@ -673,7 +671,6 @@ def _draw_field_overlay(self, max_y, max_x, view_rows, view_cols):
     fields = self.symbiosis_fields
     field_name = FIELD_NAMES[self.symbiosis_field_view]
     field = fields[field_name]
-    rows = self.symbiosis_rows
     n_layers = len(self.symbiosis_layers)
 
     for r in range(view_rows):
