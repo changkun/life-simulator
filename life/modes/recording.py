@@ -1,4 +1,4 @@
-"""Simulation Recording & Export — capture terminal frames as asciinema .cast or plain-text flipbook."""
+"""Recording & Export — capture terminal frames and save them as an asciinema .cast or a plain-text flipbook."""
 
 import curses
 import json
@@ -10,7 +10,7 @@ from life.constants import SAVE_DIR
 
 # ── ANSI color mapping from curses color pairs / attributes ──
 
-# Standard curses colors → ANSI foreground codes
+# curses colour constants → ANSI SGR codes.
 _CURSES_TO_ANSI_FG = {
     curses.COLOR_BLACK: 30,
     curses.COLOR_RED: 31,
@@ -37,19 +37,14 @@ _CURSES_TO_ANSI_BG = {
 def _attr_to_ansi(attr):
     """Convert a curses attribute bitmask to an ANSI escape prefix string."""
     codes = []
-    # Bold
     if attr & curses.A_BOLD:
         codes.append("1")
-    # Dim
     if attr & curses.A_DIM:
         codes.append("2")
-    # Reverse
     if attr & curses.A_REVERSE:
         codes.append("7")
-    # Underline
     if attr & curses.A_UNDERLINE:
         codes.append("4")
-    # Extract color pair number
     pair_num = curses.pair_number(attr)
     if pair_num > 0:
         try:
@@ -93,7 +88,6 @@ def _capture_frame(stdscr):
             line_parts.append(ch)
         if prev_attr is not None and prev_attr != 0:
             line_parts.append("\033[0m")
-        # Strip trailing spaces for compactness
         line = "".join(line_parts).rstrip()
         lines.append(line)
     # Remove trailing empty lines
@@ -162,7 +156,7 @@ def _export_txt(frames, timestamps, filepath):
 # ── Methods bound to App ──
 
 def _cast_rec_init(self):
-    """Initialize cast recording state variables."""
+    """Initialize recording state."""
     self.cast_recording = False
     self.cast_frames = []          # list of ANSI-encoded frame strings
     self.cast_frames_plain = []    # list of plain-text frame strings (for .txt export)
@@ -208,8 +202,7 @@ def _cast_rec_toggle(self):
     if self.cast_recording:
         self._cast_rec_stop()
     elif self.cast_export_menu:
-        # Already showing export menu, ignore
-        pass
+        pass  # Finish or discard the pending export first.
     else:
         self._cast_rec_start()
 
@@ -303,10 +296,10 @@ def _handle_cast_export_key(self, key):
     if key == 27 or key == ord("q"):  # ESC or q — discard
         self._cast_rec_discard()
         return True
-    if key == ord("d"):  # explicit discard
+    if key == ord("d"):
         self._cast_rec_discard()
         return True
-    return True  # consume all keys while menu is open
+    return True  # The menu swallows every key while open.
 
 
 def _cast_rec_export_both(self):
@@ -385,12 +378,11 @@ def _draw_cast_export_menu(self, max_y, max_x):
 
 
 def _draw_cast_indicator(self, max_y, max_x):
-    """Draw a small recording indicator overlay (red REC dot)."""
+    """Draw a blinking REC indicator in the top-right corner."""
     if not self.cast_recording:
         return
     n = len(self.cast_frames)
     elapsed = time.time() - self.cast_start_time if self.cast_start_time else 0.0
-    # Blinking dot effect
     blink = "●" if int(elapsed * 2) % 2 == 0 else "○"
     label = f" {blink} REC {n}f {elapsed:.0f}s "
     y = 0
@@ -409,12 +401,6 @@ def _cast_handle_key(self, key):
     return False
 
 
-def _cast_rec_handle_fps_key(self, key):
-    """Handle FPS adjustment keys during recording menu. Returns True if consumed."""
-    # These are handled in the export menu only
-    return False
-
-
 def register(App):
     """Attach recording methods to the App class."""
     App._cast_rec_init = _cast_rec_init
@@ -429,4 +415,3 @@ def register(App):
     App._draw_cast_export_menu = _draw_cast_export_menu
     App._draw_cast_indicator = _draw_cast_indicator
     App._cast_handle_key = _cast_handle_key
-    App._cast_rec_handle_fps_key = _cast_rec_handle_fps_key
