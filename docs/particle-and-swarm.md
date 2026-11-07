@@ -263,17 +263,34 @@ COHESION (radius R_c, weight W_c):
 Velocity update:
     v_new = v_old + (steer_sep * W_s + steer_ali + steer_coh) * 0.1
     |v_new| clamped to max_speed
-    Minimum speed enforced at 0.1 (random direction if below)
+    If |v_new| < 0.1: restart in a random direction at speed 0.2
 
 Position update (toroidal wrap):
     pos_new = (pos_old + v_new) mod grid_size
 ```
 
-Default parameters: R_s = 3.0, R_a = 8.0, R_c = 10.0, W_s = 1.5, W_a = 1.0, W_c = 1.0, max_speed = 1.0. Presets include configurations for tight murmurations, slow fish schools, fast swarms, and long-range migratory flocks.
+The boid count is a fraction of the grid area (at least 30). Each boid starts inside a disc around the centre with a random velocity.
+
+### Presets
+
+| Preset | Boids / cell | R_s | R_a | R_c | W_s | W_a | W_c | max_speed |
+|---|---|---|---|---|---|---|---|---|
+| Murmuration | 0.08 | 2.5 | 7.0 | 12.0 | 2.5 | 1.2 | 1.0 | 1.2 |
+| Fish School | 0.06 | 3.0 | 6.0 | 10.0 | 1.5 | 1.5 | 1.8 | 0.6 |
+| Swarm | 0.10 | 2.0 | 10.0 | 15.0 | 1.0 | 0.8 | 0.5 | 1.5 |
+| Migration | 0.04 | 3.0 | 15.0 | 20.0 | 1.2 | 2.0 | 0.8 | 1.0 |
+| Dense Flock | 0.12 | 2.0 | 5.0 | 8.0 | 2.0 | 1.5 | 2.0 | 0.8 |
+| Chaos | 0.10 | 4.0 | 6.0 | 8.0 | 3.0 | 0.5 | 0.3 | 1.8 |
+
+The menu describes Murmuration as having "predator avoidance", but the code has no predator.
+
+### Controls
+
+`s`/`S` change the separation radius, `a`/`A` the alignment radius, and `c`/`C` the cohesion radius. The weights and max speed are fixed per preset. `+`/`-` set steps per frame. `r` re-creates the flock from the current preset.
 
 ### What to look for
 
-Observe how coherent flocking emerges from purely local interactions. Increasing separation radius fragments the flock into smaller groups. Raising alignment weight produces long parallel streams. Boosting cohesion creates tight, almost spherical clusters. The transition between ordered flocking and disordered swarming as parameters change mirrors phase transitions studied in active matter physics.
+Coherent flocking emerges from purely local rules. A larger separation radius (`s`) pushes boids apart and breaks the flock into smaller groups. A larger alignment radius (`a`) lets each boid match more neighbors, which gives longer parallel streams. A larger cohesion radius (`c`) pulls boids toward a wider neighborhood, so the flock draws together. The shift between ordered flocking and disordered swarming as parameters change resembles phase transitions studied in active matter.
 
 ### References
 
