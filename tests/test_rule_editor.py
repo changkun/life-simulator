@@ -1,4 +1,6 @@
 """Tests for life.modes.rule_editor — Live Rule Editor mode."""
+import curses
+
 from tests.conftest import make_mock_app
 from life.modes.rule_editor import register
 
@@ -102,3 +104,33 @@ def test_grid_rows_match_the_drawn_area():
     app._re_init()
     assert app.re_rows == app.stdscr.getmaxyx()[0] - 7
     assert app.re_cols == (app.stdscr.getmaxyx()[1] - 1) // 2
+
+
+class _RecordingScreen:
+    """Screen stub that records the text drawn on each row."""
+
+    def __init__(self, rows, cols):
+        self.rows, self.cols, self.drawn = rows, cols, {}
+
+    def getmaxyx(self):
+        return self.rows, self.cols
+
+    def erase(self):
+        self.drawn = {}
+
+    def addstr(self, y, x, text, attr=0):
+        if y >= self.rows:
+            raise curses.error("off screen")
+        self.drawn.setdefault(y, []).append(text)
+
+
+def test_menu_keeps_selected_entry_on_screen():
+    """With 3 rows per entry, a short terminal must scroll to the selection."""
+    app = _make_app()
+    app.stdscr = _RecordingScreen(24, 80)
+    app._enter_rule_editor_mode()
+    for _ in range(9):
+        app._handle_re_menu_key(ord("j"))
+    app._draw_re_menu(24, 80)
+    shown = " ".join(t for texts in app.stdscr.drawn.values() for t in texts)
+    assert "Anneal" in shown

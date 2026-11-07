@@ -578,7 +578,8 @@ def _draw_re_menu(self, max_y, max_x):
             pass
         row += 2
     else:
-        visible = max_y - row - 6
+        # Each entry takes three rows (name, birth, survival) above the footer.
+        visible = max(1, (max_y - 3 - row) // 3)
         scroll = max(0, self.re_menu_sel - visible + 1)
         for i in range(scroll, min(len(items), scroll + visible)):
             if self.re_menu_tab == 0:
