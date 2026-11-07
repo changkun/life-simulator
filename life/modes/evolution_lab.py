@@ -642,16 +642,16 @@ def _handle_elab_key(self, key):
         return True
 
     # Navigate cursor
-    if key == curses.KEY_UP or key == ord("w"):
+    if key == curses.KEY_UP:
         self.elab_cursor = max(0, self.elab_cursor - gc)
         return True
-    if key == curses.KEY_DOWN or key == ord("s"):
+    if key == curses.KEY_DOWN:
         self.elab_cursor = min(pop_size - 1, self.elab_cursor + gc)
         return True
-    if key == curses.KEY_LEFT or key == ord("a"):
+    if key == curses.KEY_LEFT:
         self.elab_cursor = max(0, self.elab_cursor - 1)
         return True
-    if key == curses.KEY_RIGHT or key == ord("d"):
+    if key == curses.KEY_RIGHT:
         self.elab_cursor = min(pop_size - 1, self.elab_cursor + 1)
         return True
 

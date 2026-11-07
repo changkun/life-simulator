@@ -106,3 +106,19 @@ def test_scoring_triggers_phase_change():
     for _ in range(app.elab_eval_gens + 1):
         app._elab_step()
     assert app.elab_phase == "scored"
+
+
+def test_s_saves_and_a_adopts(tmp_path, monkeypatch):
+    import life.modes.evolution_lab as lab
+    monkeypatch.setattr(lab, "_SAVED_FILE", str(tmp_path / "evolution_lab.json"))
+    monkeypatch.setattr(lab, "SAVE_DIR", str(tmp_path))
+    app = _make_app()
+    app._elab_init()
+    app.elab_cursor = 1
+    app._handle_elab_key(ord("s"))
+    assert app.elab_cursor == 1
+    assert (tmp_path / "evolution_lab.json").exists()
+    birth = set(app.elab_genomes[1]["birth"])
+    app._handle_elab_key(ord("a"))
+    assert app.elab_mode is False
+    assert app.grid.birth == birth
