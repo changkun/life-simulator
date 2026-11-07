@@ -184,17 +184,33 @@ def _sph_step(self):
     # Viscosity Laplacian kernel: lap W = 45/(pi*h^6) * (h-r)
     visc_lap_coeff = 45.0 / (math.pi * h ** 6)
 
-    # --- Step 1: Compute density for each particle ---
+    # Bin particles into cells of size h so each one only tests its 3x3
+    # neighbourhood. Cost grows with n instead of n^2; the result is the same
+    # because the kernels vanish beyond h.
+    cells: dict[tuple[int, int], list[int]] = {}
     for i in range(n):
-        rho = 0.0
+        cells.setdefault((int(particles[i][0] // h), int(particles[i][1] // h)), []).append(i)
+
+    # --- Step 1: Compute density for each particle ---
+    # Also records each particle's neighbours (j, dx, dy, r2) for step 3.
+    neighbours = []
+    for i in range(n):
         xi, yi = particles[i][0], particles[i][1]
-        for j in range(n):
-            dx = particles[j][0] - xi
-            dy = particles[j][1] - yi
-            r2 = dx * dx + dy * dy
-            if r2 < h2:
-                diff = h2 - r2
-                rho += mass * poly6_coeff * diff * diff * diff
+        ci, cj = int(xi // h), int(yi // h)
+        rho = 0.0
+        near = []
+        for cx in (ci - 1, ci, ci + 1):
+            for cy in (cj - 1, cj, cj + 1):
+                for j in cells.get((cx, cy), ()):
+                    dx = particles[j][0] - xi
+                    dy = particles[j][1] - yi
+                    r2 = dx * dx + dy * dy
+                    if r2 < h2:
+                        diff = h2 - r2
+                        rho += mass * poly6_coeff * diff * diff * diff
+                        if j != i and r2 >= 1e-8:
+                            near.append((j, dx, dy, r2))
+        neighbours.append(near)
         particles[i][4] = max(rho, rho0 * 0.1)  # clamp to avoid zero density
 
     # --- Step 2: Compute pressure from equation of state ---
@@ -205,20 +221,12 @@ def _sph_step(self):
     ax = [0.0] * n
     ay = [0.0] * n
     for i in range(n):
-        xi, yi = particles[i][0], particles[i][1]
         vxi, vyi = particles[i][2], particles[i][3]
         rhoi = particles[i][4]
         pi_val = particles[i][5]
         fx, fy = 0.0, 0.0
 
-        for j in range(n):
-            if i == j:
-                continue
-            dx = particles[j][0] - xi
-            dy = particles[j][1] - yi
-            r2 = dx * dx + dy * dy
-            if r2 >= h2 or r2 < 1e-8:
-                continue
+        for j, dx, dy, r2 in neighbours[i]:
             r = math.sqrt(r2)
             rhoj = particles[j][4]
             pj_val = particles[j][5]

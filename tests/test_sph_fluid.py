@@ -456,3 +456,24 @@ def test_viscosity_slows_relative_motion():
         app._sph_step()
     rel_v_after = abs(app.sph_particles[0][2] - app.sph_particles[1][2])
     assert rel_v_after < rel_v_before, "Viscosity should reduce relative velocity"
+
+
+def test_step_density_matches_brute_force():
+    """The cell grid must find every neighbour a full pairwise scan would."""
+    app = _make_app()
+    app._sph_init(0)
+    ps = [p[:] for p in app.sph_particles[:200]]
+    app.sph_particles = ps
+    h = app.sph_h
+    coeff = 315.0 / (64.0 * math.pi * h ** 9)
+    expected = []
+    for pi in ps:
+        rho = 0.0
+        for pj in ps:
+            r2 = (pi[0] - pj[0]) ** 2 + (pi[1] - pj[1]) ** 2
+            if r2 < h * h:
+                rho += coeff * (h * h - r2) ** 3
+        expected.append(max(rho, app.sph_rest_density * 0.1))
+    app._sph_step()
+    for p, rho in zip(ps, expected):
+        assert math.isclose(p[4], rho, rel_tol=1e-9)
