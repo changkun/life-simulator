@@ -1,20 +1,16 @@
-"""Mode: cinematic_demo — auto-playing director that sequences through simulations
-with smooth crossfade transitions, parameter animations, and camera moves."""
+"""Cinematic Demo Reel — an auto-playing director that cuts between simulations with crossfades and camera moves."""
 import curses
-import math
 import random
 import time
 
-from life.constants import SPEEDS
-from life.modes.mashup import MASHUP_SIMS, _ENGINES
+from life.modes.mashup import _ENGINES
 
 _DENSITY = " ░▒▓█"
 
 # ── Curated demo reel acts ────────────────────────────────────────
-# Each act defines a simulation, duration, camera path, and parameter sweeps.
+# Each act defines a simulation, duration, camera path and color pair.
 # camera: {"zoom_start", "zoom_end", "pan_x_start", "pan_x_end",
 #           "pan_y_start", "pan_y_end"}  (all floats, zoom 1.0 = normal)
-# params: dict of {param_key: (start_val, end_val)} to interpolate over duration
 
 _DEFAULT_CAM = {
     "zoom_start": 1.0, "zoom_end": 1.0,
@@ -156,14 +152,14 @@ _CROSSFADE_DURATION = 1.5  # seconds
 # ════════════════════════════════════════════════════════════════════
 
 def _enter_cinematic_demo_mode(self):
-    """Enter Cinematic Demo Reel mode — show playlist selection menu."""
+    """Open the playlist menu."""
     self.cinem_menu = True
     self.cinem_menu_sel = 0
     self._flash("Cinematic Demo Reel — choose a playlist")
 
 
 def _exit_cinematic_demo_mode(self):
-    """Exit Cinematic Demo Reel mode and clean up."""
+    """Leave the demo reel and release the simulation."""
     self.cinem_mode = False
     self.cinem_menu = False
     self.cinem_running = False
@@ -177,7 +173,7 @@ def _exit_cinematic_demo_mode(self):
 # ════════════════════════════════════════════════════════════════════
 
 def _cinematic_init(self, playlist_idx):
-    """Initialize the demo reel from a chosen playlist."""
+    """Start the demo reel from a playlist."""
     playlist = DEMO_PLAYLISTS[playlist_idx]
     self.cinem_menu = False
     self.cinem_mode = True
@@ -247,16 +243,14 @@ def _cinematic_launch_act(self):
 
 
 def _cinematic_advance(self):
-    """Advance to the next act."""
+    """Move to the next act, looping or stopping at the end."""
     self.cinem_act_idx += 1
     if self.cinem_act_idx >= len(self.cinem_act_sequence):
         if self.cinem_loop:
-            # Reshuffle if random director
-            if DEMO_PLAYLISTS and any(p["acts"] is None for p in DEMO_PLAYLISTS):
-                for p in DEMO_PLAYLISTS:
-                    if p["name"] == self.cinem_playlist_name and p["acts"] is None:
-                        random.shuffle(self.cinem_act_sequence)
-                        break
+            # The random director reshuffles on every loop.
+            if any(p["name"] == self.cinem_playlist_name and p["acts"] is None
+                   for p in DEMO_PLAYLISTS):
+                random.shuffle(self.cinem_act_sequence)
             self.cinem_act_idx = 0
         else:
             self.cinem_running = False
@@ -269,7 +263,7 @@ def _cinematic_advance(self):
 # ════════════════════════════════════════════════════════════════════
 
 def _cinematic_step(self):
-    """Advance the demo reel — step simulation, update transitions."""
+    """Step the simulation and update the crossfade, title card and act timer."""
     if not self.cinem_running or self.cinem_paused:
         return
 
@@ -401,7 +395,7 @@ def _draw_cinematic_menu(self, max_y, max_x):
                 pass
 
     # Footer
-    footer = " ↑↓ Select │ Enter Launch │ Esc Back "
+    footer = " Up/Down=select  Enter=launch  q/Esc=back "
     try:
         self.stdscr.addstr(max_y - 1, 0, footer[:max_x - 1].ljust(max_x - 1),
                            curses.color_pair(6) | curses.A_REVERSE)
@@ -410,7 +404,7 @@ def _draw_cinematic_menu(self, max_y, max_x):
 
 
 def _draw_cinematic(self, max_y, max_x):
-    """Draw the cinematic demo reel — simulation with camera and transitions."""
+    """Draw the simulation through the camera, with crossfade and title card."""
     self.stdscr.erase()
     act = self.cinem_act
     color = act.get("color", 6)
@@ -520,7 +514,7 @@ def _draw_cinematic_title_card(self, max_y, max_x):
 
 
 def _draw_cinematic_status(self, max_y, max_x):
-    """Draw the thin status bar at the bottom."""
+    """Draw the status bar with the act progress and key hints."""
     act = self.cinem_act
     now = time.monotonic()
     elapsed = now - self.cinem_act_start
@@ -540,7 +534,7 @@ def _draw_cinematic_status(self, max_y, max_x):
               f" │ {bar} {int(remaining)}s"
               f" │ gen {self.cinem_generation}"
               f"{paused_str}"
-              f" │ n/p Skip │ Space Pause │ Esc Exit ")
+              f" │ n/p=skip  Space=pause  r=restart  q=exit ")
 
     if max_y > 0:
         try:
@@ -582,12 +576,10 @@ def _handle_cinematic_key(self, key):
     if key == -1:
         return True
 
-    # Escape / q = exit
     if key == 27 or key == ord("q"):
         _exit_cinematic_demo_mode(self)
         return True
 
-    # Space = pause/resume
     if key == ord(" "):
         self.cinem_paused = not self.cinem_paused
         now = time.monotonic()
@@ -598,18 +590,15 @@ def _handle_cinematic_key(self, key):
             self.cinem_act_start += now - self._cinem_pause_start
         return True
 
-    # n / Right = next act
     if key == ord("n") or key == curses.KEY_RIGHT:
         _cinematic_advance(self)
         return True
 
-    # p / Left = previous act
     if key == ord("p") or key == curses.KEY_LEFT:
         self.cinem_act_idx = max(0, self.cinem_act_idx - 1)
         _cinematic_launch_act(self)
         return True
 
-    # r = restart current act
     if key == ord("r"):
         _cinematic_launch_act(self)
         return True
