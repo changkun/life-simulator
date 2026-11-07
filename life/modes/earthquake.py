@@ -1,8 +1,8 @@
-"""Mode: quake — Earthquake & Seismic Wave Propagation simulation.
+"""Earthquake & Seismic Waves — a spring-block fault radiating P and S waves.
 
 Burridge-Knopoff spring-block fault model where tectonic stress accumulates
 on a heterogeneous fault plane until stick-slip ruptures cascade as
-earthquakes, radiating P-waves and S-waves through layered crust.
+earthquakes, radiating P-waves and S-waves through the crust.
 
 Emergent phenomena:
   - Gutenberg-Richter frequency-magnitude scaling (power-law statistics)
@@ -583,7 +583,7 @@ def _draw_quake_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+        hint = " j/k=select  Enter=start  q=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -644,7 +644,7 @@ def _draw_quake(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [t/T]=rate [c/C]=coupling [v]=view [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  t/T=rate  c/C=coupling  v=view  +/-=speed  r=reset  R=menu  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
