@@ -27,12 +27,14 @@ Algorithm (one step):
   2. COLLAPSE: pick random cell from candidates, pick random tile from its possibilities
      grid[r][c] = {tile}
 
-  3. PROPAGATE (BFS from collapsed cell):
-     for each neighbor (nr, nc) in direction d:
+  3. PROPAGATE (stack-based, starting at the collapsed cell):
+     for each uncollapsed neighbor (nr, nc) in direction d:
        allowed = union of A(t, d) for all t in grid[r][c]
        grid[nr][nc] = grid[nr][nc] intersect allowed
        if |grid[nr][nc]| == 0: CONTRADICTION
-       if |grid[nr][nc]| reduced: continue propagating from (nr, nc)
+       if |grid[nr][nc]| reduced:
+         if |grid[nr][nc]| == 1: mark the cell collapsed
+         continue propagating from (nr, nc)
 
 Adjacency symmetry is enforced:
   if B in A(A_tile, N) then A_tile in A(B, S)
@@ -40,7 +42,7 @@ Adjacency symmetry is enforced:
 
 **What to look for**
 
-Watch entropy visualized as brightness: uncollapsed cells with fewer remaining options appear lighter. Contradictions occur when no valid tile remains for a cell -- the propagation cascade has over-constrained a region. Different preset tile sets (Island, City, Dungeon) produce radically different spatial structures from the same algorithm. Increasing steps-per-frame reveals how constraint propagation creates coherent large-scale patterns from purely local rules.
+Uncollapsed cells show how many tiles they still allow: `▓▓` for four or more, `▒▒` for three, `░░` for two, `!!` for one. A contradiction occurs when no valid tile remains for a cell. The run then stops, and `r` restarts it. The six presets (Island, Coastline, Village, Maze, Terrain, Dungeon) use different tile sets and adjacency rules, so the same algorithm gives very different layouts. `Space` runs, `n` steps, and `s`/`S` raise or lower the steps per frame.
 
 **References**
 
