@@ -30,3 +30,11 @@ def test_step_no_crash():
         app._spinice_init(idx)
         for _ in range(5):
             app._spinice_step()
+
+
+def test_edge_vertices_can_be_neutral():
+    app = _make_app()
+    app._spinice_init(0)
+    # Edge vertices have three arrows; only the corners may stay charged.
+    assert app.spinice_n_positive + app.spinice_n_negative <= 4
+    assert app.spinice_ice_frac > 0.98

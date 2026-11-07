@@ -84,8 +84,12 @@ def _vertex_charge(self, r, c):
         total_edges += 1
     if r > 0:
         total_edges += 1
-    in_count = total_edges - out_count
-    return out_count - in_count
+    charge = 2 * out_count - total_edges
+    # An edge vertex has three arrows, so its charge is odd. Discount the
+    # unavoidable +-1 so the best edge configuration counts as neutral.
+    if total_edges % 2 == 1:
+        charge -= 1 if charge > 0 else -1
+    return charge
 
 
 def _spinice_count_monopoles(self):
