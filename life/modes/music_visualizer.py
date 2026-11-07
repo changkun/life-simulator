@@ -1,8 +1,7 @@
-"""Mode: musvis — simulation mode for the life package."""
+"""Music Visualizer — spectrum, waveform, particle and tunnel views driven by a synthetic tone sequence."""
 import curses
 import math
 import random
-import time
 
 
 MUSVIS_PRESETS = [
@@ -27,13 +26,12 @@ MUSVIS_TONE_PATTERNS = [
 
 
 def _enter_musvis_mode(self):
-    """Enter Music Visualizer mode — show preset menu."""
+    """Enter Music Visualizer mode and show the preset menu."""
     self.musvis_mode = True
     self.musvis_menu = True
     self.musvis_menu_sel = 0
     self.musvis_running = False
     self._flash("Music Visualizer — select a visualization")
-
 
 
 def _exit_musvis_mode(self):
@@ -48,9 +46,8 @@ def _exit_musvis_mode(self):
     self._flash("Music Visualizer OFF")
 
 
-
 def _musvis_init(self, preset_idx: int):
-    """Initialize music visualizer with chosen preset."""
+    """Initialize the visualizer from the chosen preset."""
     name, _desc = self.MUSVIS_PRESETS[preset_idx]
     self.musvis_preset_name = name
     self.musvis_preset_idx = preset_idx
@@ -70,15 +67,12 @@ def _musvis_init(self, preset_idx: int):
     self.musvis_mid_energy = 0.0
     self.musvis_high_energy = 0.0
     self.musvis_tone_phase = 0.0
-    # Map preset_idx to view_mode
-    view_map = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
-    self.musvis_view_mode = view_map.get(preset_idx, 0)
+    self.musvis_view_mode = preset_idx  # presets and views share the same order
     self._flash(f"Visualizer: {name} — space=pause, c=color, v=view, +/-=sensitivity")
 
 
-
 def _musvis_generate_audio_data(self):
-    """Generate synthetic audio data from oscillating tones (simulates microphone input)."""
+    """Generate the waveform, spectrum and beat state from a synthetic tone sequence."""
     t = self.musvis_time
     sens = self.musvis_sensitivity
 
@@ -127,7 +121,7 @@ def _musvis_generate_audio_data(self):
                         falloff = 1.0 if offset == 0 else 0.4
                         spectrum[bi] += amp * falloff * sens
 
-    # Add some low-frequency rumble
+    # Low-frequency rumble pulsing at 2 Hz keeps the bass bars moving.
     beat_pulse = 0.5 + 0.5 * math.sin(2.0 * math.pi * 2.0 * t)  # 2 Hz beat
     for i in range(min(4, n_bars)):
         spectrum[i] += 0.3 * beat_pulse * sens * (1.0 - i / 4.0)
@@ -164,7 +158,6 @@ def _musvis_generate_audio_data(self):
         self.musvis_beat_flash *= 0.85
 
 
-
 def _musvis_spawn_particles(self):
     """Spawn beat-reactive particles."""
     n_new = random.randint(5, 15)
@@ -182,7 +175,6 @@ def _musvis_spawn_particles(self):
         })
 
 
-
 def _musvis_update_particles(self):
     """Update particle positions and lifetimes."""
     alive = []
@@ -197,24 +189,22 @@ def _musvis_update_particles(self):
     self.musvis_particles = alive[:200]  # Cap particle count
 
 
-
 def _musvis_step(self):
-    """Advance one frame of the visualizer."""
+    """Advance the visualizer by one frame."""
     self.musvis_time += 0.04
     self.musvis_generation += 1
     self._musvis_generate_audio_data()
     self._musvis_update_particles()
 
 
-
 def _handle_musvis_menu_key(self, key: int) -> bool:
-    """Handle input in music visualizer preset menu."""
+    """Handle keys in the preset menu."""
     n = len(self.MUSVIS_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.musvis_menu_sel = (self.musvis_menu_sel + 1) % n
     elif key in (ord("k"), curses.KEY_UP):
         self.musvis_menu_sel = (self.musvis_menu_sel - 1) % n
-    elif key in (ord("\n"), ord("\r")):
+    elif key in (ord("\n"), ord("\r"), curses.KEY_ENTER):
         self._musvis_init(self.musvis_menu_sel)
     elif key in (ord("q"), 27):
         self.musvis_menu = False
@@ -224,9 +214,8 @@ def _handle_musvis_menu_key(self, key: int) -> bool:
     return True
 
 
-
 def _handle_musvis_key(self, key: int) -> bool:
-    """Handle input in active music visualizer."""
+    """Handle keys while the visualizer runs."""
     if key == ord(" "):
         self.musvis_running = not self.musvis_running
     elif key == ord("n"):
@@ -271,7 +260,6 @@ def _handle_musvis_key(self, key: int) -> bool:
     return True
 
 
-
 def _musvis_color(self, val: float, band: int = 0) -> int:
     """Return curses color attribute for a visualizer value."""
     mode = self.musvis_color_mode
@@ -307,9 +295,8 @@ def _musvis_color(self, val: float, band: int = 0) -> int:
             return curses.color_pair(7) | curses.A_BOLD  # white bold
 
 
-
 def _draw_musvis_menu(self, max_y: int, max_x: int):
-    """Draw the music visualizer preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Music Visualizer ── Select Visualization ──"
     try:
@@ -338,16 +325,15 @@ def _draw_musvis_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hint = " [j/k]=navigate  [Enter]=select  [q]=cancel"
+    hint = " j/k=select  Enter=start  q=cancel"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:
         pass
 
 
-
 def _draw_musvis(self, max_y: int, max_x: int):
-    """Render the music visualizer to the terminal."""
+    """Draw the active view, HUD and key hints."""
     self.stdscr.erase()
     view_h = max_y - 3
     view_w = max_x - 1
@@ -398,9 +384,8 @@ def _draw_musvis(self, max_y: int, max_x: int):
         pass
 
 
-
 def _draw_musvis_spectrum(self, view_h: int, view_w: int):
-    """Draw FFT spectrum bar display."""
+    """Draw the spectrum as vertical bars with peak markers."""
     spectrum = self.musvis_spectrum
     peaks = self.musvis_peak_history
     n_bars = len(spectrum)
@@ -458,9 +443,8 @@ def _draw_musvis_spectrum(self, view_h: int, view_w: int):
                         pass
 
 
-
 def _draw_musvis_waveform(self, view_h: int, view_w: int):
-    """Draw oscilloscope-style waveform."""
+    """Draw the waveform like an oscilloscope trace."""
     waveform = self.musvis_waveform
     n_samples = len(waveform)
     if n_samples == 0:
@@ -518,7 +502,6 @@ def _draw_musvis_waveform(self, view_h: int, view_w: int):
                 pass
 
 
-
 def _draw_musvis_particles_view(self, view_h: int, view_w: int):
     """Draw beat-reactive particle explosions."""
     cx = view_w // 2
@@ -554,7 +537,6 @@ def _draw_musvis_particles_view(self, view_h: int, view_w: int):
                 self.stdscr.addstr(y, x, p["char"], attr)
             except curses.error:
                 pass
-
 
 
 def _draw_musvis_combined(self, view_h: int, view_w: int):
@@ -622,7 +604,6 @@ def _draw_musvis_combined(self, view_h: int, view_w: int):
                 pass
 
 
-
 def _draw_musvis_tunnel(self, view_h: int, view_w: int):
     """Draw bass-reactive tunnel zoom effect."""
     cx = view_w // 2
@@ -676,7 +657,6 @@ def _draw_musvis_tunnel(self, view_h: int, view_w: int):
                 self.stdscr.addstr(row, col, ch, attr)
             except curses.error:
                 pass
-
 
 
 def _draw_musvis_rain(self, view_h: int, view_w: int):
