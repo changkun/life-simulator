@@ -57,7 +57,7 @@ Observables:
   Energy/spin:   E/N = (-1/N) * sum_<ij> s_i*s_j  -  (h/N) * sum_i s_i
 ```
 
-Boundary conditions are periodic (toroidal). Presets span temperatures from T=0.5 (deep ordered phase) to T=5.0 (fully disordered), with external field options.
+Boundary conditions are periodic (toroidal). Presets span temperatures from T=0.1 (near ground state) to T=4.0 (disordered); "External Field" adds h=0.5. The t/T and f/F keys change temperature (0.01 to 10) and field (-2 to 2).
 
 **What to look for** — Below Tc, large single-color domains form as spins align. Near Tc (~2.27), you see critical fluctuations: fractal-like domain boundaries with long-range correlations. Above Tc, the lattice appears as random noise. Applying an external field biases magnetization even above Tc.
 
