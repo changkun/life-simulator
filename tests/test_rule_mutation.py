@@ -29,3 +29,17 @@ def test_from_nothing_finds_a_viable_rule():
         app._rmut_step()
     assert app.rmut_accepted_mutations > 0
     assert app.rmut_current_birth
+
+
+def test_lineage_parent_is_the_rule_that_was_mutated():
+    random.seed(3)
+    app = _make_app()
+    _start(app, "Chaos Seeker")
+    for _ in range(rm._EVAL_WINDOW * 30):
+        before = rm.rule_string(app.rmut_current_birth,
+                                app.rmut_current_survival)
+        n = len(app.rmut_lineage)
+        app._rmut_step()
+        if len(app.rmut_lineage) > n:
+            assert app.rmut_lineage[-1].parent_str == before
+    assert len(app.rmut_lineage) > 3

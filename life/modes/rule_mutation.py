@@ -440,6 +440,9 @@ def _rmut_step(self):
             current_entropy = (self.rmut_entropy_history[-1]
                                if self.rmut_entropy_history else 0.0)
 
+            parent_rule = rule_string(self.rmut_current_birth,
+                                      self.rmut_current_survival)
+
             if accepted:
                 # Keep the mutation
                 self.rmut_current_birth = set(self.rmut_candidate_birth)
@@ -454,16 +457,11 @@ def _rmut_step(self):
                     rule_string(self.rmut_current_birth, self.rmut_current_survival),
                     candidate_fitness,
                     self.rmut_generation,
-                    rule_string(set(self.rmut_saved_cells is not None and
-                                    self.rmut_current_birth or set()),
-                                set()),
+                    parent_rule,
                     True,
                     current_entropy,
                     pop_frac,
                 ))
-                # Fix parent tracking
-                if len(self.rmut_lineage) >= 2:
-                    self.rmut_lineage[-1].parent_str = self.rmut_lineage[-2].rule_str
             else:
                 # Revert
                 self.rmut_reverted_mutations += 1
@@ -486,7 +484,7 @@ def _rmut_step(self):
                     rule_string(self.rmut_candidate_birth, self.rmut_candidate_survival),
                     candidate_fitness,
                     self.rmut_generation,
-                    self.rmut_lineage[-1].rule_str if self.rmut_lineage else "—",
+                    parent_rule,
                     False,
                     current_entropy,
                     pop_frac,
