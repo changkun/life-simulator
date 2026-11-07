@@ -405,3 +405,12 @@ def test_bubble_streams_survive_long_run():
         app._aquarium_step()
     assert any(b["stream_x"] is not None for b in app.aquarium_bubbles)
 
+
+def test_tap_glass_keeps_speed_bounded():
+    """Repeated taps reverse fish but do not compound their speed."""
+    app = _make_app()
+    app._aquarium_init("tropical")
+    speeds = [abs(f["vx"]) for f in app.aquarium_fish]
+    for _ in range(5):
+        app._handle_aquarium_key(ord('t'))
+    assert [abs(f["vx"]) for f in app.aquarium_fish] == speeds

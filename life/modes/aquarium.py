@@ -307,10 +307,7 @@ def _handle_aquarium_key(self, key: int) -> bool:
         # Tap glass — startle fish
         self.aquarium_startled = 3.0
         for fish in self.aquarium_fish:
-            fish["vx"] = -fish["vx"] * 2.0
-            sp = FISH_SPECIES[fish["species"]]
-            max_spd = sp["speed"][1] * 2.5
-            fish["vx"] = max(-max_spd, min(max_spd, fish["vx"]))
+            fish["vx"] = -fish["vx"]
         return True
     elif key == ord('+') or key == ord('='):
         self.aquarium_speed = min(5, self.aquarium_speed + 1)
