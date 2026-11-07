@@ -97,21 +97,25 @@ class _ReverseSolver:
     unknowns.
     """
 
-    def __init__(self, target, rows, cols, birth=None, survival=None):
+    def __init__(self, target, rows, cols, birth=None, survival=None,
+                 pad=None, exclude=()):
         self.target = target  # target[r][c] = True/False
         self.rows = rows
         self.cols = cols
         self.birth = birth or {3}
         self.survival = survival or {2, 3}
+        # Solutions the search must skip (used to find alternatives)
+        self.exclude = list(exclude)
 
         # Predecessor state: rows x cols of _CellState
         self.pred = [[_CellState.UNKNOWN] * cols for _ in range(rows)]
+        self._set_region(pad)
 
         # Search statistics
         self.backtracks = 0
         self.propagations = 0
         self.cells_decided = 0
-        self.total_cells = rows * cols
+        self.total_cells = len(self.variables)
         self.start_time = 0.0
 
         # For visualization
@@ -130,6 +134,38 @@ class _ReverseSolver:
         # Generator-based solver for incremental execution
         self._solver_gen = None
         self._paused = False
+
+    def _set_region(self, pad):
+        """Limit the search to the live cells' bounding box grown by ``pad``.
+
+        Cells outside the box are fixed dead in the predecessor, so only the
+        box and a one-cell ring around it carry constraints.  Searching the
+        whole grid is far too slow.  ``pad=None`` (or a B0 rule, where empty
+        space is not stable) searches every cell.
+        """
+        rows, cols = self.rows, self.cols
+        live = [(r, c) for r in range(rows) for c in range(cols)
+                if self.target[r][c]]
+        if pad is None or 0 in self.birth:
+            self.variables = [(r, c) for r in range(rows) for c in range(cols)]
+            self.active = self.variables
+            return
+        if not live:
+            live = [(rows // 2, cols // 2)]
+        r0 = max(0, min(r for r, _ in live) - pad)
+        r1 = min(rows - 1, max(r for r, _ in live) + pad)
+        c0 = max(0, min(c for _, c in live) - pad)
+        c1 = min(cols - 1, max(c for _, c in live) + pad)
+        self.variables = [(r, c) for r in range(r0, r1 + 1)
+                          for c in range(c0, c1 + 1)]
+        inside = set(self.variables)
+        active = set(inside)
+        for r, c in self.variables:
+            active.update(self._neighbors(r, c))
+        self.active = sorted(active)
+        for r, c in self.active:
+            if (r, c) not in inside:
+                self.pred[r][c] = _CellState.DEAD
 
     def _neighbors(self, r, c):
         """Return list of neighbor coordinates (with wrapping)."""
@@ -212,58 +248,56 @@ class _ReverseSolver:
         while changed:
             changed = False
             self.propagations += 1
-            for r in range(self.rows):
-                for c in range(self.cols):
-                    if not self._is_consistent(r, c):
-                        return False
+            for r, c in self.active:
+                if not self._is_consistent(r, c):
+                    return False
 
-                    # Try to force unknown neighbors
-                    if self.pred[r][c] != _CellState.UNKNOWN:
-                        continue
+                # Try to force unknown neighbors
+                if self.pred[r][c] != _CellState.UNKNOWN:
+                    continue
 
-                    # Try setting to ALIVE
+                # Try setting to ALIVE
+                self.pred[r][c] = _CellState.ALIVE
+                alive_ok = all(
+                    self._is_consistent(nr, nc)
+                    for nr, nc in self._neighbors(r, c) + [(r, c)]
+                )
+
+                # Try setting to DEAD
+                self.pred[r][c] = _CellState.DEAD
+                dead_ok = all(
+                    self._is_consistent(nr, nc)
+                    for nr, nc in self._neighbors(r, c) + [(r, c)]
+                )
+
+                self.pred[r][c] = _CellState.UNKNOWN
+
+                if not alive_ok and not dead_ok:
+                    return False
+                elif alive_ok and not dead_ok:
                     self.pred[r][c] = _CellState.ALIVE
-                    alive_ok = all(
-                        self._is_consistent(nr, nc)
-                        for nr, nc in self._neighbors(r, c) + [(r, c)]
-                    )
-
-                    # Try setting to DEAD
+                    self.confirmed_cells.add((r, c))
+                    self.cells_decided += 1
+                    changed = True
+                elif dead_ok and not alive_ok:
                     self.pred[r][c] = _CellState.DEAD
-                    dead_ok = all(
-                        self._is_consistent(nr, nc)
-                        for nr, nc in self._neighbors(r, c) + [(r, c)]
-                    )
-
-                    self.pred[r][c] = _CellState.UNKNOWN
-
-                    if not alive_ok and not dead_ok:
-                        return False
-                    elif alive_ok and not dead_ok:
-                        self.pred[r][c] = _CellState.ALIVE
-                        self.confirmed_cells.add((r, c))
-                        self.cells_decided += 1
-                        changed = True
-                    elif dead_ok and not alive_ok:
-                        self.pred[r][c] = _CellState.DEAD
-                        self.cells_decided += 1
-                        changed = True
+                    self.cells_decided += 1
+                    changed = True
         return True
 
     def _pick_variable(self):
         """Choose next unknown cell to branch on (most-constrained heuristic)."""
         best = None
         best_score = -1
-        for r in range(self.rows):
-            for c in range(self.cols):
-                if self.pred[r][c] != _CellState.UNKNOWN:
-                    continue
-                # Score: number of decided neighbors (higher = more constrained)
-                score = sum(1 for nr, nc in self._neighbors(r, c)
-                            if self.pred[nr][nc] != _CellState.UNKNOWN)
-                if score > best_score:
-                    best_score = score
-                    best = (r, c)
+        for r, c in self.variables:
+            if self.pred[r][c] != _CellState.UNKNOWN:
+                continue
+            # Score: number of decided neighbors (higher = more constrained)
+            score = sum(1 for nr, nc in self._neighbors(r, c)
+                        if self.pred[nr][nc] != _CellState.UNKNOWN)
+            if score > best_score:
+                best_score = score
+                best = (r, c)
         return best
 
     def _snapshot(self):
@@ -278,25 +312,23 @@ class _ReverseSolver:
 
     def _verify_solution(self):
         """Verify that the predecessor, when stepped forward, produces the target."""
-        for r in range(self.rows):
-            for c in range(self.cols):
-                if self.pred[r][c] == _CellState.UNKNOWN:
-                    return False
+        for r, c in self.variables:
+            if self.pred[r][c] == _CellState.UNKNOWN:
+                return False
 
         # Step forward and compare
-        for r in range(self.rows):
-            for c in range(self.cols):
-                alive_n = sum(1 for nr, nc in self._neighbors(r, c)
-                              if self.pred[nr][nc] == _CellState.ALIVE)
-                cell_alive = self.pred[r][c] == _CellState.ALIVE
+        for r, c in self.active:
+            alive_n = sum(1 for nr, nc in self._neighbors(r, c)
+                          if self.pred[nr][nc] == _CellState.ALIVE)
+            cell_alive = self.pred[r][c] == _CellState.ALIVE
 
-                if cell_alive:
-                    next_alive = alive_n in self.survival
-                else:
-                    next_alive = alive_n in self.birth
+            if cell_alive:
+                next_alive = alive_n in self.survival
+            else:
+                next_alive = alive_n in self.birth
 
-                if next_alive != self.target[r][c]:
-                    return False
+            if next_alive != self.target[r][c]:
+                return False
         return True
 
     def solve_step(self):
@@ -439,7 +471,7 @@ class _ReverseSolver:
         """Return solver progress as fraction 0..1."""
         if self.total_cells == 0:
             return 1.0
-        decided = sum(1 for r in range(self.rows) for c in range(self.cols)
+        decided = sum(1 for r, c in self.variables
                       if self.pred[r][c] != _CellState.UNKNOWN)
         return decided / self.total_cells
 
@@ -500,6 +532,7 @@ def _init_solver(self):
     self.reverse_life_solver = _ReverseSolver(
         self.reverse_life_target, rows, cols,
         birth=self.grid.birth, survival=self.grid.survival,
+        pad=self.reverse_life_search_pad,
     )
     self.reverse_life_running = False
 
@@ -602,10 +635,12 @@ def _handle_reverse_life_key(self, key):
 
     if key in (ord('+'), ord('=')):
         self.reverse_life_search_pad = min(self.reverse_life_search_pad + 1, 10)
+        _init_solver(self)
         return True
 
     if key == ord('-'):
         self.reverse_life_search_pad = max(self.reverse_life_search_pad - 1, 0)
+        _init_solver(self)
         return True
 
     return False
@@ -704,6 +739,7 @@ def _draw_reverse_life(self, max_y=None, max_x=None):
     info = (
         f" View: {view}  Speed: {speed_label}  "
         f"Steps back: {self.reverse_life_steps_back}  "
+        f"Pad: {self.reverse_life_search_pad}  "
         f"Rule: {rule_string(self.grid.birth, self.grid.survival)}"
     )
     try:
@@ -905,7 +941,8 @@ def _draw_stats_panel(self, scr, top, max_y, max_x):
 
     row = top
     stats = [
-        ("Grid size", f"{solver.rows} × {solver.cols} = {solver.total_cells} cells"),
+        ("Grid size", f"{solver.rows} × {solver.cols}"),
+        ("Search cells", f"{solver.total_cells}"),
         ("Progress", f"{solver.progress():.1%}"),
         ("Cells decided", f"{solver.cells_decided}"),
         ("Backtracks", f"{solver.backtracks}"),
