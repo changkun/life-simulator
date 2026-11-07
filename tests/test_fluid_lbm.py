@@ -518,7 +518,7 @@ class TestFluidLBMKeyHandling:
         self.app._fluid_init(0)
         self.app.fluid_omega = 1.97
         self.app._handle_fluid_key(ord("w"))
-        assert self.app.fluid_omega <= 1.99
+        assert self.app.fluid_omega <= 1.95
 
     def test_inflow_adjustment(self):
         self.app._fluid_init(0)

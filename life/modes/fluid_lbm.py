@@ -327,7 +327,7 @@ def _handle_fluid_key(self, key: int) -> bool:
         self._flash(f"Visualization: {modes[self.fluid_viz_mode]}")
     elif key == ord("w") or key == ord("W"):
         delta = 0.05 if key == ord("w") else -0.05
-        self.fluid_omega = max(0.5, min(1.99, self.fluid_omega + delta))
+        self.fluid_omega = max(0.5, min(1.95, self.fluid_omega + delta))
         viscosity = (1.0 / self.fluid_omega - 0.5) / 3.0
         self._flash(f"Omega: {self.fluid_omega:.2f}  (viscosity: {viscosity:.4f})")
     elif key == ord("u") or key == ord("U"):
