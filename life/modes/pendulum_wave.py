@@ -1,8 +1,6 @@
-"""Mode: pwave — simulation mode for the life package."""
+"""Pendulum Wave — uncoupled pendulums of graded length that drift in and out of phase."""
 import curses
 import math
-import random
-import time
 
 PWAVE_PRESETS = [
     ("Classic Wave", "15 pendulums — elegant snake and convergence patterns", "classic"),
@@ -35,9 +33,7 @@ def _exit_pwave_mode(self):
 
 
 def _pwave_init(self, preset: str):
-    """Initialize pendulum wave simulation from preset."""
-    import math
-
+    """Initialize the pendulum wave from a preset."""
     rows, cols = self.grid.rows, self.grid.cols
     self.pwave_rows = rows
     self.pwave_cols = cols
@@ -96,9 +92,8 @@ def _pwave_init(self, preset: str):
         self.pwave_dt = 0.02
         self.pwave_speed = 3
 
-    # Calculate pendulum lengths so that pendulum i completes (N_base + i)
-    # oscillations in realign_time T. For SHM: period = 2*pi*sqrt(L/g)
-    # We want period_i = T / (N_base + i), so L_i = g * (T / (2*pi*(N_base + i)))^2
+    # Pendulum i completes (N_base + i) oscillations in realign_time T.
+    # With period = 2*pi*sqrt(L/g) this gives L_i = g * (T / (2*pi*(N_base + i)))^2.
     n = self.pwave_n_pendulums
     N_base = 51  # base number of oscillations for the longest pendulum
     self.pwave_lengths = []
@@ -120,9 +115,7 @@ def _pwave_init(self, preset: str):
 
 
 def _pwave_step(self):
-    """Advance pendulum wave by one timestep using exact SHM solution."""
-    import math
-
+    """Advance the pendulums by one time step using the exact SHM solution."""
     self.pwave_generation += 1
     self.pwave_time += self.pwave_dt
 
@@ -250,8 +243,6 @@ def _draw_pwave_menu(self, max_y: int, max_x: int):
 
 def _draw_pwave(self, max_y: int, max_x: int):
     """Draw the Pendulum Wave simulation."""
-    import math
-
     self.stdscr.erase()
     rows = min(self.pwave_rows, max_y - 2)
     cols = min(self.pwave_cols, max_x)
