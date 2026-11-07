@@ -386,3 +386,15 @@ def test_no_orrery_leakage():
     import life.modes.black_hole as bh
     assert not hasattr(bh, '_ORRERY_PLANETS'), "Stale orrery data in black_hole.py"
     assert not hasattr(bh, 'ORRERY_PRESETS'), "Stale orrery data in black_hole.py"
+
+
+def test_jet_count_is_capped():
+    import random
+    random.seed(3)
+    app = _make_app()
+    app.grid.rows, app.grid.cols = 40, 120
+    app._blackhole_init("quasar")
+    for _ in range(6000):
+        app._blackhole_step()
+    n_jets = sum(1 for p in app.blackhole_particles if p[6] == 1)
+    assert n_jets <= 150

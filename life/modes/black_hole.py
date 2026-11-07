@@ -13,6 +13,9 @@ BLACKHOLE_PRESETS = [
     ("Binary Merger", "Two black holes spiraling toward merger", "binary"),
 ]
 
+# Jets are re-emitted rather than removed, so accretion-spawned jets need a cap.
+_MAX_JETS = 150
+
 
 def _enter_blackhole_mode(self):
     """Enter Black Hole mode — show preset menu."""
@@ -188,6 +191,7 @@ def _blackhole_step(self):
     rows, cols = self.blackhole_rows, self.blackhole_cols
     particles = self.blackhole_particles
 
+    n_jets = sum(1 for p in particles if p[6] == 1)
     new_particles = []
     for p in particles:
         x, y, vx, vy, temp, age, ptype = p
@@ -233,7 +237,8 @@ def _blackhole_step(self):
             if r < rs:
                 self.blackhole_total_accreted += 1
                 # Occasionally spawn jet particle when matter accreted
-                if rng.random() < 0.1 * self.blackhole_jet_power:
+                if n_jets < _MAX_JETS and rng.random() < 0.1 * self.blackhole_jet_power:
+                    n_jets += 1
                     direction = rng.choice([-1, 1])
                     jvx = rng.gauss(0, 0.15)
                     jvy = direction * rng.uniform(2.0, 5.0) * self.blackhole_jet_power
