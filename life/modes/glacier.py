@@ -226,6 +226,7 @@ def _glacier_init(self, preset_idx: int):
 
     # Heinrich event state
     self.glacier_heinrich_active = False
+    self.glacier_heinrich_forced = False
     self.glacier_heinrich_cooldown = 0
 
     # Metrics history
@@ -422,7 +423,12 @@ def _glacier_step(self):
 
     # --- Heinrich events ---
     self.glacier_heinrich_active = False
-    if self.glacier_heinrich_cooldown > 0:
+    if self.glacier_heinrich_forced:
+        # Set by the 'h' key; the flag survives until this step consumes it.
+        self.glacier_heinrich_forced = False
+        self.glacier_heinrich_active = True
+        self.glacier_heinrich_cooldown = 30
+    elif self.glacier_heinrich_cooldown > 0:
         self.glacier_heinrich_cooldown -= 1
     else:
         # Heinrich events more likely with thick ice sheets
@@ -607,9 +613,7 @@ def _handle_glacier_key(self, key: int) -> bool:
         self._flash(f"Volcanic: {self.glacier_volcanic_mult:.1f}x")
         return True
     if key == ord('h'):
-        # Force a Heinrich event
-        self.glacier_heinrich_active = True
-        self.glacier_heinrich_cooldown = 30
+        self.glacier_heinrich_forced = True
         self._flash("Heinrich event triggered!")
         return True
     if key == ord('d'):
