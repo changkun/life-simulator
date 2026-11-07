@@ -754,9 +754,9 @@ After acting, break agents wait 2 steps and water agents wait 3. Firestorm has n
 
 **Source:** `life/modes/city_growth.py`
 
-**Background.** This mode simulates emergent urban development where residential, commercial, and industrial zones self-organize around road networks via land-value gradients, population pressure, and zoning attraction/repulsion rules. Unlike simple cellular automata that model individual buildings or traffic, this simulation captures the macro-scale dynamics of urban morphology — how cities grow organically from small settlements into complex metropolitan structures through feedback loops between land value, transportation access, population density, and zoning compatibility. The model draws on urban economics (Alonso's bid-rent theory, von Thünen's land use rings) and complex systems approaches to city formation.
+**Background.** This mode simulates urban growth. Residential, commercial, and industrial zones form around roads, driven by land value, population, and simple zoning attraction and repulsion rules. It models the city at the scale of districts, not single buildings or vehicles. Land value, road access, traffic, and zoning compatibility feed back on each other. The ideas come from urban economics (Alonso's bid-rent theory).
 
-**Formulation.** The simulation operates on a 2D grid where each cell has a zone type, density level (0–5), land value, traffic load, and population count. Eight zone types are defined:
+**Formulation.** Each cell has a zone type, a density level (0-5), a land value (0-100), a traffic load, and a population. There are eight zone types:
 
 ```
 Zone types:
@@ -771,56 +771,59 @@ Zone types:
 
 Density levels (for Residential/Commercial/Industrial):
   0 = vacant, 1 = sparse, 2 = low, 3 = medium, 4 = high, 5 = maximum
+  Population cap per cell = (density + 1) * 20
 ```
 
-**Land value computation.** Each step, land values are recalculated for all cells based on multiple factors:
+Each step has four phases. The growth rate (`+/-`) scales zoning, population growth, density, gentrification, reclaiming, and new roads. It does not scale land value, traffic, or decay.
+
+**1. Land value.** Each non-water cell changes its land value a little each step (neighbors are the 8 surrounding cells):
 
 ```
-Land value update:
-  road_access    = count of road neighbors × road_value_bonus
-  commercial_prox = Σ (1/distance) for commercial cells within radius
-  industrial_nimby = -penalty for each industrial cell within radius
-  park_amenity    = bonus for each park cell within radius
-  traffic_penalty = -congestion × traffic_penalty_factor
-  centrality      = bonus inversely proportional to distance from city center
+Land value change per step:
+  road within 2 cells:        +0.3        (nearest road 5+ cells away or none: -0.1)
+  each commercial neighbor:   +0.15
+  each industrial neighbor:   -0.4
+  each park neighbor:         +0.25
+  each ruin neighbor:         -0.3
+  traffic on the cell:        -0.2 * traffic
+  decay > 0.5:                -0.5
+  centrality:                 +0.1 * (1 - distance_to_center / max_distance)
 
-  value = base + road_access + commercial_prox + industrial_nimby
-          + park_amenity + traffic_penalty + centrality
-  value = clamp(value, 0, max_value)
+  value = clamp(value + change, 0, 100)
 ```
 
-**Traffic simulation.** Population generates commuter traffic along roads. Traffic accumulates on road cells proportional to nearby residential population and decays each step. Congestion (traffic exceeding capacity) depresses surrounding land values and drives population migration.
+**2. Traffic.** Each populated zone cell adds 0.05 * population of traffic to every road cell in the 7x7 square around it, divided by the Manhattan distance (at least 1). Traffic on a road cell is half its old value plus the new load, capped at 20. Traffic is only tracked on road cells, so it lowers road land value but does not reach the population rules.
 
-**Organic road growth.** New roads extend toward underserved population clusters — cells with high residential density but poor road access attract road construction. Roads grow incrementally from existing road endpoints toward demand.
-
-**Zone self-organization.** Empty cells adjacent to roads may develop into zones based on probabilistic rules:
+**3. Zoning and growth.** Each step, an empty cell within 3 cells of a road may become a zone. One random roll picks among the four types below. The odds depend on land value and neighbors. "Near a road" means within 2 cells and "next to a road" means within 1 (Manhattan distance):
 
 ```
-Zone placement probability:
-  Residential: higher when land value is moderate, road-adjacent,
-               away from industrial, near parks
-  Commercial:  higher when land value is high, high road access,
-               near other commercial (agglomeration)
-  Industrial:  higher when land value is low, road-adjacent,
-               away from residential (NIMBY separation)
+Empty cell, road within 3 cells (base rate, times growth rate):
+  Residential 0.005  x2 near a road, x1.5 with 2+ residential neighbors,
+                     x1.3 with a commercial neighbor, x0.3 with 2+ industrial
+                     neighbors, x1.5 if value > 60, x0.5 if value < 30
+  Commercial  0.003  x3 next to a road, x2 with 2+ residential neighbors,
+                     x2 if value > 70, x0.5 with 3+ commercial neighbors
+  Industrial  0.002  x2 next to a road, x2 if value < 40, x0.2 if value > 70,
+                     x1.5 with an industrial neighbor
+  Park        0.0005 x3 with 3+ residential neighbors and value > 50
 ```
 
-**Gentrification.** High land value converts low-density residential into commercial zones, displacing population to lower-value areas — a positive feedback loop that concentrates commerce in high-value corridors.
+- **Population.** Occupied zones grow by a zone-specific rate (residential 2%, commercial 1.5%, industrial 1% per step, all times the growth rate; residential rises with nearby commercial cells, commercial with nearby residential cells, and industrial rises 1.5x next to a road). Industrial neighbors push residential growth down. Density rises by one level with 1% chance when population and land value are high enough.
+- **Gentrification.** A residential cell of density 2 or less with land value above 80 turns commercial with 0.3% chance per step.
+- **Decay.** A zone with no population gains decay. At decay above 0.9 it becomes a ruin with 0.5% chance per step. Population lowers decay.
+- **Reclaim.** A ruin with 2 or more residential or commercial neighbors becomes residential with 0.3% chance per step.
+- **Roads.** Empty cells more than 3 cells from a road, next to a residential cell, become road with a small chance. On 5% of steps, times the growth rate, the model samples 20 random cells and picks the zone cell with the highest population times road distance (it needs a score above 10). It then builds a road toward that cell from the nearest road within 5 cells.
 
-**Infrastructure decay.** Zones with low population, low traffic, or low land value gradually decay. Abandoned zones deteriorate into ruins over time. Ruins adjacent to active zones can be reclaimed (redeveloped) with a probability proportional to surrounding activity.
+**Presets (6):** Medieval Town, Suburban Sprawl, Dense Metropolis, Coastal City, Post-Apocalyptic Regrowth, Megacity.
 
-**Population migration.** Residents move away from congested, low-value, industrial-adjacent areas toward high-value, well-connected, park-adjacent neighborhoods.
-
-**Presets (6):**
-
-| Preset | Character | Initial Layout |
-|--------|-----------|----------------|
-| Medieval Town | Dense core, organic street pattern, walls | Small central market, radiating roads |
-| Suburban Sprawl | Low density, car-dependent, wide spread | Scattered residential, highway grid |
-| Dense Metropolis | High density, transit-oriented, vertical | Large commercial core, dense grid |
-| Coastal City | Water boundary, port industry, waterfront value | Coastline with harbor and beachfront |
-| Post-Apocalyptic Regrowth | Ruins reclaimed, sparse population | Mostly ruins with small survivor clusters |
-| Megacity | Massive scale, multiple centers, congestion | Multiple nuclei, extensive road network |
+| Preset | Initial Layout |
+|--------|----------------|
+| Medieval Town | Small central market square with roads and a few buildings around it |
+| Suburban Sprawl | Road grid with scattered houses and up to three short strip malls |
+| Dense Metropolis | Radial and ring roads, dense commercial core, residential ring |
+| Coastal City | Water on the right, harbor industry, coast road, inland town center |
+| Post-Apocalyptic Regrowth | Ruined grid city with small survivor settlements; roads decay into ruins over time |
+| Megacity | Several city centers joined by roads, grid overlay, industry on the edges |
 
 **View modes (4, cycle with `v`):**
 1. **Zone map** — zone types shown as colored Unicode characters (▪ residential, ◆ commercial, ▲ industrial, ♣ park, · road, ~ water, ░ ruin)
@@ -828,9 +831,9 @@ Zone placement probability:
 3. **Traffic heatmap** — congestion visualization revealing bottlenecks
 4. **Population density** — where people actually live
 
-**Controls:** `Space`=play/pause, `n`=step, `v`=cycle views, `+/-`=simulation speed, `r`=reset, `R`=menu, `q`=exit.
+**Controls:** `Space`=play/pause, `n`=step, `v`=cycle views, `+/-`=growth rate (x1.3 or /1.3, range 0.1-5), `p`=place a park near the center, `r`=reset, `R` or `m`=menu, `q` or `Esc`=exit.
 
-**What to look for.** In Medieval Town, watch the organic street network grow outward from the central market, with commercial zones clustering along main roads and residential filling in behind. Suburban Sprawl demonstrates low-density residential spreading far from the center with commercial strips along highways — note the high per-capita traffic. Dense Metropolis shows intense land-value peaks in the commercial core with steep gradients outward, and gentrification waves converting residential edges to commercial. Coastal City reveals how the water boundary concentrates development along the shore and creates a port-industrial zone separated from waterfront residential by land value. Post-Apocalyptic Regrowth is fascinating to watch as small survivor clusters slowly reclaim ruins, rebuilding road connections and re-establishing trade networks. Megacity showcases multiple competing centers with congestion corridors between them. Toggle to the traffic heatmap to see how road networks become saturated, then watch how new roads grow to relieve pressure. The land value view reveals the economic geography underlying all zone placement decisions.
+**What to look for.** In Medieval Town, the street network grows outward from the market, with commercial zones along the main roads and housing filling in behind. Suburban Sprawl spreads low-density housing far from the center. Dense Metropolis has a land-value peak in the commercial core, and gentrification converts residential edges to commercial. Coastal City concentrates growth along the shore, with industry kept near the harbor. In Post-Apocalyptic Regrowth, survivor clusters slowly reclaim ruins. Megacity has several competing centers. In the traffic view, watch roads saturate near populated zones. In the land value view, watch industry push values down and parks and commerce push them up.
 
 **References.**
 - Alonso, W. *Location and Land Use*. Harvard University Press, 1964.
