@@ -1,4 +1,4 @@
-"""Mode: bz — simulation mode for the life package."""
+"""BZ Reaction — Belousov-Zhabotinsky chemical waves in an excitable medium, from a three-variable Oregonator-style model."""
 import curses
 import math
 import random
@@ -145,7 +145,7 @@ def _bz_step(self):
     """Advance the BZ Reaction by one time step.
 
     Uses the Oregonator-inspired 3-variable model:
-        a' = a(alpha - a - c) + D*∇²a       (activator: autocatalytic, inhibited by recovery)
+        a' = a(alpha - a - beta*c) + D*∇²a  (activator: autocatalytic, inhibited by recovery)
         b' = a - b                            (inhibitor: tracks activator with delay)
         c' = gamma*(a - c)                    (recovery: slowly follows activator)
 
@@ -346,7 +346,7 @@ def _draw_bz_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+        hint = " j/k=navigate  Enter=select  q=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
@@ -438,7 +438,7 @@ def _draw_bz(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [a/A]=alpha [g/G]=gamma [d/D]=diffusion [p]=perturb [+/-]=steps/f [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  a/A=alpha  g/G=gamma  d/D=diffusion  p=perturb  +/-=speed  r=reset  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
