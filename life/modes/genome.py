@@ -1,8 +1,7 @@
-"""Simulation Genome Sharing System — encode/decode simulation configs as compact seed strings.
+"""Genome Sharing — encode a simulation's configuration as a short code and load it back.
 
-A horizontal feature that works across all modes. Press 'g' to export the current
-simulation's configuration as a shareable code (e.g., RD-x7Kp2mQ9), or paste a code
-to instantly reproduce that exact simulation setup.
+Press g to export the current setup as a shareable code (mode abbreviation, dash, payload),
+or to paste a code and reproduce that setup.
 """
 import base64
 import copy
@@ -64,7 +63,7 @@ _MODE_ABBREVS = {
 # Reverse lookup: abbreviation → prefix
 _ABBREV_TO_PREFIX = {v: k for k, v in _MODE_ABBREVS.items()}
 
-# Excluded modes (meta-modes that don't have simple reproducible configs)
+# Meta-modes without a simple reproducible config
 _EXCLUDED_ATTRS = {
     "compare_mode", "race_mode", "obs_mode", "cinem_mode",
     "screensaver_mode", "pexplorer_mode",
@@ -155,9 +154,6 @@ def _capture_genome(self):
             key = attr_name[len(attr_prefix):]
             config[key] = val
         elif isinstance(val, str) and len(val) < 200:
-            key = attr_name[len(attr_prefix):]
-            config[key] = val
-        elif isinstance(val, bool):
             key = attr_name[len(attr_prefix):]
             config[key] = val
         elif isinstance(val, (list, tuple)):
@@ -292,7 +288,7 @@ def _apply_genome(self, prefix, config):
                     nr, nc = r + off_r, c + off_c
                     if 0 <= nr < self.grid.rows and 0 <= nc < self.grid.cols:
                         self.grid.set_alive(nr, nc)
-        self._flash(f"Genome loaded: Game of Life")
+        self._flash("Genome loaded: Game of Life")
         return True
 
     if target_entry is None:
@@ -348,9 +344,7 @@ def _get_speeds():
 # ── Key handler ──────────────────────────────────────────────────────────────
 
 def _genome_handle_key(self, key):
-    """Handle genome sharing key (g). Returns True if handled."""
-    import curses
-
+    """Handle the genome sharing key (g).  Return True if handled."""
     if key != ord("g"):
         return False
 
