@@ -1071,7 +1071,7 @@ Three visualization modes are available:
 
 - **Side-by-Side** — Split screen with the original timeline on the left and the perturbed timeline on the right. Cells that differ between timelines are highlighted in red on the perturbed side. Population sparklines appear below each panel.
 
-- **Dual Overlay** — A blended single-grid view where green cells are alive only in the original, red cells are alive only in the perturbed timeline, and yellow/white cells are alive in both. Dead-in-both cells are blank.
+- **Dual Overlay** — A blended single-grid view where green cells are alive only in the original, red cells are alive only in the perturbed timeline, and yellow cells are alive in both. Dead-in-both cells are blank.
 
 The heatmap supports both linear and logarithmic color scaling. Log scale is useful for revealing subtle early divergence before the perturbation has cascaded widely.
 
@@ -1080,7 +1080,7 @@ The heatmap supports both linear and logarithmic color scaling. Log scale is use
 | Key | Action |
 |-----|--------|
 | **Ctrl+B** | Enter/exit Butterfly Effect mode |
-| **Arrows** / **hjkl** | Move cursor while picking (while running, arrows scroll the viewport and `h` toggles the heatmap mode) |
+| **Arrows** / **hjkl** | Move the cursor while picking. While running, only the arrow keys scroll the viewport; `h` toggles the heatmap mode |
 | **Enter** | Confirm cell perturbation |
 | **Space** | Play/pause both timelines |
 | **n** / **.** | Single-step both timelines |
@@ -1088,8 +1088,8 @@ The heatmap supports both linear and logarithmic color scaling. Log scale is use
 | **h** | Toggle cumulative vs instantaneous heatmap |
 | **c** | Toggle linear vs logarithmic color scale |
 | **r** | Reset: re-snapshot grid and pick a new cell |
-| **<** / **>** | Adjust simulation speed |
-| **Esc** / **q** | Cancel picking / quit |
+| **<** / **>** | Adjust simulation speed (`,` also slows it) |
+| **Esc** / **q** | While picking: cancel and leave the mode. While running: `q` leaves the mode |
 
 ### What to explore
 
@@ -1133,12 +1133,12 @@ The next round breeds from the best: crossover between hall-of-fame members and 
 
 | Key | Action |
 |-----|--------|
-| **Space** | Pause/resume simulation |
+| **Space** | Pause/resume simulation (once the round is scored: breed the next round) |
 | **S** | Skip to scoring (finish the current evaluation at once) |
 | **b** | Score the round, or breed the next one once scored |
 | **Arrows** / **wasd** | Move the cursor between tiles |
-| **a** | Adopt the selected universe's rules into the main grid |
-| **h** | Toggle Hall of Fame browser |
+| **Enter** | Adopt the selected universe's rules into the main grid and leave the mode |
+| **h** | Toggle Hall of Fame browser (only once it has entries) |
 | **↑ / ↓** or **k / j** (in HoF view) | Scroll through Hall of Fame entries |
 | **Enter** (in HoF view) | Adopt the selected entry's rules |
 | **x** (in HoF view) | Remove the selected entry |
@@ -1190,11 +1190,11 @@ The key addition is the adversary layer, which operates on three timescales:
 
 **Across generations** — a population of 8 adversary genomes evolves via:
 - **Genome representation**: birth set, survival set, asymmetry bias (0–1), wall aggression (0.1–1.5)
-- **Fitness function**: base score + weakness-targeting bonuses × solvability multiplier. The solvability sweet spot rewards 30–80 turn completions (×1.3), penalizes trivial (<15 turns, ×0.5) or tedious (>150 turns, ×0.7) levels, and slightly penalizes player death (×0.85)
+- **Fitness function**: base score + weakness-targeting bonuses × solvability multiplier. The solvability sweet spot rewards 30–80 turn completions (×1.3), and penalizes trivial (<15 turns, ×0.5) or tedious (>150 turns, ×0.7) levels
 - **Selection**: elite preservation (top 3) + crossover from top half + point mutation (18% per gene) + one random genome for exploration
 - **Targeted mutation**: after standard evolution, the best genome receives additional mutations tuned to the player's detected weaknesses
 
-A BFS solvability check runs after each level generation; if no path exists from player to exit, a guaranteed corridor is carved.
+A BFS solvability check runs after each level generation; if no path exists from player to exit, a guaranteed corridor is carved. The CA keeps the player's cell and the exit open on every tick, so walls close in around the player but never crush them.
 
 ### Controls
 
@@ -1208,7 +1208,7 @@ A BFS solvability check runs after each level generation; if no path exists from
 | **+/-** | Adjust CA ticks per player move |
 | **TAB** | Toggle Adversary Report overlay |
 | **?** | Toggle help overlay |
-| **n** | Restart from level 1 (after game over: next level) |
+| **n** | Restart from level 1 (after a win: next level) |
 | **Esc / q** | Exit Adaptive Adversary |
 
 ### What to explore
@@ -1216,8 +1216,8 @@ A BFS solvability check runs after each level generation; if no path exists from
 - Play several levels naturally, then press TAB to read the Adversary Report — it shows your movement bar chart, item usage, detected behavioral patterns, and exactly how the dungeon adapted. Try deliberately changing your strategy and watch the adversary re-adapt.
 - If you always go right, the dungeon will evolve asymmetric rules that collapse corridors from the right. Counter by varying your approach direction.
 - Heavy Freeze usage triggers faster wall regrowth — the dungeon learns to make your favorite tool less effective. Try rationing items or switching to Mutate.
-- Watch the evolution generation counter climb. Early levels feel random; by generation 5–10 the adversary has converged on rules tuned to your play style.
-- The solvability sweet spot means the dungeon *wants* to challenge you, not kill you. If you die too often, the adversary backs off slightly. If you breeze through, it escalates.
+- Watch the evolution generation counter climb as the adversary adapts between levels.
+- The solvability sweet spot means the dungeon *wants* to challenge you, not trap you. A level you clear in 30--80 turns earns the highest fitness multiplier (×1.3), a trivial one the lowest.
 - Compare the CA behavior across levels — you're watching natural selection in real time, with yourself as the selection pressure.
 
 ---
@@ -1230,24 +1230,24 @@ A BFS solvability check runs after each level generation; if no path exists from
 
 Phase Space Navigator maps the entire behavioral landscape of cellular automaton rule-space as an interactive 2D heatmap. Where Genesis Protocol explores rule-space one universe at a time, and Butterfly Effect examines causal sensitivity within a single simulation, the Phase Space Navigator gives a **global view** — showing where complexity, chaos, oscillation, and death occur across all possible rule parameterizations simultaneously. It is the natural culmination of the project's analytical trajectory: a "map of all possible universes."
 
-The mode runs hundreds of micro-simulations in parallel behind the scenes, classifying each point in a 2D parameter space by its emergent behavior. The user can sweep across rule parameters (birth vs. survival thresholds, density vs. birth, Langton-style lambda/mu fractions) and instantly see the narrow edge-of-chaos regions where interesting dynamics live. Clicking any point teleports into a full-screen simulation of that rule.
+The mode runs one micro-simulation per heatmap cell behind the scenes, classifying each point in a 2D parameter space by its emergent behavior. The user can sweep across rule parameters (birth vs. survival thresholds, density vs. birth, Langton-style lambda/mu fractions) and instantly see the narrow edge-of-chaos regions where interesting dynamics live. Pressing Enter on any point teleports into a full-screen simulation of that rule.
 
 ### How it works
 
 The navigator spans a configurable 2D parameter space. Four axis modes are available:
 
-- **Birth vs Survival** — single birth/survival neighbor thresholds (B{x}/S{y}), producing a 9×9 grid of all simple threshold rules.
+- **Birth vs Survival** — single birth/survival neighbor thresholds (B{x}/S{y}), with both axes spanning 0--8.
 - **Birth Range vs Survival Range** — centered ranges with configurable width, exploring rules with multiple birth/survival values at once.
 - **Density vs Birth Threshold** — how initial cell density affects outcomes across different birth rules (with fixed Conway survival).
 - **Lambda vs Mu** — Langton's lambda-like fractional parameters controlling the probability of each neighbor count appearing in birth/survival sets.
 
-For each grid point, a micro-simulation (16×16 cells, 80 steps by default) is seeded with random initial conditions and run to completion. Simulations are evaluated using a center-outward spiral scan for visual effect during the loading phase.
+The heatmap is sized to the terminal (8--60 columns, 6--40 rows). For each grid point, a micro-simulation (16×16 cells, 80 steps) is seeded at 35% density (except on the density axis) and run to completion. Simulations are evaluated using a center-outward spiral scan for visual effect during the loading phase.
 
-Each point is classified into one of eight behavioral categories based on population dynamics, variance, and trends: **dead**, **static**, **oscillating**, **complex** (edge of chaos), **chaotic**, **explosive**, **growing**, or **dying**. These classifications drive three visualization views:
+Each point is classified into one of six behavioral categories from its population history: **dead** (extinct), **explosive** (over 85% of cells alive), or, by the coefficient of variation of the last 20 populations, **static** (a constant population or a variation below 1%), **oscillating** (below 5%), **complex** (edge of chaos, below 15%) or **chaotic** (above that). These classifications drive three visualization views:
 
-- **Classification view** — colored by behavior type using Unicode block characters (cyan=static, white=oscillating, yellow=complex, red=chaotic, magenta=explosive, green=growing, blue=dying).
+- **Classification view** — each behavior type has its own block shade and color, with a legend beside the map.
 - **Complexity heatmap** — 0–1 intensity score combining entropy, population variability, and behavioral classification weights.
-- **Entropy heatmap** — raw Shannon entropy of the final spatial pattern.
+- **Entropy heatmap** — Shannon entropy of the final pattern's live/dead split (0--1 bit).
 
 The teleport feature launches a full-size simulation with the selected point's rule, allowing detailed observation before returning to the map. The adopt feature applies the selected rule to the main simulation.
 
