@@ -402,11 +402,13 @@ def _handle_blackhole_key(self, key: int) -> bool:
         idx = views.index(self.blackhole_view) if self.blackhole_view in views else 0
         self.blackhole_view = views[(idx + 1) % len(views)]
     elif key == ord('M'):
-        self.blackhole_mass = min(500.0, self.blackhole_mass * 1.1)
-        self.blackhole_rs *= 1.05
+        old = self.blackhole_mass
+        self.blackhole_mass = min(500.0, old * 1.1)
+        self.blackhole_rs *= (self.blackhole_mass / old) ** 0.5
     elif key == ord('N'):
-        self.blackhole_mass = max(1.0, self.blackhole_mass * 0.9)
-        self.blackhole_rs *= 0.95
+        old = self.blackhole_mass
+        self.blackhole_mass = max(1.0, old * 0.9)
+        self.blackhole_rs *= (self.blackhole_mass / old) ** 0.5
     elif key == ord('s'):
         self.blackhole_spin = min(0.99, self.blackhole_spin + 0.05)
     elif key == ord('S'):

@@ -398,3 +398,20 @@ def test_jet_count_is_capped():
         app._blackhole_step()
     n_jets = sum(1 for p in app.blackhole_particles if p[6] == 1)
     assert n_jets <= 150
+
+
+def test_mass_keys_keep_radius_bounded():
+    app = _make_app()
+    app.grid.rows, app.grid.cols = 40, 120
+    app._blackhole_init("stellar")
+    rs0 = app.blackhole_rs
+    for _ in range(100):
+        app._handle_blackhole_key(ord("M"))
+    assert app.blackhole_mass == 500.0
+    rs_max = app.blackhole_rs
+    app._handle_blackhole_key(ord("M"))
+    assert app.blackhole_rs == rs_max
+    for _ in range(200):
+        app._handle_blackhole_key(ord("N"))
+    assert app.blackhole_mass == 1.0
+    assert app.blackhole_rs > 0.01 * rs0
