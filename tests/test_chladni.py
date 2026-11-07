@@ -299,3 +299,15 @@ class TestChladni:
         assert self.app.chladni_steps_per_frame == spf + 1
         self.app._handle_chladni_key(ord("<"))
         assert self.app.chladni_steps_per_frame == spf
+
+
+def test_sand_total_is_conserved():
+    random.seed(5)
+    app = make_mock_app()
+    register(type(app))
+    app._chladni_init(0)
+    total0 = sum(map(sum, app.chladni_sand))
+    for _ in range(20):
+        app._chladni_step()
+    total = sum(map(sum, app.chladni_sand))
+    assert total == pytest.approx(total0, rel=1e-6)

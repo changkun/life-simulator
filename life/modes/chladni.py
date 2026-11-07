@@ -179,6 +179,13 @@ def _chladni_step(self):
     # Sand migration: sand moves away from high-amplitude regions toward nodes
     settle = self.chladni_sand_settle_rate
     sand_new = [[0.0] * cols for _ in range(rows)]
+    # The clamped rim is a node, so its sand stays put.
+    for ci in range(cols):
+        sand_new[0][ci] = sand[0][ci]
+        sand_new[rows - 1][ci] = sand[rows - 1][ci]
+    for r in range(rows):
+        sand_new[r][0] = sand[r][0]
+        sand_new[r][cols - 1] = sand[r][cols - 1]
     for r in range(1, rows - 1):
         for ci in range(1, cols - 1):
             amp = abs(plate[r][ci])
