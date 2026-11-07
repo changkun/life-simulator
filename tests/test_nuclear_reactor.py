@@ -23,6 +23,15 @@ def test_enter_and_exit():
     assert app.nuclear_reactor_running is False
 
 
+def test_menu_enter_key_variants():
+    for key in (10, 13, curses.KEY_ENTER):
+        app = _make_app()
+        app._enter_nuclear_reactor_mode()
+        app._handle_nuclear_reactor_menu_key(key)
+        assert app.nuclear_reactor_menu is False
+        assert app.nuclear_reactor_preset_name == NUCLEAR_REACTOR_PRESETS[0][0]
+
+
 def test_all_presets_step():
     for idx in range(len(NUCLEAR_REACTOR_PRESETS)):
         app = _make_app()

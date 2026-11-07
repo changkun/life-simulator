@@ -682,7 +682,7 @@ def _handle_nuclear_reactor_menu_key(self, key):
         self.nuclear_reactor_menu_sel = (self.nuclear_reactor_menu_sel + 1) % n
     elif key in (ord("k"), curses.KEY_UP):
         self.nuclear_reactor_menu_sel = (self.nuclear_reactor_menu_sel - 1) % n
-    elif key in (ord("\n"), ord("\r")):
+    elif key in (10, 13, curses.KEY_ENTER):
         self._nuclear_reactor_init(self.nuclear_reactor_menu_sel)
     elif key in (ord("q"), 27):
         self._exit_nuclear_reactor_mode()
