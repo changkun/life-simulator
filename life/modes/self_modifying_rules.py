@@ -1,25 +1,13 @@
-"""Mode: self_modifying_rules — cellular automaton where each cell carries its own rule DNA.
-
-Each living cell has its own birth/survival ruleset encoded as a 9-bit "genome"
-(bits 0-8 = neighbor counts 0-8, separate bitstrings for birth and survival).
-When a cell is born, it inherits a (possibly mutated) rule from the majority
-of its live neighbors. Regions with different rules form competing species that
-expand, contract, and coevolve — producing emergent speciation, ecological
-niches, and arms races without any external fitness function.
-"""
+"""Self-Modifying Rules CA — a cellular automaton where each cell carries its own birth/survival rule."""
 import curses
 import math
 import random
-import time
-
-from life.constants import SPEEDS
 
 # ── Genome utilities ──────────────────────────────────────────────
-# A genome is a pair of 9-bit ints: (birth_bits, survival_bits)
-# bit i set means count i triggers birth/survival.
+# A genome is a pair of 9-bit ints: (birth_bits, survival_bits).
 
 def _genome_to_bs(genome):
-    """Convert genome (birth_bits, surv_bits) to (birth_set, surv_set)."""
+    """Convert a genome to (birth_set, surv_set)."""
     b, s = genome
     return (
         frozenset(i for i in range(9) if b & (1 << i)),
@@ -28,7 +16,7 @@ def _genome_to_bs(genome):
 
 
 def _bs_to_genome(birth_set, surv_set):
-    """Convert sets to genome bitstring pair."""
+    """Convert birth and survival sets to a genome."""
     b = 0
     for i in birth_set:
         b |= (1 << i)
@@ -39,7 +27,7 @@ def _bs_to_genome(birth_set, surv_set):
 
 
 def _genome_label(genome):
-    """Human-readable B/S string for a genome."""
+    """Return the B/S label of a genome, such as "B3/S23"."""
     bs, ss = _genome_to_bs(genome)
     b_str = "".join(str(i) for i in sorted(bs)) if bs else ""
     s_str = "".join(str(i) for i in sorted(ss)) if ss else ""
@@ -47,7 +35,7 @@ def _genome_label(genome):
 
 
 def _mutate_genome(genome, mutation_rate):
-    """Flip random bits in the genome with the given probability per bit."""
+    """Flip each genome bit with the given probability."""
     b, s = genome
     for bit in range(9):
         if random.random() < mutation_rate:
@@ -58,7 +46,7 @@ def _mutate_genome(genome, mutation_rate):
 
 
 def _genome_color_hash(genome):
-    """Map a genome to a small int 0-7 for coloring species."""
+    """Map a genome to a species color index, 0-7."""
     h = (genome[0] * 31 + genome[1] * 17) & 0xFFFFFFFF
     return h % 8
 
@@ -102,7 +90,7 @@ SMR_PRESETS = [
 ]
 
 # ── Color pairs for species ───────────────────────────────────────
-# We use color pairs 160-175 (8 species colors × 2 brightness levels)
+# Color pairs 160-175: 8 species colors, each with a young and an old shade.
 
 _SPECIES_256_COLORS = [
     (33, 27),    # blue
@@ -128,7 +116,7 @@ _SPECIES_8_COLORS = [
 
 
 def _init_smr_colors():
-    """Initialize color pairs 160-175 for species display."""
+    """Initialize the species color pairs."""
     if curses.COLORS >= 256:
         for si in range(8):
             curses.init_pair(160 + si * 2, _SPECIES_256_COLORS[si][0], -1)
@@ -140,7 +128,7 @@ def _init_smr_colors():
 
 
 def _species_attr(genome, age):
-    """Get curses attribute for a cell based on its genome and age."""
+    """Return the curses attribute for a cell from its genome and age."""
     ci = _genome_color_hash(genome)
     bright = 0 if age <= 3 else 1
     return curses.color_pair(160 + ci * 2 + bright)
@@ -149,13 +137,12 @@ def _species_attr(genome, age):
 # ── Grid simulation ──────────────────────────────────────────────
 
 def _smr_build_grid(rows, cols, seed_genomes, density):
-    """Create initial grid with seed species placed in regions."""
-    # alive[r][c] = genome tuple or None (dead)
+    """Create the initial grid with seed species placed in radial sectors."""
+    # alive[r][c] is a genome tuple, or None for a dead cell.
     alive = [[None] * cols for _ in range(rows)]
     age = [[0] * cols for _ in range(rows)]
 
     if isinstance(seed_genomes, str) and seed_genomes == "random_8":
-        # Generate 8 random genomes
         genomes = []
         for _ in range(8):
             b = random.randint(1, 511)
@@ -177,7 +164,6 @@ def _smr_build_grid(rows, cols, seed_genomes, density):
     if n_species == 0:
         return alive, age
 
-    # Place species in radial sectors around center
     cr, cc = rows // 2, cols // 2
     radius = min(rows, cols) // 3
 
@@ -190,7 +176,6 @@ def _smr_build_grid(rows, cols, seed_genomes, density):
                 continue
             if random.random() > density:
                 continue
-            # Determine which species sector
             angle = math.atan2(dr, dc) + math.pi  # 0 to 2*pi
             sector = int(angle / (2 * math.pi) * n_species) % n_species
             alive[r][c] = seed_genomes[sector]
@@ -200,7 +185,7 @@ def _smr_build_grid(rows, cols, seed_genomes, density):
 
 
 def _smr_step_fn(alive, age, rows, cols, mutation_rate):
-    """Advance simulation by one generation. Returns (new_alive, new_age, stats)."""
+    """Advance one generation. Return (new_alive, new_age, stats)."""
     new_alive = [[None] * cols for _ in range(rows)]
     new_age = [[0] * cols for _ in range(rows)]
 
@@ -212,7 +197,6 @@ def _smr_step_fn(alive, age, rows, cols, mutation_rate):
 
     for r in range(rows):
         for c in range(cols):
-            # Count live neighbors and collect their genomes
             neighbor_genomes = []
             live_count = 0
             for dr in (-1, 0, 1):
@@ -228,7 +212,7 @@ def _smr_step_fn(alive, age, rows, cols, mutation_rate):
             current = alive[r][c]
 
             if current is not None:
-                # Cell is alive — check survival using its OWN rule
+                # A live cell survives by its own rule.
                 _, surv_set = _genome_to_bs(current)
                 if live_count in surv_set:
                     new_alive[r][c] = current
@@ -239,13 +223,11 @@ def _smr_step_fn(alive, age, rows, cols, mutation_rate):
                 else:
                     deaths += 1
             else:
-                # Cell is dead — check birth using majority neighbor rule
+                # A dead cell is born by the majority rule of its neighbors.
                 if neighbor_genomes:
-                    # Find majority genome among neighbors
                     majority = _majority_genome(neighbor_genomes)
                     birth_set, _ = _genome_to_bs(majority)
                     if live_count in birth_set:
-                        # Born with parent genome, possibly mutated
                         child = majority
                         if random.random() < mutation_rate:
                             child = _mutate_genome(child, 0.15)
@@ -280,14 +262,14 @@ def _majority_genome(genomes):
 # ── Mode functions ────────────────────────────────────────────────
 
 def _enter_smr_mode(self):
-    """Show preset selection menu."""
+    """Show the preset menu."""
     self.smr_menu = True
     self.smr_menu_sel = 0
     self._flash("Self-Modifying Rules — select a preset")
 
 
 def _exit_smr_mode(self):
-    """Clean up and exit mode."""
+    """Leave Self-Modifying Rules mode."""
     self.smr_mode = False
     self.smr_menu = False
     self.smr_running = False
@@ -317,7 +299,7 @@ def _smr_reset_stats(self):
 
 
 def _smr_init(self, preset_idx):
-    """Initialize simulation from a preset."""
+    """Start the simulation from a preset."""
     _init_smr_colors()
 
     name, desc, seed_genomes, mutation_rate, density = SMR_PRESETS[preset_idx]
@@ -343,7 +325,7 @@ def _smr_init(self, preset_idx):
 
 
 def _smr_step(self):
-    """Advance one generation."""
+    """Advance the simulation by one generation."""
     self.smr_alive, self.smr_age, self.smr_stats = _smr_step_fn(
         self.smr_alive, self.smr_age,
         self.smr_rows, self.smr_cols,
@@ -363,7 +345,7 @@ def _smr_step(self):
 
 
 def _smr_randomize(self):
-    """Randomize the grid with current settings."""
+    """Replace the grid with random species at the current density."""
     genomes = []
     for _ in range(random.randint(2, 6)):
         b = random.randint(1, 511)
@@ -377,7 +359,7 @@ def _smr_randomize(self):
 
 
 def _handle_smr_menu_key(self, key):
-    """Handle key input on the preset menu."""
+    """Handle keys in the preset menu."""
     n = len(SMR_PRESETS)
     if key == ord("q") or key == 27:
         self.smr_menu = False
@@ -396,7 +378,7 @@ def _handle_smr_menu_key(self, key):
 
 
 def _handle_smr_key(self, key):
-    """Handle key input in active simulation."""
+    """Handle keys while the simulation runs."""
     if key == ord("q") or key == 27:
         _exit_smr_mode(self)
         return True
@@ -431,7 +413,7 @@ def _handle_smr_key(self, key):
 
 
 def _draw_smr_menu(self, max_y, max_x):
-    """Render the preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     y = 1
     try:
@@ -469,14 +451,13 @@ def _draw_smr_menu(self, max_y, max_x):
 
 
 def _draw_smr(self, max_y, max_x):
-    """Render the active simulation."""
+    """Draw the grid, info panel and status bar."""
     self.stdscr.erase()
 
     stats = self.smr_stats
     species = stats.get("species_count", {})
     n_species = len(species)
 
-    # Draw grid
     grid_x_start = 0
     grid_y_start = 0
     panel_x = max_x - 28 if max_x > 60 else max_x
@@ -492,11 +473,9 @@ def _draw_smr(self, max_y, max_x):
                 if g is not None:
                     attr = _species_attr(g, self.smr_age[r][c])
                     self.stdscr.addstr(sy, sx, "██", attr)
-                # dead cells are just blank (erased background)
             except curses.error:
                 pass
 
-    # Draw info panel on the right
     if max_x > 60:
         px = max_x - 27
         py = 1
@@ -569,11 +548,10 @@ def _draw_smr(self, max_y, max_x):
 
 
 def _draw_sparkline(stdscr, y, x, width, data, max_y):
-    """Draw a tiny sparkline chart."""
+    """Draw a sparkline of the last `width` values."""
     if y >= max_y - 1:
         return
     sparks = "▁▂▃▄▅▆▇█"
-    # Use last `width` data points
     segment = data[-width:]
     if not segment:
         return
