@@ -1,4 +1,4 @@
-"""Mode: spin_glass — continuous-spin magnetism with frustrated interactions and glassy dynamics."""
+"""Magnetism & Spin Glass — XY spins with ferromagnetic, antiferromagnetic or random bonds, relaxed by Metropolis dynamics."""
 import curses
 import math
 import random
@@ -27,14 +27,14 @@ SPINGLASS_PRESETS = [
 
 
 def _enter_spinglass_mode(self):
-    """Enter Spin Glass mode — show preset menu."""
+    """Enter Magnetism & Spin Glass mode and show the preset menu."""
     self.spinglass_menu = True
     self.spinglass_menu_sel = 0
     self._flash("Magnetism & Spin Glass — select a scenario")
 
 
 def _exit_spinglass_mode(self):
-    """Exit Spin Glass mode."""
+    """Exit Magnetism & Spin Glass mode."""
     self.spinglass_mode = False
     self.spinglass_menu = False
     self.spinglass_running = False
@@ -44,7 +44,7 @@ def _exit_spinglass_mode(self):
 
 
 def _spinglass_init(self, preset_idx: int):
-    """Initialize Spin Glass with the given preset."""
+    """Initialize the lattice, bonds and statistics for a preset."""
     presets = self.SPINGLASS_PRESETS
     name, _desc, coupling_type, temp, field, init_style = presets[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
@@ -60,7 +60,7 @@ def _spinglass_init(self, preset_idx: int):
     self.spinglass_steps_per_frame = 1
     self.spinglass_view = 0  # 0=spin arrows, 1=energy density, 2=stats
 
-    # Initialize spin grid — continuous angles in [0, 2*pi)
+    # Angles in [0, 2*pi).
     two_pi = 2.0 * math.pi
     if init_style == "aligned":
         self.spinglass_grid = [[0.0] * cols for _ in range(rows)]
@@ -77,8 +77,7 @@ def _spinglass_init(self, preset_idx: int):
             for _ in range(rows)
         ]
 
-    # Initialize coupling constants J_ij for each bond (right, down)
-    # Store as two grids: J_right[r][c] and J_down[r][c]
+    # Bond couplings: j_right[r][c] joins (r, c) to its right neighbor, j_down[r][c] to the one below.
     if coupling_type == "ferro":
         j_right = [[1.0] * cols for _ in range(rows)]
         j_down = [[1.0] * cols for _ in range(rows)]
@@ -108,7 +107,7 @@ def _spinglass_init(self, preset_idx: int):
 
 
 def _spinglass_compute_stats(self):
-    """Compute magnetization, energy, susceptibility."""
+    """Update magnetization, energy and susceptibility, and record their history."""
     grid = self.spinglass_grid
     rows, cols = self.spinglass_rows, self.spinglass_cols
     j_right, j_down = self.spinglass_coupling
@@ -162,7 +161,7 @@ def _spinglass_compute_stats(self):
 
 
 def _spinglass_step(self):
-    """Advance Spin Glass by one sweep (Metropolis on continuous spins)."""
+    """Advance by one Metropolis sweep over continuous spins."""
     grid = self.spinglass_grid
     rows, cols = self.spinglass_rows, self.spinglass_cols
     j_right, j_down = self.spinglass_coupling
@@ -218,7 +217,7 @@ def _spinglass_step(self):
 
 
 def _handle_spinglass_menu_key(self, key: int) -> bool:
-    """Handle input in Spin Glass preset menu."""
+    """Handle input in the preset menu."""
     presets = self.SPINGLASS_PRESETS
     if key == curses.KEY_DOWN or key == ord("j"):
         self.spinglass_menu_sel = (self.spinglass_menu_sel + 1) % len(presets)
@@ -234,7 +233,7 @@ def _handle_spinglass_menu_key(self, key: int) -> bool:
 
 
 def _handle_spinglass_key(self, key: int) -> bool:
-    """Handle input in active Spin Glass simulation."""
+    """Handle input in the running simulation."""
     if key == ord("q") or key == 27:
         self._exit_spinglass_mode()
         return True
@@ -274,7 +273,6 @@ def _handle_spinglass_key(self, key: int) -> bool:
         self.spinglass_steps_per_frame = choices[max(idx - 1, 0)]
         self._flash(f"Speed: {self.spinglass_steps_per_frame} sweeps/frame")
         return True
-    # Temperature controls: t/T
     if key == ord("t"):
         self.spinglass_temperature = max(0.01, self.spinglass_temperature - 0.05)
         self._flash(f"Temperature: {self.spinglass_temperature:.3f}")
@@ -283,17 +281,14 @@ def _handle_spinglass_key(self, key: int) -> bool:
         self.spinglass_temperature = min(10.0, self.spinglass_temperature + 0.05)
         self._flash(f"Temperature: {self.spinglass_temperature:.3f}")
         return True
-    # Quench: Q — instant drop to very low T
     if key == ord("Q"):
         self.spinglass_temperature = 0.01
         self._flash("QUENCH! T → 0.01")
         return True
-    # Anneal: A — gradual increase
     if key == ord("a"):
         self.spinglass_temperature = min(10.0, self.spinglass_temperature + 0.5)
         self._flash(f"Anneal: T → {self.spinglass_temperature:.2f}")
         return True
-    # External field: f/F
     if key == ord("f"):
         self.spinglass_ext_field = max(-2.0, self.spinglass_ext_field - 0.1)
         self._flash(f"External field: {self.spinglass_ext_field:.2f}")
@@ -306,7 +301,7 @@ def _handle_spinglass_key(self, key: int) -> bool:
 
 
 def _draw_spinglass_menu(self, max_y: int, max_x: int):
-    """Draw the Spin Glass preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Magnetism & Spin Glass ── Select Scenario ──"
     try:
@@ -340,22 +335,18 @@ def _draw_spinglass_menu(self, max_y: int, max_x: int):
 
 
 def _spinglass_local_energy(grid, j_right, j_down, rows, cols, r, c):
-    """Compute local energy density at site (r,c)."""
+    """Return the energy density at site (r, c)."""
     theta = grid[r][c]
     e = 0.0
-    # Right bond
     e -= j_right[r][c] * math.cos(theta - grid[r][(c + 1) % cols])
-    # Left bond
     e -= j_right[r][(c - 1) % cols] * math.cos(grid[r][(c - 1) % cols] - theta)
-    # Down bond
     e -= j_down[r][c] * math.cos(theta - grid[(r + 1) % rows][c])
-    # Up bond
     e -= j_down[(r - 1) % rows][c] * math.cos(grid[(r - 1) % rows][c] - theta)
     return e * 0.5  # avoid double counting
 
 
 def _is_domain_wall(grid, rows, cols, r, c):
-    """Check if site (r,c) is at a domain wall (large angle difference with neighbors)."""
+    """Return True if site (r, c) differs from a neighbor by more than 0.6 pi."""
     theta = grid[r][c]
     threshold = math.pi * 0.6
     for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
@@ -369,7 +360,7 @@ def _is_domain_wall(grid, rows, cols, r, c):
 
 
 def _draw_spinglass(self, max_y: int, max_x: int):
-    """Draw the active Spin Glass simulation."""
+    """Draw the active simulation."""
     self.stdscr.erase()
     grid = self.spinglass_grid
     rows, cols = self.spinglass_rows, self.spinglass_cols
@@ -377,7 +368,6 @@ def _draw_spinglass(self, max_y: int, max_x: int):
     state = "▶ RUN" if self.spinglass_running else "⏸ PAUSED"
     views = ["Spins", "Energy", "Stats"]
 
-    # Title bar
     title = (f" SpinGlass: {self.spinglass_preset_name}  |  sweep {self.spinglass_generation}"
              f"  |  T={self.spinglass_temperature:.3f}"
              f"  h={self.spinglass_ext_field:.2f}"
@@ -403,7 +393,6 @@ def _draw_spinglass(self, max_y: int, max_x: int):
         # Statistics / time series
         _draw_spinglass_stats(self, max_y, max_x)
 
-    # Info bar
     info_y = max_y - 2
     if info_y > 1:
         coupling_tag = {"ferro": "Ferromagnetic", "antiferro": "Antiferromagnetic",
@@ -419,7 +408,6 @@ def _draw_spinglass(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    # Hint bar
     hint_y = max_y - 1
     if hint_y > 0:
         now = time.monotonic()
@@ -435,7 +423,7 @@ def _draw_spinglass(self, max_y: int, max_x: int):
 
 
 def _draw_spinglass_arrows(self, grid, j_right, j_down, rows, cols, view_rows, view_cols):
-    """Draw spin arrows with color-coded energy density and domain wall highlighting."""
+    """Draw spin arrows colored by local energy, with domain walls highlighted."""
     pi = math.pi
     two_pi = 2.0 * pi
     addstr = self.stdscr.addstr
@@ -515,13 +503,13 @@ def _draw_spinglass_energy(self, grid, j_right, j_down, rows, cols, view_rows, v
 
 
 def _draw_spinglass_stats(self, max_y: int, max_x: int):
-    """Draw time-series plots for magnetization, energy, susceptibility."""
+    """Draw time-series plots of magnetization, energy and susceptibility."""
     plot_h = max(5, (max_y - 6) // 3)
     plot_w = max(20, max_x - 4)
     addstr = self.stdscr.addstr
 
     def draw_plot(y_start, data, label, color_pair, lo, hi):
-        """Draw a simple ASCII line plot."""
+        """Plot one series as a line, one block per sample."""
         if not data:
             return
         try:
@@ -588,7 +576,7 @@ def _draw_spinglass_stats(self, max_y: int, max_x: int):
 
 
 def register(App):
-    """Register spin glass mode methods on the App class."""
+    """Register Magnetism & Spin Glass methods on the App class."""
     App._enter_spinglass_mode = _enter_spinglass_mode
     App._exit_spinglass_mode = _exit_spinglass_mode
     App._spinglass_init = _spinglass_init
