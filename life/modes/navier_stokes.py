@@ -1,12 +1,7 @@
-"""Mode: ns — simulation mode for the life package."""
+"""Navier-Stokes — 2D incompressible fluid with dye, cursor-injected momentum and obstacles."""
 import curses
 import math
-import random
 import time
-
-# ══════════════════════════════════════════════════════════════════════
-#  Navier-Stokes Fluid Dynamics — Mode Ctrl+D
-# ══════════════════════════════════════════════════════════════════════
 
 NS_PRESETS = [
     ("Dye Playground", "Empty canvas — inject dye with cursor and watch it flow", "playground"),
@@ -164,7 +159,6 @@ def _ns_init(self, preset_idx: int):
                     self.ns_vx[r][c] = -15.0
                 # Perturbation to trigger instability
                 if abs(r - mid) < 3:
-                    import math
                     self.ns_vy[r][c] = 3.0 * math.sin(2.0 * math.pi * c / cols * 6)
                     self.ns_dye[r][c] = 0.8
 
@@ -528,8 +522,6 @@ def _handle_ns_key(self, key: int) -> bool:
         self.ns_viscosity *= 2.0
         self._flash(f"Viscosity: {self.ns_viscosity:.6f}")
         return True
-    if key == ord("v") and False:  # handled above
-        pass
     if key == ord("b"):
         self.ns_viscosity = max(0.000001, self.ns_viscosity / 2.0)
         self._flash(f"Viscosity: {self.ns_viscosity:.6f}")
@@ -702,7 +694,6 @@ def _draw_ns(self, max_y: int, max_x: int):
                 idx = min(4, max(0, idx))
                 ch = self.NS_DYE_CHARS[idx]
                 # Color based on dye hue cycling
-                import math
                 hue_offset = (r * 0.02 + c * 0.015 + self.ns_dye_hue) % 1.0
                 if norm < 0.05:
                     color = 0
@@ -796,7 +787,7 @@ def _draw_ns(self, max_y: int, max_x: int):
     if self.message and now - self.message_time < 3.0:
         hint = f" {self.message}"
     else:
-        hint = " arrows=move  f/Enter=inject  o=obstacle  v=viz  b/V=viscosity  +/-=strength  [/]=radius  c/C=clear  R=menu  q=exit"
+        hint = " q=exit  R=menu  Space=play  n=step  arrows=move  f/Enter=inject  o=obstacle  v=viz  b/V=viscosity  +/-=strength  [/]=radius  c/C=clear"
     try:
         self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:
