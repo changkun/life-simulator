@@ -1,22 +1,11 @@
-"""Mode: optics — Geometric Optics & Light simulation.
+"""Geometric Optics & Light — rays traced through mirrors, lenses, prisms and gratings.
 
-Rays of light propagate through a 2D scene containing mirrors, lenses,
-prisms, and diffraction gratings, demonstrating reflection, refraction
-(Snell's law), total internal reflection, chromatic dispersion into
-spectral colors, caustic focusing, and interference patterns.
-
-Users can interactively place and rotate optical elements.
-
-Emergent phenomena:
-  - Total internal reflection at critical angles
-  - Chromatic dispersion / rainbow splitting
-  - Caustic focusing patterns
-  - Interference fringes from gratings
-  - Multiple reflections in mirror halls
+Shows reflection, refraction (Snell's law), total internal reflection, dispersion
+and caustics.  Select an element to move, rotate or refocus it.
 """
 import curses
 import math
-import random
+import time
 
 # ══════════════════════════════════════════════════════════════════════
 #  Presets
@@ -50,7 +39,6 @@ OPTICS_PRESETS = [
 # Refractive indices
 _N_AIR = 1.0
 _N_GLASS = 1.52
-_N_FIBER = 1.48
 
 # Spectral colors: (name, wavelength_nm, curses_color_pair, n_offset)
 # n_offset is added to base refractive index for dispersion
@@ -178,7 +166,7 @@ def _refract_vec(dx, dy, nx, ny, n1, n2):
     return (rx, ry)
 
 
-def _trace_single_ray(elements, px, py, dx, dy, n_medium, spectral_idx,
+def _trace_single_ray(elements, px, py, dx, dy, spectral_idx,
                        max_bounces, rows, cols):
     """Trace a single ray through the scene.
 
@@ -186,7 +174,6 @@ def _trace_single_ray(elements, px, py, dx, dy, n_medium, spectral_idx,
     """
     points = []
     bounces = 0
-    cur_n = n_medium
     color = _SPECTRUM[spectral_idx][2]
 
     while bounces < max_bounces:
@@ -194,7 +181,6 @@ def _trace_single_ray(elements, px, py, dx, dy, n_medium, spectral_idx,
         best_t = float("inf")
         best_elem = None
         best_edge = None
-        best_u = 0.0
 
         for elem in elements:
             if elem.kind == _ELEM_PRISM:
@@ -204,7 +190,6 @@ def _trace_single_ray(elements, px, py, dx, dy, n_medium, spectral_idx,
                         best_t = hit[0]
                         best_elem = elem
                         best_edge = edge
-                        best_u = hit[1]
             else:
                 ex1, ey1, ex2, ey2 = elem.endpoints()
                 hit = _seg_intersect(px, py, dx, dy, ex1, ey1, ex2, ey2)
@@ -212,7 +197,6 @@ def _trace_single_ray(elements, px, py, dx, dy, n_medium, spectral_idx,
                     best_t = hit[0]
                     best_elem = elem
                     best_edge = (ex1, ey1, ex2, ey2)
-                    best_u = hit[1]
 
         # Limit ray length
         max_t = math.sqrt(rows * rows + cols * cols)
@@ -283,7 +267,6 @@ def _trace_single_ray(elements, px, py, dx, dy, n_medium, spectral_idx,
                     dx, dy = _reflect_vec(dx, dy, nx, ny)
                 else:
                     dx, dy = result
-                    cur_n = n_glass
             else:
                 # Exiting glass
                 result = _refract_vec(dx, dy, nx, ny, n_glass, _N_AIR)
@@ -291,7 +274,6 @@ def _trace_single_ray(elements, px, py, dx, dy, n_medium, spectral_idx,
                     dx, dy = _reflect_vec(dx, dy, nx, ny)
                 else:
                     dx, dy = result
-                    cur_n = _N_AIR
 
         elif best_elem.kind == _ELEM_BLOCK:
             # Glass block: refraction
@@ -303,14 +285,12 @@ def _trace_single_ray(elements, px, py, dx, dy, n_medium, spectral_idx,
                     dx, dy = _reflect_vec(dx, dy, nx, ny)
                 else:
                     dx, dy = result
-                    cur_n = n_glass
             else:
                 result = _refract_vec(dx, dy, nx, ny, n_glass, _N_AIR)
                 if result is None:
                     dx, dy = _reflect_vec(dx, dy, nx, ny)
                 else:
                     dx, dy = result
-                    cur_n = _N_AIR
 
         elif best_elem.kind == _ELEM_GRATING:
             # Diffraction grating: split into multiple orders
@@ -357,14 +337,12 @@ def _trace_all_rays(self):
                 # White light: trace each color separately
                 for si in _WHITE_SPECTRUM:
                     pts = _trace_single_ray(elements, sx, sy, dx, dy,
-                                            _N_AIR, si, _MAX_BOUNCES,
-                                            rows, cols)
+                                            si, _MAX_BOUNCES, rows, cols)
                     all_points.extend(pts)
             else:
                 # Monochromatic (yellow/white)
                 pts = _trace_single_ray(elements, sx, sy, dx, dy,
-                                        _N_AIR, 3, _MAX_BOUNCES,
-                                        rows, cols)
+                                        3, _MAX_BOUNCES, rows, cols)
                 all_points.extend(pts)
 
     self.optics_ray_points = all_points
@@ -772,7 +750,7 @@ def _draw_optics_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+        hint = " j/k=navigate  Enter=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -821,16 +799,14 @@ def _draw_optics(self, max_y: int, max_x: int):
             pass
 
     # Hint bar
-    import time as _time
     hint_y = max_y - 1
     if hint_y > 0:
-        now = _time.monotonic()
+        now = time.monotonic()
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = (" [Space]=play [n]=step [e]=select [wasd/←→]=move"
-                    " [\\[\\]]=rotate [f/F]=focal [h]=heatmap [r]=reset"
-                    " [R]=menu [q]=exit")
+            hint = (" Space=play  n=step  e=select  wasd/arrows=move  [/]=rotate"
+                    "  f/F=focal  h=heatmap  r=reset  R=menu  q=exit")
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
