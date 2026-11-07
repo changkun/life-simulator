@@ -376,7 +376,7 @@ def _compdet_init(self):
     self.compdet_integration = 0.0
     self.compdet_bits_processed = 0.0
     self.compdet_channel_capacity = 0.0
-    self.compdet_frame = -1
+    self.compdet_frame = 0     # draws since the last recompute
     self.compdet_compute_interval = 4  # recompute every N draw frames
     self.compdet_colormap = "plasma"
     self.compdet_show_labels = True
@@ -410,10 +410,12 @@ def _compdet_sample_grid(self, N):
 
 def _compdet_compute(self):
     """Recompute information-theoretic measures with caching."""
-    frame = getattr(self, 'pp_frame_count', 0)
-    if (self.compdet_te_map is not None
-            and (frame - self.compdet_frame) < self.compdet_compute_interval):
-        return
+    # Count our own draws: pp_frame_count only advances while a
+    # post-processing effect is active, so it would freeze the analysis.
+    if self.compdet_te_map is not None:
+        self.compdet_frame += 1
+        if self.compdet_frame < self.compdet_compute_interval:
+            return
 
     N = self.compdet_size
     grid = _compdet_sample_grid(self, N)
@@ -464,7 +466,7 @@ def _compdet_compute(self):
                 max_te = self.compdet_te_map[r][c]
     self.compdet_channel_capacity = max_te
 
-    self.compdet_frame = frame
+    self.compdet_frame = 0
 
 
 # ── Draw overlay panels ──────────────────────────────────────────────
