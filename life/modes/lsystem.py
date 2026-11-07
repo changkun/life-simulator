@@ -1,4 +1,4 @@
-"""Mode: lsystem — L-System Fractal Garden with seasonal cycles, wind, mutation & light competition."""
+"""L-System Fractal Garden — plants grow from Lindenmayer grammars with seasons, wind, mutation and light competition."""
 import curses
 import math
 import random
@@ -147,7 +147,7 @@ def _make_plant(species_id: str, x: float, y: float, mutation: float = 0.0) -> d
 # ── Mode enter/exit ──────────────────────────────────────────────────────────
 
 def _enter_lsystem_mode(self):
-    """Enter L-System Fractal Garden mode — show preset menu."""
+    """Enter L-System Fractal Garden mode and show the preset menu."""
     self.lsystem_menu = True
     self.lsystem_menu_sel = 0
     self._flash("L-System Fractal Garden — select a preset")
@@ -167,6 +167,7 @@ def _exit_lsystem_mode(self):
 # ── Menu key handling ─────────────────────────────────────────────────────────
 
 def _handle_lsystem_menu_key(self, key: int) -> bool:
+    """Handle input in the preset menu."""
     n = len(self.LSYSTEM_PRESETS)
     if key in (curses.KEY_UP, ord("k")):
         self.lsystem_menu_sel = (self.lsystem_menu_sel - 1) % n
@@ -187,6 +188,7 @@ def _handle_lsystem_menu_key(self, key: int) -> bool:
 # ── Simulation key handling ───────────────────────────────────────────────────
 
 def _handle_lsystem_key(self, key: int) -> bool:
+    """Handle input while the simulation is active."""
     if key in (ord("q"), 27):
         self._exit_lsystem_mode()
     elif key == ord(" "):
@@ -197,7 +199,6 @@ def _handle_lsystem_key(self, key: int) -> bool:
         self.lsystem_menu = True
         self.lsystem_menu_sel = 0
     elif key == ord("r"):
-        # Reset current preset
         preset_id = ""
         for _n, _d, pid in self.LSYSTEM_PRESETS:
             if _n == self.lsystem_preset_name:
@@ -216,25 +217,20 @@ def _handle_lsystem_key(self, key: int) -> bool:
         self.lsystem_angle = min(90.0, self.lsystem_angle + 2.0)
         self._lsystem_rebuild_all()
     elif key == ord("w"):
-        # Decrease wind
         self.lsystem_wind = max(-1.0, self.lsystem_wind - 0.05)
         self._lsystem_rebuild_all()
     elif key == ord("W"):
-        # Increase wind
         self.lsystem_wind = min(1.0, self.lsystem_wind + 0.05)
         self._lsystem_rebuild_all()
     elif key == ord("m"):
-        # Toggle mutation
         self.lsystem_mutation = 0.0 if self.lsystem_mutation > 0 else 0.3
         self._flash(f"Mutation {'ON' if self.lsystem_mutation > 0 else 'OFF'}")
     elif key == ord("s"):
-        # Advance season manually
         self.lsystem_season = (self.lsystem_season + 1) % 4
         self.lsystem_season_tick = 0
         self._lsystem_apply_season()
         self._lsystem_rebuild_all()
     elif key == ord("S"):
-        # Toggle seasonal auto-cycle
         self.lsystem_seasons_auto = not self.lsystem_seasons_auto
         self._flash(f"Season cycle {'ON' if self.lsystem_seasons_auto else 'OFF'}")
     elif key == ord("g"):
@@ -259,6 +255,7 @@ def _handle_lsystem_key(self, key: int) -> bool:
 # ── Initialization ────────────────────────────────────────────────────────────
 
 def _lsystem_init(self, preset: str) -> None:
+    """Reset the garden state and plant the given preset."""
     max_y, max_x = self.stdscr.getmaxyx()
     self.lsystem_rows = max(10, max_y - 3)
     self.lsystem_cols = max(10, max_x - 1)
@@ -280,6 +277,7 @@ def _lsystem_init(self, preset: str) -> None:
 
 
 def _lsystem_build_preset(self, preset: str) -> None:
+    """Create the preset's plants and build their segments."""
     cx = self.lsystem_cols // 2
     base_y = float(self.lsystem_rows - 1)
 
@@ -380,6 +378,7 @@ def _lsystem_build_preset(self, preset: str) -> None:
 # ── L-system expansion & interpretation ───────────────────────────────────────
 
 def _lsystem_expand(self, string: str, rules: dict[str, str]) -> str:
+    """Apply the rewriting rules to every symbol of the string in parallel."""
     result: list[str] = []
     for ch in string:
         result.append(rules.get(ch, ch))
@@ -409,7 +408,7 @@ def _lsystem_interpret(self, plant: dict) -> tuple[list[tuple], list[tuple]]:
     wind = self.lsystem_wind
     wind_phase = self.lsystem_wind_time
 
-    # Light direction bias
+    # Light direction tilts the whole plant.
     light_bias = math.radians(self.lsystem_light_dir) * 0.15
 
     # Season effects
@@ -429,7 +428,6 @@ def _lsystem_interpret(self, plant: dict) -> tuple[list[tuple], list[tuple]]:
     heading = -math.pi / 2 + light_bias
     cur_len = length
     depth = 0
-    max_h = 0.0  # track max height for wind scaling
 
     for ch in string:
         if ch == "F":
@@ -461,8 +459,6 @@ def _lsystem_interpret(self, plant: dict) -> tuple[list[tuple], list[tuple]]:
                 if show_leaves:
                     leaves.append((x, y, is_flower, color_leaf, deciduous))
                 x, y, heading, cur_len, depth = stack.pop()
-        elif ch == "X":
-            pass
 
     return segments, leaves
 
@@ -636,6 +632,7 @@ def _lsystem_step(self) -> None:
 # ── Drawing: menu ─────────────────────────────────────────────────────────────
 
 def _draw_lsystem_menu(self, max_y: int, max_x: int) -> None:
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "═══ L-System Fractal Garden ═══"
     try:
@@ -661,7 +658,7 @@ def _draw_lsystem_menu(self, max_y: int, max_x: int) -> None:
         except curses.error:
             pass
 
-    hint = " [Up/Down]=select  [Enter]=start  [q]=back"
+    hint = " Up/Down=select  Enter=start  q=back"
     try:
         self.stdscr.addstr(max_y - 2, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:
@@ -671,12 +668,12 @@ def _draw_lsystem_menu(self, max_y: int, max_x: int) -> None:
 # ── Drawing: simulation ──────────────────────────────────────────────────────
 
 def _draw_lsystem(self, max_y: int, max_x: int) -> None:
+    """Draw the plants, ground and status lines."""
     self.stdscr.erase()
 
     rows = self.lsystem_rows
     cols = self.lsystem_cols
 
-    # Character grid + color grid
     grid: list[list[str]] = [[" "] * cols for _ in range(rows)]
     color_grid: list[list[int]] = [[0] * cols for _ in range(rows)]
 
@@ -686,12 +683,6 @@ def _draw_lsystem(self, max_y: int, max_x: int) -> None:
     trunk_chars = ["#", "|", "|", ":", ":", ".", ".", "."]
     branch_right = ["\\", "\\", "\\", "\\", ".", "."]
     branch_left = ["/", "/", "/", "/", ".", "."]
-
-    # Season-based sky background (subtle)
-    sky_colors = {
-        SEASON_SPRING: 0, SEASON_SUMMER: 0,
-        SEASON_AUTUMN: 0, SEASON_WINTER: 0,
-    }
 
     # Draw segments
     for seg in self.lsystem_segments:
@@ -847,7 +838,7 @@ def _draw_lsystem(self, max_y: int, max_x: int) -> None:
     if self.message and time.monotonic() - self.message_time < 2.0:
         hint = f" {self.message}"
     else:
-        hint = " [Space]=play [n]=step [a/A]=angle [w/W]=wind [s/S]=season [m]=mutate [r]=reset [R]=menu [q]=exit"
+        hint = " Space=play  n=step  a/A=angle  w/W=wind  s/S=season  m=mutate  g/G=growth  Left/Right=light  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(max_y - 2, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:
