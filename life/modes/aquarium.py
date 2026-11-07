@@ -1,8 +1,7 @@
-"""Mode: aquarium — simulation mode for the life package."""
+"""ASCII Aquarium / Fish Tank — a fish tank with swimming fish, swaying seaweed, bubbles and food."""
 import curses
 import math
 import random
-import time
 
 AQUARIUM_PRESETS = [
     ("Goldfish Bowl", "Classic goldfish in a small bowl", "goldfish"),
@@ -28,17 +27,15 @@ FISH_SPECIES = [
 
 
 def _enter_aquarium_mode(self):
-    """Enter Aquarium mode — show preset menu."""
+    """Enter Aquarium mode and show the preset menu."""
     self.aquarium_mode = True
     self.aquarium_menu = True
     self.aquarium_menu_sel = 0
     self.aquarium_running = False
 
 
-
-
 def _exit_aquarium_mode(self):
-    """Exit Aquarium mode and clean up."""
+    """Exit Aquarium mode and clear its state."""
     self.aquarium_mode = False
     self.aquarium_menu = False
     self.aquarium_running = False
@@ -49,11 +46,8 @@ def _exit_aquarium_mode(self):
     self.aquarium_sand = []
 
 
-
-
 def _aquarium_init(self, preset_key):
-    """Initialize aquarium from selected preset."""
-    import random as rng
+    """Initialize the aquarium from the selected preset."""
     rows, cols = self.stdscr.getmaxyx()
     self.aquarium_rows = rows
     self.aquarium_cols = cols
@@ -70,85 +64,76 @@ def _aquarium_init(self, preset_key):
     self.aquarium_preset_name = preset_key
 
     sand_row = rows - 2
-    # Generate sandy bottom
     self.aquarium_sand = []
     for c in range(cols):
-        h = rng.choice([0, 0, 0, 1, 1, 2]) if rng.random() < 0.7 else 0
+        h = random.choice([0, 0, 0, 1, 1, 2]) if random.random() < 0.7 else 0
         self.aquarium_sand.append(h)
 
     # Spawn seaweed
     num_seaweed = max(3, cols // 8)
     for _ in range(num_seaweed):
-        x = rng.randint(2, cols - 3)
-        height = rng.randint(3, max(3, min(8, rows // 3)))
-        color = rng.choice([3, 11, 10])  # green variants
-        phase = rng.uniform(0, 6.28)
+        x = random.randint(2, cols - 3)
+        height = random.randint(3, max(3, min(8, rows // 3)))
+        color = random.choice([3, 11, 10])  # green variants
+        phase = random.uniform(0, 6.28)
         self.aquarium_seaweed.append({
             "x": x, "height": height, "color": color, "phase": phase,
-            "speed": rng.uniform(0.5, 1.5),
+            "speed": random.uniform(0.5, 1.5),
         })
 
     # Spawn fish based on preset
     if preset_key == "tropical":
         species_pool = [0, 1, 2, 3, 4, 5]
-        num_fish = rng.randint(10, 16)
+        num_fish = random.randint(10, 16)
     elif preset_key == "deep":
         species_pool = [5, 6, 7]
-        num_fish = rng.randint(5, 8)
+        num_fish = random.randint(5, 8)
     elif preset_key == "koi":
         species_pool = [3, 4]
-        num_fish = rng.randint(6, 10)
+        num_fish = random.randint(6, 10)
     else:  # goldfish
         species_pool = [1, 2]
-        num_fish = rng.randint(4, 7)
+        num_fish = random.randint(4, 7)
 
     water_top = 2
     water_bottom = sand_row - 2
     for _ in range(num_fish):
         self._aquarium_spawn_fish(species_pool, water_top, water_bottom)
 
-    # Initial bubble streams
-    num_streams = rng.randint(1, 3)
+    num_streams = random.randint(1, 3)
     for _ in range(num_streams):
-        bx = rng.randint(3, cols - 4)
+        bx = random.randint(3, cols - 4)
         self.aquarium_bubbles.append({
             "x": float(bx), "y": float(sand_row - 1),
-            "vx": 0.0, "vy": -rng.uniform(0.3, 0.8),
+            "vx": 0.0, "vy": -random.uniform(0.3, 0.8),
             "char_idx": 0, "age": 0,
-            "stream_x": bx, "stream_delay": rng.randint(0, 20),
+            "stream_x": bx, "stream_delay": random.randint(0, 20),
         })
-
-
 
 
 def _aquarium_spawn_fish(self, species_pool, water_top, water_bottom):
     """Spawn a single fish in the tank."""
-    import random as rng
-    sp_idx = rng.choice(species_pool)
+    sp_idx = random.choice(species_pool)
     sp = FISH_SPECIES[sp_idx]
-    direction = rng.choice([-1, 1])  # -1 = left, 1 = right
-    speed = rng.uniform(sp["speed"][0], sp["speed"][1])
-    y = rng.uniform(water_top + 1, water_bottom)
-    x = rng.uniform(5, self.aquarium_cols - 10)
+    direction = random.choice([-1, 1])  # -1 = left, 1 = right
+    speed = random.uniform(sp["speed"][0], sp["speed"][1])
+    y = random.uniform(water_top + 1, water_bottom)
+    x = random.uniform(5, self.aquarium_cols - 10)
     # Color: vary by species index
     colors = [2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14]
-    color = rng.choice(colors)
-    bob_phase = rng.uniform(0, 6.28)
+    color = random.choice(colors)
+    bob_phase = random.uniform(0, 6.28)
     self.aquarium_fish.append({
         "species": sp_idx, "x": float(x), "y": float(y),
         "vx": speed * direction, "vy": 0.0,
         "color": color, "bob_phase": bob_phase,
-        "bob_amp": rng.uniform(0.1, 0.4),
+        "bob_amp": random.uniform(0.1, 0.4),
         "target_y": y,
     })
 
 
-
-
 def _aquarium_step(self):
-    """Advance aquarium simulation by one tick."""
-    import random as rng
-    import math
+    """Advance the aquarium by one tick."""
     self.aquarium_generation += 1
     self.aquarium_time += 0.1
     self.aquarium_caustic_phase += 0.05
@@ -164,7 +149,6 @@ def _aquarium_step(self):
     # ── Move fish ──
     for fish in self.aquarium_fish:
         sp = FISH_SPECIES[fish["species"]]
-        base_speed = rng.uniform(sp["speed"][0], sp["speed"][1])
         startle_mult = 2.5 if self.aquarium_startled > 0 else 1.0
 
         # Horizontal movement
@@ -179,7 +163,7 @@ def _aquarium_step(self):
             fish["x"] = cols + body_len
 
         # Occasionally change direction
-        if rng.random() < 0.005:
+        if random.random() < 0.005:
             fish["vx"] = -fish["vx"]
 
         # Vertical bobbing
@@ -188,8 +172,8 @@ def _aquarium_step(self):
         fish["y"] = fish["target_y"] + bob
 
         # Occasionally change depth
-        if rng.random() < 0.01:
-            fish["target_y"] = rng.uniform(water_top + 1, sand_row - 3)
+        if random.random() < 0.01:
+            fish["target_y"] = random.uniform(water_top + 1, sand_row - 3)
 
         # Clamp
         fish["y"] = max(water_top, min(sand_row - 2, fish["y"]))
@@ -217,7 +201,7 @@ def _aquarium_step(self):
         b["age"] += 1
         # Grow bubble
         if b["age"] > 5:
-            b["char_idx"] = min(b["char_idx"] + 1, len(BUBBLE_CHARS) - 1) if rng.random() < 0.05 else b["char_idx"]
+            b["char_idx"] = min(b["char_idx"] + 1, len(BUBBLE_CHARS) - 1) if random.random() < 0.05 else b["char_idx"]
 
         if b["y"] > water_top:
             new_bubbles.append(b)
@@ -229,11 +213,11 @@ def _aquarium_step(self):
             new_bubbles.append(b)
         # Spawn new bubble in stream
         if b.get("stream_x") is not None and b["age"] % max(1, 8 - self.aquarium_speed) == 0:
-            if rng.random() < 0.3:
+            if random.random() < 0.3:
                 new_bubbles.append({
-                    "x": float(b["stream_x"]) + rng.uniform(-0.5, 0.5),
+                    "x": float(b["stream_x"]) + random.uniform(-0.5, 0.5),
                     "y": float(sand_row - 1),
-                    "vx": 0.0, "vy": -rng.uniform(0.3, 0.8),
+                    "vx": 0.0, "vy": -random.uniform(0.3, 0.8),
                     "char_idx": 0, "age": 0,
                     "stream_x": None, "stream_delay": 0,
                 })
@@ -251,10 +235,8 @@ def _aquarium_step(self):
     self.aquarium_food = [f for f in self.aquarium_food if f["age"] < 300]
 
 
-
-
 def _handle_aquarium_menu_key(self, key: int) -> bool:
-    """Handle keys in the aquarium preset menu."""
+    """Handle keys in the preset menu."""
     if key == curses.KEY_UP:
         self.aquarium_menu_sel = (self.aquarium_menu_sel - 1) % len(AQUARIUM_PRESETS)
     elif key == curses.KEY_DOWN:
@@ -270,12 +252,9 @@ def _handle_aquarium_menu_key(self, key: int) -> bool:
     return True
 
 
-
-
 def _handle_aquarium_key(self, key: int) -> bool:
-    """Handle keys during aquarium simulation."""
-    import random as rng
-    if key in (27,):  # ESC -> menu
+    """Handle keys while the aquarium runs."""
+    if key == 27:  # Esc returns to the menu
         self.aquarium_running = False
         self.aquarium_menu = True
         self.aquarium_menu_sel = 0
@@ -296,9 +275,9 @@ def _handle_aquarium_key(self, key: int) -> bool:
     elif key == ord('f') or key == ord('F'):
         # Feed fish — drop food from top
         cols = self.aquarium_cols
-        for _ in range(rng.randint(3, 7)):
+        for _ in range(random.randint(3, 7)):
             self.aquarium_food.append({
-                "x": rng.uniform(3, cols - 4),
+                "x": random.uniform(3, cols - 4),
                 "y": 3.0,
                 "age": 0,
             })
@@ -335,13 +314,12 @@ def _handle_aquarium_key(self, key: int) -> bool:
         return True
     elif key == ord('b') or key == ord('B'):
         # Add bubble stream
-        import random as rng2
         cols = self.aquarium_cols
         sand_row = self.aquarium_rows - 2
-        bx = rng2.randint(3, cols - 4)
+        bx = random.randint(3, cols - 4)
         self.aquarium_bubbles.append({
             "x": float(bx), "y": float(sand_row - 1),
-            "vx": 0.0, "vy": -rng2.uniform(0.3, 0.8),
+            "vx": 0.0, "vy": -random.uniform(0.3, 0.8),
             "char_idx": 0, "age": 0,
             "stream_x": bx, "stream_delay": 0,
         })
@@ -352,10 +330,8 @@ def _handle_aquarium_key(self, key: int) -> bool:
     return True  # consume all keys while in aquarium mode
 
 
-
-
 def _draw_aquarium_menu(self, max_y: int, max_x: int):
-    """Draw the aquarium preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "🐠  ASCII Aquarium / Fish Tank  🐠"
     subtitle = "A relaxing zen-mode aquarium with procedural ASCII fish"
@@ -384,18 +360,15 @@ def _draw_aquarium_menu(self, max_y: int, max_x: int):
             pass
 
     hint_y = min(y_start + len(AQUARIUM_PRESETS) * 2 + 2, max_y - 2)
-    hint = "↑/↓ select   Enter start   q quit"
+    hint = "↑/↓=select  Enter=start  q=quit"
     try:
         self.stdscr.addstr(hint_y, max(0, (max_x - len(hint)) // 2), hint, curses.color_pair(8))
     except curses.error:
         pass
 
 
-
-
 def _draw_aquarium(self, max_y: int, max_x: int):
-    """Draw the full aquarium scene."""
-    import math
+    """Draw the tank."""
     self.stdscr.erase()
     rows = max_y
     cols = max_x
@@ -517,8 +490,8 @@ def _draw_aquarium(self, max_y: int, max_x: int):
             f"Food: {len(self.aquarium_food)}",
             f"Generation: {self.aquarium_generation}",
             "",
-            "f feed  t tap glass  a/d +/- fish",
-            "b add bubbles  +/- speed  ESC menu",
+            "f=feed  t=tap  a/d=add/remove fish",
+            "b=bubbles  +/-=speed  Esc=menu",
         ]
         for i, line in enumerate(info_lines):
             if i + 1 < rows - 1 and len(line) + 2 < cols:
