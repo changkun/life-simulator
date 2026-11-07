@@ -1,33 +1,28 @@
-"""Mode: blueprint — simulation mode for the life package."""
+"""Blueprints — capture a region of live cells as a named pattern, then stamp or delete it."""
 import curses
-import math
-import random
-import time
-
 
 from life.patterns import PATTERNS
 from life.utils import _save_blueprints
 
+
 def _enter_blueprint_mode(self):
-    """Start blueprint region selection at current cursor position."""
+    """Start blueprint region selection at the cursor."""
     self.blueprint_mode = True
     self.blueprint_anchor = (self.cursor_r, self.cursor_c)
     self._flash("Blueprint: move cursor to select region, Enter=capture, Esc=cancel")
 
 
-
 def _blueprint_region(self) -> tuple[int, int, int, int]:
-    """Return (min_r, min_c, max_r, max_c) of the current blueprint selection."""
+    """Return (min_r, min_c, max_r, max_c) of the blueprint selection."""
     ar, ac = self.blueprint_anchor
     cr, cc = self.cursor_r, self.cursor_c
     return (min(ar, cr), min(ac, cc), max(ar, cr), max(ac, cc))
 
 
-
 def _capture_blueprint(self):
     """Capture the selected region as a named blueprint pattern."""
     min_r, min_c, max_r, max_c = self._blueprint_region()
-    # Collect alive cells in the region, normalised to (0,0) origin
+    # Cells are stored relative to the region's top-left corner.
     cells = []
     for r in range(min_r, max_r + 1):
         for c in range(min_c, max_c + 1):
@@ -44,7 +39,6 @@ def _capture_blueprint(self):
     height = max_r - min_r + 1
     self.blueprint_mode = False
     self.blueprint_anchor = None
-    # Prompt for a name
     name = self._prompt_text(f"Blueprint name ({len(cells)} cells, {width}x{height})")
     if not name:
         self._flash("Blueprint cancelled")
@@ -66,7 +60,6 @@ def _capture_blueprint(self):
     self._flash(f"Saved blueprint: {safe_name}")
 
 
-
 def _stamp_blueprint(self, name: str):
     """Overlay a blueprint pattern centered on the current cursor."""
     pat = self._get_pattern(name)
@@ -84,7 +77,6 @@ def _stamp_blueprint(self, name: str):
     self._flash(f"Stamped: {name}")
 
 
-
 def _delete_blueprint(self, name: str):
     """Delete a user-saved blueprint."""
     if name in self.blueprints:
@@ -92,7 +84,6 @@ def _delete_blueprint(self, name: str):
         _save_blueprints(self.blueprints)
         self._rebuild_pattern_list()
         self._flash(f"Deleted blueprint: {name}")
-
 
 
 def _handle_blueprint_mode_key(self, key: int) -> bool:
@@ -107,21 +98,19 @@ def _handle_blueprint_mode_key(self, key: int) -> bool:
     if key in (10, 13, curses.KEY_ENTER):  # Enter — capture
         self._capture_blueprint()
         return True
-    # Cursor movement (same as normal mode)
     if key in (curses.KEY_UP, ord("k")):
         self.cursor_r = (self.cursor_r - 1) % self.grid.rows
         return True
     if key in (curses.KEY_DOWN, ord("j")):
         self.cursor_r = (self.cursor_r + 1) % self.grid.rows
         return True
-    if key in (curses.KEY_LEFT, ord("l") - 4):  # 'h' already used
+    if key in (curses.KEY_LEFT, ord("h")):
         self.cursor_c = (self.cursor_c - 1) % self.grid.cols
         return True
     if key in (curses.KEY_RIGHT, ord("l")):
         self.cursor_c = (self.cursor_c + 1) % self.grid.cols
         return True
     return True
-
 
 
 def _handle_blueprint_menu_key(self, key: int) -> bool:
@@ -159,7 +148,6 @@ def _handle_blueprint_menu_key(self, key: int) -> bool:
     return True
 
 
-
 def _draw_blueprint_menu(self, max_y: int, max_x: int):
     """Draw the blueprint library menu."""
     bp_names = sorted(self.blueprints.keys())
@@ -191,8 +179,6 @@ def _draw_blueprint_menu(self, max_y: int, max_x: int):
             self.stdscr.addstr(y, 2, line, attr)
         except curses.error:
             pass
-
-
 
 
 def register(App):
