@@ -1,8 +1,7 @@
-"""Parameter Tuning Overlay — real-time interactive parameter adjustment HUD.
+"""Parameter Tuner — overlay for adjusting the active mode's parameters while it runs.
 
-Pressing ``P`` while any simulation mode is active toggles a translucent
-overlay listing that mode's tunable parameters.  Arrow keys navigate and
-adjust values in real-time while the simulation keeps running.
+Press ``P`` to list the mode's tunable parameters.  Up/down select one;
+left/right change it.
 """
 import curses
 
@@ -319,7 +318,6 @@ def _handle_param_tuner_key(self, key: int) -> bool:
     elif key in (curses.KEY_RIGHT, ord('l')):
         p = params[self.param_tuner_sel]
         cur = getattr(self, p['attr'], 0)
-        # Shift = 10x step
         new = cur + p['step']
         if isinstance(p['min'], int) and isinstance(p['max'], int) and p['fmt'] == 'd':
             new = min(int(new), p['max'])
@@ -338,7 +336,6 @@ def _handle_param_tuner_key(self, key: int) -> bool:
         setattr(self, p['attr'], new)
         return True
     elif key == ord(']'):
-        # Large step (10x)
         p = params[self.param_tuner_sel]
         cur = getattr(self, p['attr'], 0)
         new = cur + p['step'] * 10
@@ -349,7 +346,6 @@ def _handle_param_tuner_key(self, key: int) -> bool:
         setattr(self, p['attr'], new)
         return True
     elif key == ord('['):
-        # Large step (10x)
         p = params[self.param_tuner_sel]
         cur = getattr(self, p['attr'], 0)
         new = cur - p['step'] * 10
@@ -360,7 +356,7 @@ def _handle_param_tuner_key(self, key: int) -> bool:
         setattr(self, p['attr'], new)
         return True
     elif key == ord('0'):
-        # Reset: re-fetch params from current state (effectively a refresh)
+        # Re-detect the parameter list from the current state
         self.param_tuner_params = self._get_tunable_params()
         self.param_tuner_sel = min(self.param_tuner_sel, max(0, len(self.param_tuner_params) - 1))
         self._flash("Params refreshed")
@@ -411,13 +407,9 @@ def _draw_param_tuner_overlay(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    # Visible window (scroll if needed)
+    # Scroll so the selected row stays visible
     visible_rows = panel_h - 3  # space for title, footer
-    scroll_off = 0
-    if self.param_tuner_sel >= scroll_off + visible_rows:
-        scroll_off = self.param_tuner_sel - visible_rows + 1
-    elif self.param_tuner_sel < scroll_off:
-        scroll_off = self.param_tuner_sel
+    scroll_off = max(0, self.param_tuner_sel - visible_rows + 1)
 
     # Draw parameters
     for vi in range(visible_rows):
@@ -465,7 +457,7 @@ def _draw_param_tuner_overlay(self, max_y: int, max_x: int):
     # Footer with hints
     footer_y = py + 1 + min(visible_rows, len(params))
     if footer_y < max_y:
-        hint = " ↑↓=sel ←→=adj []/10x P=close"
+        hint = " ↑↓=select  ←→=adjust  [ ]=10x  P=close"
         hint_line = hint[:panel_w].ljust(panel_w, '─')
         try:
             self.stdscr.addstr(footer_y, px, hint_line[:panel_w], hint_attr)
