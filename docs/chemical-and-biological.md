@@ -16,16 +16,16 @@ dV/dt = Dv * laplacian(V) + U*V^2 - (f + k)*V
 
 Where:
   U, V     = concentrations of the two species, clamped to [0, 1]
-  Du, Dv   = diffusion coefficients (Du > Dv, typically Du=0.21, Dv=0.105)
+  Du, Dv   = diffusion coefficients (Du > Dv; the code uses Du=0.16, Dv=0.08)
   f        = feed rate (replenishment of U from reservoir), range 0.001-0.100
   k        = kill rate (removal of V), range 0.001-0.100
   laplacian = 5-point discrete stencil: U[r-1][c] + U[r+1][c] + U[r][c-1] + U[r][c+1] - 4*U[r][c]
-  dt       = time step (forward Euler integration)
+  dt       = time step (forward Euler, dt=1.0)
 ```
 
-Seeding is done by placing circular patches of V (with U=0.5) into a uniform U=1, V=0 background. Each preset selects a (f, k) pair from the parameter space that produces a distinct pattern class — from "spots" at f=0.0300, k=0.0620 to "coral" at f=0.0545, k=0.0620 to "fingerprints" at f=0.0545, k=0.0620 with slight variations.
+Seeding places circular patches of V (with U about 0.5) into a uniform U=1, V=0 background. Each of the 15 presets sets an (f, k) pair: Coral Growth, Mitosis, Fingerprints, Spots (α), Worms, Spirals, Maze, Chaos, Pulsing Spots, Negatons, Cell Division, Bacteria, Lichen, Bubbles and Ripples. For example, Coral Growth uses f=0.0545, k=0.062 and Fingerprints uses f=0.025, k=0.060.
 
-**What to look for** — Watch how V concentration (displayed as ASCII density glyphs) self-organises from random circular seeds into regular patterns. Tiny changes in f or k produce wildly different morphologies: increase k to watch spots shrink and die; decrease f to see stripes break into labyrinthine worms. Mouse clicks inject V perturbations. Five color schemes (ocean, thermal, organic, purple, monochrome) let you see the concentration field from different perspectives.
+**What to look for** — Watch how V concentration (displayed as ASCII density glyphs) self-organises from random circular seeds into regular patterns. Tiny changes in f or k produce wildly different morphologies: increase k to watch spots shrink and die; decrease f to see stripes break into labyrinthine worms. `f`/`F` raise or lower the feed rate and `k`/`K` the kill rate, `p` adds a random V patch, and mouse clicks inject V. `c` cycles five color schemes (ocean, thermal, organic, purple, monochrome).
 
 **References**
 - Pearson, J. E. "Complex Patterns in a Simple System." *Science* 261 (1993): 189-192. https://doi.org/10.1126/science.261.5118.189
@@ -48,15 +48,15 @@ Where:
   a = activator concentration (autocatalytic, excitable)
   b = inhibitor concentration (tracks activator with delay)
   c = recovery variable (slowly follows activator, suppresses re-excitation)
-  alpha = activator self-amplification rate (0.6-1.4)
-  beta  = inhibitor feedback strength (0.7-1.2)
-  gamma = recovery rate (0.5-1.2)
-  D     = diffusion coefficient for activator (0.10-0.35)
+  alpha = activator self-amplification rate (presets 0.6-1.4; keys allow 0.1-3.0)
+  beta  = inhibitor feedback strength (presets 0.7-1.2; fixed per preset)
+  gamma = recovery rate (presets 0.5-1.2; keys allow 0.1-3.0)
+  D     = diffusion coefficient for activator (presets 0.10-0.35; keys allow 0.01-1.0)
   dt    = 0.05 (Euler step)
   laplacian = 5-point stencil, wrapping boundaries
 ```
 
-Initial conditions include spiral seeds (broken wavefronts that curl), center Gaussian blobs (expanding rings), random seed patches, and random noise fields.
+Eight presets: Classic Spirals, Dense Spirals, Slow Waves, Turbulent, Target Waves, Multi-Spiral, Gentle Ripples and Fast Chaos. Each picks a start state: a spiral seed (broken wavefront that curls), a center blob (expanding rings), several spiral seeds, random seed patches, or random noise.
 
 **What to look for** — Spiral waves rotate around their free ends, annihilating when they collide — a hallmark of excitable media. Target waves expand as concentric rings from point sources. Increasing alpha sharpens wavefronts; decreasing gamma creates slower, broader waves. The "Turbulent" preset (alpha=1.4, D=0.1) shows spiral breakup into spatiotemporal chaos. Phase-based coloring maps activation states to a BZ-like color wheel: bright yellow wavefronts, cyan transitions, magenta refractory zones, and dark quiescent regions.
 
@@ -96,9 +96,9 @@ Where:
   dt   = 0.1 (Euler step)
 ```
 
-Chemotactic flux uses an upwind scheme: bacteria flow toward higher-signal neighbors proportional to the signal gradient, weighted by local bacterial density and chemotaxis strength chi.
+Chemotactic flux uses an upwind scheme: bacteria flow toward higher-signal neighbors, in proportion to the signal difference, the bacteria density at the source cell and chi. Values are clamped to [0, 1] after each step. The eight presets are Eden Cluster, DLA Tendrils, Dense Branching, Concentric Rings, Swarming Colony, Multi-Colony, Nutrient Gradient and Quorum Sensing. Multi-Colony starts five colonies; Nutrient Gradient seeds one colony in a nutrient field that rises from left to right.
 
-**What to look for** — The "Eden Cluster" preset (high growth, zero chemotaxis) produces compact circular colonies. "DLA Tendrils" (high consumption, moderate chemotaxis) creates branching fractal structures as bacteria compete for scarce nutrients. "Concentric Rings" (strong chemotaxis, high signal production) generates periodic wave-like patterns. Toggle between bacteria, nutrient, and signal views to see the depletion zones and chemical gradients driving morphology.
+**What to look for** — The "Eden Cluster" preset (high growth, zero chemotaxis) produces compact circular colonies. "DLA Tendrils" (high consumption, moderate chemotaxis) creates branching fractal structures as bacteria compete for scarce nutrients. "Concentric Rings" (strong chemotaxis, high signal production) generates periodic wave-like patterns. Press `v` to cycle the bacteria, nutrient and signal views and see the depletion zones and chemical gradients driving morphology.
 
 **References**
 - Ben-Jacob, E. et al. "Generic modelling of cooperative growth patterns in bacterial colonies." *Nature* 368 (1994): 46-49. https://doi.org/10.1038/368046a0
@@ -124,13 +124,15 @@ Transition rules (applied synchronously each step):
   empty -> tree       with probability p_grow
 
 Parameters:
-  p_grow      = tree growth probability per step (0.003-0.02)
-  p_lightning = lightning strike probability per tree per step (0.0001-0.001)
-  ash_decay   = probability ash decays to empty per step (0.05-0.50)
-  initial_density = fraction of cells starting as trees (0.3-0.9)
+  p_grow      = tree growth probability per step (presets 0.01-0.08)
+  p_lightning = lightning strike probability per tree per step (presets 0.0001-0.01)
+  ash_decay   = probability ash decays to empty per step (presets 0.03-0.20)
+  initial_density = fraction of cells starting as trees (presets 0.15-0.95)
 ```
 
-**What to look for** — Watch the forest cycle between dense canopy and catastrophic burns. The tree density sparkline at the bottom reveals oscillatory dynamics: long growth phases punctuated by sudden crashes. Increase p_grow to accelerate recovery; increase p_lightning to trigger more frequent, smaller fires. The "Wildfire" preset with high density and low lightning produces rare but devastating conflagrations — a hallmark of self-organised criticality.
+Cells outside the grid count as not burning (no wrapping). Presets: Classic, Dense Forest, Dry Season, Regrowth, Tinderbox, Savanna, Rainforest, Firestorm, Critical Density and Slow Burn.
+
+**What to look for** — Watch the forest cycle between dense canopy and catastrophic burns. The tree density sparkline at the bottom reveals oscillatory dynamics: long growth phases punctuated by sudden crashes. Raise p_grow (`p`/`P`) to speed recovery; raise p_lightning (`l`/`L`) to trigger more frequent, smaller fires; `a`/`A` change the ash decay. The "Dense Forest" and "Rainforest" presets (high density, rare lightning) produce rare but large fires, the signature of self-organised criticality.
 
 **References**
 - Drossel, B. & Schwabl, F. "Self-organized critical forest-fire model." *Physical Review Letters* 69 (1992): 1629-1632. https://doi.org/10.1103/PhysRevLett.69.1629
@@ -146,7 +148,7 @@ Parameters:
 
 ```
 Infection:
-  For each infected cell at (r, c), scan all cells within radius R:
+  For each infected cell at (r, c), scan all cells within distance R:
     p_infect = trans_prob * (1 - dist / (R + 1))
     susceptible neighbor becomes infected with probability p_infect
 
@@ -168,7 +170,9 @@ Parameters:
   population_density = fraction of grid occupied (0.3-1.0)
 ```
 
-**What to look for** — The epidemic curve (bar chart in status area) shows the classic SIR peak-and-decline. "Measles" (high transmission, large radius) sweeps through rapidly; "Sparse Rural" (low density) shows slow, fragmented spread. The "Vaccination" preset demonstrates herd immunity by pre-seeding Recovered cells. "Reinfection Wave" produces oscillatory endemic dynamics as immunity wanes. Adjust transmission probability mid-run to simulate interventions.
+**What to look for** — A stacked bar in the status area shows the current share of S, I, R and D. Watch the infected front sweep the grid and then leave a recovered interior. "Measles" (high transmission, large radius) sweeps through rapidly; "Sparse Rural" (low density) shows slow, fragmented spread. "Reinfection Wave" produces oscillatory endemic dynamics as immunity wanes. Adjust transmission (`t`/`T`), recovery time (`v`/`V`) and mortality (`d`/`D`) mid-run to simulate interventions.
+
+The eight presets are Seasonal Flu, COVID-like, Deadly Plague, Measles, Reinfection Wave, Sparse Rural, Superspreader and Fast Burn.
 
 **References**
 - Kermack, W. O. & McKendrick, A. G. "A contribution to the mathematical theory of epidemics." *Proceedings of the Royal Society A* 115 (1927): 700-721. https://doi.org/10.1098/rspa.1927.0118
@@ -186,33 +190,35 @@ Parameters:
 Grid cells: grass (0), empty/regrowing (-1), prey (1), predator (2)
 
 Grass:
-  empty -> grass after grass_regrow steps (countdown timer)
+  A cell left empty becomes grass after grass_regrow steps (countdown timer)
 
 Prey (herbivores):
-  Move to random 4-neighbor (prefer grass cells)
-  Eat grass: energy += prey_gain
-  Lose 1 energy per step (starvation if energy <= 0 -> death)
+  Move to a random grass neighbor (4-neighbors); else to an empty neighbor; else stay
+  Eat the grass they step on: energy += prey_gain
+  Lose 1 energy per move; die when energy <= 0
   Reproduce when energy >= prey_breed:
-    split energy equally, offspring placed at vacated cell
+    split energy equally, offspring placed at the vacated cell
 
 Predators:
-  Move to random 4-neighbor (prefer prey cells)
+  Move onto a random prey neighbor if any; else to an empty or grass neighbor
   Eat prey: energy += pred_gain (prey dies)
-  Lose 1 energy per step
+  Lose 1 energy per move; die when energy <= 0
   Reproduce when energy >= pred_breed:
-    split energy equally
+    split energy equally, offspring placed at the vacated cell
 
-Parameters:
-  grass_regrow    = steps for grass to regrow (3-15)
-  prey_gain       = energy gained from eating grass (3-8)
-  pred_gain       = energy gained from eating prey (15-30)
-  prey_breed      = energy threshold for prey reproduction (6-15)
-  pred_breed      = energy threshold for predator reproduction (10-25)
-  prey_density    = initial fraction of prey (0.05-0.20)
-  pred_density    = initial fraction of predators (0.01-0.05)
+Parameters (preset ranges):
+  grass_regrow    = steps for grass to regrow (2-12)
+  prey_gain       = energy gained from eating grass (3-6)
+  pred_gain       = energy gained from eating prey (6-10)
+  prey_breed      = energy threshold for prey reproduction (4-8)
+  pred_breed      = energy threshold for predator reproduction (7-14)
+  prey_density    = initial fraction of prey (0.15-0.35)
+  pred_density    = initial fraction of predators (0.03-0.15)
 ```
 
-**What to look for** — The population bar chart shows the characteristic quarter-cycle phase lag: prey peaks lead predator peaks. "Boom and Bust" amplifies oscillations; "Stable Ecosystem" maintains tighter cycles. Watch spatial patterns: predators cluster around prey herds, creating traveling waves of predation. If predators overgraze, they crash and prey explode — the cycle restarts. Adjust grass regrowth to see bottom-up trophic control, or predator breeding threshold for top-down control.
+Presets: Classic Oscillation, Predator Boom, Prey Paradise, Fast Dynamics, Sparse Savanna, Dense Jungle, Extinction Edge and Stable Coexistence.
+
+**What to look for** — A stacked bar shows the current share of grass, prey and predators; the counts in the title bar show the prey peak leading the predator peak. "Predator Boom" crashes the prey, then the predators; "Stable Coexistence" is tuned for long-lived oscillations. Watch spatial patterns: predators cluster around prey herds, creating traveling waves of predation. If predators overshoot, they crash and prey explode, and the cycle restarts. Press `g`/`G` to change grass regrowth (bottom-up control) and `p`/`P` to change the predator breeding threshold (top-down control); `b`/`B` change the prey breeding threshold.
 
 **References**
 - Lotka, A. J. *Elements of Physical Biology.* Williams & Wilkins, 1925. https://archive.org/details/elementsofphysic017171mbp
@@ -237,25 +243,26 @@ Where:
   u = recovery variable, initialised at b*v
   I = synaptic input + noise
 
-Synaptic input:
+Synaptic input (grid edges do not wrap):
   I = sum over 8-neighbors: weight * (+1 if excitatory fired, -1 if inhibitory fired)
     + noise_amp * N(0, 1)    (Gaussian thalamic noise)
 
 Neuron types:
   Excitatory (regular spiking): a=0.02, b=0.2, c=-65, d=8
   Inhibitory (fast spiking):    a=0.1,  b=0.2, c=-65, d=2
-  Chattering:                   a=0.02, b=0.2, c=-50, d=2
+  Chattering:                   a=0.02, b=0.2, c=-50, d=2  (excitatory cells in "Chattering Network")
+  Cortical Column:              excitatory c and d vary per cell; inhibitory a and b vary per cell
 
-Parameters:
-  excit_ratio   = fraction of excitatory neurons (0.6-0.9)
-  weight        = synaptic weight (2.0-20.0)
-  noise_amp     = thalamic noise amplitude (1.0-10.0)
-  dt            = integration sub-step (0.5-1.0 ms)
+Parameters (preset ranges):
+  excit_ratio   = fraction of excitatory neurons (0.5-0.95)
+  weight        = synaptic weight (6.0-18.0; `w`/`W` allow 0-50)
+  noise_amp     = thalamic noise amplitude (1.0-12.0; `v`/`V` allow 0-30)
+  dt            = integration sub-step (0.5 ms in every preset)
 ```
 
-Integration uses Euler method with sub-steps (1/dt iterations per logical step) for numerical stability. Fire history decays exponentially (factor 0.85) to produce a glow-trail visualization.
+Integration uses the Euler method with 1/dt sub-steps per logical step. Fire history decays exponentially (factor 0.85) to produce a glow-trail visualization. The ten presets are Sparse Random Firing, Synchronized Bursting, Traveling Waves, Spiral Activity, Excitation Cascade, Inhibition-Dominated, Chattering Network, Cortical Column, Noise-Driven and Two-Cluster Sync.
 
-**What to look for** — Excitatory neurons fire in bright yellow; inhibitory neurons in cyan. The glow trail (red-to-magenta decay) shows wave propagation paths. "Cortical Column" produces irregular, asynchronous activity. "Traveling Waves" show coherent activity fronts sweeping across the network. Increase synaptic weight to push the network toward synchronised bursts (epileptic-like); increase noise to desynchronize. The fire rate indicator shows network activity level: sustained ~2-5% is healthy; >10% suggests pathological synchrony.
+**What to look for** — Excitatory neurons fire in bright yellow; inhibitory neurons in cyan. The glow trail (red-to-magenta decay) shows wave propagation paths. "Cortical Column" produces irregular, asynchronous activity. "Traveling Waves" show coherent activity fronts sweeping across the network. Increase synaptic weight (`W`) to push the network toward synchronised bursts; change the noise level with `v`/`V`; `p` stimulates a random patch. The fire rate bar shows the share of neurons firing; it is full at 10% and turns red above 5%.
 
 **References**
 - Izhikevich, E. M. "Simple model of spiking neurons." *IEEE Transactions on Neural Networks* 14 (2003): 1569-1572. https://doi.org/10.1109/TNN.2003.820440
@@ -281,27 +288,28 @@ Hamiltonian:
     Penalizes deviation from target cell size
 
   H_chemotaxis = -lambda_chem * chemical_field[r][c]
-    Biases cell extension toward chemical gradients (when enabled)
+    Biases cell extension toward higher concentration (Chemotaxis preset only).
+    The field diffuses and decays, and the right edge is held at 1.0.
 
 Metropolis step:
   1. Pick random pixel (r, c) with cell ID = target
   2. Pick random 4-neighbor (nr, nc) with cell ID = source
-  3. If source == target: skip
+  3. If source == target or the neighbor is off the grid: skip
   4. Propose copying source ID into (r, c)
   5. Compute delta_H = H_after - H_before
   6. Accept if delta_H <= 0, else accept with probability exp(-delta_H / T)
   7. Update area cache
 
 Parameters:
-  Temperature T     = stochastic fluctuation level (5.0-12.0)
-  lambda_area       = area constraint strength (1.5-3.0)
-  target_area       = preferred cell size in pixels (20-60)
-  J matrix          = type-type adhesion energies
-  lambda_chem       = chemotaxis strength (0 or 200)
-  steps_per_frame   = 500-1000 Metropolis attempts per visual update
+  Temperature T     = stochastic fluctuation level (presets 5.0-12.0)
+  lambda_area       = area constraint strength (presets 1.5-3.0)
+  target_area       = preferred cell size in pixels (presets 20-60)
+  J matrix          = type-type adhesion energies (the medium and the grid edge count as type 0)
+  lambda_chem       = chemotaxis strength (0, or 200 in the Chemotaxis preset)
+  steps_per_frame   = 500-1000 Metropolis attempts per visual update (presets)
 ```
 
-**What to look for** — In "Cell Sorting," two randomly intermixed cell types segregate into domains — the Steinberg differential adhesion hypothesis in action. "Wound Healing" shows a cell sheet edge advancing to fill empty space. "Tumor Growth" demonstrates invasive expansion of high-proliferation cells. Watch boundary pixels (bold) define cell outlines; interior pixels (dimmer) show cell body. Temperature controls membrane fluctuations: high T = motile, ruffled edges; low T = smooth, rigid cells.
+**What to look for** — In "Cell Sorting," two randomly intermixed cell types segregate into domains — the Steinberg differential adhesion hypothesis in action. "Wound Healing" shows a cell sheet edge advancing to fill empty space. "Tumor Growth" starts a central cluster of larger, weakly adhering tumor cells inside normal tissue. "Chemotaxis" starts a block of cells on the left and a field that rises toward the right edge. "Checkerboard" and "Foam / Bubbles" are the other two presets. Press `v` to cycle the views (cell type, cell ID, boundaries). Temperature (`t`/`T`) controls membrane fluctuations: high T = motile, ruffled edges; low T = smooth, rigid cells. `a`/`A` change the area constraint.
 
 **References**
 - Graner, F. & Glazier, J. A. "Simulation of biological cell sorting using a two-dimensional extended Potts model." *Physical Review Letters* 69 (1992): 2013-2016. https://doi.org/10.1103/PhysRevLett.69.2013
@@ -319,7 +327,7 @@ Parameters:
 Neural network (forward pass):
   Inputs: [nearest_food_dr, nearest_food_dc, nearest_threat_dr, nearest_threat_dc, energy_norm, bias=1.0]
   Hidden: h[j] = tanh(sum_i(inputs[i] * W1[j*6 + i]))   for j in 0..3
-  Output: (dr, dc) = (tanh(sum_j(h[j] * W2[o*4 + j])))  for o in 0..1
+  Output: o = tanh(sum_j(h[j] * W2[o*4 + j]))  for o in 0..1, read as the (dr, dc) move direction
   Total weights: 6*4 + 4*2 = 32
 
 Movement:
@@ -327,19 +335,26 @@ Movement:
 
 Energy dynamics:
   cost_per_step = (|vr| + |vc|) * 0.3 * size + 0.1 * size
-  eating food:   energy += food_value * 50
+  eating food:   energy += eaten * 50, where eaten = min(food_here, 0.4 * size)
   eating prey:   energy += prey_energy * 0.6 + prey_size * 20
+  death:         energy <= 0, or age > 800 + 200 * size (the body leaves food behind)
 
 Reproduction (when energy > 0.75 * max_energy, age > 60, random < 0.02/size):
-  Parent energy halved; child inherits mutated traits
-  Trait mutation: trait += gaussian(0, 0.1) * mutation_rate * 3
+  Parent energy x 0.45; child starts at 0.4 * max_energy with mutated traits
+  Trait mutation: trait += gaussian(0, 0.1) * mutation_rate * 3  (speed, size; sense uses 0.3)
   Brain mutation: weight += gaussian(0, 0.3) with probability mutation_rate
   Rare diet mutation: probability mutation_rate * 0.1
 
 Diet types: 0=herbivore, 1=predator, 2=omnivore
+
+Predators and omnivores kill any creature smaller than 1.3x their size
+within 1.5 cells, except that predators spare other predators.
+Population is capped at rows*cols/15; the lowest-energy creatures are culled.
 ```
 
-**What to look for** — Watch population sparklines for Lotka-Volterra-like oscillations between herbivores and predators. Average trait statistics reveal evolutionary trends: speed often increases under predation pressure; size evolves toward an energy-efficiency optimum. "Evolution Lab" (high mutation) produces rapid adaptation visible within minutes. When the population crashes to zero, five fresh herbivores respawn — a reboot of evolution. The stats panel tracks generation depth, revealing how many reproductive generations have elapsed.
+Presets: Grassland, Predator-Prey, Desert, Coral Reef, Evolution Lab and Primordial Soup. They differ in starting populations, food density and regrowth, and mutation rate.
+
+**What to look for** — Watch population sparklines for Lotka-Volterra-like oscillations between herbivores and predators. Average trait statistics reveal evolutionary trends: speed often increases under predation pressure; size evolves toward an energy-efficiency optimum. "Evolution Lab" (high mutation) produces rapid adaptation visible within minutes. When the population crashes to zero, five fresh herbivores respawn. `s` toggles the stats panel, which tracks generation depth. `+`/`-` change food regrowth, `f` scatters extra food, and `<`/`>` change creature speed.
 
 **References**
 - Sims, K. "Evolving virtual creatures." *SIGGRAPH Conference Proceedings* (1994): 15-22. https://doi.org/10.1145/192161.192170
@@ -374,16 +389,22 @@ Return_food:
   Dig toward queen if blocked (probability 0.15)
   Deliver food -> eggs += 1; every 5 eggs, spawn new ant (up to 60)
 
+Dig:
+  Move into a random dirt cell below or beside the ant, clearing it
+  Clay clears with probability 0.1 * dig_strength
+  Back to explore when blocked, or with probability 0.05 per step
+  Below depth 5, with probability 0.01 per step, clear a 3x3 chamber around the ant
+
 Pheromone dynamics:
   decay: pheromone *= 0.995 per step (exponential evaporation)
   floor: values below 0.01 set to 0.0
 
 Grid cells: AIR, DIRT, CLAY, ROCK, CHAMBER, QUEEN_CELL, FOOD_STORE
   Soil layers: shallow=dots, medium=colons, deep=hashes
-  Clay requires higher dig_strength; rock is impassable
+  Clay needs dig_strength (2 in Sandy Soil, else 1); rock is impassable
 ```
 
-**What to look for** — Watch the colony self-organise: ants first dig a starter tunnel from surface to queen, then branch out seeking food. Pheromone trails (faint dots and commas) guide returning foragers, creating positive feedback loops that establish main highways. The "Rocky" preset forces creative tunnel routing around obstacles. "Rainy" adds precipitation that occasionally spawns surface food. Drop food with 'f' and watch ants discover and exploit it via trail recruitment. Chamber formation happens at tunnel junctions when ants excavate wider spaces.
+**What to look for** — Watch the colony self-organise: ants start from a ready-made tunnel between the surface and the queen chamber, then dig branches while seeking food. Pheromone trails (faint dots and commas) guide returning foragers, creating positive feedback loops that establish main highways. The five presets are Classic Colony, Sandy Soil, Rocky Ground, Deep Nest and Rainy Day. "Rocky Ground" forces tunnels to route around rock. "Rainy Day" adds rain that occasionally spawns surface food. Move the cursor with the left and right arrow keys, drop food with `f`, and watch ants find it and recruit through the trail. `w` toggles rain, `o` places a rock obstacle below the cursor, and `i` toggles the info panel.
 
 **References**
 - Bonabeau, E. et al. *Swarm Intelligence: From Natural to Artificial Systems.* Oxford University Press, 1999. https://global.oup.com/academic/product/9780195131581
