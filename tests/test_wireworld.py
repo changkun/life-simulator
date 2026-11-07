@@ -516,3 +516,17 @@ class TestWireworldStepMulti:
             assert len(self.app.ww_grid) == count, (
                 f"Cell count changed at gen {self.app.ww_generation}"
             )
+
+
+def test_clock_preset_keeps_emitting():
+    """The Clock preset must circulate its electron and emit pulses indefinitely."""
+    app = _make_ww_app()
+    cells = dict(next(p for p in WW_PRESETS if p[0] == "Clock")[2])
+    app._ww_init(cells)
+    head_gens = 0
+    for _ in range(120):
+        app._ww_step()
+        if WW_HEAD in app.ww_grid.values():
+            head_gens += 1
+    assert head_gens == 120
+    assert len(app.ww_grid) == len(cells)
