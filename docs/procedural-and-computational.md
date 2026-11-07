@@ -651,7 +651,7 @@ This mode implements a complete feed-forward neural network with backpropagation
 **Formulation**
 
 ```
-Network: fully connected layers, sizes configurable (e.g., 2-8-8-3)
+Network: fully connected layers, sizes set by the preset (e.g., 2-8-8-3)
 
 Weight initialization (Xavier):
   scale = sqrt(2 / (fan_in + fan_out))
@@ -662,20 +662,20 @@ Forward pass:
   for each layer l:
     z[l][j] = sum_i(w[l][j][i] * a[l-1][i]) + b[l][j]
     a[l][j] = activation(z[l][j])
-  Output layer: sigmoid (binary) or softmax (multi-class)
+  Output layer: softmax (more than one output); otherwise the preset's activation
 
-Activation functions:
+Activation functions (hidden layers; presets use sigmoid or relu):
   sigmoid(x) = 1 / (1 + exp(-x));     deriv: s * (1-s)
   relu(x) = max(0, x);                deriv: 1 if x > 0 else 0
-  tanh(x) = tanh(x);                  deriv: 1 - t^2
+  tanh(x) = tanh(x);                  deriv: 1 - t^2  (available, no preset uses it)
 
 Loss functions:
-  Binary:      L = 0.5 * sum(output - target)^2
-  Multi-class: L = -sum(target * log(output))  (cross-entropy with softmax)
+  Single output: L = 0.5 * sum(output - target)^2
+  Multi-class:   L = -sum(target * log(output))  (cross-entropy with softmax)
 
 Backpropagation:
   Output deltas:
-    Binary:  delta[L] = (out - target) * activation'(out)
+    Single:  delta[L] = (out - target) * activation'(out)
     Softmax: delta[L] = out - target
 
   Hidden deltas:
@@ -685,9 +685,13 @@ Backpropagation:
     grad = delta[l][j] * a[l-1][i]
     w[l][j][i] -= learning_rate * grad
 
-Tasks:
-  XOR (4 points), Spiral (3-class, 150 points), Circle (80 points),
-  Two Moons (120 points), Sine Regression (60 points), Gaussian Clusters (120 points)
+Presets (layers, activation, learning rate, samples):
+  XOR Gate               2-2-1      sigmoid  1.0   4 noisy points
+  Spiral Classification  2-8-8-3    relu     0.3   150 points, 3 classes
+  Circle Decision        2-4-1      sigmoid  0.5   80 points
+  Two Moons              2-6-4-1    relu     0.4   120 points
+  Sine Regression        2-8-4-1    relu     0.1   60 points
+  Gaussian Clusters      2-8-4-3    relu     0.25  120 points, 3 classes
 
 Visualization: neuron activation mapped to fill characters (empty to full circle),
   weight magnitude to line thickness, gradient flow animated as pulsing arrows
@@ -695,7 +699,7 @@ Visualization: neuron activation mapped to fill characters (empty to full circle
 
 **What to look for**
 
-The decision boundary view reveals how the network partitions input space. For XOR, watch the 2-2-1 network learn a non-linear boundary that no single perceptron can produce. The spiral task requires deeper networks (2-8-8-3) to create the complex interleaving boundaries needed for three-class separation. The loss curve shows characteristic training dynamics: initial plateau (random weights), rapid descent (gradient catches), and potential oscillation (learning rate too high). Adjust learning rate with [ and ] to observe its effect on convergence stability.
+The decision boundary view reveals how the network partitions input space. For XOR, watch the 2-2-1 network learn a non-linear boundary that no single perceptron can produce. The spiral task uses a deeper network (2-8-8-3) to separate three interleaved classes. The loss curve shows characteristic training dynamics: initial plateau (random weights), rapid descent (gradient catches), and potential oscillation (learning rate too high). Press `[` or `]` to lower or raise the learning rate and see its effect on stability. `v` cycles the panels, `+`/`-` change the training speed, and `n` trains one step.
 
 **References**
 
