@@ -1,8 +1,7 @@
-"""Quantum Circuit Simulator & Visualizer — build and simulate quantum circuits in ASCII.
+"""Quantum Circuit Simulator — step preset quantum circuits and watch the state vector.
 
-Qubit state vectors rendered as mini Bloch-sphere projections, gate operations
-animated as they transform states, entanglement shown via colored link indicators,
-and measurement triggers probabilistic wavefunction collapse with a running histogram.
+Shows the gate diagram, amplitudes, mini Bloch spheres, entangled qubit pairs,
+and a histogram of repeated measurements.
 
 Presets:
   1. Bell State (|Φ+⟩)        — H on q0, CNOT → maximal entanglement
@@ -98,7 +97,7 @@ ISQRT2 = 1.0 / math.sqrt(2.0)
 
 
 def _apply_gate(state_vec, n_qubits, gate_name, qubits, params):
-    """Apply a gate to the state vector (in-place mutation of a copy)."""
+    """Return a new state vector with the gate applied."""
     n = len(state_vec)
 
     if gate_name == "H":
@@ -339,7 +338,6 @@ def _qcirc_init(self, preset_idx):
     self.qcirc_histogram = {}
     self.qcirc_total_shots = 0
     self.qcirc_anim_tick = 0
-    self.qcirc_measured_bits = {}
     self.qcirc_speed = 8  # frames between steps when auto-running
     self._flash(f"Quantum Circuit: {name} — Space=run, n=step, m=measure×100")
 
@@ -351,14 +349,6 @@ def _qcirc_step(self):
     gate_name, qubits, params = self.qcirc_gates[self.qcirc_gate_idx]
     self.qcirc_state = _apply_gate(
         self.qcirc_state, self.qcirc_n_qubits, gate_name, qubits, params)
-    if gate_name == "M":
-        q = qubits[0]
-        # Record measured value
-        for i, amp in enumerate(self.qcirc_state):
-            if abs(amp) ** 2 > 0.5:
-                bit = (i >> (self.qcirc_n_qubits - 1 - q)) & 1
-                self.qcirc_measured_bits[q] = bit
-                break
     self.qcirc_gate_idx += 1
     self.qcirc_step_count += 1
     return True
@@ -473,7 +463,7 @@ def _draw_qcirc_menu(self, max_y, max_x):
             pass
 
     help_y = max_y - 2
-    help_text = "↑/↓ select  ·  Enter/Space start  ·  q quit"
+    help_text = "↑/↓=select  Enter=start  q=quit"
     try:
         self.stdscr.addstr(help_y, max(0, (max_x - len(help_text)) // 2),
                            help_text[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
@@ -744,7 +734,8 @@ def _draw_qcirc(self, max_y, max_x):
         "DONE" if gate_idx >= len(gates) else ("RUNNING" if self.qcirc_running else "PAUSED"),
     ]
     status = "  │  ".join(status_parts)
-    controls = " Space=run n=step f=all m=100shots M=1000 r=reset R=menu q=quit +/-=speed"
+    controls = (" Space=run  n=step  f=all  m=100 shots  M=1000 shots"
+                "  +/-=speed  r=reset  R=menu  q=quit")
     try:
         self.stdscr.addstr(max_y - 2, 0, status[:max_x - 1],
                            curses.color_pair(5) | curses.A_BOLD)
