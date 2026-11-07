@@ -1,40 +1,4 @@
-"""Mode: tokamak — Tokamak Fusion Plasma Confinement.
-
-Simulates a toroidal cross-section (poloidal plane) of magnetically confined
-hydrogen plasma in a tokamak fusion reactor.  Particle-in-cell dynamics track
-ion and electron populations on nested magnetic flux surfaces created by the
-superposition of toroidal (out-of-plane) and poloidal (in-plane) magnetic fields.
-
-Physics modeled:
-  - Magnetic topology: toroidal field ~ 1/R (stronger on inboard side),
-    poloidal field from plasma current creating nested flux surfaces with
-    safety factor q(r) = rB_tor / RB_pol
-  - Ohmic heating from plasma current (P_ohm ~ eta * j^2, resistivity drops
-    with T^{-3/2})
-  - Neutral beam injection (NBI) heating with deposition profile
-  - Radiation losses: Bremsstrahlung ~ n^2 * sqrt(T), line radiation
-  - Energy confinement time tau_E with L-mode and H-mode scaling
-  - Lawson criterion: n * T * tau_E > 3e21 m^-3 keV s for ignition
-  - Plasma instabilities: sawtooth crashes (q=1 surface reconnection),
-    ELMs (edge localized modes, H-mode pedestal collapse), kink modes
-    (q<1 global instability), and full disruptions (thermal + current quench)
-  - Turbulent transport: anomalous diffusion across flux surfaces with
-    intermittent avalanche-like events
-  - Runaway electrons accelerated by electric field when collisionality drops
-
-Three views:
-  1) Plasma cross-section — toroidal slice with density/temperature colored
-     plasma on nested flux surfaces, magnetic field line topology, LCFS,
-     divertor X-point, wall/limiter, NBI beam path
-  2) Energy balance dashboard — Lawson triple-product tracker, heating vs
-     loss power bars, temperature/density/pressure profiles, confinement
-     mode indicator, Q-factor display
-  3) Time-series sparkline graphs — 10 key metrics
-
-Six presets:
-  Stable Ohmic Confinement, H-Mode Transition, Plasma Disruption,
-  ITER-Scale Burning Plasma, Sawtooth Oscillations, Runaway Electron Beam
-"""
+"""Tokamak Fusion Plasma Confinement — heating, transport and instabilities of a tokamak plasma."""
 import curses
 import math
 import random
@@ -72,10 +36,6 @@ TOKAMAK_PRESETS = [
 
 _NEIGHBORS_4 = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
-# Plasma physics (normalized units)
-_MU0 = 1.0              # permeability (normalized)
-_BOLTZMANN = 1.0         # (normalized)
-
 # Confinement
 _TAU_E_BASE = 80.0       # base energy confinement time (ticks) L-mode
 _TAU_E_HMODE = 200.0     # H-mode confinement time
@@ -83,7 +43,6 @@ _HMODE_POWER_THRESH = 0.6  # normalized heating power threshold for L-H transiti
 
 # Heating
 _OHMIC_COEFF = 0.02      # ohmic heating coefficient
-_NBI_POWER = 0.0         # neutral beam injection power (preset-dependent)
 _NBI_DEPOSITION_WIDTH = 0.3  # NBI deposition profile width (normalized radius)
 _NBI_DEPOSITION_CENTER = 0.3  # NBI peak deposition radius
 _ALPHA_POWER_COEFF = 0.04  # fusion alpha heating coefficient
@@ -105,12 +64,8 @@ _DISRUPTION_THERMAL_QUENCH = 5  # ticks for thermal quench
 _DISRUPTION_CURRENT_QUENCH = 20  # ticks for current quench
 
 # Geometry
-_ASPECT_RATIO = 3.0      # R/a (major radius / minor radius)
 _ELONGATION = 1.7        # plasma elongation (kappa)
 _TRIANGULARITY = 0.33    # plasma triangularity (delta)
-
-# Lawson criterion threshold (normalized)
-_LAWSON_IGNITION = 1.0   # normalized ignition threshold
 
 # Safety factor
 _Q_EDGE = 3.5            # edge safety factor
@@ -118,6 +73,8 @@ _Q_AXIS = 1.1            # on-axis safety factor (normally > 1)
 
 # History
 _MAX_HIST = 500
+
+_HINT = "Space=play  n=step  v=view  b=NBI  d=disrupt  +/-=speed  r=reset  R=menu  q=exit"
 
 
 # ======================================================================
@@ -412,7 +369,6 @@ def _tokamak_step(self):
     rho = self.tokamak_rho
     params = self.tokamak_params
     gen = self.tokamak_generation
-    pid = self.tokamak_preset_id
 
     # --- Check for disruption trigger ---
     if params['disruption_enabled'] and not self.tokamak_disrupted:
@@ -652,14 +608,7 @@ def _tokamak_step(self):
                         n[r][c] += 0.02
 
     # --- Runaway electrons ---
-    if params['runaway_enabled'] and self.tokamak_disrupted:
-        # Runaway beam: concentrated in core, gaining energy
-        self.tokamak_runaway_energy *= 1.02
-        for r in range(rows):
-            for c in range(cols):
-                if rho[r][c] <= 0.2:
-                    T[r][c] = self.tokamak_runaway_energy * 0.3
-    elif params['runaway_enabled'] and self.tokamak_disruption_phase >= 2:
+    if params['runaway_enabled'] and self.tokamak_disruption_phase >= 2:
         self.tokamak_runaway_pop = min(1.0, self.tokamak_runaway_pop + 0.02)
         self.tokamak_runaway_energy = min(5.0, self.tokamak_runaway_energy + 0.1)
 
@@ -862,7 +811,7 @@ def _draw_tokamak_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hint = "[up/dn] select  [Enter] start  [q] back"
+    hint = "Up/Down=select  Enter=start  q=exit"
     try:
         self.stdscr.addstr(max_y - 2, max(0, (max_x - len(hint)) // 2), hint,
                            curses.color_pair(7))
@@ -890,7 +839,6 @@ def _draw_tokamak_plasma(self, max_y: int, max_x: int):
     rows = self.tokamak_rows
     cols = self.tokamak_cols
     T = self.tokamak_T
-    n = self.tokamak_n
     rho = self.tokamak_rho
     view_h = min(rows, max_y - 3)
     view_w = min(cols, max_x - 1)
@@ -940,7 +888,6 @@ def _draw_tokamak_plasma(self, max_y: int, max_x: int):
 
             # Plasma interior
             t_val = T[r][c]
-            n_val = n[r][c]
             intensity = t_val / max(0.01, max_T)
 
             # Runaway electron beam visualization
@@ -1034,7 +981,7 @@ def _draw_tokamak_plasma(self, max_y: int, max_x: int):
 
     status = (f" {self.tokamak_preset_name} | t={gen} | {mode_str} | "
               f"nTt={lawson:.2f} Q={q_fac:.1f} | "
-              f"[v]iew [b]NBI [d]isrupt [space] [r]eset [q]uit")
+              f"{_HINT}")
     try:
         self.stdscr.addstr(max_y - 2, 0, status[:max_x - 1],
                            curses.color_pair(7) | curses.A_BOLD)
@@ -1172,7 +1119,6 @@ def _draw_tokamak_energy(self, max_y: int, max_x: int):
     rho_samples = [0.0, 0.25, 0.5, 0.75, 1.0]
     T = self.tokamak_T
     n_grid = self.tokamak_n
-    rho_grid = self.tokamak_rho
     mid_r = self.tokamak_mid_r
     mid_c = self.tokamak_mid_c
     a_c = self.tokamak_a_c
@@ -1222,7 +1168,7 @@ def _draw_tokamak_energy(self, max_y: int, max_x: int):
         y += 2
 
     # Status bar
-    status = "[v]iew [b]NBI [d]isrupt [space]pause [r]eset [q]uit"
+    status = _HINT
     try:
         self.stdscr.addstr(max_y - 1, 2, status[:max_x - 3], curses.color_pair(7))
     except curses.error:
@@ -1295,7 +1241,7 @@ def _draw_tokamak_graphs(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    status = "[v]iew [b]NBI [d]isrupt [space]pause [r]eset [q]uit"
+    status = _HINT
     try:
         self.stdscr.addstr(max_y - 1, 2, status[:max_x - 3], curses.color_pair(7))
     except curses.error:
