@@ -143,7 +143,9 @@ Decoherence: with probability p, collapse amplitude to random phase
    phi[r][c] = average of 4 neighbors
    Boundary conditions:
      Channel cells: phi = 0 (conductor)
-     Ground plane:  phi = 1 (opposite electrode)
+     Ground:        phi = 1 (opposite electrode): the bottom row for
+                    top-start presets, all four edges for center and
+                    point presets
      Other edges:   Neumann (zero gradient)
 
 2. Find growth candidates: empty cells adjacent to the channel
@@ -158,10 +160,10 @@ Decoherence: with probability p, collapse amplitude to random phase
 Parameters:
   eta — branching exponent (0.1 to 10.0)
         Low eta: dense branching, bushy fractal
-        High eta: sparse, direct paths (DLA-like)
+        High eta: sparse, direct paths (eta = 1 is DLA-like)
 ```
 
-**What to look for** — Low eta values (~1.0) produce densely branched, bushy lightning bolts reminiscent of natural lightning. High eta values produce straighter, less branched paths. The discharge channel is colored by age: bright yellow for fresh growth, fading through cyan to dim blue for older segments. The faint potential field is visible as dim dots in the background.
+**What to look for** — Low eta values (~1.0) produce densely branched, bushy bolts. High eta values produce straighter, less branched paths. The discharge channel is colored by age: bright yellow for fresh growth, fading through cyan to dim blue for older segments. The faint potential field is visible as dim dots in the background.
 
 **References**
 - Niemeyer, L., Pietronero, L., and Wiesmann, H.J. "Fractal dimension of dielectric breakdown," *Physical Review Letters*, 1984. https://doi.org/10.1103/PhysRevLett.52.1033
