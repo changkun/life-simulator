@@ -81,3 +81,16 @@ def test_clustering_coefficient_complete_graph():
     adj = {i: [j for j in range(n) if j != i] for i in range(n)}
     cc = _clustering_coefficient(n, adj)
     assert abs(cc - 1.0) < 0.01
+
+
+def test_menu_escape_goes_back_one_level():
+    """Esc in the rule menu returns to the topology menu; Esc there closes it."""
+    app = _make_app()
+    app._enter_gca_mode()
+    app._handle_gca_menu_key(10)
+    assert app.gca_menu_phase == "rule"
+    app._handle_gca_menu_key(27)
+    assert app.gca_menu is True
+    assert app.gca_menu_phase == "topology"
+    app._handle_gca_menu_key(27)
+    assert app.gca_menu is False

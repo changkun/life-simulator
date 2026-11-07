@@ -513,10 +513,6 @@ def _gca_clear(self):
 
 def _handle_gca_menu_key(self, key):
     """Handle keys in the topology/rule selection menu."""
-    if key == 27:  # ESC
-        self.gca_menu = False
-        return True
-
     if self.gca_menu_phase == "topology":
         n_items = len(GRAPH_TOPOLOGIES)
         if key == curses.KEY_UP:
@@ -526,7 +522,7 @@ def _handle_gca_menu_key(self, key):
         elif key in (10, 13, curses.KEY_ENTER):
             self.gca_menu_phase = "rule"
             self.gca_rule_sel = 0
-        elif key == ord("q"):
+        elif key == ord("q") or key == 27:
             self.gca_menu = False
         return True
     elif self.gca_menu_phase == "rule":
