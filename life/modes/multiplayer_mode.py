@@ -1,20 +1,17 @@
-"""Mode: mp — simulation mode for the life package."""
+"""Multiplayer — two-player competitive Game of Life over a network."""
 import curses
-import math
 import random
 import time
-
 
 from life.colors import color_for_mp
 from life.constants import CELL_CHAR, MP_DEFAULT_PORT, MP_PLANNING_TIME, MP_SIM_GENS, SPEEDS, SPEED_LABELS
 from life.grid import Grid
 from life.multiplayer import MultiplayerNet
-from life.utils import sparkline
+
 
 def _mp_init_owner_grid(self):
     """Create a fresh ownership grid matching the main grid dimensions."""
     self.mp_owner = [[0] * self.grid.cols for _ in range(self.grid.rows)]
-
 
 
 def _mp_enter_host(self):
@@ -44,7 +41,6 @@ def _mp_enter_host(self):
     self.mp_host_port = port
     self.running = False
     self._flash(f"Hosting on port {port} — waiting for opponent...")
-
 
 
 def _mp_enter_client(self):
@@ -82,7 +78,6 @@ def _mp_enter_client(self):
     self._flash("Connected! Waiting for game setup...")
 
 
-
 def _mp_exit(self):
     """Leave multiplayer mode and clean up."""
     if self.mp_net:
@@ -100,7 +95,6 @@ def _mp_exit(self):
     self.draw_mode = None
     self.running = False
     self._flash("Multiplayer ended")
-
 
 
 def _mp_start_planning(self):
@@ -121,7 +115,6 @@ def _mp_start_planning(self):
     self._flash(f"Round {self.mp_round} — Place cells on your side! ({MP_PLANNING_TIME}s)")
 
 
-
 def _mp_start_sim(self):
     """Transition from planning to simulation phase."""
     self.mp_phase = "running"
@@ -132,7 +125,6 @@ def _mp_start_sim(self):
     self.running = True
     self.speed_idx = 3  # 4× speed for watching
     self._flash("Simulation running! Watch your cells compete...")
-
 
 
 def _mp_place_cell(self, r: int, c: int, alive: bool):
@@ -155,7 +147,6 @@ def _mp_place_cell(self, r: int, c: int, alive: bool):
     if self.mp_net:
         self.mp_net.send({"type": "place", "r": r, "c": c, "alive": alive,
                           "player": self.mp_player})
-
 
 
 def _mp_step(self):
@@ -208,7 +199,6 @@ def _mp_step(self):
     self.mp_owner = new_owner
 
 
-
 def _mp_calc_scores(self):
     """Calculate scores: cells owned + bonus for cells in enemy territory."""
     s1 = s2 = 0
@@ -228,7 +218,6 @@ def _mp_calc_scores(self):
                         b2 += 1
     self.mp_scores = [s1, s2]
     self.mp_territory_bonus = [b1, b2]
-
 
 
 def _mp_finish(self):
@@ -253,7 +242,6 @@ def _mp_finish(self):
                           "bonus": [b1, b2]})
 
 
-
 def _mp_send_state(self):
     """Host sends full grid state + ownership to client."""
     if not self.mp_net or self.mp_role != "host":
@@ -273,7 +261,6 @@ def _mp_send_state(self):
     })
 
 
-
 def _mp_recv_state(self, msg: dict):
     """Client applies a full state update from host."""
     self.grid.generation = msg["gen"]
@@ -291,7 +278,6 @@ def _mp_recv_state(self, msg: dict):
         self.mp_scores = msg["scores"]
     if "bonus" in msg:
         self.mp_territory_bonus = msg["bonus"]
-
 
 
 def _mp_poll(self):
@@ -350,7 +336,6 @@ def _mp_poll(self):
         self._mp_exit()
 
 
-
 def _mp_lobby_tick(self):
     """Host lobby: check if client connected, then send hello and start planning."""
     if self.mp_role == "host" and self.mp_net and self.mp_net.connected:
@@ -367,13 +352,11 @@ def _mp_lobby_tick(self):
         pass
 
 
-
 def _mp_planning_tick(self):
     """Check planning timer and auto-ready if expired."""
     remaining = self.mp_planning_deadline - time.monotonic()
     if remaining <= 0 and not self.mp_ready[self.mp_player - 1]:
         self._mp_set_ready()
-
 
 
 def _mp_set_ready(self):
@@ -388,7 +371,6 @@ def _mp_set_ready(self):
             self.mp_net.send({"type": "start_sim"})
 
 
-
 def _mp_sim_tick(self):
     """Host runs simulation step and broadcasts state."""
     if self.mp_role != "host":
@@ -401,7 +383,6 @@ def _mp_sim_tick(self):
     gens_elapsed = self.grid.generation - self.mp_start_gen
     if gens_elapsed >= self.mp_sim_gens:
         self._mp_finish()
-
 
 
 def _handle_mp_planning_key(self, key: int) -> bool:
@@ -458,7 +439,6 @@ def _handle_mp_planning_key(self, key: int) -> bool:
         return True
     # Random fill on player's side
     if key == ord("r"):
-        import random
         half = self.grid.cols // 2
         c_start = 0 if self.mp_player == 1 else half
         c_end = half if self.mp_player == 1 else self.grid.cols
@@ -494,7 +474,6 @@ def _handle_mp_planning_key(self, key: int) -> bool:
     return True
 
 
-
 def _mp_apply_draw_mode(self):
     """Apply draw/erase under cursor during multiplayer planning, respecting territory."""
     if not self.draw_mode or self.mp_phase != "planning":
@@ -509,7 +488,6 @@ def _mp_apply_draw_mode(self):
         self._mp_place_cell(self.cursor_r, self.cursor_c, True)
     elif self.draw_mode == "erase":
         self._mp_place_cell(self.cursor_r, self.cursor_c, False)
-
 
 
 def _handle_mp_running_key(self, key: int) -> bool:
@@ -546,7 +524,6 @@ def _handle_mp_running_key(self, key: int) -> bool:
     return True
 
 
-
 def _handle_mp_finished_key(self, key: int) -> bool:
     """Handle input on the multiplayer results screen."""
     if key == -1:
@@ -563,9 +540,6 @@ def _handle_mp_finished_key(self, key: int) -> bool:
             self._flash("Waiting for host to start next round...")
         return True
     return True
-
-# ── Save / Load ──
-
 
 
 def _draw_mp_lobby(self, max_y: int, max_x: int):
@@ -604,7 +578,6 @@ def _draw_mp_lobby(self, max_y: int, max_x: int):
             self.stdscr.addstr(y, x, line, attr)
         except curses.error:
             pass
-
 
 
 def _draw_mp_grid(self, max_y: int, max_x: int, status_rows: int = 5):
@@ -657,7 +630,6 @@ def _draw_mp_grid(self, max_y: int, max_x: int, status_rows: int = 5):
                     except curses.error:
                         pass
     return vis_rows, vis_cols
-
 
 
 def _draw_mp_planning(self, max_y: int, max_x: int):
@@ -719,13 +691,12 @@ def _draw_mp_planning(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [e/Space]=toggle cell [d]=draw [x]=erase [r]=random fill [c]=clear [Enter]=ready [q]=quit"
+            hint = " e/Space=toggle  d=draw  x=erase  r=random fill  c=clear  Enter=ready  q=quit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
         except curses.error:
             pass
-
 
 
 def _draw_mp_game(self, max_y: int, max_x: int):
@@ -775,10 +746,9 @@ def _draw_mp_game(self, max_y: int, max_x: int):
             except curses.error:
                 pass
 
-    # Population sparkline
+    # Cell counts
     spark_y = max_y - 3
     if spark_y > 0:
-        # Quick sparkline from current pop
         s1, s2 = self.mp_scores
         info = f" P1 cells: {s1}  │  P2 cells: {s2}  │  Total: {self.grid.population}"
         try:
@@ -809,13 +779,12 @@ def _draw_mp_game(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=pause [+/-]=speed [Arrows]=scroll [q]=quit"
+            hint = " Space=pause  +/-=speed  Arrows=scroll  q=quit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
         except curses.error:
             pass
-
 
 
 def _draw_mp_finished(self, max_y: int, max_x: int):
@@ -870,8 +839,6 @@ def _draw_mp_finished(self, max_y: int, max_x: int):
             self.stdscr.addstr(y, x, line, attr)
         except curses.error:
             pass
-
-
 
 
 def register(App):
