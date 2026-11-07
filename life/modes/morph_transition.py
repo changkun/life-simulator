@@ -1,13 +1,8 @@
-"""Smooth mode-morphing crossfade transitions.
+"""Mode Morph Transitions — crossfade the previous mode's last frame into the new mode.
 
-When switching between modes, captures the outgoing mode's screen content
-and crossfades it with the incoming mode over a configurable number of frames.
-Old mode fades out while the new mode fades in, creating a visually seamless
-transition instead of a hard cut.
-
-Works with all 130+ modes via the truecolor pipeline without modifying any
-individual mode logic.  Hooks into _exit_current_modes (capture) and
-_tc_refresh (blend).
+The outgoing screen is captured on mode exit and faded out over a set
+number of frames while the new mode draws normally.  Hooks into
+_exit_current_modes (capture) and _tc_refresh (blend).
 
 Toggle with 'G' (Shift+G).  Adjust duration with '[' / ']'.
 Cycle easing curve with Ctrl+T.
@@ -56,20 +51,14 @@ def _morph_transition_init(self):
 # ── Frame capture ────────────────────────────────────────────────────────
 
 def _morph_capture_frame(self):
-    """Capture the current screen content as the outgoing frame.
-
-    Called just before _exit_current_modes clears the old mode.
-    Captures both truecolor buffer cells and curses screen content.
-    """
+    """Capture the truecolor and curses cells on screen as the outgoing frame."""
     my, mx = self.stdscr.getmaxyx()
     safe_mx = mx - 1
     frame = {}
 
-    # 1) Truecolor cells (full RGB)
     for y, x, text, r, g, b, _bold, _dim in self.tc_buf.cells:
         frame[(y, x)] = (text[:1] if text else " ", r, g, b)
 
-    # 2) Curses screen cells
     for y in range(my):
         for x in range(safe_mx):
             if (y, x) in frame:
@@ -90,34 +79,25 @@ def _morph_capture_frame(self):
 # ── Crossfade rendering ─────────────────────────────────────────────────
 
 def _morph_render_crossfade(self):
-    """Blend the old captured frame with the new mode's current output.
-
-    Called during _tc_refresh while a transition is active.
-    The old frame fades out (alpha decreasing) while new content is
-    already being drawn normally by the new mode.
-    """
+    """Overlay the captured frame, fading it out with the easing curve."""
     if not self._morph_active:
         return
 
     self._morph_progress += 1
     if self._morph_progress >= self.morph_duration:
-        # Transition complete
         self._morph_active = False
         self._morph_old_frame.clear()
         return
 
-    # Calculate alpha for the OLD frame (1.0 = fully visible, 0.0 = gone)
     t = self._morph_progress / self.morph_duration
     _name, easing_fn = EASING_FUNCS[self.morph_easing_idx]
     alpha_old = 1.0 - easing_fn(t)
 
     if alpha_old <= 0.01:
-        # Negligible — skip rendering old frame
         self._morph_active = False
         self._morph_old_frame.clear()
         return
 
-    # Build set of positions occupied by the NEW mode's current frame
     new_occupied = set()
     for y, x, _t, _r, _g, _b, _bo, _di in self.tc_buf.cells:
         new_occupied.add((y, x))
@@ -125,30 +105,23 @@ def _morph_render_crossfade(self):
     my, mx = self.stdscr.getmaxyx()
     safe_mx = mx - 1
 
-    # Also check curses screen for new mode content
-    # (skip this if too expensive — tc_buf cells are the main indicator)
-
     # Render old frame cells with faded alpha
     parts = []
     for (y, x), (char, r, g, b) in self._morph_old_frame.items():
         if y >= my or x >= safe_mx:
             continue
         if (y, x) in new_occupied:
-            # Both old and new have content here — blend by dimming old
-            # The new mode's content takes priority but we tint behind it
-            continue
+            continue  # the new mode's content takes priority
 
         if r is not None:
-            # Original RGB — scale by alpha
             dr = max(0, int(r * alpha_old))
             dg = max(0, int(g * alpha_old))
             db = max(0, int(b * alpha_old))
-        else:
-            # Curses-only cell — use a dim grey based on alpha
+        else:  # curses-only cell has no RGB; use grey
             grey = max(0, int(180 * alpha_old))
             dr = dg = db = grey
 
-        # Emit directly as ANSI escape (after curses refresh, before tc_buf render)
+        # Emit raw ANSI escapes: curses cannot draw 24-bit colour
         pos = f'\033[{y + 1};{x + 1}H'
         color = f'\033[38;2;{dr};{dg};{db}m'
         dim_attr = '\033[2m' if alpha_old < 0.5 else ''
@@ -173,10 +146,10 @@ def _morph_draw_indicator(self):
         label = f" MORPH:{self.morph_duration}f {easing_name} [{pct}%] "
     else:
         label = f" MORPH:{self.morph_duration}f {easing_name} "
-    # Place to the right of ghost trail indicator if present
+    # Sit to the right of the ghost trail badge
     col = 1
     if self.ghost_trail_active:
-        col += 22  # skip past ghost trail badge
+        col += 22
     if col + len(label) >= mx:
         return
     try:
@@ -189,7 +162,7 @@ def _morph_draw_indicator(self):
 # ── Key handling ─────────────────────────────────────────────────────────
 
 def _morph_handle_key(self, key):
-    """Handle morph transition key bindings.  Returns True if consumed."""
+    """Handle morph transition keys.  Return True if the key was consumed."""
     # 'G' (Shift+G) — toggle morph transitions on/off
     if key == ord("G"):
         self.morph_enabled = not self.morph_enabled
@@ -231,20 +204,16 @@ def _morph_handle_key(self, key):
 # ── Hooks ────────────────────────────────────────────────────────────────
 
 def _morph_on_mode_exit(self):
-    """Hook called just before _exit_current_modes.
-
-    If morph transitions are enabled, captures the current screen content
-    so it can be crossfaded with the incoming mode.
-    """
+    """Capture the outgoing screen when morphing is enabled."""
     if self.morph_enabled:
         _morph_capture_frame(self)
 
 
 def _morph_on_refresh(self):
-    """Hook called during _tc_refresh to render the crossfade overlay.
+    """Draw the crossfade overlay.
 
-    Should be called AFTER stdscr.refresh() and AFTER tc_buf.render(),
-    so the old frame's fading remnants overlay on top of the new mode.
+    Call after stdscr.refresh() and tc_buf.render() so the fading remnants
+    land on top of the new mode.
     """
     if self._morph_active:
         _morph_render_crossfade(self)
