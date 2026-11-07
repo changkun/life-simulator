@@ -370,7 +370,7 @@ Topology Mode changes the grid's boundary conditions, transforming the surface o
 
 ### How it works
 
-The Grid class implements neighbor lookups that consult the `topology` attribute. For twist-wrapping topologies, when a coordinate wraps past an edge, the opposite axis is mirrored: on a Klein bottle, a cell going off the top row reappears at the bottom with its column reflected (`c' = cols - 1 - c`). Ctrl+W cycles through the topologies. Outside the torus, the mode draws a label in the top-right corner and edge indicators: thin lines for walls, double lines for seamless wraps, and wavy lines for twist wraps. Corner markers and midpoint arrows mark twisted edges.
+The Grid class implements neighbor lookups that consult the `topology` attribute. For twist-wrapping topologies, when a coordinate wraps past an edge, the opposite axis is mirrored: on a Klein bottle, a cell going off the top row reappears at the bottom with its column reflected (`c' = cols - 1 - c`). Pick Topology Mode in the mode browser to move to the next topology; each pick cycles once (Ctrl+W saves a snapshot). Outside the torus, the mode draws a label in the top-right corner and edge indicators: thin lines for walls, double lines for seamless wraps, and wavy lines for twist wraps. Corner markers and midpoint arrows mark twisted edges.
 
 ### What to explore
 
@@ -390,7 +390,7 @@ The Visual FX Pipeline provides six stackable post-processing effects (scanlines
 
 ### How it works
 
-Ctrl+V opens the effects menu, where `1`--`6` toggle effects and `Esc` closes it. Effects are applied after the simulation's draw call, operating directly on the curses screen buffer via `inch()` and `chgat()`. Scanlines dim every other row. Bloom makes occupied cells bold and paints dim glow characters in the four adjacent empty cells. Trails keep a buffer of past frame occupancy maps; older frames are drawn with progressively lighter block characters. Edge detection builds an occupancy bitmap and erases interior cells (those with all four cardinal neighbors occupied). Color cycling rotates color pair indices modulo 5 based on a frame counter. CRT adds vignette darkening, scanlines, and a rounded bezel border.
+Pick Visual FX Pipeline in the mode browser to open the effects menu, where `1`--`6` toggle effects and `Esc` closes it (Ctrl+V toggles the sparkline HUD). Effects are applied after the simulation's draw call, operating directly on the curses screen buffer via `inch()` and `chgat()`. Scanlines dim every other row. Bloom makes occupied cells bold and paints dim glow characters in the four adjacent empty cells. Trails keep a buffer of past frame occupancy maps; older frames are drawn with progressively lighter block characters. Edge detection builds an occupancy bitmap and erases interior cells (those with all four cardinal neighbors occupied). Color cycling rotates color pair indices modulo 5 based on a frame counter. CRT adds vignette darkening, scanlines, and a rounded bezel border.
 
 ### What to explore
 
@@ -410,7 +410,7 @@ Recording & Export captures terminal frames during any simulation and exports th
 
 ### How it works
 
-When recording is active, each frame the system reads every cell of the curses window via `inch()`, groups runs of identical attributes, and emits ANSI escape sequences for color and style changes. A parallel plain-text capture strips all ANSI codes. Frame capture respects an FPS budget (default 10 fps) and a safety cap of 3000 frames. The `.cast` exporter writes asciinema v2 format: a JSON header line followed by `[elapsed, "o", data]` event lines. A blinking red REC indicator with the frame count and elapsed time is drawn in the top-right corner during recording. Stopping opens an export menu: `1` for `.cast`, `2` for `.txt`, `3` for both, and `d` or `Esc` to discard.
+When recording is active, each frame the system reads every cell of the curses window via `inch()`, groups runs of identical attributes, and emits ANSI escape sequences for color and style changes. A parallel plain-text capture strips all ANSI codes. Frame capture respects an FPS budget (default 10 fps) and a safety cap of 3000 frames. The `.cast` exporter writes asciinema v2 format: a JSON header line followed by `[elapsed, "o", data]` event lines. A blinking red REC indicator with the frame count and elapsed time is drawn in the top-right corner during recording. Stopping opens an export menu: `1` for `.cast`, `2` for `.txt`, `3` for both, and `d`, `q` or `Esc` to discard. `Up`/`Down` and `Enter` also pick a format. Each cell is read with `inch()`, which keeps only the low 8 bits, so non-ASCII glyphs are not recorded faithfully.
 
 ### What to explore
 
@@ -478,11 +478,11 @@ Training uses antithetic Evolution Strategies: generate N/2 random perturbations
 
 ### Background
 
-Timeline Branching lets you fork an alternate timeline from any point in a simulation's history. Scrub back through the timeline, press Ctrl+F to fork the grid state into a branch (optionally with a different rule), and watch both timelines evolve side by side in a split view with a live divergence metric.
+Timeline Branching lets you fork an alternate timeline from any point in a simulation's history. Scrub back through the history (`u` steps back, `[` and `]` jump by 10), then press Ctrl+F to fork the grid state into a branch (optionally with a different rule), and watch both timelines evolve side by side in a split view with a live divergence metric.
 
 ### How it works
 
-Forking copies the primary grid (cells, rules, topology) into a secondary grid. Both grids advance in lockstep from the fork point. The split view renders them side by side with dual sparklines and a divergence bar. Divergence is the share of cells that are alive in one grid and dead in the other: `divergence = count(alive_a != alive_b) / total_cells * 100%`. The fork menu offers two options: "Fork with same rules" (to study sensitivity to initial conditions) or "Fork with different rule" (to compare rule behavior from identical starting states). The fork-point generation and rule labels are displayed in a status bar. Ctrl+F again exits the split view.
+Forking copies the primary grid (cells, rules, topology) into a secondary grid. Both grids advance in lockstep from the fork point. The split view renders them side by side with dual sparklines and a divergence bar. Divergence is the share of cells that are alive in one grid and dead in the other: `divergence = count(alive_a != alive_b) / total_cells * 100%`. The fork menu offers two options: "Fork with same rules" (to study sensitivity to initial conditions) or "Fork with different rule" (to compare rule behavior from identical starting states). The fork-point generation and rule labels are displayed in a status bar. Ctrl+F opens the fork menu only while you are scrubbed back; without a scrubbed frame the key goes to the active mode. Ctrl+F again exits the split view.
 
 ### What to explore
 
@@ -554,6 +554,8 @@ The frozen composite renders as a full-screen truecolor image using density-mapp
 
 Export produces two files: a JSON file containing per-pixel coordinates, RGB values, and density fractions (machine-readable, suitable for further processing), and an ANSI art `.ans` file with embedded 24-bit color escapes (viewable with `cat` in any truecolor terminal).
 
+Ctrl+E starts and stops a capture; stopping freezes the composite. Ctrl+] exports it. Ctrl+F (freeze or unfreeze), `[` and `]` (window length, in steps of 50) and `{` and `}` (blend mode) act only while a capture is running or a composite exists. Otherwise those keys go to the active mode or the launchers (Ctrl+F Fireworks, `{` Chemotaxis, `}` MHD Plasma). While the spectrum overlay is on, it takes `{` and `}` first.
+
 ### What to explore
 
 - Capture a 500-frame exposure of Boids or N-Body to see orbital trajectories materialize as luminous trails.
@@ -584,6 +586,8 @@ Color dimming is RGB-aware: truecolor cells decay their original RGB values by t
 
 The entire pipeline hooks into `_tc_refresh()`, running once per draw cycle before the truecolor buffer is rendered to the terminal.
 
+Press `g` to toggle the trail (a mode that binds `g` keeps it). While it is on, `<`/`,` and `>`/`.` change the depth (1--20 frames) and Ctrl+G switches the decay curve.
+
 ### What to explore
 
 - Toggle ghost trail on Boids or N-Body to see orbital paths and flocking trajectories materialize.
@@ -600,7 +604,7 @@ The entire pipeline hooks into `_tc_refresh()`, running once per draw cycle befo
 
 ### Background
 
-Parameter Tuner adds a real-time HUD overlay for interactively adjusting any simulation mode's constants while it runs. Instead of restarting a mode with different parameters, you press `P` to open a translucent panel listing the active mode's tunable values — diffusion rates, gravity constants, coupling strengths, temperatures, thresholds — and tweak them live with immediate visual feedback.
+Parameter Tuner adds a real-time HUD overlay for interactively adjusting any simulation mode's constants while it runs. Instead of restarting a mode with different parameters, you press `P` inside a mode to open a translucent panel listing the active mode's tunable values — diffusion rates, gravity constants, coupling strengths, temperatures, thresholds — and tweak them live with immediate visual feedback. A mode that binds `P` keeps the key.
 
 ### How it works
 
@@ -687,9 +691,9 @@ Duration is configurable from 10 to 120 frames (default 45, roughly 1.5 seconds 
 
 ### What to explore
 
-- Toggle morph transitions on with `G` (Shift+G), then switch between modes to see the crossfade in action.
-- Use `[` / `]` to shorten or lengthen the transition duration — short (10 frames) feels snappy, long (90+ frames) feels dreamlike.
-- Cycle easing curves with `Ctrl+T` to compare linear (mechanical), smooth (natural), and ease-in-out (cinematic) fade profiles.
+- Toggle morph transitions on with `G` (Shift+G) at the Game of Life screen, then switch between modes to see the crossfade in action. Inside a mode that binds `G` itself, the key goes to the mode.
+- Use `[` / `]` at the Game of Life screen to shorten or lengthen the transition duration — short (10 frames) feels snappy, long (90+ frames) feels dreamlike. Inside a mode they scrub time or go to the mode.
+- Cycle easing curves with `:` to compare linear (mechanical), smooth (natural), and ease-in-out (cinematic) fade profiles.
 - Enable morph transitions alongside the screensaver/demo-reel mode for an unattended visual showcase with seamless mode changes.
 
 ---
@@ -757,7 +761,7 @@ The 2D Spatial Frequency Spectrum overlay performs a Discrete Fourier Transform 
 
 ### How it works
 
-Press `y` to toggle the overlay. It samples the current simulation state into an N×N grid (default 32×32) via `_get_minimap_data()`, the same universal sampling interface used by the minimap. The 2D DFT is computed using a separable approach:
+Press `y` to toggle the overlay (a mode that binds `y` keeps it). `{` and `}` halve and double the DFT size between 8 and 64 while the overlay is on. It samples the current simulation state into an N×N grid (default 32×32) via `_get_minimap_data()`, the same universal sampling interface used by the minimap. The 2D DFT is computed using a separable approach:
 
 ```
 For each row:    X_row[k] = Σ_n x[n] · e^(-j2πkn/N)
@@ -777,8 +781,8 @@ Caching recomputes the spectrum every 3 draw frames to stay responsive without i
 - Toggle the spectrum on Game of Life glider guns to see the directional frequency signature of repeating structures.
 - Run it on Wave Equation simulations to watch standing wave modes appear as bright spots in the frequency domain.
 - Compare Reaction-Diffusion spots vs. worms: spots produce ring-like spectra (isotropic), worms produce directional bands.
-- Increase resolution to 64×64 with `}` for finer frequency discrimination on large grids.
-- Decrease to 8×8 with `{` for a fast, coarse overview that updates with minimal lag.
+- Double the resolution with `}` (up to 64×64) for finer frequency discrimination on large grids.
+- Halve it with `{` (down to 8×8) for a fast, coarse overview that updates with minimal lag.
 - Combine with ghost trail for simultaneous temporal and spectral analysis of any simulation.
 
 ---
@@ -1000,7 +1004,7 @@ Auto-save runs every 60 seconds during simulation, and state is always saved on 
 
 Existing analytics measure statistical properties (entropy, periodicity, phase transitions) but not **causal structure and information flow**. The Emergent Computation Detector is an information-theoretic overlay that instruments any running simulation to find computational structures — glider guns, logic gates, signal channels, memory cells — using transfer entropy, integrated information, and causal density.
 
-This mode works as a universal overlay, not a standalone simulation. It samples the active simulation via `_get_minimap_data()`, meaning it works across every existing mode without modification. Toggle it with `I` during any simulation.
+This mode works as a universal overlay, not a standalone simulation. It samples the active simulation via `_get_minimap_data()`, meaning it works across every existing mode without modification. Toggle it with `I` at the Game of Life screen or in any mode that leaves `I` free; a mode that binds `I` keeps it.
 
 ### How it works
 
