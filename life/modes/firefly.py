@@ -125,12 +125,18 @@ def _enter_firefly_mode(self):
     self.firefly_menu = True
     self.firefly_menu_sel = 0
 
+
+# Flags App.__init__ defines and the main loop reads directly; exiting
+# frees the mode's simulation state but must keep these.
+_KEEP_ON_EXIT = frozenset({'firefly_mode', 'firefly_menu', 'firefly_menu_sel', 'firefly_running'})
+
+
 def _exit_firefly_mode(self):
     self.firefly_mode = False
     self.firefly_menu = False
     self.firefly_running = False
     for attr in list(vars(self)):
-        if attr.startswith('firefly_') and attr != 'firefly_mode':
+        if attr.startswith('firefly_') and attr not in _KEEP_ON_EXIT:
             try:
                 delattr(self, attr)
             except AttributeError:

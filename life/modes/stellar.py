@@ -138,12 +138,17 @@ def _enter_stellar_mode(self):
     self.stellar_menu_sel = 0
 
 
+# Flags App.__init__ defines and the main loop reads directly; exiting
+# frees the mode's simulation state but must keep these.
+_KEEP_ON_EXIT = frozenset({'stellar_mode', 'stellar_menu', 'stellar_menu_sel', 'stellar_running'})
+
+
 def _exit_stellar_mode(self):
     self.stellar_mode = False
     self.stellar_menu = False
     self.stellar_running = False
     for attr in list(vars(self)):
-        if attr.startswith('stellar_') and attr != 'stellar_mode':
+        if attr.startswith('stellar_') and attr not in _KEEP_ON_EXIT:
             try:
                 delattr(self, attr)
             except AttributeError:

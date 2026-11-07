@@ -272,13 +272,18 @@ def _enter_crispr_mode(self):
     self._flash("CRISPR-Cas9 Gene Editing & Repair — select scenario")
 
 
+# Flags App.__init__ defines and the main loop reads directly; exiting
+# frees the mode's simulation state but must keep these.
+_KEEP_ON_EXIT = frozenset({'crispr_mode', 'crispr_menu', 'crispr_menu_sel', 'crispr_running'})
+
+
 def _exit_crispr_mode(self):
     """Exit CRISPR mode."""
     self.crispr_mode = False
     self.crispr_menu = False
     self.crispr_running = False
     for attr in list(vars(self)):
-        if attr.startswith('crispr_') and attr not in ('crispr_mode',):
+        if attr.startswith('crispr_') and attr not in _KEEP_ON_EXIT:
             try:
                 delattr(self, attr)
             except AttributeError:
