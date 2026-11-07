@@ -293,35 +293,52 @@ Terrain yields per cell:
   Tundra       1     1     0
   Jungle       3     2     2
 
+Resources per tick (summed over the tribe's territory):
+  food_yield, prod_yield, gold_yield = terrain yields + tech bonuses
+  Agrarian:   food_yield *= 1 + 0.2 * trait_strength
+  Mercantile: gold_yield *= 1 + 0.3 * trait_strength
+  gold_yield += num_trade_partners * 2.0 * trade_bonus
+  food, prod and gold each grow by 0.1 * their yield
+
 Population growth:
   food_per_cap = tribe.food / tribe.pop
   If food_per_cap > 1.0:
     growth = min(pop * 0.03, food_per_cap * 0.5)
+    pop += max(1, int(growth)); food -= growth * 0.5
   If food_per_cap < 0.3:
-    famine_loss = pop * 0.05  (tribe dies if pop <= 0)
+    famine_loss = max(1, int(pop * 0.05))  (tribe dies if pop <= 0)
 
 Research progress per tick:
   progress += (prod_yield * 0.05 + pop * 0.01) * sci_multiplier
+  sci_multiplier = 1 + 0.3 * trait_strength  (Scientific trait)
   Tech discovered when progress >= cost
 
-Military strength:
+Military strength (per war step between neighbors):
   strength = attack * pop * 0.01 + defense * 0.5
-  Combat outcome: P(win) = strength / (strength_a + strength_b)
+  strength *= 1.2 if Warlike
+  P(a wins) = strength_a / (strength_a + strength_b)
+  The winner takes one border cell from the loser.
+  Each step has a 5% chance of ending in peace.
 
 Cultural diffusion:
-  influence = trait_strength * culture * 0.01
-  Radiates from settlements with radius ~ sqrt(culture)
-  Decays as 1/manhattan_distance
-  Trait adoption when local influence > 0.5
+  strength = trait_strength * culture * 0.01
+  Each trait radiates from every settlement within radius
+    max(3, int(sqrt(culture)))
+  influence = strength / manhattan_distance
+  map[cell][trait] += 0.02 * influence  (capped at 1.0)
+  A tribe with fewer than 4 traits has a 2% chance per tick to adopt
+  a trait whose map value at its first settlement exceeds 0.5
 
-Trade income:
-  gold += num_trade_partners * 2.0 * trade_bonus
+Trade:
+  Only tribes with touching territory can trade or fight.
+  p_trade = 0.08 + 0.1 for each Mercantile tribe of the pair
+            + 0.05 if the first tribe is Peaceful
 
-War declaration probability:
+War declaration (tribes that are not trade partners):
   p_war = aggression * 0.04
-        + 0.06 * warlike_strength  (if Warlike trait)
-        * 0.2                      (if Peaceful trait)
-        * 1.5                      (if pop > 1.5 * enemy_pop)
+  p_war += 0.06 * trait_strength   (if Warlike)
+  p_war *= 0.2                     (if Peaceful)
+  p_war *= 1.5                     (if pop > 1.5 * enemy_pop)
 ```
 
 The tech tree contains 20 technologies from Fire and Tool-Making through Gunpowder and Printing Press, with prerequisite chains and effects on food, production, attack, defense, movement, trade, and culture. Ten cultural traits (Warlike, Peaceful, Nomadic, Agrarian, Mercantile, Religious, Artistic, Scientific, Expansionist, Isolationist) modify behavior and can spread between civilizations through cultural diffusion.
@@ -339,12 +356,13 @@ The tech tree contains 20 technologies from Fire and Tool-Making through Gunpowd
 
 ### What to look for
 
-- **Geographic determinism**: River Valleys civilizations develop faster thanks to high food yields (River tiles produce 5 food), enabling larger populations and faster research. Archipelago civilizations remain isolated until Navigation is discovered.
-- **Tech race dynamics**: Watch the sidebar to see which civilizations lead in technology count. The Scientific trait provides a 30% research bonus, while Agrarian civilizations grow larger populations that also contribute to research.
+- **Geographic determinism**: River tiles yield 5 food and Mountains yield 4 production, so the terrain a tribe holds shapes its growth and research. "River Valleys" has the most river sources. A tribe can claim water tiles only after it discovers Navigation, which matters most in "Archipelago".
+- **Tech race dynamics**: Watch the sidebar to see which civilizations lead in technology count. The Scientific trait adds up to a 30% research bonus, scaled by its strength. Population also feeds research, and the Agrarian trait raises food yield.
 - **Cultural diffusion**: Switch to culture view (`v`) to see traits radiating outward from settlements. Civilizations near a culturally dominant neighbor may adopt foreign traits when local influence exceeds 0.5.
-- **War and conquest**: Warlike civilizations with population advantages tend to expand aggressively. Conquered civilizations' territory is absorbed by the victor.
-- **Trade networks**: Trade view shows which civilizations have established trade partnerships. Mercantile traits increase trade probability, and each partner adds 2.0 * trade_bonus gold per tick.
-- **Rise and fall**: Event log (`l`) narrates the history -- tech discoveries, war declarations, peace treaties, settlements founded, and civilizations that perish from famine or conquest.
+- **War and conquest**: Warlike tribes and tribes with a population lead are more likely to declare war. A tribe that falls to zero population or territory is conquered, and the victor absorbs its remaining territory.
+- **Trade networks**: Trade view shows which civilizations have established trade partnerships. Mercantile traits increase trade probability, and each partner adds 2.0 * trade_bonus to the gold yield.
+- **Rise and fall**: The event log (`l`) narrates the history -- tech discoveries, war declarations, peace treaties, settlements founded, and civilizations that perish from famine or conquest.
+- **Keys**: `Space` play/pause, `n` step, `v` cycle view (political, terrain, culture, trade), `l` event log, `+`/`-` steps per frame, `[`/`]` speed, `r` restart, `R` menu, `q` or `Esc` exit.
 
 ### References
 
