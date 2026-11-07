@@ -171,7 +171,7 @@ Presets:           buoyancy  turbulence  cooling  smoke_rate  wind
   Smoke Stack      0.18      0.05        0.01     0.5         0.03
 ```
 
-**Controls:** `Space`=play/pause, `n`=step, arrows or `hjkl`=move cursor, `f` or `Enter`=add or remove a fire source at the cursor, `F`=add fuel around the cursor, `b/B`=buoyancy up/down, `t/T`=turbulence up/down, `w/W`=wind up/down, `c/C`=cooling up/down, `>/<`=steps per frame (1-10), `R`=menu, `q`=exit. There is no reset key. Use `R` and pick the scene again.
+**Controls:** `Space`=play/pause, `n` or `.`=step, arrows or `hjkl`=move cursor, `f` or `Enter`=add or remove a fire source at the cursor, `F`=add fuel around the cursor, `b/B`=buoyancy up/down, `t/T`=turbulence up/down, `w/W`=wind up/down, `c/C`=cooling up/down, `>/<`=steps per frame (1-10), `R`=menu, `q` or `Esc`=exit. There is no reset key. Use `R` and pick the scene again.
 
 **What to look for.** Campfire shows a steady flickering flame with a rising smoke plume. Wildfire Spread ignites fuel on the left, and the fire moves right across the fuel bed, helped by the wind. Explosion Burst starts with a radial velocity burst. More turbulence makes the flames billow. More buoyancy makes them taller and thinner. Fire sources flicker with intensity 0.7 + random * 0.3.
 
@@ -366,7 +366,7 @@ Bass Tunnel view:
 
 **Presets (6):** Spectrum Bars, Waveform, Particles, Combined, Bass Tunnel, Frequency Rain. Each preset only picks the starting view.
 
-**Controls:** `Space`=play/pause, `v`=next view, `c`=color scheme, `+/-`=sensitivity (0.1-3.0), `b/B`=more/fewer bars (8-64), `n/N`=next/previous preset, `r`=reset, `R` or `m`=menu, `q`=exit.
+**Controls:** `Space`=play/pause, `v`=next view, `c`=color scheme, `+/-`=sensitivity (0.1-3.0), `b/B`=more/fewer bars (8-64), `n/N`=next/previous preset, `r`=reset, `R` or `m`=menu, `q` or `Esc`=exit.
 
 **What to look for.** The spectrum view shows bars colored by frequency band (bass/mid/high) with peak markers that decay slowly. A detected beat spawns particles and flashes the waveform view. The tunnel scrolls faster with bass energy. Four color schemes (spectrum, fire, ocean, neon) map intensity to different palettes. Sensitivity scales the synthesized amplitudes before clamping.
 
@@ -427,7 +427,7 @@ Flake sizes: 0=small, 1=medium, 2=large
   (only Wet Spring Snow)
 ```
 
-**Controls:** `Space`=play/pause, `n` or `.`=step, `+/-`=speed (1-10), `w/W`=wind up/down, `d`=flip wind direction, `f/F`=more/fewer flakes (20-800), `t/T`=warmer/colder (-30 to +3C), `i`=info panel, `r`=reset, `R` or `m`=menu, `q`=exit.
+**Controls:** `Space`=play/pause, `n` or `.`=step, `+/-`=speed (1-10), `w/W`=wind up/down, `d`=flip wind direction, `f/F`=more/fewer flakes (20-800), `t/T`=warmer/colder (-30 to +3C), `i`=info panel, `r`=reset, `R` or `m`=menu, `q` or `Esc`=exit.
 
 **What to look for.** In Gentle Snowfall, flakes trace slow wavy paths. In Heavy Blizzard and Arctic Whiteout, the flake count and wind make near-horizontal streaks with low visibility. Snow piles into uneven drifts shaped by the wind. Flipping the wind (`d`) slowly reshapes them. Above 0C, flakes fall 20% slower. In strong wind, drift particles blow off the tops of piles.
 
@@ -488,7 +488,7 @@ Presets:         density  speed  chars
   Rainbow        0.40     2      full set, rainbow color
 ```
 
-**Controls:** `Space`=play/pause, `n` or `.`=step, `s/S` or `+/-`=faster/slower (1-10), `d/D`=density up/down, `c`=cycle color (green, blue, rainbow), `i`=info overlay, `r`=reset, `R` or `m`=menu, `q`=exit.
+**Controls:** `Space`=play/pause, `n` or `.`=step, `s/S` or `+/-`=faster/slower (1-10), `d/D`=density up/down, `c`=cycle color (green, blue, rainbow), `i`=info overlay, `r`=reset, `R` or `m`=menu, `q` or `Esc`=exit.
 
 **What to look for.** The white head of each stream reads as an advancing cursor, and the tail fades into the background. Character mutation makes the streams flicker. Dense Rain fills most columns with falling text. Sparse Drizzle leaves large gaps, so you can follow single streams. In rainbow mode, color depends on the column and the frame counter, so diagonal color bands scroll across the screen.
 
