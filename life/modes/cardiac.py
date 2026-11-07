@@ -83,6 +83,7 @@ _DIFF_PURKINJE = 3.5   # fast Purkinje conduction
 _DIFF_HIS = 2.5        # His bundle conduction
 _DIFF_AV_DELAY = 0.08  # slow AV node conduction (delay)
 _DIFF_SCAR = 0.0       # no conduction through scar
+_DIFF_COUPLING_MAX = 0.5  # cap on dt * total coupling per cell (explicit stability)
 
 # Pacemaker
 _SA_PERIOD = 50        # ticks between SA node fires (~60 bpm at display rate)
@@ -535,6 +536,7 @@ def _cardiac_step(self):
             # Diffusion: sum contributions from neighbors
             d_local = diff[r][c]
             laplacian = 0.0
+            d_total = 0.0
             for dr, dc in _NEIGHBORS_4:
                 rr, cc = r + dr, c + dc
                 if 0 <= rr < rows and 0 <= cc < cols:
@@ -544,6 +546,12 @@ def _cardiac_step(self):
                         # Use geometric mean of coupling coefficients
                         d_eff = math.sqrt(d_local * d_n) if d_local > 0 and d_n > 0 else 0.0
                         laplacian += d_eff * (V[rr][cc] - v)
+                        d_total += d_eff
+
+            # Explicit diffusion is unstable once dt * sum(d_eff) exceeds 1:
+            # cells then flip between the voltage clamps every tick.
+            if dt * d_total > _DIFF_COUPLING_MAX:
+                laplacian *= _DIFF_COUPLING_MAX / (dt * d_total)
 
             new_v = v + dt * (dv + laplacian)
             new_w = w + dt * dw
