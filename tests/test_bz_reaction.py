@@ -2,7 +2,7 @@
 import math
 import random
 from tests.conftest import make_mock_app
-from life.modes.bz_reaction import register, BZ_PRESETS
+from life.modes.bz_reaction import register, BZ_FLOOR, BZ_PRESETS
 
 
 class TestBZReaction:
@@ -140,54 +140,76 @@ class TestBZReaction:
                 break
         assert differs, "BZ step should change the activator field"
 
-    def test_step_oregonator_reaction(self):
-        """Verify the Oregonator reaction: da = a*(alpha - a - beta*c) + D*lap_a."""
+    def test_step_cyclic_rule(self):
+        """Each species grows on the one it feeds on and shrinks under its predator."""
         self.app._bz_init(0)
         rows, cols = self.app.bz_rows, self.app.bz_cols
         alpha = self.app.bz_alpha
         beta = self.app.bz_beta
         gamma = self.app.bz_gamma
         diff = self.app.bz_diffusion
-        dt = 0.05
+        a, b, c = self.app.bz_a, self.app.bz_b, self.app.bz_c
 
-        # Pick a cell away from boundaries for simple Laplacian check
-        r, c = rows // 2, cols // 2
-        av = self.app.bz_a[r][c]
-        bv = self.app.bz_b[r][c]
-        cv = self.app.bz_c[r][c]
-        lap_a = (self.app.bz_a[(r - 1) % rows][c] + self.app.bz_a[(r + 1) % rows][c]
-                 + self.app.bz_a[r][(c - 1) % cols] + self.app.bz_a[r][(c + 1) % cols]
-                 - 4.0 * av)
-        expected_da = av * (alpha - av - beta * cv) + diff * lap_a
-        expected_na = max(0.0, min(1.0, av + dt * expected_da))
+        def mean(g, r, col):
+            return g[r][col] + diff * (
+                g[(r - 1) % rows][col] + g[(r + 1) % rows][col]
+                + g[r][(col - 1) % cols] + g[r][(col + 1) % cols]
+                - 4.0 * g[r][col])
+
+        r, col = rows // 2, cols // 2
+        am, bm, cm = mean(a, r, col), mean(b, r, col), mean(c, r, col)
+        expected = (
+            am + am * (alpha * bm - gamma * cm),
+            bm + bm * (beta * cm - alpha * am),
+            cm + cm * (gamma * am - beta * bm),
+        )
+        expected = tuple(min(1.0, v) for v in expected)
 
         self.app._bz_step()
-        actual_na = self.app.bz_a[r][c]
-        assert abs(actual_na - expected_na) < 1e-10, (
-            f"Oregonator mismatch at ({r},{c}): expected {expected_na}, got {actual_na}")
+        actual = (self.app.bz_a[r][col], self.app.bz_b[r][col], self.app.bz_c[r][col])
+        for got, want in zip(actual, expected):
+            if want < BZ_FLOOR:
+                assert 0.0 <= got < BZ_FLOOR
+            else:
+                assert abs(got - want) < 1e-10
 
-    def test_step_inhibitor_tracks_activator(self):
-        """Inhibitor: db = a - b, so b should move toward a."""
+    def test_species_at_zero_grows_back(self):
+        """A species wiped out everywhere returns instead of freezing the grid."""
         self.app._bz_init(0)
-        r, c = self.app.bz_rows // 2, self.app.bz_cols // 2
-        av = self.app.bz_a[r][c]
-        bv = self.app.bz_b[r][c]
-        dt = 0.05
-        expected_nb = max(0.0, min(1.0, bv + dt * (av - bv)))
-        self.app._bz_step()
-        assert abs(self.app.bz_b[r][c] - expected_nb) < 1e-10
+        rows, cols = self.app.bz_rows, self.app.bz_cols
+        self.app.bz_a = [[1.0] * cols for _ in range(rows)]
+        self.app.bz_b = [[0.0] * cols for _ in range(rows)]
+        self.app.bz_c = [[0.0] * cols for _ in range(rows)]
+        peak_b = peak_c = 0.0
+        for _ in range(60):
+            self.app._bz_step()
+            peak_b = max(peak_b, max(v for row in self.app.bz_b for v in row))
+            peak_c = max(peak_c, max(v for row in self.app.bz_c for v in row))
+        assert peak_b > 0.5 and peak_c > 0.5
 
-    def test_step_recovery_dynamics(self):
-        """Recovery: dc = gamma*(a - c), recovery follows activator."""
-        self.app._bz_init(0)
-        r, c = self.app.bz_rows // 2, self.app.bz_cols // 2
-        av = self.app.bz_a[r][c]
-        cv = self.app.bz_c[r][c]
-        gamma = self.app.bz_gamma
-        dt = 0.05
-        expected_nc = max(0.0, min(1.0, cv + dt * gamma * (av - cv)))
-        self.app._bz_step()
-        assert abs(self.app.bz_c[r][c] - expected_nc) < 1e-10
+    def test_noise_start_keeps_waves_going(self):
+        """A noisy start must not settle to a uniform state or saturate."""
+        random.seed(42)
+        self.app._bz_init(3)  # Turbulent starts from random noise
+        for _ in range(300):
+            self.app._bz_step()
+        cells = [v for row in self.app.bz_a for v in row]
+        mean = sum(cells) / len(cells)
+        spread = (sum((v - mean) ** 2 for v in cells) / len(cells)) ** 0.5
+        assert spread > 0.03, "activator went uniform"
+        assert 0.02 < mean < 0.9, "activator died out or saturated"
+
+    def test_every_preset_stays_patterned_for_400_steps(self):
+        """No preset may fade to a uniform grid within 400 steps."""
+        for idx in range(len(BZ_PRESETS)):
+            random.seed(7 + idx)
+            self.app._bz_init(idx)
+            for _ in range(400):
+                self.app._bz_step()
+            cells = [v for row in self.app.bz_a for v in row]
+            mean = sum(cells) / len(cells)
+            spread = (sum((v - mean) ** 2 for v in cells) / len(cells)) ** 0.5
+            assert spread > 0.03, BZ_PRESETS[idx][0]
 
     def test_diffusion_spreads_activation(self):
         """A point excitation should diffuse to neighbors."""
@@ -261,8 +283,8 @@ class TestBZReaction:
             assert self.app.bz_preset_name == name
 
     # ── Quiescent state stability ────────────────────────────────────
-    def test_zero_grid_stays_zero(self):
-        """A grid of all zeros should remain all zeros (no spontaneous activation)."""
+    def test_zero_grid_stays_dark(self):
+        """An all-zero grid gets only traces under the floor, no activation."""
         self.app._bz_init(0)
         rows, cols = self.app.bz_rows, self.app.bz_cols
         for r in range(rows):
@@ -274,6 +296,13 @@ class TestBZReaction:
             self.app._bz_step()
         for r in range(rows):
             for c in range(cols):
-                assert self.app.bz_a[r][c] == 0.0
-                assert self.app.bz_b[r][c] == 0.0
-                assert self.app.bz_c[r][c] == 0.0
+                assert self.app.bz_a[r][c] < BZ_FLOOR
+                assert self.app.bz_b[r][c] < BZ_FLOOR
+                assert self.app.bz_c[r][c] < BZ_FLOOR
+
+    def test_diffusion_key_stops_at_quarter(self):
+        """D is capped at 0.25, where the cell's own weight in its mean hits zero."""
+        self.app._bz_init(0)
+        for _ in range(30):
+            self.app._handle_bz_key(ord("D"))
+        assert self.app.bz_diffusion == 0.25

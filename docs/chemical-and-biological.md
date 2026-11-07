@@ -35,36 +35,35 @@ Seeding places circular patches of V (with U about 0.5) into a uniform U=1, V=0 
 
 ## BZ Reaction
 
-**Background** — The Belousov-Zhabotinsky (BZ) reaction is the most famous example of a chemical oscillator. Discovered by Boris Belousov in 1951 and characterised by Anatol Zhabotinsky in the 1960s, it produces stunning spiral and target wave patterns in a dish of cerium/malonic-acid solution. The simulation uses an Oregonator-inspired three-variable model (activator, inhibitor, recovery) that borrows the excitable-medium idea behind these self-organising waves.
+**Background** — The Belousov-Zhabotinsky (BZ) reaction is the most famous example of a chemical oscillator. Discovered by Boris Belousov in 1951 and characterised by Anatol Zhabotinsky in the 1960s, it produces stunning spiral and target wave patterns in a dish of cerium/malonic-acid solution. The simulation does not integrate chemical kinetics. It uses a three-species cyclic cellular automaton: each species grows on the one it feeds on and shrinks under the one that feeds on it, so the three chase each other round the grid in waves.
 
-**Formulation** — Three coupled fields evolve on a 2D grid with wrapping boundaries:
+**Formulation** — Three fields (a, b, c) hold concentrations in [0, 1] on a 2D grid with wrapping boundaries. Each step, every cell first takes the mean of each species over itself and its four neighbours, then updates from those means:
 
 ```
-da/dt = a * (alpha - a - beta*c) + D * laplacian(a)     (activator)
-db/dt = a - b                                             (inhibitor)
-dc/dt = gamma * (a - c)                                   (recovery)
+mean(x) = x + D * laplacian(x)         (5-point stencil, wrapping)
+
+a' = a + a * (alpha*b - gamma*c)
+b' = b + b * (beta*c  - alpha*a)
+c' = c + c * (gamma*a - beta*b)
 
 Where:
-  a = activator concentration (autocatalytic, excitable)
-  b = inhibitor concentration (tracks activator with delay)
-  c = recovery variable (slowly follows activator, suppresses re-excitation)
-  alpha = activator self-amplification rate (presets 0.6-1.4; keys allow 0.1-3.0)
-  beta  = inhibitor feedback strength (presets 0.7-1.2; fixed per preset)
-  gamma = recovery rate (presets 0.5-1.2; keys allow 0.1-3.0)
-  D     = diffusion coefficient for activator (presets 0.10-0.35; keys allow 0.01-1.0)
-  dt    = 0.05 (Euler step)
-  laplacian = 5-point stencil, wrapping boundaries
+  a eats b at rate alpha, b eats c at rate beta, c eats a at rate gamma
+  alpha = presets 0.9-1.1; keys allow 0.1-3.0
+  beta  = presets 0.9-1.1; fixed per preset
+  gamma = presets 0.9-1.1; keys allow 0.1-3.0
+  D     = presets 0.05-0.10; keys allow 0.01-0.25
 ```
 
-Values are clamped to [0, 1] after each step. Eight presets: Classic Spirals, Dense Spirals, Slow Waves, Turbulent, Target Waves, Multi-Spiral, Gentle Ripples and Fast Chaos. Each picks a start state: a spiral seed (broken wavefront), a center blob, several spiral seeds, random seed patches, or random noise.
+Values are capped at 1 after each step, and there is no time step. A value below 0.001 becomes a random trace under 0.001, because a species at exactly 0 would never grow back. The `D` key stops at 0.25, where a cell's own weight in its mean reaches zero.
 
-This model has a uniform steady state, a = b = c = alpha / (1 + beta), and the diffusion term smooths the field toward it. The seeded fronts therefore fade within a few hundred steps and the whole grid settles to that one level; the model does not sustain rotating spirals or repeating target rings. `p` or a mouse click adds a new excitation patch, which spreads and fades the same way.
+Every preset starts from random noise in [0, 0.3] in all three fields, then adds its seed on top: a broken wavefront, a center blob, scattered patches, four half-ring seeds, or nothing more. The eight presets are Classic Spirals, Dense Spirals, Slow Waves, Turbulent, Target Waves, Multi-Spiral, Gentle Ripples and Fast Chaos. Their rates lie between 0.9 and 1.1.
 
-**What to look for** — Watch the seeded wavefront spread and relax toward the uniform level while it lasts. The color follows the activator and the recovery variable: bright yellow for a > 0.7, cyan or red for medium activation, magenta or green for the transitional range, blue for deep refractory cells, and dark for quiescent cells. `a`/`A` lower or raise alpha, `g`/`G` gamma and `d`/`D` the diffusion; `+`/`-` set the steps per frame. Use `p` to re-excite the field and compare how the presets relax. Real BZ dishes sustain spirals and target rings; this three-variable model does not.
+**What to look for** — Bands of the three species chase each other across the grid and keep moving instead of fading to one level. The preset names describe the starting seed: the bands curve and break up, but closed spirals are not guaranteed. On a 24x80 terminal the noise presets (Turbulent, Gentle Ripples) can fall into a grid-wide pulse, where the whole field changes color together; `p` breaks it up.
+
+The color follows a, and c picks the shade: bright yellow where a is above 0.7, then green or white, red or cyan, and dim magenta or green as a falls. Cells where a and c are both under 0.05 stay dark. `a`/`A` lower or raise alpha, `g`/`G` gamma and `d`/`D` the diffusion; `+`/`-` set the steps per frame. `p` or a mouse click adds a patch of a.
 
 **References**
 - Zhabotinsky, A. M. "A history of chemical oscillations and waves." *Chaos* 1 (1991): 379-386. https://doi.org/10.1063/1.857857
-- Field, R. J. & Noyes, R. M. "Oscillations in chemical systems. IV. Limit cycle behavior in a model of a real chemical reaction." *Journal of Chemical Physics* 60 (1974): 1877-1884. https://doi.org/10.1063/1.1682069
 
 ---
 

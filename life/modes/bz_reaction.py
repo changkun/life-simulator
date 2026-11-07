@@ -1,31 +1,36 @@
-"""BZ Reaction — Belousov-Zhabotinsky chemical waves in an excitable medium, from a three-variable Oregonator-style model."""
+"""BZ Reaction — Belousov-Zhabotinsky chemical waves, from a three-species cyclic cellular automaton."""
 import curses
 import math
 import random
 import time
 
+# The rule only scales a species, so one that reaches 0 never grows back and
+# the grid can freeze. Values below this floor get a random trace under it
+# instead, so every species can return.
+BZ_FLOOR = 1e-3
+
 BZ_PRESETS = [
     # (name, description, alpha, beta, gamma, diffusion, init_type)
-    # alpha: activator self-amplification
-    # beta: inhibitor feedback strength
-    # gamma: recovery/decay rate
-    # diffusion: spatial diffusion coefficient
-    ("Classic Spirals", "Self-organizing spiral wavefronts",
-     1.0, 1.0, 1.0, 0.2, "spiral_seed"),
-    ("Dense Spirals", "Many small tightly-wound spirals",
-     1.2, 1.0, 0.8, 0.15, "random_seeds"),
-    ("Slow Waves", "Large slow-moving circular waves",
-     0.7, 0.8, 0.6, 0.3, "center_seed"),
-    ("Turbulent", "Chaotic spiral breakup and turbulence",
-     1.4, 1.2, 1.0, 0.1, "random_noise"),
-    ("Target Waves", "Concentric ring patterns from center",
-     0.9, 1.0, 0.9, 0.25, "center_seed"),
-    ("Multi-Spiral", "Multiple competing spiral centers",
-     1.0, 1.0, 1.0, 0.2, "multi_spiral"),
-    ("Gentle Ripples", "Soft low-contrast undulations",
-     0.6, 0.7, 0.5, 0.35, "random_noise"),
-    ("Fast Chaos", "Rapid evolution with spiral fragments",
-     1.3, 0.9, 1.2, 0.12, "random_seeds"),
+    # alpha: how fast a eats b
+    # beta: how fast b eats c
+    # gamma: how fast c eats a
+    # diffusion: weight of the four neighbours in each cell's mean
+    ("Classic Spirals", "Waves grow from a broken front",
+     1.0, 1.0, 1.0, 0.05, "spiral_seed"),
+    ("Dense Spirals", "Wave patches grow from scattered seeds",
+     1.1, 1.0, 1.0, 0.05, "random_seeds"),
+    ("Slow Waves", "Waves spread from a central blob",
+     1.0, 1.0, 0.9, 0.05, "center_seed"),
+    ("Turbulent", "Irregular waves from random noise",
+     1.1, 1.1, 1.1, 0.1, "random_noise"),
+    ("Target Waves", "Waves spread from a central blob, lower beta",
+     1.0, 0.9, 1.0, 0.05, "center_seed"),
+    ("Multi-Spiral", "Four half-ring seeds compete",
+     1.0, 1.1, 1.0, 0.05, "multi_spiral"),
+    ("Gentle Ripples", "Soft waves from random noise",
+     0.9, 0.9, 0.9, 0.1, "random_noise"),
+    ("Fast Chaos", "Scattered seeds, c eats a faster",
+     1.0, 1.0, 1.1, 0.05, "random_seeds"),
 ]
 
 
@@ -65,10 +70,11 @@ def _bz_init(self, preset_idx: int):
     self.bz_generation = 0
     self.bz_steps_per_frame = 1
 
-    # Initialize grids: a=activator, b=inhibitor, c=recovery
-    self.bz_a = [[0.0] * cols for _ in range(rows)]
-    self.bz_b = [[0.0] * cols for _ in range(rows)]
-    self.bz_c = [[0.0] * cols for _ in range(rows)]
+    # Low noise in all three species: the cyclic rule cannot grow a species
+    # that is exactly zero, so the seeds below sit on this background.
+    self.bz_a = [[random.uniform(0.0, 0.3) for _ in range(cols)] for _ in range(rows)]
+    self.bz_b = [[random.uniform(0.0, 0.3) for _ in range(cols)] for _ in range(rows)]
+    self.bz_c = [[random.uniform(0.0, 0.3) for _ in range(cols)] for _ in range(rows)]
 
     cr, cc = rows // 2, cols // 2
 
@@ -80,7 +86,7 @@ def _bz_init(self, preset_idx: int):
                 # Vertical wavefront on left half
                 if c2 < cc and abs(r - cr) < rows // 4:
                     self.bz_a[r][c2] = 1.0
-                # Break the wavefront — only top half gets the recovery
+                # Break the wavefront — only the top half gets species c
                 if c2 < cc and r < cr:
                     self.bz_c[r][c2] = 0.5
     elif init_type == "center_seed":
@@ -90,7 +96,7 @@ def _bz_init(self, preset_idx: int):
                 dx = (c2 - cc) / max(cols, 1) * 6
                 dy = (r - cr) / max(rows, 1) * 6
                 d2 = dx * dx + dy * dy
-                self.bz_a[r][c2] = math.exp(-d2 * 2.0)
+                self.bz_a[r][c2] = max(self.bz_a[r][c2], math.exp(-d2 * 2.0))
     elif init_type == "random_seeds":
         # Scattered small excitation patches
         num_seeds = max(8, (rows * cols) // 300)
@@ -142,15 +148,16 @@ def _bz_init(self, preset_idx: int):
 
 
 def _bz_step(self):
-    """Advance the BZ Reaction by one time step.
+    """Advance the BZ Reaction by one step of the three-species cyclic rule.
 
-    Uses the Oregonator-inspired 3-variable model:
-        a' = a(alpha - a - beta*c) + D*∇²a  (activator: autocatalytic, inhibited by recovery)
-        b' = a - b                            (inhibitor: tracks activator with delay)
-        c' = gamma*(a - c)                    (recovery: slowly follows activator)
-
-    This produces the characteristic spiral waves seen in the
-    Belousov-Zhabotinsky chemical reaction.
+    Each cell takes the neighbourhood mean of every species, then:
+        a' = a + a*(alpha*b - gamma*c)
+        b' = b + b*(beta*c - alpha*a)
+        c' = c + c*(gamma*a - beta*b)
+    Each species grows on the one it feeds on and shrinks under the one that
+    feeds on it, so the three chase each other round in waves.  The mean is
+    x + diffusion * laplacian(x) (5-point stencil, wrapping).  Results are
+    capped at 1, and values below BZ_FLOOR become a random trace under it.
     """
     a = self.bz_a
     b = self.bz_b
@@ -160,45 +167,33 @@ def _bz_step(self):
     beta = self.bz_beta
     gamma = self.bz_gamma
     diff = self.bz_diffusion
-    dt = 0.05
+    floor = BZ_FLOOR
+    rnd = random.random
 
     new_a = [[0.0] * cols for _ in range(rows)]
     new_b = [[0.0] * cols for _ in range(rows)]
     new_c = [[0.0] * cols for _ in range(rows)]
 
     for r in range(rows):
-        a_r = a[r]
-        b_r = b[r]
-        c_r = c[r]
+        up = (r - 1) % rows
+        dn = (r + 1) % rows
+        a_r, b_r, c_r = a[r], b[r], c[r]
         for col in range(cols):
+            lt = (col - 1) % cols
+            rt = (col + 1) % cols
             av = a_r[col]
             bv = b_r[col]
             cv = c_r[col]
+            am = av + diff * (a[up][col] + a[dn][col] + a_r[lt] + a_r[rt] - 4.0 * av)
+            bm = bv + diff * (b[up][col] + b[dn][col] + b_r[lt] + b_r[rt] - 4.0 * bv)
+            cm = cv + diff * (c[up][col] + c[dn][col] + c_r[lt] + c_r[rt] - 4.0 * cv)
 
-            # Laplacian of activator (5-point stencil, wrapping)
-            up = a[(r - 1) % rows][col]
-            dn = a[(r + 1) % rows][col]
-            lt = a_r[(col - 1) % cols]
-            rt = a_r[(col + 1) % cols]
-            lap_a = up + dn + lt + rt - 4.0 * av
-
-            # Reaction dynamics
-            # Activator: autocatalytic growth, saturated by itself and suppressed by recovery
-            da = av * (alpha - av - beta * cv) + diff * lap_a
-            # Inhibitor: slowly tracks activator
-            db = av - bv
-            # Recovery: driven by activator, decays
-            dc = gamma * (av - cv)
-
-            # Euler step
-            na = av + dt * da
-            nb = bv + dt * db
-            nc = cv + dt * dc
-
-            # Clamp to [0, 1]
-            new_a[r][col] = max(0.0, min(1.0, na))
-            new_b[r][col] = max(0.0, min(1.0, nb))
-            new_c[r][col] = max(0.0, min(1.0, nc))
+            na = min(1.0, am + am * (alpha * bm - gamma * cm))
+            nb = min(1.0, bm + bm * (beta * cm - alpha * am))
+            nc = min(1.0, cm + cm * (gamma * am - beta * bm))
+            new_a[r][col] = na if na >= floor else floor * rnd()
+            new_b[r][col] = nb if nb >= floor else floor * rnd()
+            new_c[r][col] = nc if nc >= floor else floor * rnd()
 
     self.bz_a = new_a
     self.bz_b = new_b
@@ -259,23 +254,23 @@ def _handle_bz_key(self, key: int) -> bool:
         self.bz_steps_per_frame = choices[max(idx - 1, 0)]
         self._flash(f"Speed: {self.bz_steps_per_frame} steps/frame")
         return True
-    # Alpha (activator rate): a/A
+    # Alpha (a eats b): a/A
     if key == ord("a"):
         self.bz_alpha = max(0.1, self.bz_alpha - 0.1)
-        self._flash(f"Alpha (activator): {self.bz_alpha:.1f}")
+        self._flash(f"Alpha (a eats b): {self.bz_alpha:.1f}")
         return True
     if key == ord("A"):
         self.bz_alpha = min(3.0, self.bz_alpha + 0.1)
-        self._flash(f"Alpha (activator): {self.bz_alpha:.1f}")
+        self._flash(f"Alpha (a eats b): {self.bz_alpha:.1f}")
         return True
-    # Gamma (recovery rate): g/G
+    # Gamma (c eats a): g/G
     if key == ord("g"):
         self.bz_gamma = max(0.1, self.bz_gamma - 0.1)
-        self._flash(f"Gamma (recovery): {self.bz_gamma:.1f}")
+        self._flash(f"Gamma (c eats a): {self.bz_gamma:.1f}")
         return True
     if key == ord("G"):
         self.bz_gamma = min(3.0, self.bz_gamma + 0.1)
-        self._flash(f"Gamma (recovery): {self.bz_gamma:.1f}")
+        self._flash(f"Gamma (c eats a): {self.bz_gamma:.1f}")
         return True
     # Diffusion: d/D
     if key == ord("d"):
@@ -283,7 +278,8 @@ def _handle_bz_key(self, key: int) -> bool:
         self._flash(f"Diffusion: {self.bz_diffusion:.2f}")
         return True
     if key == ord("D"):
-        self.bz_diffusion = min(1.0, self.bz_diffusion + 0.02)
+        # Above 0.25 a cell's own weight in its mean turns negative.
+        self.bz_diffusion = min(0.25, self.bz_diffusion + 0.02)
         self._flash(f"Diffusion: {self.bz_diffusion:.2f}")
         return True
     # Perturb: p — add random excitation patch
