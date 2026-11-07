@@ -662,7 +662,7 @@ Debris dynamics:
   Spawned at ground level when touch_ground = true
   Forces:
     Tangential (rotation): a_t = (-dy/dist) * f * rotation_speed * 0.15
-    Inward pull:           a_in = -(dx/dist) * f * 0.2
+    Inward pull:           a_in = -(dx/dist) * f * 0.2, -(dy/dist) * f * 0.1
     Updraft:               a_up = -updraft_strength * f * 0.15
     Gravity:               vy += 0.04
     Drag:                  v *= 0.97
@@ -672,11 +672,12 @@ Lightning generation (branching):
   Branch with probability 0.2, capped at 30 segments
   Flash duration: 3 frames
 
-Storm presets: EF3 (strong), Rope (narrow), Outbreak (severe),
-               Rain-Wrapped (hidden), Night (dark), Dust Devil (dry, no rain)
+Presets: EF3 Wedge Tornado, Rope Tornado, Supercell Outbreak (one large
+         vortex with the strongest updraft), Rain-Wrapped (500 rain particles),
+         Nighttime Storm, Dust Devil (no rain)
 ```
 
-**What to look for** — The funnel cloud narrows from the wide mesocyclone base to a tight ground contact, with visible rotation in the shading pattern. Debris orbits the vortex, occasionally lofted high into the storm. Lightning illuminates the entire cloud structure. The "Night Tornado" preset hides the funnel in darkness, revealed only by lightning flashes. The "Dust Devil" preset shows a weaker, rain-free vortex with only debris.
+**What to look for** — The funnel cloud narrows from the wide mesocyclone base to a tight ground contact, with visible rotation in the shading pattern. Debris orbits the vortex, occasionally lofted high into the storm. Lightning illuminates the entire cloud structure. The "Nighttime Storm" preset hides the funnel in darkness, revealed only by lightning flashes. The "Dust Devil" preset shows a small, rain-free vortex with only debris. Press l to trigger lightning.
 
 **References**
 - Bluestein, H.B. *Severe Convective Storms and Tornadoes: Observations and Dynamics*, Springer, 2013. https://doi.org/10.1007/978-3-642-05381-8
