@@ -624,3 +624,17 @@ class TestSmokeFireWildfireSpread:
                     final_heated_cols.add(c)
         # Fire should spread to more columns
         assert len(final_heated_cols) >= len(initial_heated_cols)
+
+
+class TestSmokeFireFlashMessage:
+    def test_recent_flash_replaces_hint_bar(self, monkeypatch):
+        import curses
+        monkeypatch.setattr(curses, "color_pair", lambda n: 0)
+        app = _make_app()
+        app._smokefire_init("campfire")
+        app.smokefire_preset_name = "Campfire"
+        drawn = []
+        app.stdscr.addstr = lambda *a, **k: drawn.append(a[2])
+        app._flash("Fuel added")
+        app._draw_smokefire(40, 120)
+        assert any("Fuel added" in s for s in drawn)

@@ -600,7 +600,7 @@ def _draw_smokefire(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    if self.message and time.time() - self.message_time < 3.0:
+    if self.message and time.monotonic() - self.message_time < 3.0:
         hint = f" {self.message}"
     else:
         hint = " [Space]=play [n]=step [f]=fire [F]=fuel [b/B]=buoy [t/T]=turb [w/W]=wind [c/C]=cool [R]=menu [q]=exit"
