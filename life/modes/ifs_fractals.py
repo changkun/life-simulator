@@ -168,6 +168,29 @@ def _ifs_init(self, preset_idx: int):
     for _ in range(50):
         self._ifs_iterate()
 
+    # Fix the view box up front from a sample of the attractor. Growing it
+    # while plotting would leave earlier points at stale screen positions.
+    xs, ys = [], []
+    for _ in range(2000):
+        self._ifs_iterate()
+        xs.append(self.ifs_x)
+        ys.append(self.ifs_y)
+    pad_x = 0.05 * (max(xs) - min(xs)) + 1e-6
+    pad_y = 0.05 * (max(ys) - min(ys)) + 1e-6
+    xmin, xmax = min(xs) - pad_x, max(xs) + pad_x
+    ymin, ymax = min(ys) - pad_y, max(ys) + pad_y
+    # Widen the box to the screen shape (cells are about twice as tall as
+    # wide) so the fractal keeps its proportions.
+    aspect = self.ifs_cols / (2.0 * self.ifs_rows)
+    if (xmax - xmin) / (ymax - ymin) < aspect:
+        extra = ((ymax - ymin) * aspect - (xmax - xmin)) / 2
+        xmin, xmax = xmin - extra, xmax + extra
+    else:
+        extra = ((xmax - xmin) / aspect - (ymax - ymin)) / 2
+        ymin, ymax = ymin - extra, ymax + extra
+    self._ifs_xmin, self._ifs_xmax = xmin, xmax
+    self._ifs_ymin, self._ifs_ymax = ymin, ymax
+
     self.ifs_menu = False
     self.ifs_mode = True
     self._flash(f"IFS Fractal: {name} — Space to start")
@@ -198,39 +221,12 @@ def _ifs_step(self):
     """Advance IFS fractal by one point iteration and plot it."""
     self._ifs_iterate()
 
-    # Map IFS coordinates to screen
-    # We need to find the bounding box — use adaptive bounds
     rows = self.ifs_rows
     cols = self.ifs_cols
 
-    # Compute bounds from all transforms' fixed points (approximate)
-    # Use running min/max tracked across iterations
-    if not hasattr(self, '_ifs_xmin') or self.ifs_total_points == 0:
-        self._ifs_xmin = self.ifs_x - 0.1
-        self._ifs_xmax = self.ifs_x + 0.1
-        self._ifs_ymin = self.ifs_y - 0.1
-        self._ifs_ymax = self.ifs_y + 0.1
-
-    # Expand bounds if needed
-    margin = 0.05
-    if self.ifs_x < self._ifs_xmin:
-        self._ifs_xmin = self.ifs_x - margin
-    if self.ifs_x > self._ifs_xmax:
-        self._ifs_xmax = self.ifs_x + margin
-    if self.ifs_y < self._ifs_ymin:
-        self._ifs_ymin = self.ifs_y - margin
-    if self.ifs_y > self._ifs_ymax:
-        self._ifs_ymax = self.ifs_y + margin
-
     xrange = self._ifs_xmax - self._ifs_xmin
     yrange = self._ifs_ymax - self._ifs_ymin
-    if xrange < 1e-10:
-        xrange = 1.0
-    if yrange < 1e-10:
-        yrange = 1.0
 
-    # Map to screen with aspect ratio correction (chars are ~2x tall)
-    # Scale to fit both dimensions
     sx = (self.ifs_x - self._ifs_xmin) / xrange
     sy = (self.ifs_y - self._ifs_ymin) / yrange
 
@@ -302,11 +298,6 @@ def _handle_ifs_key(self, key: int) -> bool:
         self.ifs_color_field = [[-1] * self.ifs_cols for _ in range(self.ifs_rows)]
         self.ifs_total_points = 0
         self.ifs_generation = 0
-        if hasattr(self, '_ifs_xmin'):
-            del self._ifs_xmin
-            del self._ifs_xmax
-            del self._ifs_ymin
-            del self._ifs_ymax
         self._flash("Canvas cleared")
         return True
     if key == ord("r"):

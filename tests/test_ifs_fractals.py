@@ -176,17 +176,38 @@ class TestIFSFractals:
                 break
         assert has_color
 
-    # ── Adaptive bounding box ──
+    # ── View box ──
 
-    def test_bounds_expand(self):
-        """Bounding box should expand as new points are found outside it."""
-        self.app._ifs_init(1)  # fern - has a wider range
-        for _ in range(500):
+    def test_bounds_fixed_at_init(self):
+        """The view box is set at init and does not move while plotting."""
+        self.app._ifs_init(1)  # fern
+        box = (self.app._ifs_xmin, self.app._ifs_xmax,
+               self.app._ifs_ymin, self.app._ifs_ymax)
+        assert box[1] > box[0] and box[3] > box[2]
+        for _ in range(3000):
             self.app._ifs_step()
-        # After many iterations, bounds should have expanded
-        assert hasattr(self.app, '_ifs_xmin')
-        assert self.app._ifs_xmax > self.app._ifs_xmin
-        assert self.app._ifs_ymax > self.app._ifs_ymin
+        assert box == (self.app._ifs_xmin, self.app._ifs_xmax,
+                       self.app._ifs_ymin, self.app._ifs_ymax)
+
+    @pytest.mark.parametrize("idx", range(len(IFS_PRESETS)))
+    def test_view_box_keeps_aspect(self, idx):
+        """The view box matches the screen shape, so fractals are not stretched."""
+        self.app._ifs_init(idx)
+        w = self.app._ifs_xmax - self.app._ifs_xmin
+        h = self.app._ifs_ymax - self.app._ifs_ymin
+        assert w / h == pytest.approx(self.app.ifs_cols / (2.0 * self.app.ifs_rows))
+
+    def test_fern_fits_view(self):
+        """The fern spans the canvas height and stays inside it."""
+        random.seed(3)
+        self.app._ifs_init(1)
+        for _ in range(5000):
+            self.app._ifs_step()
+        used_rows = [r for r in range(self.app.ifs_rows) if any(self.app.ifs_points[r])]
+        assert used_rows[0] <= 3 and used_rows[-1] >= self.app.ifs_rows - 8
+        # Points outside the box would pile up on the border cells.
+        assert not any(self.app.ifs_points[r][0] or self.app.ifs_points[r][-1]
+                       for r in range(self.app.ifs_rows))
 
     # ── Stability ──
 
