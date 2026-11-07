@@ -1,9 +1,7 @@
-"""Mode: fluid_life — hybrid Game of Life + Navier-Stokes fluid simulation.
+"""Fluid of Life — Conway's Game of Life coupled to a lattice Boltzmann fluid.
 
-Live cells generate heat (buoyancy), dead cells sink. The fluid advects cells
-to new grid positions before the CA rule is applied, so gliders ride currents,
-oscillators create vortex streets, and guns pump jets of fluid. Users can place
-fans, heaters, and walls to sculpt the flow.
+Live cells heat the fluid and the flow carries cells along, so gliders ride currents.
+Fans, heaters, coolers and walls shape the flow.
 """
 import curses
 import math
@@ -402,13 +400,12 @@ def _fluidlife_ca_step(self):
 
 
 def _fluidlife_step(self):
-    """One combined step: multiple LBM sub-steps, periodic advection + CA."""
+    """Run the LBM sub-steps, advect the cells, then apply the CA rule every ca_interval steps."""
     gen = self.fluidlife_generation
 
     for _ in range(self.fluidlife_steps_per_frame):
         _fluidlife_lbm_step(self)
 
-    # Advect cells every step
     _fluidlife_advect(self)
 
     # CA update every ca_interval steps
@@ -437,7 +434,7 @@ def _handle_fluidlife_menu_key(self, key: int) -> bool:
         self.fluidlife_menu_sel = (self.fluidlife_menu_sel + 1) % n
     elif key in (ord('k'), curses.KEY_UP):
         self.fluidlife_menu_sel = (self.fluidlife_menu_sel - 1) % n
-    elif key in (ord('\n'), ord('\r')):
+    elif key in (ord('\n'), ord('\r'), curses.KEY_ENTER):
         _fluidlife_init(self, self.fluidlife_menu_sel)
     elif key in (ord('q'), 27):
         self.fluidlife_menu = False
