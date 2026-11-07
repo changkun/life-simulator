@@ -250,7 +250,7 @@ def _handle_lightning_menu_key(self, key: int) -> bool:
         self.lightning_menu_sel = (self.lightning_menu_sel + 1) % n
     elif key in (ord("k"), curses.KEY_UP):
         self.lightning_menu_sel = (self.lightning_menu_sel - 1) % n
-    elif key in (ord("\n"), ord("\r")):
+    elif key in (ord("\n"), ord("\r"), curses.KEY_ENTER):
         self._lightning_init(self.lightning_menu_sel)
     elif key in (ord("q"), 27):
         self.lightning_menu = False

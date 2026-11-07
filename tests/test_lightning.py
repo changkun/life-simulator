@@ -340,6 +340,12 @@ class TestLightningExitAndKeys:
         assert self.app.lightning_mode is True
         assert self.app.lightning_menu is False
 
+    def test_handle_menu_key_keypad_enter(self):
+        import curses
+        self.app._enter_lightning_mode()
+        self.app._handle_lightning_menu_key(curses.KEY_ENTER)
+        assert self.app.lightning_mode is True
+
     def test_handle_key_toggle_running(self):
         self.app._lightning_init(0)
         assert self.app.lightning_running is False
