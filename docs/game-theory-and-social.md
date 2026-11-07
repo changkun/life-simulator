@@ -193,41 +193,50 @@ Agent-based computational finance models emerged in the 1990s from the Santa Fe 
 
 ### Formulation
 
-The market operates as a continuous double auction with four agent types:
+Each tick, every agent may post an order, and the mode clears the resulting book once. There are four agent types:
 
 ```
 Agent types and decision rules:
 
 FUNDAMENTALIST:
   gap = (FV - price) / price
-  sentiment = clamp(gap * 3.0 + noise, -1, 1)
-  Buy if gap > 0.02 (price below fair value)
-  Sell if gap < -0.02 (price above fair value)
+  sentiment = clamp(gap * 3.0 + gauss(0, 0.1), -1, 1)
+  Bid if gap > 0.02 (price below fair value), up to 5 shares
+  Ask if gap < -0.02 (price above fair value), up to 3 shares
   FV follows random walk: FV += gauss(0, 0.1) each tick
 
 CHARTIST:
   momentum = trend * recent_return + (1 - trend) * prev_momentum
-  sentiment = clamp(momentum * 5 + herd * global_sentiment + noise, -1, 1)
-  Buy if sentiment > 0.2; Sell if sentiment < -0.2
-  recent_return = (price[t] - price[t-20]) / price[t-20]
+  sentiment = clamp(momentum * 5 + herd * global_sentiment
+                    + gauss(0, 0.1), -1, 1)
+  Bid if sentiment > 0.2; ask if sentiment < -0.2
+  recent_return compares the latest price with the price up to
+  20 ticks back
 
 NOISE TRADER:
   sentiment = clamp(herd * global_sentiment + gauss(0, 0.5), -1, 1)
-  Trades with 30% probability each tick
-  Direction follows sentiment sign
+  Posts a 1-share order with 30% probability each tick
+  Bids if sentiment > 0, asks if sentiment < 0
 
 MARKET MAKER:
   spread = volatility * price * 0.5
-  Posts bid at (price - spread * U(0.5, 1.5))
-  Posts ask at (price + spread * U(0.5, 1.5))
+  Posts bid at (price - spread * U(0.5, 1.5)), 1-5 shares
+  Posts ask at (price + spread * U(0.5, 1.5)), 1-5 shares
   Neutral sentiment
 
-Order matching:
-  trade_price = (best_bid + best_ask) / 2
-  Executes if best_bid >= best_ask
+Order matching (once per tick, book rebuilt each tick):
+  Sort bids high to low and asks low to high.
+  While best_bid >= best_ask:
+    trade at (best_bid + best_ask) / 2
+    quantity = min of the two orders' quantities
+    (skipped if the buyer lacks cash or the seller lacks shares)
+  Price = last trade price of the tick.
+  If nothing traded: price *= 1 + gauss(0, volatility * 0.1)
+
+global_sentiment = mean sentiment of all agents
 
 Parameters:
-  volatility       -- base price noise scale
+  volatility       -- sets the market maker spread and the no-trade noise
   trend_strength   -- chartist momentum weight [0, 1]
   herd_factor      -- social influence weight [0, 1]
   fundamental_value -- anchored price target (drifts)
@@ -246,11 +255,12 @@ Parameters:
 
 ### What to look for
 
-- **Emergent bubbles and crashes**: "Bubble & Pop" shows price inflating far above fundamental value as chartists and noise traders reinforce each other, followed by sudden collapse when fundamentalists overwhelm momentum.
-- **Flash crash dynamics**: With many chartists and high trend/herd parameters, positive feedback loops can trigger sudden price drops of 20--40% in a few ticks.
-- **Efficient market convergence**: When fundamentalists dominate (80:10:10 ratio), price closely tracks the drifting fundamental value -- the efficient market hypothesis in action.
-- **View modes**: Press `v` to cycle through price chart (candlestick), order book depth, agent wealth heatmap, and sentiment map.
-- **Wealth distribution**: The wealth heatmap view reveals how different agent types fare over time. Market makers tend to accumulate wealth through the spread; chartists profit in trending markets but suffer in mean-reverting ones.
+- **Feedback loops**: "Bubble & Pop", "Flash Crash" and "Herd Mania" combine high herd and trend values with many chartists or noise traders. Compare the price with FV in the title bar. The price can drift far from fair value and then swing back.
+- **Fundamentalist anchoring**: "Efficient Market" has the most fundamentalists and the lowest volatility, trend and herd values. Watch how closely the price follows the drifting FV.
+- **Market makers**: "Market Maker Dominance" has 15 market makers, which post bids and asks around the last price every tick. Check the Bids and Asks counts in the info bar.
+- **View modes**: Press `v` to cycle through price chart (candlestick, 5 ticks per candle), order book depth, agent wealth heatmap, and sentiment map.
+- **Wealth distribution**: The wealth heatmap view shows how the agent types fare over time. Wealth is cash plus shares at the current price.
+- **Keys**: `Space` play/pause, `n` step, `v` view, `+`/`-` steps per frame, `<`/`>` speed, `r` restart, `R` menu, `q` or `Esc` exit.
 
 ### References
 
