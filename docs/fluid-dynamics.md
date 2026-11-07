@@ -475,11 +475,13 @@ Ferrofluids also exhibit labyrinthine stripe patterns when confined as a thin fi
 Per-cell forces:
 
   1. Magnetic body force (Kelvin force):
-     F_mag = μ * h * (B_local - B_crit)
+     F_mag = μ * dev * (B_local - B_crit)
      If B_local > B_crit (supercritical):
-       F_mag += 0.5 * μ * (B_local - B_crit)^2 * h
-     This creates positive feedback: taller regions in a supercritical
-     field experience stronger upward force, driving spike growth.
+       F_mag += 0.5 * μ * (B_local - B_crit)^2 * dev
+     where dev = h - h_mean is the deviation from the mean fluid level.
+     This creates positive feedback: regions above the mean in a
+     supercritical field experience stronger upward force, driving spike
+     growth.
 
   2. Field gradient force:
      F_grad = μ * h * |∇B| * 0.3
@@ -490,10 +492,10 @@ Per-cell forces:
      Opposes sharp height gradients, stabilising short wavelengths.
 
   4. Gravity:
-     F_grav = -g * h
+     F_grav = -g * dev
      Opposes spike growth, sets the characteristic spike height.
 
-  5. Dipolar chaining (for chain/spike presets):
+  5. Dipolar chaining (Rosensweig, Chain and Hedgehog presets):
      F_chain = 0.02 * μ * B * sum_neighbors(h_neighbor - h)
      Neighbouring magnetised regions attract, promoting columnar alignment.
 
@@ -504,6 +506,9 @@ Velocity update (damped):
 Height update:
   h_new = h + v_new
   h_new clamped to [0.0, 1.0]
+  The grid is then shifted (up to 4 passes) so the mean height returns to
+  its target. Fluid volume is conserved; clicking adds fluid and raises
+  the target.
 
 Magnetisation (linear susceptibility):
   M = μ * B_local
@@ -541,7 +546,7 @@ The Chain Columns preset scatters random droplets that coalesce into elongated c
 
 Switch views with `v`: top-down (height glyphs with spike markers for tall features), side (cross-section profile through the middle row showing the spike silhouette), and magnetisation (M intensity field showing where the magnetic response is strongest). Click to drop additional fluid and watch the field gradient pull it toward existing spikes.
 
-**Keys.** `Space` play/pause, `n` step, `v` cycles views, `b`/`B` raise/lower the field B, `g`/`G` raise/lower surface tension, `a`/`A` rotate the field angle, `f`/`F` raise/lower the field gradient in x, `+`/`-` steps per frame, `r` reset, `R` or `m` menu, `q` exit.
+**Keys.** `Space` play/pause, `n` step, `v` cycles views, `b`/`B` raise/lower the field B, `g`/`G` raise/lower surface tension, `a`/`A` rotate the field angle, `f`/`F` raise/lower the field gradient in x, `+`/`-` steps per frame, a mouse click drops a blob of fluid, `r` reset, `R` or `m` menu, `q` exit.
 
 **Presets:** Rosensweig Spikes (B=0.6, γ=0.08), Labyrinthine Maze (B=0.5, γ=0.12), Chain Columns (B=0.7, γ=0.05), Field-Responsive Art (sweeping gradient), Hedgehog Spikes (point-source B=0.8), Dual Magnets (two-source interference B=0.65).
 
