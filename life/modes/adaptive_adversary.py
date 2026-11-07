@@ -1,26 +1,6 @@
-"""Mode: Adaptive Adversary — co-evolutionary Living Labyrinth where the dungeon
-learns from how you play.
-
-Fuses the Living Labyrinth (playable roguelike CA dungeon) with the Genesis
-Protocol (evolutionary rule discovery).  After each level the dungeon evolves
-its CA ruleset using crossover & mutation, with a fitness function that targets
-the player's behavioral weaknesses.  A population of candidate rulesets competes
-to be "most challenging but still solvable" — difficulty via co-evolution.
-
-Keys:
-  Arrow keys / WASD / hjkl — move player (@)
-  Space                    — wait one turn
-  f                        — use Freeze item
-  v                        — use Reverse item
-  m                        — use Mutate item
-  +/-                      — adjust CA tick rate
-  ?                        — toggle help overlay
-  TAB                      — toggle Adversary Report
-  q / Escape               — exit Adaptive Adversary
-"""
+"""Adaptive Adversary — a roguelike dungeon whose cellular-automaton rules evolve to exploit how you play."""
 
 import curses
-import math
 import random
 import time
 import copy
@@ -64,7 +44,7 @@ ADVERSARY_MUTATION_RATE = 0.18
 # ── Maze generation ───────────────────────────────────────────────────
 
 def _generate_maze(rows, cols):
-    """Generate a maze using recursive backtracker."""
+    """Carve a maze with a recursive backtracker and open some extra passages."""
     mr = rows if rows % 2 == 1 else rows - 1
     mc = cols if cols % 2 == 1 else cols - 1
     maze = [[WALL] * cols for _ in range(rows)]
@@ -110,7 +90,7 @@ def _find_open_cells(maze, rows, cols):
 # ── CA step ────────────────────────────────────────────────────────────
 
 def _adversary_ca_step(cells, rows, cols, birth, survival, frozen_mask=None):
-    """One CA generation with optional freeze mask."""
+    """Advance the CA one generation; frozen cells keep their state."""
     new = [[0] * cols for _ in range(rows)]
     for r in range(rows):
         for c in range(cols):
@@ -137,7 +117,7 @@ def _adversary_ca_step(cells, rows, cols, birth, survival, frozen_mask=None):
 # ── Adversary genome helpers ──────────────────────────────────────────
 
 def _random_adversary_genome():
-    """Generate a random adversary genome (CA ruleset)."""
+    """Return a random adversary genome (a CA ruleset plus two tuning knobs)."""
     birth = {d for d in range(9) if random.random() < 0.3}
     survival = {d for d in range(9) if random.random() < 0.3}
     if not birth:
@@ -204,7 +184,7 @@ def _mutate_adversary(genome, rate=ADVERSARY_MUTATION_RATE):
 
 
 def _genome_rule_label(genome):
-    """Short label for a genome."""
+    """Return the genome's rule as a B/S string."""
     return rule_string(genome["birth"], genome["survival"])
 
 
@@ -474,7 +454,7 @@ def _check_solvability(cells, rows, cols, start_r, start_c, exit_r, exit_c):
 # ── State initialization ──────────────────────────────────────────────
 
 def _adversary_init(self):
-    """Initialize Adaptive Adversary state variables."""
+    """Set the default Adaptive Adversary state."""
     self.adversary_mode = False
     self.adversary_running = False
     self.adversary_cells = None
@@ -503,7 +483,6 @@ def _adversary_init(self):
     self.adversary_msg_time = 0.0
     self.adversary_game_over = False
     self.adversary_won = False
-    self.adversary_fov_radius = 20
 
     # Adversary evolution state
     self.adversary_population = []       # list of adversary genomes
@@ -514,11 +493,11 @@ def _adversary_init(self):
     self.adversary_weakness_report = None
     self.adversary_generation = 0        # evolution generation counter
     self.adversary_adaptation_log = []   # list of (level, adaptations) tuples
-    self.adversary_level_results = []    # list of (genome, result, fitness)
+    self.adversary_level_results = []    # one dict per finished level
 
 
 def _adversary_generate(self):
-    """Generate a new adversary dungeon using the current genome."""
+    """Build a dungeon for the current genome and reset the level state."""
     h, w = self.grid.rows, self.grid.cols
     self.adversary_rows = h
     self.adversary_cols = w
@@ -630,7 +609,7 @@ def _adversary_flash(self, msg):
 # ── Entry / exit ──────────────────────────────────────────────────────
 
 def _enter_adversary_mode(self):
-    """Enter Adaptive Adversary mode."""
+    """Start a new run with a fresh population."""
     self.adversary_mode = True
     self.adversary_running = True
     self.adversary_level = 1
@@ -657,7 +636,7 @@ def _enter_adversary_mode(self):
 
 
 def _exit_adversary_mode(self):
-    """Exit Adaptive Adversary mode."""
+    """Leave Adaptive Adversary mode and drop the dungeon."""
     self.adversary_mode = False
     self.adversary_running = False
     self.adversary_cells = None
@@ -694,6 +673,7 @@ def _adversary_tick_ca(self):
 # ── Item usage ─────────────────────────────────────────────────────────
 
 def _adversary_use_freeze(self):
+    """Freeze the walls around the player for 10 turns."""
     if self.adversary_inventory[ITEM_FREEZE] <= 0:
         _adversary_flash(self, "No freeze items!")
         return
@@ -710,6 +690,7 @@ def _adversary_use_freeze(self):
 
 
 def _adversary_use_reverse(self):
+    """Rewind the cells around the player up to 5 generations."""
     if self.adversary_inventory[ITEM_REVERSE] <= 0:
         _adversary_flash(self, "No reverse items!")
         return
@@ -731,6 +712,7 @@ def _adversary_use_reverse(self):
 
 
 def _adversary_use_mutate(self):
+    """Randomly flip cells around the player."""
     if self.adversary_inventory[ITEM_MUTATE] <= 0:
         _adversary_flash(self, "No mutate items!")
         return
@@ -752,7 +734,7 @@ def _adversary_use_mutate(self):
 # ── Player movement ───────────────────────────────────────────────────
 
 def _adversary_move(self, dr, dc):
-    """Try to move player."""
+    """Move the player if the target cell is open. Return True if it moved."""
     if self.adversary_game_over:
         return False
     nr = self.adversary_player_r + dr
@@ -826,7 +808,7 @@ def _adversary_player_turn(self, dr, dc):
 # ── Level end: evolution trigger ──────────────────────────────────────
 
 def _adversary_end_level(self, result):
-    """Called when a level ends (win or death). Evolve the adversary."""
+    """Score the current genome and log the adaptations when a level ends."""
     genome = self.adversary_current_genome
 
     # Compute fitness for current genome
@@ -850,10 +832,12 @@ def _adversary_end_level(self, result):
         "fitness": fitness,
         "level": self.adversary_level,
     })
+    if len(self.adversary_level_results) > 20:
+        self.adversary_level_results = self.adversary_level_results[-15:]
 
 
 def _adversary_next_level(self):
-    """Advance to the next level with evolved dungeon."""
+    """Evolve the population and build the next level."""
     self.adversary_level += 1
     self.adversary_generation += 1
 
@@ -886,7 +870,7 @@ def _adversary_next_level(self):
 # ── Key handler ────────────────────────────────────────────────────────
 
 def _handle_adversary_key(self, key):
-    """Handle keyboard input for Adaptive Adversary mode."""
+    """Handle a key press."""
     if key == ord('q') or key == 27:
         _exit_adversary_mode(self)
         return True
@@ -1086,7 +1070,7 @@ def _draw_adversary(self, max_y=None, max_x=None):
     stats = (
         f" W:{self.adversary_wins} D:{self.adversary_deaths} │ "
         f"CA/move: {self.adversary_ca_ticks} │ "
-        f"[?]Help [TAB]Report [f]Freeze [v]Rev [m]Mut [q]Quit"
+        f"?=help  Tab=report  f/v/m=items  n=new  q=quit"
     )
     try:
         scr.addstr(hud_y + 1, 0, stats[:max_w - 1], curses.A_DIM)
@@ -1273,16 +1257,16 @@ def _draw_adversary_report(self, scr, max_h, max_w, view_h):
 # ── Step / auto-stepping ──────────────────────────────────────────────
 
 def _adversary_step(self):
-    """Auto-step: no-op since movement is turn-based."""
+    """Do nothing; the game advances only on player turns."""
     pass
 
 
 def _is_adversary_auto_stepping(self):
-    """Turn-based, no auto-stepping."""
+    """Return False; the mode is turn-based."""
     return False
 
 
-# ── Menu (no separate menu needed) ────────────────────────────────────
+# ── Menu hooks (the mode has no menu) ─────────────────────────────────
 
 def _handle_adversary_menu_key(self, key):
     return _handle_adversary_key(self, key)
@@ -1295,7 +1279,7 @@ def _draw_adversary_menu(self, max_y=None, max_x=None):
 # ── Registration ──────────────────────────────────────────────────────
 
 def register(App):
-    """Register Adaptive Adversary mode methods on App class."""
+    """Register Adaptive Adversary methods on the App class."""
     App.adversary_mode = False
     App.adversary_running = False
     _adversary_init(App)
