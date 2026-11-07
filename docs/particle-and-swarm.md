@@ -627,7 +627,7 @@ The branching arises because the outer tips of the crystal are more accessible t
 
 ### Background
 
-Honeybee colonies are among the most studied examples of swarm intelligence, combining individual simplicity with remarkable collective problem-solving. Karl von Frisch's Nobel Prize–winning work (1967) decoded the waggle dance — a figure-eight movement performed by returning foragers on the vertical comb face, encoding the distance and direction to a food source relative to the sun's azimuth. Recruits observing the dance extract this vector information and navigate to the advertised patch, creating a positive feedback loop where richer sources attract more foragers. Thomas Seeley's later work showed that this dance-based recruitment system implements a decentralized "house-hunting" algorithm with near-optimal collective decision-making.
+Honeybee colonies are among the most studied examples of swarm intelligence, combining individual simplicity with remarkable collective problem-solving. Karl von Frisch's work (Nobel Prize 1973) decoded the waggle dance — a figure-eight movement performed by returning foragers on the vertical comb face, encoding the distance and direction to a food source relative to the sun's azimuth. Recruits observing the dance extract this vector information and navigate to the advertised patch, creating a positive feedback loop where richer sources attract more foragers. Thomas Seeley's later work showed that this dance-based recruitment system implements a decentralized "house-hunting" algorithm with near-optimal collective decision-making.
 
 Beyond communication, honeybee colonies exhibit age-based division of labor (temporal polyethism): young bees nurse brood, middle-aged bees build comb and process nectar, and older bees forage and guard. This role allocation is not genetically fixed but emerges from hormonal thresholds modulated by colony needs — a workforce that dynamically reallocates itself. The colony also collectively thermoregulates the brood nest to 35°C ± 1°C through endothermic muscle shivering (heating) and wing-fanning evaporative cooling, maintaining homeostasis across ambient temperatures from −20°C to +45°C.
 
@@ -635,82 +635,100 @@ This mode simulates foraging economics, waggle dance recruitment, hexagonal comb
 
 ### Formulation
 
-Each bee agent has position (x, y), heading, speed, energy, age, role, and behavioral state. Seven roles exist: Queen, Nurse, Builder, Forager, Guard, Fanner, and Scout. Flower patches have position, nectar/pollen reserves with regeneration, bloom windows, and species identity.
+Each bee agent has position (x, y), heading, speed, energy, age, role, and behavioral state. Seven roles exist: Queen, Nurse, Builder, Forager, Guard, Fanner, and Scout. Flower patches have position, radius, nectar/pollen reserves with regeneration, bloom windows, and a species. A patch's species sets its color in the Colony view. The hive sits at the field centre with radius min(rows, cols) / 8; "in the hive" means within 1.5 hive radii of the centre.
 
 ```
-Age-based polyethism (every 100 ticks):
-    age > 12, Nurse → Builder   (P = 0.10)
-    age > 20, Nurse → Forager   (P = 0.15)
-    age > 40, any   → Guard     (P = 0.10)
+Age-based polyethism (every 100 ticks each bee ages by 1; rules tried in this order):
+    age > 40, any non-Guard   → Guard     (P = 0.10)
+    age > 20, Nurse           → Forager   (P = 0.15)
+    age > 12, Nurse           → Builder   (P = 0.10)
 
-Emergency role switching:
-    alert_level > 0.5: Forager → Guard  (P = 0.05 per tick, if in hive)
-    hive_temp > 38°C:  any → Fanner     (P = 0.03 per tick, if in hive)
+Emergency role switching (bees in the hive):
+    alert_level > 0.5: Forager → Guard  (P = 0.05 per tick)
+    hive_temp > 38°C:  any (not Queen or Fanner) → Fanner  (P = 0.03 per tick)
+    A Fanner becomes a Forager again when hive_temp < 35.5°C (P = 0.05 per tick)
 
 Forager behavior (state machine):
-    IDLE     → pick known patch or random direction → FORAGING
-    FORAGING → move toward target patch at speed 0.4–0.7
-               on arrival: harvest nectar/pollen (deplete patch proportionally)
-               → RETURNING
-    RETURNING → steer toward hive center
-               on arrival: deposit nectar → honey_store, pollen → pollen_store
-               → DANCING
-    DANCING  → perform waggle dance for 15–25 ticks
-               dance encodes: angle = atan2(patch.y − hive.y, patch.x − hive.x)
-                              distance = euclidean(patch, hive)
-               quality ∝ nectar collected
-               → IDLE (cycle repeats)
-
-    FOLLOWING → recruit observes dance, extracts (angle, distance)
-               navigates to encoded location with angular noise ±0.2 rad
-               → FORAGING on arrival near target
+    IDLE      → in the hive: follow an active dance (P = 0.04 × quality per tick) → FOLLOWING
+                else go to the last known patch if its nectar > 1 → FORAGING
+                else (P = 0.02 per tick) pick a random target → FORAGING
+    FORAGING  → move toward target at speed 0.4–0.7
+                on arrival inside a patch with nectar: take up to 2 nectar and 1 pollen
+                → RETURNING; else wander to a new nearby target, giving up with
+                P = 0.05 per tick → RETURNING
+    RETURNING → steer toward hive center at 1.2 × speed
+                on arrival: honey_store += 0.8 × nectar, pollen_store += 0.9 × pollen
+                if nectar > 0.5 → DANCING, else → IDLE
+    DANCING   → stay near the hive for max(10, int(40 × quality)) ticks
+                quality = min(1, nectar / 3)
+                → IDLE
+    FOLLOWING → head for hive + dist × (cos angle, sin angle), the exact patch
+                location encoded in the dance (no noise)
+                on arrival: same as FORAGING (stays FOLLOWING while it wanders)
 
 Scout behavior:
-    Random exploration at wider radius than foragers
-    On discovering a rich patch (nectar > 30): return and dance
+    Random exploration at 1.3 × speed, returning home with P = 0.005 per tick
+    On entering a patch with nectar > 10: take up to 1 nectar, return, and dance
+    for max(15, int(50 × quality)) ticks, quality = patch nectar / max nectar
 
 Waggle dance encoding:
-    angle:    direction from hive to food source (radians)
-    distance: euclidean distance / field_diagonal (normalized)
-    quality:  proportional to nectar harvested (affects recruit probability)
-    type:     ROUND (close source, dist < 5) or WAGGLE (far source)
+    angle:    direction from hive to patch (radians)
+    distance: euclidean distance from hive to patch (grid cells)
+    quality:  sets dance length and the chance that idle foragers follow it
 
-Temperature regulation:
+Temperature regulation (per tick):
     heat_gain = n_bees × 0.015 × 0.01
-    cooling   = n_fanners × 0.4 × 0.1
+    cooling   = n_fanning_fanners × 0.4 × 0.1
     drift     = (ambient − hive_temp) × 0.01
     hive_temp += drift + heat_gain − cooling
     hive_temp ∈ [ambient, 45°C]
 
-Comb construction (Builder role):
-    If wax_store > 2: place WAX cell adjacent to existing comb (P = 0.15)
-    wax_store += honey_store × 0.01  (bees convert honey to wax)
+Comb construction (Builder role, inside the hive radius):
+    P = 0.03 per tick, if honey_store > 1: pick a random comb cell; if it is empty
+    and touches a non-empty cell, make it WAX
+    honey_store −= 0.5, wax_store += 0.1
+    Deposited nectar and pollen fill the empty or wax cell nearest the comb centre,
+    searching out to 6 cells; if none is free, no comb cell changes (the stores
+    still grow).
 
 Queen egg-laying (every 50 ticks):
-    If honey_store > 5: place BROOD in empty comb cell, honey_store −= 0.5
+    If honey_store > 5: pick a random cell within ±2 of the comb centre;
+    if empty, make it BROOD and honey_store −= 0.5
 
 Nurse behavior:
-    Tend BROOD cells: pollen_store −= 0.05 per nursing action
     Wander within hive radius
+    With P = 0.02 per tick, if pollen_store > 0.1, check a random comb cell;
+    on BROOD, pollen_store −= 0.1
 
 Patch regeneration:
-    In bloom:  nectar += regen_rate × max_nectar per tick
+    In bloom:  nectar += 0.02 × max_nectar per tick (pollen at half that rate)
     Out of bloom: nectar decays slowly (−0.01/tick)
-    Bloom cycling: every 500 ticks, 30% of patches shift bloom windows
+    Bloom cycling: every 500 ticks, 30% of patches get a new bloom window
+    (starts within 200 ticks, lasts 200–600) and their nectar is set to half the maximum
 ```
+
+Every bee except the queen loses 0.001 energy per tick. A bee in the hive below 0.3 energy eats 0.1 honey for +0.2 energy.
+
+Unlike the real colony described above, the hive here starts at 35°C and cools toward ambient (20°C by default); without fanners it settles at ambient + 0.015 × n_bees. Fanners go back to foraging once the hive is below 35.5°C. Brood cells never hatch; they only record egg-laying.
 
 ### Presets
 
-- **Spring Bloom**: Abundant wildflower meadow with 12 diverse patches and a large forager workforce. The colony operates at peak efficiency — watch waggle dance trails converge on the richest patches as scouts discover them.
-- **Overwintering Cluster**: Ambient temperature −5°C with minimal forage. Bees cluster tightly for warmth, fanners work overtime, and the colony slowly depletes honey reserves. A survival scenario where thermoregulation dominates behavior.
-- **Swarm Departure**: Colony in reproductive mode — scouts search for new nest sites while foragers maintain existing operations. Demonstrates the exploration-exploitation trade-off at colony scale.
-- **Bear Attack Defense**: A bear agent advances toward the hive, triggering high alert. Foragers abandon patches and switch to guard duty; guards converge to sting the intruder. If enough guards mobilize (>10 near bear), they push it back. Honey stores drain if the bear breaches the hive perimeter.
-- **Robber Bee Invasion**: Foreign bees (20 robbers) approach the hive to steal honey. Guards intercept and drain robber energy; depleted robbers respawn at distance. A resource-defense scenario with attacker-defender dynamics.
-- **Pollination Network**: Six flower species arranged in clusters, with 18 patches total. Foragers develop patch fidelity — watch specialization emerge as bees repeatedly visit the same species clusters, mimicking real-world floral constancy.
+Every preset also has a queen and max(3, foragers / 10) scouts.
+
+- **Spring Bloom**: Up to 12 random patches; 60 foragers, 20 nurses, 10 builders, 5 guards, 5 fanners.
+- **Overwintering Cluster**: Ambient −5°C, hive starts at 20°C, honey store 200. Only 3 small patches (nectar 20), far from the hive; 15 foragers, 30 nurses, 5 builders, 5 guards, 25 fanners.
+- **Swarm Departure**: 8 random patches; 50 foragers, 15 nurses, 15 builders, 10 guards, 5 fanners. Only the population and patches differ from other presets; no nest-site search is modelled.
+- **Bear Attack Defense**: Up to 10 patches; 40 foragers, 15 nurses, 5 builders, 30 guards, 5 fanners; alert level starts at 0.8. A bear starts 5 hive radii away and walks toward the hive at 0.15 per tick. Inside 2 hive radii it raises the alert by 0.02 per tick (alert decays 0.002 per tick), and inside 1.2 hive radii it drains 0.5 honey per tick. Guards within 3 hive radii move toward the bear. If more than 10 guards are within 3 cells of it, the bear is pushed back by 0.3 per tick; it leaves once it is more than 6 hive radii away.
+- **Robber Bee Invasion**: 5 patches; 35 foragers, 15 nurses, 5 builders, 25 guards, 5 fanners; alert level starts at 0.5. 20 robbers start 2 to 4 hive radii away and move toward the hive at 0.3 per tick. Within 1.5 hive radii each steals 0.3 honey with P = 0.1 per tick, and the first guard within 2 cells drains 0.05 of its energy per tick. At zero energy a robber respawns at a random spot within ±5 hive radii of the hive centre (each axis) with energy 0.8.
+- **Pollination Network**: 18 patches in 6 clusters of 3, one species per cluster; 70 foragers, 20 nurses, 10 builders, 5 guards, 5 fanners. Foragers return to their last known patch while it has nectar, so each forager tends to keep visiting the same patch.
+
+### Controls
+
+`Space` starts and pauses. `n` advances one tick. `v` cycles the view (colony, dance, comb). `+`/`-` set steps per frame (1 to 20). `r` resets the preset and `R` (or `m`) returns to the menu.
 
 ### What to look for
 
-In **Spring Bloom**, watch the initial exploration phase where scouts fan out randomly, then observe how the first successful forager's waggle dance triggers a cascade of recruitment to her patch — the colony rapidly focuses its workforce on the best sources. As patches deplete, dancers switch to advertising new locations, demonstrating the exploration-exploitation balance. In **Overwintering Cluster**, the hive temperature gauge is the key metric: watch fanners activate when temperature rises above 38°C from bee body heat, then deactivate as it drops, creating an oscillating thermostat. The **Bear Attack** preset shows emergency role switching in action — the forager-to-guard transition happens within ticks of the bear entering alert range, and the collective defense pushes the bear away if guard mobilization is fast enough. In the **Comb view** (press v), observe hexagonal cells filling with honey (gold), pollen (orange), and brood (pink) as builders expand the comb structure outward from the center. The **Dance view** zooms into the dance floor, rendering the figure-eight waggle dance trajectories — each dance's orientation encodes direction and its duration encodes distance, exactly as von Frisch described.
+In **Spring Bloom**, scouts and foragers search at random, then dances recruit idle foragers to the patches that returned nectar. As patches deplete, new dances advertise other locations. In **Overwintering Cluster**, watch the temperature in the info bar and the honey store. In **Bear Attack Defense**, foragers in the hive turn into guards soon after the start, and the guards can push the bear back if enough of them gather near it. In the **Comb** view (`v`), cells show `H` (honey), `P` (pollen), `B` (brood) and a bare hexagon for wax; builders extend the comb outward from the centre. The **Dance** view zooms into the hive. Each dance is drawn as a waggle run along the direction to the patch. The run is longer for farther patches, and bold for quality above 0.6.
 
 ### References
 
