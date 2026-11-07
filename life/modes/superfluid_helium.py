@@ -204,6 +204,10 @@ def _superfluid_init(self, preset_idx: int):
         _update_superfluid_fraction(self)
         _init_random_vortices(self, n_pairs=15)
 
+    # Fill the display fields now so the first frame is not empty.
+    _compute_velocity_field(self)
+    _compute_energy_spectrum(self)
+
     self.superfluid_mode = True
     self.superfluid_menu = False
     self.superfluid_running = False
