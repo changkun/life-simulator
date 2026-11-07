@@ -1340,12 +1340,14 @@ Energy function (non-bonded contacts only, |i-j| > 1):
     ε(P,P) =  0.0   (no contribution)
     H-bond  = -0.3   (backbone hydrogen bond contribution)
 
-Monte Carlo moves (8 attempts per tick):
-  Pivot move:  select random residue i, rotate tail (i+1..N) by ±90°
-  Crankshaft:  select i, rotate residues i and i+1 as rigid unit
+Monte Carlo moves (8 attempts per tick, each pivot or crankshaft with equal probability):
+  Pivot move:  select an interior residue i, rotate the head (0..i-1) or the tail (i+1..N)
+               by 90°, 180° or 270°
+  Crankshaft:  select i, i+1 where residues i-1 and i+2 are adjacent and i, i+1 lie on the
+               same side of them; flip both to the other side (a U-shaped kink only)
   Acceptance:  Metropolis criterion
-    if ΔE < 0:  accept
-    if ΔE ≥ 0:  accept with probability exp(-ΔE / (k_B × T))
+    if ΔE ≤ 0:  accept
+    if ΔE > 0:  accept with probability exp(-ΔE / (k_B × T))
     k_B = 1.0 (arbitrary units), T = simulation temperature
 
   Reject move if new configuration has self-intersection
@@ -1392,7 +1394,7 @@ Metrics:
 | Amyloid Cascade (Alzheimer's analog) | 10 proteins with an H-rich sequence, one seeded fibril, 1 chaperone | H-rich sequence plus a seeded fibril; misfolded proteins join it and elongate the aggregate |
 | Intrinsically Disordered Protein | 5 proteins with a low-H sequence (85% polar), T=1.0, 2 chaperones | No stable fold — protein samples broad conformational ensemble, high R_g, flat energy landscape |
 
-**What to look for** — In the Spatial Fold Map, watch hydrophobic residues (● green) cluster into a compact core while polar residues (○ cyan) remain exposed on the surface — this is the hydrophobic collapse that drives folding. Toggle the contact map overlay with `c` to see non-bonded H-H contacts highlighted. In the Prion preset, watch the misfolded protein (red) approach native ones and convert them — the cascade accelerates as more misfolded proteins recruit. Chaperones (◎ yellow) chemotax toward misfolded proteins, capture them (◉), and release them after refolding. In the Energy Landscape view, proteins appear on a folding funnel — lower energy and smaller R_g toward the bottom, with the native state at the funnel's minimum. The contact map matrix shows which residue pairs are in spatial proximity. Adjust temperature with `t`/`T` to see the competition between thermal unfolding and energetic stabilization.
+**What to look for** — In the Spatial Fold Map, watch hydrophobic residues (● green) cluster into a compact core while polar residues (○ cyan) remain exposed on the surface — this is the hydrophobic collapse that drives folding. Toggle the contact map overlay with `c` to see non-bonded H-H contacts highlighted. In the Prion preset, watch the misfolded protein (red) approach native ones and convert them — the cascade accelerates as more misfolded proteins recruit. Chaperones (◎ yellow) chemotax toward misfolded proteins, capture them (◉), and release them after refolding. In the Energy Landscape view, proteins appear on a folding funnel — lower energy and smaller R_g toward the bottom, with the native state at the funnel's minimum. The contact map matrix shows which residue pairs are in spatial proximity. Adjust temperature with `t`/`T` (steps of 0.5, range 0.1 to 6.0) to see the competition between thermal unfolding and energetic stabilization. `v` cycles the views, `+`/`-` set the speed, and `q` or Esc exits.
 
 **References**
 - Anfinsen, C. B. "Principles that govern the folding of protein chains." *Science* 181 (1973): 223-230. https://doi.org/10.1126/science.181.4096.223
