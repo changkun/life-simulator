@@ -1,8 +1,7 @@
-"""Mode: snowfall — simulation mode for the life package."""
+"""Snowfall & Blizzard — wind-blown snowflakes that pile up and drift along the ground."""
 import curses
 import math
 import random
-import time
 
 SNOWFALL_PRESETS = [
     ("Gentle Snowfall", "Light, peaceful snow drifting down on a calm winter night", "gentle"),
@@ -15,13 +14,11 @@ SNOWFALL_PRESETS = [
 
 
 def _enter_snowfall_mode(self):
-    """Enter Snowfall & Blizzard mode — show preset menu."""
+    """Enter Snowfall & Blizzard mode and show the preset menu."""
     self.snowfall_mode = True
     self.snowfall_menu = True
     self.snowfall_menu_sel = 0
     self.snowfall_running = False
-
-
 
 
 def _exit_snowfall_mode(self):
@@ -34,10 +31,8 @@ def _exit_snowfall_mode(self):
     self.snowfall_drift_particles = []
 
 
-
-
 def _snowfall_init(self, preset: str):
-    """Initialize snowfall simulation from preset."""
+    """Initialize the snowfall from the selected preset."""
     rows, cols = self.grid.rows, self.grid.cols
     self.snowfall_rows = rows
     self.snowfall_cols = cols
@@ -112,13 +107,10 @@ def _snowfall_init(self, preset: str):
     self.snowfall_running = True
 
 
-
-
 def _snowfall_step(self):
-    """Advance snowfall simulation by one timestep."""
+    """Advance the snowfall by one timestep."""
     self.snowfall_generation += 1
     self.snowfall_time += self.snowfall_dt
-    t = self.snowfall_time
     rows = self.snowfall_rows
     cols = self.snowfall_cols
 
@@ -217,10 +209,8 @@ def _snowfall_step(self):
     self.snowfall_drift_particles = new_drift
 
 
-
-
 def _handle_snowfall_menu_key(self, key: int) -> bool:
-    """Handle keys in the snowfall preset menu."""
+    """Handle keys in the preset menu."""
     n = len(SNOWFALL_PRESETS)
     if key in (curses.KEY_DOWN, ord('j')):
         self.snowfall_menu_sel = (self.snowfall_menu_sel + 1) % n
@@ -237,15 +227,11 @@ def _handle_snowfall_menu_key(self, key: int) -> bool:
         self.snowfall_menu = False
         self.snowfall_mode = True
         self.snowfall_running = True
-    else:
-        return True
     return True
 
 
-
-
 def _handle_snowfall_key(self, key: int) -> bool:
-    """Handle keys during snowfall simulation."""
+    """Handle keys while the snow falls."""
     if key in (27, ord('q')):
         self._exit_snowfall_mode()
         return True
@@ -302,15 +288,11 @@ def _handle_snowfall_key(self, key: int) -> bool:
     elif key == ord('T'):
         # Colder
         self.snowfall_temperature = max(-30.0, self.snowfall_temperature - 1.0)
-    else:
-        return True
     return True
 
 
-
-
 def _draw_snowfall_menu(self, max_y: int, max_x: int):
-    """Draw the snowfall preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Snowfall & Blizzard ──"
     if max_x > len(title) + 2:
@@ -374,10 +356,8 @@ def _draw_snowfall_menu(self, max_y: int, max_x: int):
         pass
 
 
-
-
 def _draw_snowfall(self, max_y: int, max_x: int):
-    """Draw the Snowfall & Blizzard simulation."""
+    """Draw the flakes, snow pile, drift particles, info panel and status bar."""
     self.stdscr.erase()
     rows = min(max_y, self.snowfall_rows)
     cols = min(max_x, self.snowfall_cols)
@@ -388,7 +368,6 @@ def _draw_snowfall(self, max_y: int, max_x: int):
             pass
         return
 
-    t = self.snowfall_time
     ground_base = rows - 2
     vis = self.snowfall_visibility
 
@@ -396,11 +375,6 @@ def _draw_snowfall(self, max_y: int, max_x: int):
     _SNOWFLAKE_CHARS_MED = "o*+~^%&"
     _SNOWFLAKE_CHARS_LARGE = "*#@OQ0"
     _SNOW_GROUND_CHARS = "_.=-~+#@"
-
-    try:
-        has_color = curses.has_colors()
-    except curses.error:
-        has_color = False
 
     # ── Draw snowflakes ──
     for f in self.snowfall_flakes:
@@ -484,7 +458,7 @@ def _draw_snowfall(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    hint = " SPC=play n=step +/-=spd w/W=wind d=flip f/F=density t/T=temp i=info r=reset m=menu q=exit"
+    hint = " Space=play  n=step  +/-=speed  w/W=wind  d=flip wind  f/F=density  t/T=temp  i=info  r=reset  m=menu  q=exit"
     if status_y + 1 < rows:
         try:
             self.stdscr.addstr(status_y + 1, 0, hint[:cols - 1], curses.A_DIM)
