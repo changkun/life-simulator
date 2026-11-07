@@ -5,6 +5,7 @@ and frame-by-frame stepping through any simulation's timeline.
 """
 import copy
 import curses
+import pickle
 
 from life.registry import MODE_REGISTRY
 
@@ -34,9 +35,79 @@ def _tt_get_active_mode_prefix(self):
     return None
 
 
+# Total byte budget for pickled snapshots held in ``tt_history``.
+TT_BYTE_BUDGET = 64 * 1024 * 1024
+
+_PICKLE_PROTO = pickle.HIGHEST_PROTOCOL
+
+
+class _TTSnapshot:
+    """Compact, immutable-ish snapshot of one mode's state.
+
+    Picklable attributes are stored as a single ``pickle`` blob; attributes
+    that cannot be pickled fall back to ``copy.deepcopy`` and live in
+    ``extra``.  Behaves like a read-mostly mapping (``snap["attr"]``,
+    ``in``, ``get``, ``items``) by unpickling on demand, so every access
+    yields fresh, independent objects.
+    """
+
+    __slots__ = ("blob", "extra", "nbytes")
+
+    def __init__(self, blob, extra, prefix):
+        self.blob = blob
+        self.extra = extra
+        self.extra["_prefix"] = prefix
+        self.nbytes = len(blob) if blob else 0
+
+    @property
+    def prefix(self):
+        return self.extra.get("_prefix")
+
+    def state(self):
+        """Return a fresh dict of all captured attributes (no _prefix)."""
+        out = pickle.loads(self.blob) if self.blob else {}
+        for k, v in self.extra.items():
+            if k != "_prefix":
+                out[k] = copy.deepcopy(v)
+        return out
+
+    def _full(self):
+        d = self.state()
+        d["_prefix"] = self.prefix
+        return d
+
+    def __getitem__(self, key):
+        if key == "_prefix":
+            return self.prefix
+        return self._full()[key]
+
+    def __setitem__(self, key, value):
+        self.extra[key] = value
+
+    def __contains__(self, key):
+        return key in self._full()
+
+    def get(self, key, default=None):
+        if key == "_prefix":
+            return self.prefix
+        return self._full().get(key, default)
+
+    def keys(self):
+        return self._full().keys()
+
+    def items(self):
+        return self._full().items()
+
+    def __iter__(self):
+        return iter(self._full())
+
+    def __len__(self):
+        return len(self._full())
+
+
 def _tt_snapshot(self, prefix):
-    """Capture a deep-copy snapshot of all simulation state for the given mode prefix."""
-    snapshot = {}
+    """Capture a compact snapshot of all simulation state for the given mode prefix."""
+    state = {}
     attr_prefix = prefix + "_"
     for attr_name in list(vars(self)):
         if not attr_name.startswith(attr_prefix):
@@ -47,14 +118,39 @@ def _tt_snapshot(self, prefix):
         val = getattr(self, attr_name)
         if callable(val):
             continue
-        snapshot[attr_name] = copy.deepcopy(val)
-    return snapshot
+        state[attr_name] = val
+    try:
+        blob = pickle.dumps(state, protocol=_PICKLE_PROTO)
+        return _TTSnapshot(blob, {}, prefix)
+    except Exception:
+        pass
+    # Slow path: pickle what we can, deepcopy the rest.
+    good = {}
+    extra = {}
+    for k, v in state.items():
+        try:
+            pickle.dumps(v, protocol=_PICKLE_PROTO)
+            good[k] = v
+        except Exception:
+            try:
+                extra[k] = copy.deepcopy(v)
+            except Exception:
+                pass  # unsnapshottable; leave live value untouched on restore
+    try:
+        blob = pickle.dumps(good, protocol=_PICKLE_PROTO)
+    except Exception:
+        blob = pickle.dumps({}, protocol=_PICKLE_PROTO)
+    return _TTSnapshot(blob, extra, prefix)
 
 
 def _tt_restore(self, snapshot):
-    """Restore mode state from a snapshot dict."""
-    for key, val in snapshot.items():
-        setattr(self, key, copy.deepcopy(val))
+    """Restore mode state from a snapshot (fresh objects each time)."""
+    if isinstance(snapshot, _TTSnapshot):
+        items = snapshot.state()
+    else:  # plain dict (legacy / tests)
+        items = {k: copy.deepcopy(v) for k, v in snapshot.items()}
+    for key, val in items.items():
+        setattr(self, key, val)
 
 
 def _tt_push(self):
@@ -68,12 +164,19 @@ def _tt_push(self):
         self.tt_history = self.tt_history[:self.tt_pos + 1]
         self.tt_pos = None
 
-    snapshot = self._tt_snapshot(prefix)
-    snapshot["_prefix"] = prefix
-    self.tt_history.append(snapshot)
+    self.tt_history.append(self._tt_snapshot(prefix))
 
     if len(self.tt_history) > self.tt_max:
         self.tt_history = self.tt_history[-self.tt_max:]
+
+    # Enforce the byte budget by dropping the oldest entries (keep >= 1).
+    total = sum(getattr(h, "nbytes", 0) for h in self.tt_history)
+    if total > TT_BYTE_BUDGET:
+        drop = 0
+        while total > TT_BYTE_BUDGET and drop < len(self.tt_history) - 1:
+            total -= getattr(self.tt_history[drop], "nbytes", 0)
+            drop += 1
+        self.tt_history = self.tt_history[drop:]
 
 
 def _tt_rewind(self):
