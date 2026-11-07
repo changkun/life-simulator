@@ -131,3 +131,17 @@ loop
         app._script_step()
     # Script should still be running (loop prevents finish)
     assert app.script_running is True
+
+
+def test_pause_does_not_consume_wait():
+    """Time spent paused is not counted against a wait or sweep."""
+    from unittest.mock import patch
+    app = _make_app()
+    with patch("life.modes.scripting.time.monotonic", return_value=100.0):
+        app._script_init("mode gol\nsweep speed 1 5 over 10s\nwait 5s\n", "Pause")
+        app._handle_script_key(ord(" "))
+    with patch("life.modes.scripting.time.monotonic", return_value=160.0):
+        app._handle_script_key(ord(" "))
+    assert app.script_paused is False
+    assert app.script_wait_until == 170.0
+    assert app.script_active_sweeps[0]["start_time"] == 160.0

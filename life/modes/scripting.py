@@ -422,6 +422,7 @@ def _script_init(self, script_text, script_name="Script"):
     self.script_mode = True
     self.script_running = True
     self.script_paused = False
+    self.script_pause_start = 0.0
     self.script_name = script_name
     self.script_commands = commands
     self.script_pc = 0  # program counter
@@ -933,10 +934,18 @@ def _handle_script_key(self, key):
 
     # Space = pause/resume
     if key == ord(" "):
-        self.script_paused = not self.script_paused
         if not self.script_paused:
-            # Adjust wait time for pause duration
-            pass  # wait_until is monotonic, but we'd need to track pause time
+            self.script_paused = True
+            self.script_pause_start = time.monotonic()
+        else:
+            self.script_paused = False
+            # Timers run on the monotonic clock, so push them forward by the
+            # time spent paused.
+            shift = time.monotonic() - self.script_pause_start
+            self.script_wait_until += shift
+            self.script_label_time += shift
+            for sweep in self.script_active_sweeps:
+                sweep["start_time"] += shift
         return True
 
     # n = skip current wait / advance
