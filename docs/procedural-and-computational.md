@@ -254,7 +254,7 @@ The non-linear depth mapping (square root) gives a natural perspective where nea
 
 **Background**
 
-Signed Distance Field (SDF) ray marching is a rendering technique where the distance to the nearest surface guides ray advancement, enabling efficient rendering of implicit surfaces, fractals, and boolean CSG operations. Popularized by Inigo Quilez through ShaderToy (2013+), it has become the standard technique for real-time fractal rendering. This implementation renders six SDF scenes with Blinn-Phong shading and soft shadows.
+Signed Distance Field (SDF) ray marching is a rendering technique where the distance to the nearest surface guides ray advancement, enabling efficient rendering of implicit surfaces, fractals, and boolean CSG operations. Popularized by Inigo Quilez through ShaderToy (2013+), it has become the standard technique for real-time fractal rendering. This implementation renders six scenes (Sphere, Torus, Multi-Shape, Mandelbulb, Infinite Spheres, Smooth Blend) with Blinn-Phong shading and soft shadows.
 
 **Formulation**
 
@@ -285,6 +285,8 @@ SDF primitives:
     z = zr * (sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)) + p
     SDF = 0.5 * ln(r) * r / dr
 
+  Infinite Spheres: repeat space with period 3, then SDF = |p_local| - 0.8
+
   Smooth blend (smooth union):
     h = clamp(0.5 + 0.5*(d2-d1)/k, 0, 1)
     SDF = lerp(d2, d1, h) - k*h*(1-h)     where k = 0.5
@@ -309,7 +311,7 @@ Soft shadows (32 steps, k = 8):
 
 **What to look for**
 
-The Mandelbulb preset reveals infinite self-similar detail as you zoom in -- adjust the power parameter (default 8) to morph between different fractal shapes. The smooth blend scene demonstrates how SDFs enable organic transitions between geometries impossible with mesh-based rendering. Observe how soft shadows create penumbra effects where the shadow factor smoothly decreases near occluder edges. The color mapping uses surface normal direction: green for Y-facing, cyan for Z-facing, magenta for X-facing surfaces.
+The Mandelbulb preset shows self-similar detail as you zoom in with `+`/`-`. Press `p` or `P` to lower or raise the power (default 8, range 2 to 16) and the shape changes. The Smooth Blend scene shows how SDFs join two shapes with a smooth transition. Soft shadows (toggle with `s`) fade gradually near the edges of occluders. `l`/`L` move the light, `a` toggles auto-rotation, and the arrow keys orbit the camera. The color mapping uses surface normal direction: green for Y-facing, cyan for Z-facing, magenta for X-facing surfaces.
 
 **References**
 
