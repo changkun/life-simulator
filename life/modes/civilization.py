@@ -297,6 +297,7 @@ def _exit_civ_mode(self):
     self.civ_terrain = []
     self.civ_tribes = []
     self.civ_log = []
+    self.civ_show_log = False
     self._flash("Civilization mode OFF")
 
 
@@ -329,6 +330,7 @@ def _civ_init(self, preset_idx: int):
     self.civ_steps_per_frame = 1
     self.civ_settings = settings
     self.civ_view = "political"  # political / terrain / culture / trade
+    self.civ_show_log = False
 
     # Generate terrain
     terrain, hmap = _generate_terrain(rows, cols, settings)
