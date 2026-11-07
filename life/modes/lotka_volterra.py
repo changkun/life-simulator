@@ -1,4 +1,4 @@
-"""Mode: lv — simulation mode for the life package."""
+"""Lotka-Volterra — grass, prey and predators on a torus, with energy, breeding and starvation."""
 import curses
 import random
 import time
@@ -10,15 +10,15 @@ from life.constants import SPEEDS
 LV_MAX_HISTORY = 1000
 
 def _enter_lv_mode(self):
-    """Enter Predator-Prey mode — show preset menu."""
+    """Enter Lotka-Volterra mode — show preset menu."""
     self.lv_menu = True
     self.lv_menu_sel = 0
-    self._flash("Predator-Prey (Lotka-Volterra) — select a scenario")
+    self._flash("Lotka-Volterra — select a scenario")
 
 
 
 def _exit_lv_mode(self):
-    """Exit Predator-Prey mode."""
+    """Exit Lotka-Volterra mode."""
     self.lv_mode = False
     self.lv_menu = False
     self.lv_running = False
@@ -26,12 +26,12 @@ def _exit_lv_mode(self):
     self.lv_energy = []
     self.lv_grass_timer = []
     self.lv_counts = []
-    self._flash("Predator-Prey mode OFF")
+    self._flash("Lotka-Volterra mode OFF")
 
 
 
 def _lv_init(self, preset_idx: int):
-    """Initialize Predator-Prey simulation with the given preset."""
+    """Initialize Lotka-Volterra simulation with the given preset."""
     (name, _desc, grass_regrow, prey_gain, pred_gain,
      prey_breed, pred_breed, prey_init_e, pred_init_e,
      prey_density, pred_density) = self.LV_PRESETS[preset_idx]
@@ -96,7 +96,7 @@ def _lv_record_counts(self):
 
 
 def _lv_step(self):
-    """Advance the Predator-Prey simulation by one step."""
+    """Advance the Lotka-Volterra simulation by one step."""
     rows, cols = self.lv_rows, self.lv_cols
     grid = self.lv_grid
     energy = self.lv_energy
@@ -118,7 +118,6 @@ def _lv_step(self):
     dirs = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
     # Phase 1: Move prey
-    moved_prey: set[tuple[int, int]] = set()
     for r, c in prey_cells:
         if grid[r][c] != 1:
             continue  # already eaten or moved
@@ -162,8 +161,6 @@ def _lv_step(self):
             timers[nr][nc] = self.lv_grass_regrow
             energy[nr][nc] = 0
             continue
-
-        moved_prey.add((nr, nc))
 
         # Check reproduction
         if e >= self.lv_prey_breed:
@@ -244,7 +241,7 @@ def _lv_step(self):
 
 
 def _handle_lv_menu_key(self, key: int) -> bool:
-    """Handle input in Predator-Prey preset menu."""
+    """Handle input in Lotka-Volterra preset menu."""
     n = len(self.LV_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.lv_menu_sel = (self.lv_menu_sel + 1) % n
@@ -254,13 +251,13 @@ def _handle_lv_menu_key(self, key: int) -> bool:
         self._lv_init(self.lv_menu_sel)
     elif key in (ord("q"), 27):
         self.lv_menu = False
-        self._flash("Predator-Prey cancelled")
+        self._flash("Lotka-Volterra cancelled")
     return True
 
 
 
 def _handle_lv_key(self, key: int) -> bool:
-    """Handle input in active Predator-Prey simulation."""
+    """Handle input in active Lotka-Volterra simulation."""
     if key == ord(" "):
         self.lv_running = not self.lv_running
     elif key in (ord("n"), ord(".")):
@@ -309,9 +306,9 @@ def _handle_lv_key(self, key: int) -> bool:
 
 
 def _draw_lv_menu(self, max_y: int, max_x: int):
-    """Draw the Predator-Prey preset selection menu."""
+    """Draw the Lotka-Volterra preset selection menu."""
     self.stdscr.erase()
-    title = "── Predator-Prey (Lotka-Volterra) ── Select Scenario ──"
+    title = "── Lotka-Volterra ── Select Scenario ──"
     try:
         self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
                            curses.color_pair(7) | curses.A_BOLD)
@@ -331,7 +328,7 @@ def _draw_lv_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hint = " [j/k]=navigate  [Enter]=select  [q]=cancel"
+    hint = " j/k=select  Enter=start  q=cancel"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:
@@ -340,7 +337,7 @@ def _draw_lv_menu(self, max_y: int, max_x: int):
 
 
 def _draw_lv(self, max_y: int, max_x: int):
-    """Draw the active Predator-Prey simulation."""
+    """Draw the active Lotka-Volterra simulation."""
     self.stdscr.erase()
     grid = self.lv_grid
     rows, cols = self.lv_rows, self.lv_cols
@@ -437,16 +434,15 @@ def _draw_lv(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [g/G]=grass+/- [b/B]=prey-breed+/- [p/P]=pred-breed+/- [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = (" Space=play  n=step  g/G=grass regrow  b/B=prey breed  p/P=pred breed"
+                    "  +/-=steps/frame  </>=speed  r=reset  R=menu  q=exit")
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
         except curses.error:
             pass
 
-# ══════════════════════════════════════════════════════════════════════
-#  Schelling Segregation Model — Mode K
-# ══════════════════════════════════════════════════════════════════════
+# Presets for Schelling Segregation; schelling.py imports them from here.
 
 SCHELLING_PRESETS = [
     # (name, description, tolerance, density, n_groups)
