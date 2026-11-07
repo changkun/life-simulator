@@ -743,7 +743,7 @@ def _handle_adisco_key(self, key):
     if key == curses.KEY_DOWN or key == ord("s"):
         self.adisco_cursor = min(pop_size - 1, self.adisco_cursor + gc)
         return True
-    if key == curses.KEY_LEFT or key == ord("a"):
+    if key == curses.KEY_LEFT:
         self.adisco_cursor = max(0, self.adisco_cursor - 1)
         return True
     if key == curses.KEY_RIGHT or key == ord("d"):

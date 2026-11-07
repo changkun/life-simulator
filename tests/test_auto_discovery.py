@@ -1,0 +1,56 @@
+"""Tests for life.modes.auto_discovery — Auto-Discovery mode."""
+import curses
+
+from tests.conftest import make_mock_app
+from life.modes.auto_discovery import register
+
+
+def _make_app():
+    app = make_mock_app()
+    app.adisco_mode = False
+    app.adisco_menu = False
+    app.adisco_menu_sel = 0
+    app.adisco_batch_size = 12
+    app.adisco_eval_steps = 150
+    app.adisco_mutation_rate = 0.15
+    app.adisco_auto_continue = False
+    app.adisco_gallery_max = 50
+    app.adisco_gallery_threshold = 150
+    app.adisco_round = 0
+    app.adisco_sims = []
+    app.adisco_genomes = []
+    app.adisco_fitness = []
+    app.adisco_pop_histories = []
+    app.adisco_period_detectors = []
+    app.adisco_cursor = 0
+    app.adisco_sim_step = 0
+    app.adisco_phase = "idle"
+    app.adisco_running = False
+    app.adisco_gallery = []
+    app.adisco_gallery_view = False
+    app.adisco_gallery_sel = 0
+    app.adisco_gallery_scroll = 0
+    app.adisco_history = []
+    register(type(app))
+    return app
+
+
+def test_a_adopts_cursor_rule_instead_of_moving_left():
+    app = _make_app()
+    app._enter_adisco_mode()
+    app._adisco_init()
+    app.adisco_cursor = 2
+    genome = app.adisco_genomes[2]
+    app._handle_adisco_key(ord("a"))
+    assert app.adisco_mode is False
+    assert app.grid.birth == genome["birth"]
+    assert app.grid.survival == genome["survival"]
+
+
+def test_left_arrow_moves_cursor():
+    app = _make_app()
+    app._enter_adisco_mode()
+    app._adisco_init()
+    app.adisco_cursor = 2
+    app._handle_adisco_key(curses.KEY_LEFT)
+    assert app.adisco_cursor == 1
