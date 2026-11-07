@@ -11,7 +11,7 @@ COLLIDER_PRESETS = [
 ]
 
 _COLLIDER_DETECTOR_LABELS = ["ATLAS", "CMS", "ALICE", "LHCb"]
-_COLLIDER_SHOWER_CHARS = "·∘○◎●★✦⚡"
+_COLLIDER_SHOWER_CHARS = "·∘○◎●★✦↯"
 _COLLIDER_PARTICLES = [
     {"name": "Photon", "symbol": "γ", "mass": 0, "color": 7, "rare": False},
     {"name": "Electron", "symbol": "e⁻", "mass": 0.000511, "color": 4, "rare": False},
@@ -247,7 +247,7 @@ def _collider_step(self):
                     ty = collision_y + random.uniform(-1, 1)
                     self.collider_trails.append({
                         "x": tx, "y": ty, "life": random.randint(5, 15),
-                        "char": random.choice(["✦", "✧", "⚡", "★", "⊕", "⊗"]),
+                        "char": random.choice(["✦", "✧", "↯", "★", "⊕", "⊗"]),
                         "color": random.choice([4, 6, 7, 14]),
                     })
 
@@ -352,19 +352,23 @@ def _draw_collider_menu(self, max_y: int, max_x: int):
             pass
 
     # Draw ASCII accelerator art
+    # Every glyph here is one cell wide (no emoji), so len() is the width.
     art = [
-        "        ╭──────────────╮",
-        "   ╭────╯  ⚛  ⊕  ⊗    ╰────╮",
-        "   │    →→→→→→→→→→→→→→→    │",
-        "   │    ←←←←←←←←←←←←←←←    │",
-        "   ╰────╮    ★  ✦  ⚡  ╭────╯",
-        "        ╰──────────────╯",
+        "     ╭──────────────╮",
+        "╭────╯  ⚛   ⊕   ⊗   ╰────╮",
+        "│    →→→→→→→→→→→→→→→→    │",
+        "│    ←←←←←←←←←←←←←←←←    │",
+        "╰────╮   ★   ✦   ↯  ╭────╯",
+        "     ╰──────────────╯",
     ]
     art_y = 4
+    # Center the art as one block so the rows keep their columns.
+    art_w = max(len(line) for line in art)
+    art_x = max(0, (max_x - art_w) // 2)
     for i, line in enumerate(art):
-        if art_y + i < max_y - 10 and len(line) + 2 < max_x:
+        if art_y + i < max_y - 10 and art_w + 2 < max_x:
             try:
-                self.stdscr.addstr(art_y + i, max(0, (max_x - len(line)) // 2), line,
+                self.stdscr.addstr(art_y + i, art_x, line,
                                    curses.color_pair(4))
             except curses.error:
                 pass
