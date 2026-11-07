@@ -87,7 +87,7 @@ summed over the 5x5 bins around each particle):
 
 Gas pressure (for gas particles, type > 0.5):
   If the particle's bin mass > 3.0:
-    F_pressure = 0.5 * (bin_mass - 3.0) * (away from bin center-of-mass)
+    F_pressure = P * (bin_mass - 3.0) * (away from bin center-of-mass)
   Gas cooling: v *= 0.998 per step
 
 Circular orbital velocity (initialization):
@@ -106,11 +106,12 @@ Parameters:
   r_s         — halo scale radius (30; 15 in Dwarf Irregular; scaled down on small grids)
   dt          — timestep (default 0.03, range 0.005-0.2)
   epsilon     — softening length (1.0)
+  P           — gas pressure (default 0.5, range 0-1)
 ```
 
 **Presets (8):** Milky Way, Grand Design, Whirlpool, Elliptical, Dwarf Irregular, Galaxy Merger, Ring Galaxy, Barred Spiral.
 
-**Controls:** `Space`=play/pause, `n`=step, `v`=view (combined/stars/gas/velocity), `g/G`=raise/lower gravity, `d/D`=raise/lower dt, `w/W`=rotation speed and `f/F`=gas fraction (both change a stored value that the simulation never reads, so they have no effect), `h`=halo overlay, `+/-`=steps per frame (1-10), `r`=reset, `R` or `m`=menu, `q` or `Esc`=exit.
+**Controls:** `Space`=play/pause, `n`=step, `v`=view (combined/stars/gas/velocity), `g/G`=raise/lower gravity, `d/D`=raise/lower dt, `w/W`=raise/lower the orbital speed of every particle (0.1-3x), `f/F`=raise/lower gas pressure P, `h`=halo overlay, `+/-`=steps per frame (1-10), `r`=reset, `R` or `m`=menu, `q` or `Esc`=exit.
 
 **What to look for.** In the Milky Way and Grand Design presets, watch spiral arms wind up over time. The Whirlpool preset adds a small companion galaxy that starts off to one side and moves toward the main disk. The Galaxy Merger preset starts two disk galaxies on a collision course. Elliptical starts with random velocities and no net rotation. The halo overlay (`h`) shows the NFW density profile behind all the dynamics. Gas particles lose speed slowly and feel pressure in dense bins.
 
