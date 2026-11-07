@@ -355,9 +355,9 @@ Upwelling = horizontal current divergence:
 
 ## Fluid Rope / Honey Coiling
 
-**Background.** When a viscous fluid like honey is poured from a height onto a surface, the falling thread does not simply pile up. Instead, it coils, folds, and meanders in regular patterns -- a phenomenon known as the liquid rope coiling instability. The coiling frequency depends on the fall height, flow rate, and viscosity. This was first systematically studied by G.I. Taylor (1968) and later analyzed in detail by Ribe, Habibi, and Bonn. The same physics governs how shampoo coils in your palm and how lava ropes form on volcanic flows.
+**Background.** When a viscous fluid like honey is poured from a height onto a surface, the falling thread does not simply pile up. Instead, it coils, folds, and meanders in regular patterns -- a phenomenon known as the liquid rope coiling instability. The coiling frequency depends on the fall height, flow rate, and viscosity. G.I. Taylor first studied it systematically (1968), and Ribe, Habibi, and Bonn later analyzed it in detail. The same physics governs how shampoo coils in your palm and how lava ropes form on volcanic flows.
 
-**Formulation.** The simulation models a falling viscous thread that coils upon contact with an accumulating pool below.
+**Formulation.** The simulation is a kinematic sketch, not a fluid solver. It animates a falling thread that sweeps a circle on an accumulating pool below. The coil speed and radius are preset constants, not computed from viscosity or fall height.
 
 ```
 Rope dynamics:
@@ -374,12 +374,9 @@ Rope dynamics:
     wobble = sin(t*3 + i*0.5) * 0.3 * frac * viscosity
     segment_x = target_x + wobble
 
-  Fall speed (gravitational acceleration along stream):
-    speed_i = 0.5 + frac * 2.0
-
 Pool accumulation:
   deposit = flow_rate * dt * 0.8
-  Gaussian spread around landing point: radius ~ coil_radius * 1.5
+  Spread around landing point: spread = max(1, int(coil_radius * 1.5)) columns
   deposit_col += deposit * (1 - |dx|/(spread+1))^2
 
 Viscous spreading:
@@ -397,11 +394,15 @@ Parameters by preset:
 dt = 0.02
 ```
 
-**What to look for.** The Honey preset produces slow, wide coils -- the thread is thick and viscous, so it resists bending and makes large loops. The Shampoo preset coils much faster with a tighter radius because the lower viscosity allows the thread to buckle more readily. Try adjusting the pour height (h/H keys): taller falls produce faster coiling because the thread velocity at impact is higher. Move the surface laterally (s/S keys) to see the thread transition from coiling to folding to meandering -- the same regime transitions observed in laboratory experiments. The Lava preset shows the slowest, broadest coiling pattern with maximum viscosity.
+**What to look for.** The Honey preset produces slow, wide coils. The Shampoo preset coils faster with a tighter radius. The Lava preset has the highest viscosity and the slowest, broadest coils. Viscosity changes the pool spreading rate and the thread's wobble, but not the coil speed. Pour height changes how far the thread falls. Moving the surface sideways (`s`/`S`) drags the landing point along, so the pool builds up as a trail instead of a single mound.
+
+**Keys.** `Space` play/pause, `n` step, `+`/`-` speed, `h`/`H` raise/lower pour height, `f`/`F` raise/lower flow rate, `v`/`V` raise/lower viscosity, `s`/`S` move the surface right/left, `0` stop and recenter the surface, `i` toggle info, `r` reset, `R` or `m` menu, `q` exit.
+
+**Presets:** Honey, Chocolate, Shampoo, Lava.
 
 **References.**
 - Ribe, N.M. "Coiling of Viscous Jets." *Proceedings of the Royal Society A*, 460(2051), 2004. https://doi.org/10.1098/rspa.2004.1353
-- Habibi, M., Maleki, M., Golestanian, R., Ribe, N.M., and Bonn, D. "Dynamics of Liquid Rope Coiling." *Physical Review E*, 74(6), 2006. https://doi.org/10.1098/rspa.2004.1353
+- Habibi, M., Maleki, M., Golestanian, R., Ribe, N.M., and Bonn, D. "Dynamics of Liquid Rope Coiling." *Physical Review E*, 74(6), 2006. https://doi.org/10.1103/PhysRevE.74.066306
 
 ---
 
