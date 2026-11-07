@@ -1,7 +1,5 @@
-"""Mode: portal — spatial gateways connecting two simulations at a boundary seam."""
+"""Simulation Portal — run two simulations side by side, with density bleeding across the seam."""
 import curses
-import math
-import random
 import time
 
 from life.constants import SPEEDS
@@ -42,7 +40,7 @@ _PORTAL_CHAR_H = "━"
 # ════════════════════════════════════════════════════════════════════
 
 def _enter_portal_mode(self):
-    """Enter Portal mode — show selection menu."""
+    """Open the portal selection menu."""
     self.portal_menu = True
     self.portal_menu_sel = 0
     self.portal_menu_phase = 0  # 0=presets, 1=pick sim A, 2=pick sim B, 3=pick orientation
@@ -50,7 +48,7 @@ def _enter_portal_mode(self):
 
 
 def _exit_portal_mode(self):
-    """Exit Portal mode and clean up."""
+    """Leave Simulation Portal and drop both simulations."""
     self.portal_mode = False
     self.portal_menu = False
     self.portal_running = False
@@ -64,7 +62,7 @@ def _exit_portal_mode(self):
 # ════════════════════════════════════════════════════════════════════
 
 def _portal_init(self, id_a, id_b, orientation):
-    """Initialize two simulations on separate halves of the screen."""
+    """Start two simulations on separate halves of the screen."""
     max_y, max_x = self.stdscr.getmaxyx()
     self.portal_orientation = orientation  # "vertical" or "horizontal"
     self.portal_sim_a_id = id_a
@@ -72,21 +70,21 @@ def _portal_init(self, id_a, id_b, orientation):
     self.portal_sim_a_name = _SIM_BY_ID[id_a]["name"]
     self.portal_sim_b_name = _SIM_BY_ID[id_b]["name"]
 
-    # Available rendering area (leave room for header + status + hint)
+    # Leave room for the header, legend, status and hint rows.
     avail_rows = max(10, max_y - 4)
     avail_cols = max(20, max_x - 1)
 
     if orientation == "vertical":
-        # Side by side: A on left, B on right, portal line in middle
-        half_cols = max(5, avail_cols // 4)  # each sim gets half the char width
-        sim_cols = half_cols  # cell columns per sim
+        # Each cell is 2 characters wide, so each sim gets a quarter of the columns.
+        half_cols = max(5, avail_cols // 4)
+        sim_cols = half_cols
         sim_rows = max(5, avail_rows)
         self.portal_split = half_cols  # split position in cell coords
     else:
         # Top/bottom: A on top, B on bottom, portal line in middle
         half_rows = max(5, avail_rows // 2)
         sim_rows = half_rows
-        sim_cols = max(5, avail_cols // 2)  # each cell = 2 chars wide
+        sim_cols = max(5, avail_cols // 2)
         self.portal_split = half_rows
 
     self.portal_sim_rows = sim_rows
@@ -94,7 +92,6 @@ def _portal_init(self, id_a, id_b, orientation):
     self.portal_avail_rows = avail_rows
     self.portal_avail_cols = avail_cols
 
-    # Initialize both simulations
     init_a, _, dens_a = _ENGINES[id_a]
     init_b, _, dens_b = _ENGINES[id_b]
     self.portal_sim_a = init_a(sim_rows, sim_cols)
@@ -103,9 +100,8 @@ def _portal_init(self, id_a, id_b, orientation):
     self.portal_generation = 0
     self.portal_running = False
     self.portal_coupling = 0.5
-    self.portal_bleed = 3  # how many cells deep the cross-talk extends
+    self.portal_bleed = 3  # cells of depth the cross-talk reaches into the other sim
 
-    # Compute initial density maps
     self.portal_density_a = dens_a(self.portal_sim_a)
     self.portal_density_b = dens_b(self.portal_sim_b)
 
@@ -119,30 +115,25 @@ def _portal_init(self, id_a, id_b, orientation):
 # ════════════════════════════════════════════════════════════════════
 
 def _portal_build_boundary_influence(density, rows, cols, orientation, split, bleed):
-    """Build a coupling density field from one sim's boundary edge.
+    """Build the influence field that A's seam edge exerts on B.
 
-    For a vertical split, we take the rightmost `bleed` columns of A
-    and mirror them into a field the same size as B (and vice-versa).
-    The influence fades linearly from the seam.
+    Copy the last `bleed` columns (or rows) of A into the first ones of B,
+    fading linearly away from the seam.
     """
     influence = [[0.0] * cols for _ in range(rows)]
 
     if orientation == "vertical":
-        # Extract the edge columns near the split
         for r in range(rows):
             for d in range(bleed):
-                # Source column: from the edge of the donor sim
-                src_c = cols - 1 - d  # rightmost cols for A→B, leftmost for B→A
+                src_c = cols - 1 - d
                 if src_c < 0 or src_c >= cols:
                     continue
                 fade = 1.0 - d / max(bleed, 1)
-                # Place into target at the opposite edge
                 tgt_c = d
                 if tgt_c < cols:
                     val = density[r][src_c] if src_c < len(density[r]) else 0.0
                     influence[r][tgt_c] = val * fade
     else:
-        # Horizontal: extract edge rows near the split
         for c in range(cols):
             for d in range(bleed):
                 src_r = rows - 1 - d
@@ -173,23 +164,14 @@ def _portal_step(self):
     orient = self.portal_orientation
     coupling = self.portal_coupling
 
-    # Build boundary influence: A's edge feeds into B, and vice versa
+    # A's right/bottom edge feeds B's left/top edge, and B's left/top edge feeds A's right/bottom edge.
     influence_a_to_b = _portal_build_boundary_influence(
         self.portal_density_a, rows, cols, orient, self.portal_split, bleed)
-    influence_b_to_a = _portal_build_boundary_influence(
-        self.portal_density_b, rows, cols, orient, self.portal_split, bleed)
-
-    # For B→A influence, the source edge is the *left/top* edge of B
-    # and it should appear at the *right/bottom* edge of A.
-    # We need to flip the influence mapping.
-    flipped_b_to_a = _portal_flip_influence(
+    influence_b_to_a = _portal_flip_influence(
         self.portal_density_b, rows, cols, orient, bleed)
 
-    flipped_a_to_b = influence_a_to_b  # already correct: A's right → B's left
-
-    # Step each sim with the other's boundary influence
-    step_a(self.portal_sim_a, flipped_b_to_a, coupling)
-    step_b(self.portal_sim_b, flipped_a_to_b, coupling)
+    step_a(self.portal_sim_a, influence_b_to_a, coupling)
+    step_b(self.portal_sim_b, influence_a_to_b, coupling)
 
     # Refresh density maps
     self.portal_density_a = density_a(self.portal_sim_a)
@@ -356,10 +338,9 @@ def _draw_portal_menu(self, max_y, max_x):
             except curses.error:
                 pass
 
-    # Hint bar
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [Up/Down]=navigate  [Enter]=select  [Esc]=back/exit"
+        hint = " Up/Down=move  Enter=select  Esc=back"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -457,7 +438,6 @@ def _draw_portal(self, max_y, max_x):
     else:
         _draw_portal_horizontal(self, da, db, rows, cols, max_y, max_x)
 
-    # ── Legend bar ──
     legend_y = max_y - 3
     if legend_y > 1:
         legend = (f" ■ {self.portal_sim_a_name}=cyan (left/top)"
@@ -469,7 +449,6 @@ def _draw_portal(self, max_y, max_x):
         except curses.error:
             pass
 
-    # ── Status bar ──
     status_y = max_y - 2
     if status_y > 1:
         sa = sb = 0.0
@@ -490,14 +469,13 @@ def _draw_portal(self, max_y, max_x):
         except curses.error:
             pass
 
-    # ── Hint bar ──
     hint_y = max_y - 1
     if hint_y > 0:
         now = time.monotonic()
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [+/-]=coupling [b/B]=bleed [o]=orient [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  +/-=coupling  b/B=bleed  o=orient  r=reset  R=menu  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -507,12 +485,9 @@ def _draw_portal(self, max_y, max_x):
 
 def _draw_portal_vertical(self, da, db, rows, cols, max_y, max_x):
     """Draw vertical split: A on left, portal line, B on right."""
-    view_rows = min(rows, max_y - 5)  # leave room for header/footer
+    view_rows = min(rows, max_y - 5)
 
-    # Each sim's density is cols wide. We render side by side.
-    # Left side uses cols_a characters, then portal line, then cols_b characters.
-    # Each cell = 2 chars wide.
-    half_w = min(cols, (max_x - 3) // 4)  # chars available for each side / 2
+    half_w = min(cols, (max_x - 3) // 4)  # cells per side; each cell is 2 characters wide
     portal_sx = half_w * 2  # screen x of portal line
 
     bleed = self.portal_bleed
@@ -522,7 +497,6 @@ def _draw_portal_vertical(self, da, db, rows, cols, max_y, max_x):
         if sy >= max_y - 3:
             break
 
-        # Draw sim A (left side)
         da_row = da[r] if r < len(da) else []
         for c in range(half_w):
             sx = c * 2
@@ -534,7 +508,7 @@ def _draw_portal_vertical(self, da, db, rows, cols, max_y, max_x):
             di = max(1, min(4, int(val * 4.0)))
             ch = _DENSITY[di]
 
-            # Near-seam cells glow to show cross-talk
+            # Cells inside the bleed zone use a different colour.
             dist_to_seam = cols - 1 - c
             if dist_to_seam < bleed and self.portal_coupling > 0:
                 pair = 5  # magenta for bleed zone
@@ -552,7 +526,6 @@ def _draw_portal_vertical(self, da, db, rows, cols, max_y, max_x):
             except curses.error:
                 pass
 
-        # Draw portal seam
         if portal_sx < max_x:
             try:
                 self.stdscr.addstr(sy, portal_sx, _PORTAL_CHAR_V,
@@ -560,7 +533,6 @@ def _draw_portal_vertical(self, da, db, rows, cols, max_y, max_x):
             except curses.error:
                 pass
 
-        # Draw sim B (right side)
         db_row = db[r] if r < len(db) else []
         for c in range(half_w):
             sx = portal_sx + 1 + c * 2
@@ -572,7 +544,6 @@ def _draw_portal_vertical(self, da, db, rows, cols, max_y, max_x):
             di = max(1, min(4, int(val * 4.0)))
             ch = _DENSITY[di]
 
-            # Near-seam cells glow
             if c < bleed and self.portal_coupling > 0:
                 pair = 5  # magenta for bleed zone
             else:
@@ -592,13 +563,12 @@ def _draw_portal_vertical(self, da, db, rows, cols, max_y, max_x):
 
 def _draw_portal_horizontal(self, da, db, rows, cols, max_y, max_x):
     """Draw horizontal split: A on top, portal line, B on bottom."""
-    half_h = min(rows, (max_y - 5) // 2)  # rows available for each side
+    half_h = min(rows, (max_y - 5) // 2)
     view_cols = min(cols, (max_x - 1) // 2)
     portal_sy = 1 + half_h  # screen y of portal line
 
     bleed = self.portal_bleed
 
-    # Draw sim A (top)
     for r in range(half_h):
         sy = 1 + r
         if sy >= max_y - 3:
@@ -631,7 +601,6 @@ def _draw_portal_horizontal(self, da, db, rows, cols, max_y, max_x):
             except curses.error:
                 pass
 
-    # Draw portal seam line
     if portal_sy < max_y - 3:
         seam_str = _PORTAL_CHAR_H * min(view_cols * 2, max_x - 1)
         try:
@@ -640,7 +609,6 @@ def _draw_portal_horizontal(self, da, db, rows, cols, max_y, max_x):
         except curses.error:
             pass
 
-    # Draw sim B (bottom)
     for r in range(half_h):
         sy = portal_sy + 1 + r
         if sy >= max_y - 3:
