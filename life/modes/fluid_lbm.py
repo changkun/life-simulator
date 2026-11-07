@@ -1,9 +1,7 @@
-"""Mode: fluid — simulation mode for the life package."""
+"""Lattice Boltzmann Fluid — D2Q9 lattice Boltzmann flow past obstacles, with speed, vorticity and density views."""
 import curses
 import math
-import random
 import time
-
 
 from life.constants import SPEEDS
 from life.colors import colormap_addstr
@@ -38,7 +36,7 @@ FLUID_PRESETS = [
 
 
 def _enter_fluid_mode(self):
-    """Enter Fluid Dynamics mode — show preset menu."""
+    """Enter Lattice Boltzmann Fluid mode and show the preset menu."""
     self.fluid_menu = True
     self.fluid_menu_sel = 0
     self._flash("Fluid Dynamics (LBM) — select a configuration")
@@ -46,7 +44,7 @@ def _enter_fluid_mode(self):
 
 
 def _exit_fluid_mode(self):
-    """Exit Fluid Dynamics mode."""
+    """Exit Lattice Boltzmann Fluid mode."""
     self.fluid_mode = False
     self.fluid_menu = False
     self.fluid_running = False
@@ -57,7 +55,7 @@ def _exit_fluid_mode(self):
 
 
 def _fluid_init(self, preset_idx: int):
-    """Initialize LBM simulation with the given preset."""
+    """Start the simulation with the given preset."""
     name, _desc, omega, inflow, obs_type = self.FLUID_PRESETS[preset_idx]
     self.fluid_preset_name = name
     self.fluid_omega = omega
@@ -161,7 +159,7 @@ def _fluid_init(self, preset_idx: int):
 
 
 def _fluid_step(self):
-    """Advance LBM simulation by one step (stream + collide)."""
+    """Advance the simulation by one step (stream, bounce back, collide)."""
     rows = self.fluid_rows
     cols = self.fluid_cols
     f = self.fluid_f
@@ -256,7 +254,7 @@ def _fluid_step(self):
 
 
 def _fluid_get_macros(self):
-    """Compute macroscopic fields (density, velocity) from distributions."""
+    """Return the density and velocity fields computed from the distributions."""
     rows = self.fluid_rows
     cols = self.fluid_cols
     f = self.fluid_f
@@ -295,7 +293,7 @@ def _handle_fluid_menu_key(self, key: int) -> bool:
         self.fluid_menu_sel = (self.fluid_menu_sel + 1) % n
     elif key in (ord("k"), curses.KEY_UP):
         self.fluid_menu_sel = (self.fluid_menu_sel - 1) % n
-    elif key in (ord("\n"), ord("\r")):
+    elif key in (ord("\n"), ord("\r"), curses.KEY_ENTER):
         self._fluid_init(self.fluid_menu_sel)
     elif key in (ord("q"), 27):
         self.fluid_menu = False
@@ -342,12 +340,10 @@ def _handle_fluid_key(self, key: int) -> bool:
         self._flash(f"Steps/frame: {self.fluid_steps_per_frame}")
     elif key == ord("<") or key == ord(","):
         self.speed_idx = max(0, self.speed_idx - 1)
-    elif key == ord(">") or key == ord("."):
+    elif key == ord(">"):
         self.speed_idx = min(len(SPEEDS) - 1, self.speed_idx + 1)
     elif key in (ord("q"), 27):
         self._exit_fluid_mode()
-    else:
-        return True
     return True
 
 
@@ -552,7 +548,7 @@ def _draw_fluid(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [v]=viz mode [w/W]=viscosity+/- [u/U]=inflow+/- [r]=reset [R]=menu [q]=exit"
+            hint = " [Space]=play [n]=step [v]=viz mode [w/W]=omega+/- [u/U]=inflow+/- [+/-]=steps/frame [r]=reset [R]=menu [q]=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
