@@ -237,7 +237,7 @@ def _preview_static(name, tick, h, w):
 
     elif "screensaver" in name.lower() or "demo reel" in name.lower():
         # Animated mode-switching preview — cycling symbols
-        symbols = ["◎", "〜", "≈", "◉", "❋", "⚙", "◈", "♫", "⬡", "⚖"]
+        symbols = ["◎", "∿", "≈", "◉", "❋", "⚙", "◈", "♫", "⬡", "⚖"]
         for i in range(min(10, h * w // 4)):
             phase = (tick + i * 3) % 20
             r = int((math.sin(t * 0.7 + i * 1.1) * 0.4 + 0.5) * h) % h
@@ -322,18 +322,18 @@ def _save_favorites(favorites):
 
 BANNER = [
     "╔═══════════════════════════════════════════════════════════╗",
-    "║   ██╗     ██╗███████╗███████╗    ███████╗██╗███╗   ███╗  ║",
-    "║   ██║     ██║██╔════╝██╔════╝    ██╔════╝██║████╗ ████║  ║",
-    "║   ██║     ██║█████╗  █████╗      ███████╗██║██╔████╔██║  ║",
-    "║   ██║     ██║██╔══╝  ██╔══╝      ╚════██║██║██║╚██╔╝██║  ║",
-    "║   ███████╗██║██║     ███████╗    ███████║██║██║ ╚═╝ ██║  ║",
-    "║   ╚══════╝╚═╝╚═╝     ╚══════╝    ╚══════╝╚═╝╚═╝     ╚═╝  ║",
+    "║   ██╗     ██╗███████╗███████╗    ███████╗██╗███╗   ███╗   ║",
+    "║   ██║     ██║██╔════╝██╔════╝    ██╔════╝██║████╗ ████║   ║",
+    "║   ██║     ██║█████╗  █████╗      ███████╗██║██╔████╔██║   ║",
+    "║   ██║     ██║██╔══╝  ██╔══╝      ╚════██║██║██║╚██╔╝██║   ║",
+    "║   ███████╗██║██║     ███████╗    ███████║██║██║ ╚═╝ ██║   ║",
+    "║   ╚══════╝╚═╝╚═╝     ╚══════╝    ╚══════╝╚═╝╚═╝     ╚═╝   ║",
     "╚═══════════════════════════════════════════════════════════╝",
 ]
 
 BANNER_SMALL = [
     "┌─────────────────────────────────┐",
-    "│  L I F E   S I M U L A T O R   │",
+    "│   L I F E   S I M U L A T O R   │",
     "└─────────────────────────────────┘",
 ]
 
@@ -341,7 +341,7 @@ BANNER_SMALL = [
 CATEGORY_ICONS = {
     "Classic CA": "⬡",
     "Particle & Swarm": "◎",
-    "Physics & Waves": "〜",
+    "Physics & Waves": "∿",
     "Fluid Dynamics": "≈",
     "Chemical & Biological": "◉",
     "Game Theory & Social": "⚖",
@@ -587,13 +587,15 @@ def _draw_dashboard(self, max_y, max_x):
     # ── Banner ──
     banner = BANNER if max_x >= 65 else BANNER_SMALL
     banner_y = 0
+    # Center the banner as one block so its rows keep their columns.
+    banner_x = max(0, (list_w - max(len(line) for line in banner)) // 2)
     for i, line in enumerate(banner):
         y = banner_y + i
         if y >= max_y:
             break
         text = line[:max_x - 1]
         try:
-            self.stdscr.addstr(y, max(0, (list_w - len(line)) // 2), text,
+            self.stdscr.addstr(y, banner_x, text,
                                curses.color_pair(2) | curses.A_BOLD)
         except curses.error:
             pass
@@ -615,7 +617,7 @@ def _draw_dashboard(self, max_y, max_x):
 
     # ── Search bar ──
     if self.dashboard_search:
-        search_text = f" 🔍 {self.dashboard_search}█"
+        search_text = f" Search: {self.dashboard_search}█"
     else:
         search_text = " Type to search..."
     if content_y < max_y:
@@ -628,7 +630,8 @@ def _draw_dashboard(self, max_y, max_x):
         content_y += 1
         if content_y < max_y:
             try:
-                inner = search_text[:list_w - 5].ljust(list_w - 4)
+                # Same width as the ┌─┐ bar above: list_w - 3 cells between the sides.
+                inner = search_text[:list_w - 4].ljust(list_w - 3)
                 self.stdscr.addstr(content_y, 1, f"│{inner}│", search_attr)
             except curses.error:
                 pass
