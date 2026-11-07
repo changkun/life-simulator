@@ -134,7 +134,7 @@ Decoherence: with probability p, collapse amplitude to random phase
 
 ## Lightning
 
-**Background** — The mode uses the Dielectric Breakdown Model (DBM), introduced by Niemeyer, Pietronero, and Wiesmann in 1984, simulates how electrical discharge channels grow through an insulating medium. It explains the branching fractal structure of lightning bolts, electrical treeing in power cables, and Lichtenberg figures. The parameter eta controls the fractal dimension of the resulting pattern.
+**Background** — The Dielectric Breakdown Model (DBM), introduced by Niemeyer, Pietronero, and Wiesmann in 1984, simulates how electrical discharge channels grow through an insulating medium. It explains the branching fractal structure of lightning bolts, electrical treeing in power cables, and Lichtenberg figures. The parameter eta controls the fractal dimension of the resulting pattern.
 
 **Formulation** — The simulation solves for the electrostatic potential and grows the discharge channel probabilistically:
 
