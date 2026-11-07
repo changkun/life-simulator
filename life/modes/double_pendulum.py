@@ -1,7 +1,6 @@
-"""Mode: dpend — simulation mode for the life package."""
+"""Double Pendulum — chaotic motion of two linked pendulums, shown side by side."""
 import curses
 import math
-import random
 import time
 
 DPEND_PRESETS = [
@@ -23,7 +22,6 @@ def _enter_dpend_mode(self):
     self._flash("Double Pendulum Chaos — select a configuration")
 
 
-
 def _exit_dpend_mode(self):
     """Exit Double Pendulum mode."""
     self.dpend_mode = False
@@ -34,10 +32,8 @@ def _exit_dpend_mode(self):
     self._flash("Double Pendulum mode OFF")
 
 
-
 def _dpend_init(self, preset_idx: int):
     """Initialize double pendulum simulation with the given preset."""
-    import math
     name, _desc, preset_id = self.DPEND_PRESETS[preset_idx]
     self.dpend_preset_name = name
     self.dpend_generation = 0
@@ -109,10 +105,8 @@ def _dpend_init(self, preset_idx: int):
     self._flash(f"Double Pendulum: {name} — Space to start")
 
 
-
 def _dpend_derivs(self, state: list[float]) -> list[float]:
     """Compute derivatives for double pendulum equations of motion."""
-    import math
     t1, t2, w1, w2 = state
     m1, m2 = self.dpend_m1, self.dpend_m2
     l1, l2 = self.dpend_l1, self.dpend_l2
@@ -144,7 +138,6 @@ def _dpend_derivs(self, state: list[float]) -> list[float]:
     return [w1, w2, dw1, dw2]
 
 
-
 def _dpend_rk4_step(self, state: list[float]) -> list[float]:
     """Advance state by one RK4 step."""
     dt = self.dpend_dt
@@ -159,16 +152,13 @@ def _dpend_rk4_step(self, state: list[float]) -> list[float]:
             for i in range(4)]
 
 
-
 def _dpend_tip_pos(self, state: list[float]) -> tuple[float, float]:
     """Get (x, y) position of the lower bob tip."""
-    import math
     t1, t2 = state[0], state[1]
     l1, l2 = self.dpend_l1, self.dpend_l2
     x = l1 * math.sin(t1) + l2 * math.sin(t2)
     y = l1 * math.cos(t1) + l2 * math.cos(t2)
     return (x, y)
-
 
 
 def _dpend_step(self):
@@ -187,7 +177,6 @@ def _dpend_step(self):
             self.dpend_trail2 = self.dpend_trail2[-self.dpend_max_trail:]
 
     self.dpend_generation += 1
-
 
 
 def _handle_dpend_menu_key(self, key: int) -> bool:
@@ -209,7 +198,6 @@ def _handle_dpend_menu_key(self, key: int) -> bool:
         self._dpend_init(self.dpend_menu_sel)
         return True
     return True
-
 
 
 def _handle_dpend_key(self, key: int) -> bool:
@@ -286,7 +274,6 @@ def _handle_dpend_key(self, key: int) -> bool:
     return True
 
 
-
 def _draw_dpend_menu(self, max_y: int, max_x: int):
     """Draw the Double Pendulum preset selection menu."""
     self.stdscr.erase()
@@ -349,10 +336,8 @@ def _draw_dpend_menu(self, max_y: int, max_x: int):
         pass
 
 
-
 def _draw_dpend(self, max_y: int, max_x: int):
     """Draw the Double Pendulum simulation."""
-    import math
     self.stdscr.erase()
     rows = self.dpend_rows
     cols = self.dpend_cols
@@ -403,9 +388,6 @@ def _draw_dpend(self, max_y: int, max_x: int):
         # Draw trajectory trail with fading
         trail_len = len(trail)
         for i, (tx, ty) in enumerate(trail):
-            sx = px + int(tx * scale)
-            sy = py + int(ty * scale * 0.5)  # Compress vertical for terminal aspect ratio
-            # Recalculate with proper pivot offset
             sx = px + int(tx * scale)
             sy = py + int(ty * scale)
             if 1 <= sy < draw_h + 1 and 0 <= sx < cols:
@@ -470,7 +452,6 @@ def _draw_dpend(self, max_y: int, max_x: int):
     # Compute angular divergence if dual
     divergence_str = ""
     if self.dpend_dual and self.dpend_generation > 0:
-        import math
         d_theta1 = abs(self.dpend_p1[0] - self.dpend_p2[0])
         d_theta2 = abs(self.dpend_p1[1] - self.dpend_p2[1])
         divergence = math.degrees(d_theta1 + d_theta2)
@@ -499,7 +480,6 @@ def _draw_dpend(self, max_y: int, max_x: int):
         self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:
         pass
-
 
 
 def _dpend_draw_line(self, x0: int, y0: int, x1: int, y1: int,
