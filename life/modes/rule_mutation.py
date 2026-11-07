@@ -36,7 +36,7 @@ RMUT_PRESETS = [
      "Slow mutations from HighLife — watch rules gradually shift",
      "B36/S23", 0.06, 0.3),
     ("Complexity Hunter",
-     "Balanced approach: moderate mutation with diversity bonus",
+     "Like Entropy Climber, but mutates a little faster (0.15 vs 0.12)",
      "B3/S23", 0.15, 0.35),
     ("From Nothing",
      "Start with empty ruleset and discover viable rules from scratch",

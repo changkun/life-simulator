@@ -55,3 +55,10 @@ def test_full_reset_cancels_a_mutant_under_test():
     app._handle_rmut_key(ord("R"))
     assert app.rmut_eval_phase == "stable"
     assert app.rmut_candidate_birth is None
+
+
+def test_complexity_hunter_description_matches_fitness():
+    """_compute_fitness has no diversity term, so the text must not claim one."""
+    desc = dict((p[0], p[1]) for p in rm.RMUT_PRESETS)["Complexity Hunter"]
+    assert "diversity" not in desc.lower()
+    assert len(desc) <= 70
