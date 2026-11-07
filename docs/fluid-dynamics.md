@@ -285,9 +285,11 @@ Frontal effects:
   Both reduce pressure along the front line
 ```
 
-**What to look for.** The Cyclone preset shows a deep low-pressure center (960 hPa) with counterclockwise winds (Northern Hemisphere). Watch precipitation bands spiral inward. The Fronts preset demonstrates cold and warm fronts: the cold front (marked with triangles) pushes under warm air, triggering intense but narrow precipitation. The Arctic Outbreak shows a polar high driving cold air southward against a stationary warm air mass. Switch between layers (pressure, temperature, wind, humidity) to see different aspects of the same weather system. New pressure centers occasionally spawn, and fronts weaken over time.
+**What to look for.** The Tropical Cyclone preset starts with a deep low-pressure center (960 hPa) in warm, moist air, plus a high to the east. The Cold Front Clash preset sets a cold front (marked `▼`) and a warm front (marked `▲`) across a strong temperature contrast. Fronts cool or warm the air, add humidity, and lower the pressure along their line. The Arctic Outbreak preset places a polar high at the top with a cold front and very cold air below it, pushing south. Pressure centers drift, new ones occasionally spawn, and fronts weaken over time.
 
-**Presets:** Cyclone, Weather Fronts, High Pressure Dome, Monsoon, Arctic Outbreak, Random Weather.
+**Keys.** `Space` play/pause, `+`/`-` speed, `l` or `v` cycles layers (default, pressure, temperature, wind, humidity), `?` toggles the help overlay, `r` restarts the scenario, `m` opens the menu, `Esc` exits.
+
+**Presets:** Tropical Cyclone, Cold Front Clash, High Pressure Dome, Monsoon Season, Arctic Outbreak, Random Weather.
 
 **References.**
 - Bjerknes, J. and Solberg, H. "Life Cycle of Cyclones and the Polar Front Theory of Atmospheric Circulation." *Geofysiske Publikationer*, 3(1), 1922. https://www.ngfweb.no/docs/NGF_GP_Vol03_no1.pdf
@@ -339,7 +341,9 @@ Upwelling = horizontal current divergence:
   Positive divergence -> upwelling -> nutrient enrichment
 ```
 
-**What to look for.** The Gulf Stream preset shows a strong northward western boundary current with mesoscale eddies spinning off the jet. The Thermohaline Conveyor shows warm surface water flowing north, cooling and sinking at the poles, then returning at depth -- the "great ocean conveyor belt." The El Nino preset demonstrates how weakened trade winds allow warm water to spread eastward, suppressing upwelling and devastating plankton productivity on the eastern coast. Switch to the plankton layer to see blooms forming in upwelling zones where cold, nutrient-rich water reaches the surface.
+**What to look for.** The Gulf Stream preset starts with a strong northward western boundary current and warm water along it. The Thermohaline Conveyor preset adds deep-water formation zones where cold, salty water sinks and drives outward flow. The El Nino preset weakens the trade winds so warm water spreads eastward. Gyres drift and fluctuate, and new eddies spawn at random. Switch to the plankton layer to see blooms form where upwelling brings nutrient-rich water to the surface.
+
+**Keys.** `Space` play/pause, `+`/`-` speed, `l` or `v` cycles layers (default, temperature, salinity, density, currents, plankton), `?` toggles the help overlay, `r` restarts the scenario, `m` opens the menu, `Esc` exits. The mode starts running.
 
 **Presets:** Gulf Stream, Pacific Gyre, Antarctic Circumpolar, El Nino, Thermohaline Conveyor, Random Ocean.
 
