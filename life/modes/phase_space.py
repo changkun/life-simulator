@@ -1,20 +1,9 @@
-"""Mode: phase_space — Phase Space Navigator.
-
-Maps the behavioral landscape of cellular automaton rule-space as an
-interactive, real-time bifurcation explorer.  The user sweeps across two
-rule parameters while the simulator runs hundreds of micro-simulations in
-parallel behind the scenes, plotting a live 2D heatmap of where complexity,
-chaos, oscillation, and death occur.
-
-Click any point on the phase portrait to teleport into that simulation
-running full-screen.  A "map of all possible universes."
-"""
+"""Phase Space Navigator — a heatmap of how Life-like rules behave across two swept parameters."""
 import curses
 import math
 import random
-import time
 
-from life.analytics import PeriodicityDetector, shannon_entropy, classify_stability
+from life.analytics import shannon_entropy
 from life.grid import Grid
 from life.rules import rule_string
 
@@ -23,8 +12,7 @@ from life.rules import rule_string
 _SPARKLINE = "▁▂▃▄▅▆▇█"
 
 # Micro-simulation parameters
-_SIM_ROWS = 16
-_SIM_COLS = 16
+_SIM_ROWS = 16        # micro-simulations are square
 _EVAL_STEPS = 80
 _SIMS_PER_FRAME = 4       # how many sims to advance per step call
 _INITIAL_DENSITY = 0.35
@@ -210,42 +198,23 @@ def _classify_micro(grid, pop_history):
     if pop_frac > 0.85:
         return "explosive"
 
-    # Check for static
     recent = pop_history[-20:]
-    if len(recent) >= 10:
-        if max(recent) == min(recent):
-            return "static"
+    if len(recent) >= 10 and max(recent) == min(recent):
+        return "static"
 
-    # Check variance
-    if len(recent) >= 5:
-        mean = sum(recent) / len(recent)
-        if mean > 0:
-            variance = sum((x - mean) ** 2 for x in recent) / len(recent)
-            cv = math.sqrt(variance) / mean
+    # Sort by the coefficient of variation of the recent population.
+    # The mean is positive here because the final population is.
+    mean = sum(recent) / len(recent)
+    variance = sum((x - mean) ** 2 for x in recent) / len(recent)
+    cv = math.sqrt(variance) / mean
 
-            if cv < 0.01:
-                return "static"
-            elif cv < 0.05:
-                return "oscillating"
-            elif cv < 0.15:
-                return "complex"
-            elif cv < 0.3:
-                return "chaotic"
-            else:
-                return "chaotic"
-
-    # Check trend
-    if len(recent) >= 10:
-        first = sum(recent[:5]) / 5
-        last = sum(recent[-5:]) / 5
-        if first > 0:
-            ratio = last / first
-            if ratio > 1.3:
-                return "growing"
-            elif ratio < 0.7:
-                return "dying"
-
-    return "complex"
+    if cv < 0.01:
+        return "static"
+    if cv < 0.05:
+        return "oscillating"
+    if cv < 0.15:
+        return "complex"
+    return "chaotic"
 
 
 def _compute_complexity_score(grid, pop_history, classification):
@@ -1145,7 +1114,7 @@ def _draw_phasespace_status(self, max_y, max_x):
     try:
         state = "▶ SCAN" if self.phasespace_running else "⏸ DONE" if self.phasespace_total_done >= self.phasespace_total_cells else "⏸ STOP"
         bar = (f" {state} │ Arrows:move  Enter:teleport  a:adopt  "
-               f"v:view  r:rescan  m:axes  R:menu  q:quit ")
+               f"v:view  t:labels  r:rescan  m:axes  Space:pause  R:menu  q:quit ")
         self.stdscr.addstr(max_y - 1, 0, bar[:max_x - 1], curses.A_REVERSE)
     except curses.error:
         pass
