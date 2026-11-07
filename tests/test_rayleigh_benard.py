@@ -271,3 +271,17 @@ class TestRayleighBenard:
         gen_before = self.app.rbc_generation
         self.app._handle_rbc_key(ord("n"))
         assert self.app.rbc_generation == gen_before + 1
+
+
+def test_menu_lists_every_preset_on_24_rows(monkeypatch):
+    """All presets must be visible in the menu on an 80x24 terminal."""
+    app = make_mock_app(rows=24, cols=80)
+    register(type(app))
+    drawn = []
+    monkeypatch.setattr(type(app.stdscr), "addstr",
+                        lambda self, *a, **k: drawn.append(a[2] if len(a) > 2 else ""))
+    app.rbc_menu_sel = 0
+    app._draw_rbc_menu(24, 80)
+    text = "\n".join(str(d) for d in drawn)
+    for name, _desc, _pid in RBC_PRESETS:
+        assert name in text
