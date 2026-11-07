@@ -1,8 +1,6 @@
-"""Mode: doomrc — simulation mode for the life package."""
+"""Doom Raycaster — a first-person walk through ASCII mazes drawn by raycasting."""
 import curses
 import math
-import random
-import time
 
 DOOMRC_PRESETS = [
     ("Dungeon", "Dark stone corridors with twisting passages", "dungeon"),
@@ -146,7 +144,7 @@ def _exit_doomrc_mode(self):
 
 
 def _doomrc_find_spawn(self) -> tuple:
-    """Find first open floor tile to spawn the player."""
+    """Return the first open floor tile as the player spawn point."""
     for r in range(self.doomrc_map_h):
         for c in range(self.doomrc_map_w):
             if self.doomrc_map[r][c] == '.':
@@ -156,7 +154,7 @@ def _doomrc_find_spawn(self) -> tuple:
 
 
 def _doomrc_init(self, preset_idx: int):
-    """Initialize raycaster with chosen map preset."""
+    """Start the raycaster on the chosen map."""
     name, _desc, key = self.DOOMRC_PRESETS[preset_idx]
     self.doomrc_preset_name = name
     self.doomrc_map = list(self.DOOMRC_MAPS[key])
@@ -177,7 +175,7 @@ def _doomrc_init(self, preset_idx: int):
 
 
 def _doomrc_is_wall(self, x: float, y: float) -> bool:
-    """Check if map position (x,y) is a wall."""
+    """Return True if map position (x, y) is a wall or off the map."""
     ix = int(x)
     iy = int(y)
     if ix < 0 or iy < 0 or iy >= self.doomrc_map_h or ix >= self.doomrc_map_w:
@@ -187,7 +185,7 @@ def _doomrc_is_wall(self, x: float, y: float) -> bool:
 
 
 def _doomrc_move(self, dx: float, dy: float):
-    """Try to move player by (dx,dy) with collision detection and wall sliding."""
+    """Move the player by (dx, dy), sliding along walls on collision."""
     margin = 0.2
     nx = self.doomrc_px + dx
     ny = self.doomrc_py + dy
@@ -216,13 +214,13 @@ def _doomrc_move(self, dx: float, dy: float):
 
 
 def _doomrc_step(self):
-    """Advance one frame."""
+    """Count one frame."""
     self.doomrc_generation += 1
 
 
 
 def _handle_doomrc_menu_key(self, key: int) -> bool:
-    """Handle input in doom raycaster preset menu."""
+    """Handle keys in the Doom Raycaster map menu."""
     n = len(self.DOOMRC_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.doomrc_menu_sel = (self.doomrc_menu_sel + 1) % n
@@ -240,7 +238,7 @@ def _handle_doomrc_menu_key(self, key: int) -> bool:
 
 
 def _handle_doomrc_key(self, key: int) -> bool:
-    """Handle input in active doom raycaster simulation."""
+    """Handle keys while walking the map."""
     spd = self.doomrc_speed
     rspd = self.doomrc_rot_speed
     cos_a = math.cos(self.doomrc_pa)
@@ -277,7 +275,7 @@ def _handle_doomrc_key(self, key: int) -> bool:
 
 
 def _draw_doomrc_menu(self, max_y: int, max_x: int):
-    """Draw the doom raycaster preset selection menu."""
+    """Draw the Doom Raycaster map menu."""
     self.stdscr.erase()
     title = "╔══ DOOM RAYCASTER ══╗"
     subtitle = "Select a map to explore"
@@ -305,7 +303,7 @@ def _draw_doomrc_menu(self, max_y: int, max_x: int):
 
 
 def _draw_doomrc(self, max_y: int, max_x: int):
-    """Render doom-style first-person view via raycasting."""
+    """Draw the first-person view by casting one ray per screen column."""
     self.stdscr.erase()
     if max_y < 5 or max_x < 10:
         return
@@ -326,22 +324,16 @@ def _draw_doomrc(self, max_y: int, max_x: int):
     n_wall = len(shade_wall)
     n_floor = len(shade_floor)
 
-    # Cast a ray for each column
     for x in range(screen_w):
-        # Ray angle for this column
         ray_a = (pa - fov / 2.0) + (x / float(screen_w)) * fov
         cos_r = math.cos(ray_a)
         sin_r = math.sin(ray_a)
 
-        # DDA raycasting
+        # Fixed-step ray march.
         dist = 0.0
-        hit = False
         step_size = 0.02
         max_steps = int(depth / step_size)
 
-        # Use a faster stepping approach
-        ray_x = px
-        ray_y = py
         for _s in range(max_steps):
             dist += step_size
             ray_x = px + cos_r * dist
@@ -349,10 +341,8 @@ def _draw_doomrc(self, max_y: int, max_x: int):
             ix = int(ray_x)
             iy = int(ray_y)
             if ix < 0 or iy < 0 or iy >= map_h or ix >= map_w:
-                hit = True
                 break
             if map_data[iy][ix] == '#':
-                hit = True
                 break
 
         # Correct for fisheye
@@ -360,7 +350,6 @@ def _draw_doomrc(self, max_y: int, max_x: int):
         if dist < 0.01:
             dist = 0.01
 
-        # Calculate wall height
         wall_h = int(screen_h / dist) if dist > 0 else screen_h
         ceiling = int((screen_h - wall_h) / 2.0)
         floor = ceiling + wall_h
@@ -368,14 +357,11 @@ def _draw_doomrc(self, max_y: int, max_x: int):
         for y in range(screen_h):
             try:
                 if y < ceiling:
-                    # Ceiling
                     self.stdscr.addstr(y, x, " ")
                 elif y <= floor:
-                    # Wall — shade by distance
                     t = dist / depth
                     idx = min(int(t * n_wall), n_wall - 1)
                     ch = shade_wall[idx]
-                    # Color walls by distance
                     if dist < depth * 0.25:
                         attr = curses.color_pair(4) | curses.A_BOLD
                     elif dist < depth * 0.5:
@@ -386,7 +372,6 @@ def _draw_doomrc(self, max_y: int, max_x: int):
                         attr = curses.A_DIM
                     self.stdscr.addstr(y, x, ch, attr)
                 else:
-                    # Floor — shade by distance from bottom
                     b = 1.0 - (y - screen_h / 2.0) / (screen_h / 2.0)
                     if b < 0.01:
                         b = 0.01
@@ -425,16 +410,11 @@ def _draw_doomrc_minimap(self, max_y: int, max_x: int):
 
 
 def register(App):
-    """Register doomrc mode methods and constants on the App class."""
-    # Class-level constants (from original monolith)
-    if not hasattr(App, 'DOOMRC_PRESETS'):
-        App.DOOMRC_PRESETS = DOOMRC_PRESETS
-    if not hasattr(App, 'DOOMRC_MAPS'):
-        App.DOOMRC_MAPS = DOOMRC_MAPS
-    if not hasattr(App, 'DOOMRC_SHADE_WALL'):
-        App.DOOMRC_SHADE_WALL = DOOMRC_SHADE_WALL
-    if not hasattr(App, 'DOOMRC_SHADE_FLOOR'):
-        App.DOOMRC_SHADE_FLOOR = DOOMRC_SHADE_FLOOR
+    """Register Doom Raycaster methods and constants on the App class."""
+    App.DOOMRC_PRESETS = DOOMRC_PRESETS
+    App.DOOMRC_MAPS = DOOMRC_MAPS
+    App.DOOMRC_SHADE_WALL = DOOMRC_SHADE_WALL
+    App.DOOMRC_SHADE_FLOOR = DOOMRC_SHADE_FLOOR
     App._enter_doomrc_mode = _enter_doomrc_mode
     App._exit_doomrc_mode = _exit_doomrc_mode
     App._doomrc_find_spawn = _doomrc_find_spawn
