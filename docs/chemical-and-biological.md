@@ -1303,17 +1303,17 @@ Monte Carlo moves (8 attempts per tick):
 
 Protein states:
   folding   — actively sampling conformations via MC
-  native    — energy ≤ 0.85 × native_energy (near global minimum)
-  misfolded — spontaneous (P = 0.003/tick) or prion-recruited
+  native    — folding chain with native_contacts ≥ 0.7 × (number of H residues // 2)
+  misfolded — spontaneous, heat-denatured or prion-recruited
   captured  — inside chaperone folding chamber
 
 Misfolding & aggregation:
-  Spontaneous misfolding:  P = 0.003 per protein per tick
-  Templated recruitment:   misfolded protein recruits native/folding
-                           within radius 4, P = 0.05 per contact per tick
-  Fibril nucleation:       2+ misfolded proteins within radius 3
-  Fibril elongation:       misfolded proteins join existing fibrils
-                           within radius 3, P = 0.08 per tick
+  Spontaneous misfolding:  P = 0.003 × (1 + 2 × max(0, T - 1)) per folding or native protein per tick
+  Templated recruitment:   misfolded protein recruits native proteins
+                           within distance < 4, P = 0.05 per contact per tick
+  Fibril nucleation:       2+ other misfolded proteins within distance < 3, P = 0.02 per tick
+  Fibril elongation:       a misfolded protein within distance 3 of a fibril's
+                           end joins it, P = 0.08 per tick (the protein is then captured for good)
 
 Chaperone dynamics (GroEL/GroES analog):
   Free chaperones chemotax toward nearest misfolded protein
@@ -1323,8 +1323,8 @@ Chaperone dynamics (GroEL/GroES analog):
 
 Heat shock response:
   Heat shock field: diffusible (D = 0.10), decay 0.008/tick
-  Temperature-dependent denaturation: P = 0.02/tick at elevated T
-  Chaperone upregulation: 3× spawn rate when HSF active
+  Denaturation of native proteins when T > 2: P = 0.02 × (T - 1) per tick
+  Chaperone upregulation: 3× spawn rate when the mean heat shock field exceeds 0.1
 
 Metrics:
   Radius of gyration: R_g = √(Σ(r_i - r_cm)² / N)
@@ -1336,12 +1336,12 @@ Metrics:
 
 | Preset | Configuration | What to watch |
 |--------|--------------|---------------|
-| Normal Folding | Standard HP sequence, T=1.0, 3 chaperones | Single chain collapses hydrophobic core first, then fine-tunes contacts toward native state |
-| Prion Propagation | High-H sequence, 1 pre-misfolded seed, recruitment P=0.08 | Misfolded seed converts native proteins one by one — exponential cascade into fibril network |
-| Heat Shock Stress | T=2.5, elevated denaturation rate | Temperature spike denatures proteins en masse; watch HSF field trigger chaperone upregulation wave |
-| Chaperone Deficiency | Normal sequence, max 1 chaperone | Misfolding accumulates unchecked — aggregation dominates without rescue capacity |
-| Amyloid Cascade (Alzheimer's) | Amyloidogenic HHHP-rich sequence, enhanced fibril rates | β-sheet-prone sequence nucleates fibrils rapidly; elongation creates extended ordered aggregates |
-| Intrinsically Disordered Protein | Low-H sequence (85% polar), T=1.5 | No stable fold — protein samples broad conformational ensemble, high R_g, flat energy landscape |
+| Normal Folding | One 20-residue HP chain, T=1.0, 3 chaperones | Single chain collapses hydrophobic core first, then fine-tunes contacts toward native state |
+| Prion Propagation | 8 proteins with a high-H sequence, 1 pre-misfolded seed, 2 chaperones | Misfolded seed converts native proteins one by one — exponential cascade into fibril network |
+| Heat Shock Stress | 6 native proteins, 4 chaperones; T ramps from 1.0 to 4.0 over 80 ticks, falls to 1.5 by tick 150, then back to 1.0 | Temperature spike denatures proteins en masse; watch HSF field trigger chaperone upregulation wave |
+| Chaperone Deficiency | 8 proteins, normal sequence, 1 chaperone | Misfolding accumulates unchecked — aggregation dominates without rescue capacity |
+| Amyloid Cascade (Alzheimer's analog) | 10 proteins with an H-rich sequence, one seeded fibril, 1 chaperone | H-rich sequence plus a seeded fibril; misfolded proteins join it and elongate the aggregate |
+| Intrinsically Disordered Protein | 5 proteins with a low-H sequence (85% polar), T=1.0, 2 chaperones | No stable fold — protein samples broad conformational ensemble, high R_g, flat energy landscape |
 
 **What to look for** — In the Spatial Fold Map, watch hydrophobic residues (● green) cluster into a compact core while polar residues (○ cyan) remain exposed on the surface — this is the hydrophobic collapse that drives folding. Toggle the contact map overlay with `c` to see non-bonded H-H contacts highlighted. In the Prion preset, watch the misfolded protein (red) approach native ones and convert them — the cascade accelerates as more misfolded proteins recruit. Chaperones (◎ yellow) chemotax toward misfolded proteins, capture them (◉), and release them after refolding. In the Energy Landscape view, proteins appear on a folding funnel — lower energy and smaller R_g toward the bottom, with the native state at the funnel's minimum. The contact map matrix shows which residue pairs are in spatial proximity. Adjust temperature with `t`/`T` to see the competition between thermal unfolding and energetic stabilization.
 
