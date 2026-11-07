@@ -123,7 +123,7 @@ Spatial Rock-Paper-Scissors models cyclic dominance -- a competitive structure f
 
 ### Formulation
 
-Each cell on a toroidal grid holds one of N species (3 for classic RPS, 5 for RPSLS -- Rock-Paper-Scissors-Lizard-Spock). Interactions follow cyclic dominance:
+Each cell on a toroidal grid holds one of N species: 3 for classic RPS, 5 for the "Five Species" preset (Rock, Paper, Scissors, Lizard, Spock). Species form a single cycle:
 
 ```
 Cyclic dominance rule for N species (labeled 0, 1, ..., N-1):
@@ -134,11 +134,12 @@ Cyclic dominance rule for N species (labeled 0, 1, ..., N-1):
               Paper(1) beats Rock(0)
               Scissors(2) beats Paper(1)
 
-  For N = 5:  Each species beats the 2 species
-              "behind" it in the cycle.
+  For N = 5:  Rock(0) beats Spock(4), Paper(1) beats Rock(0), ...
+              Each species beats only the one before it, so this
+              is a 5-cycle, not the full RPSLS dominance graph.
 
 Update algorithm (per generation):
-  interactions = rows * cols * swap_rate
+  interactions = int(rows * cols * swap_rate)
 
   For each interaction:
     1. Pick random cell (r, c)
@@ -148,16 +149,32 @@ Update algorithm (per generation):
     4. If defender == (attacker - 1) mod N:
          cell adopts attacker's species  (invasion)
 
-  swap_rate in [0.05, 1.0]  (fraction of grid sampled per step)
+  swap_rate in [0.05, 1.0]  (interactions per cell, per generation)
 ```
+
+Updates happen in place, so a cell can change several times in one generation.
+
+### Presets
+
+| Preset | Species | Swap Rate | Initial Layout |
+|--------|---------|-----------|----------------|
+| Classic Spiral Waves | 3 | 0.5 | random |
+| Slow Spirals | 3 | 0.2 | random |
+| Fast Chaos | 3 | 0.9 | random |
+| Territorial Blocks | 3 | 0.5 | blocks |
+| Five Species | 5 | 0.5 | random |
+| Seeded Spirals | 3 | 0.4 | seeds |
+
+The "blocks" layout starts with vertical stripes, one per species. The "seeds" layout fills the grid with species 0 and drops small circular clusters of the others. The simulation starts running as soon as you pick a preset.
 
 ### What to look for
 
-- **Spiral waves**: The signature phenomenon. Three-armed spirals emerge and rotate as each species chases the one it dominates, forming a stable dynamical pattern.
-- **Coexistence through space**: All species survive indefinitely on the lattice, whereas mean-field (well-mixed) dynamics would lead to one species dominating.
-- **Swap rate effects**: Higher swap rates (press `s`) create faster dynamics and larger spiral wavelengths. Lower rates produce fine-grained, noisy patterns.
-- **5-species dynamics**: RPSLS (Lizard-Spock extension) produces more complex spiral structures with additional interleaved domains.
-- **Initial layout**: "Blocks" layout (vertical stripes) shows invasion fronts clearly; "seeds" layout shows nucleation and growth; "random" reaches spiral equilibrium fastest.
+- **Spiral waves**: Random starts develop rotating spiral fronts as each species chases the one it beats.
+- **Coexistence through space**: On a large grid all species usually persist. In a well-mixed population one species would take over. Small grids can still lose species by chance.
+- **Swap rate**: Press `s` to raise it and `S` to lower it by 0.05. It sets how many interactions run per generation, so it mostly changes how fast the pattern evolves.
+- **Five species**: The 5-cycle gives more complex fronts and interleaved domains.
+- **Initial layout**: "Territorial Blocks" shows invasion fronts clearly. "Seeded Spirals" shows nucleation, but with only a few small seeds one species can sweep the grid.
+- **Keys**: `Space` play/pause, `n` step, `+`/`-` steps per frame, `r` restart, `R` menu, `q` or `&` exit.
 
 ### References
 
