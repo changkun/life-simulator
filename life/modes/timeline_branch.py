@@ -146,7 +146,7 @@ def _tbranch_handle_split_key(self, key: int) -> bool:
     if key == -1:
         return True
 
-    if key == 6:  # Ctrl+F
+    if key == 6 or key == ord("q"):  # Ctrl+F or q
         self._tbranch_exit()
         return True
 
@@ -189,10 +189,6 @@ def _tbranch_handle_split_key(self, key: int) -> bool:
     if key == curses.KEY_RIGHT:
         self.cursor_c = min(self.grid.cols - 1, self.cursor_c + 1)
         return True
-
-    if key == ord("q"):
-        import sys
-        sys.exit(0)
 
     return True  # consume all keys while in split view
 
@@ -410,7 +406,7 @@ def _tbranch_draw_split(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " Space=play/pause  n=step  </>=speed  Arrows=scroll  Ctrl+F=exit branch  q=quit"
+            hint = " Space=play/pause  n=step  </>=speed  Arrows=scroll  q/Ctrl+F=exit branch"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)

@@ -67,3 +67,12 @@ def test_fork_copies_rule_set():
     app._tbranch_fork_from_current()
     assert app.tbranch_grid.birth == {3, 6}
     assert app.tbranch_grid.survival == {2, 3}
+
+
+def test_q_leaves_branch_view_without_quitting():
+    """q closes the split view; it must not exit the whole app."""
+    app = _make_app()
+    app._tbranch_fork_from_current()
+    assert app._tbranch_handle_key(ord("q")) is True
+    assert app.tbranch_mode is False
+    assert app.tbranch_grid is None

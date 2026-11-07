@@ -483,7 +483,7 @@ Timeline Branching lets you fork an alternate timeline from any point in a simul
 
 ### How it works
 
-Forking copies the primary grid (cells, rules, topology) into a secondary grid. Both grids advance in lockstep from the fork point. The split view renders them side by side with dual sparklines and a divergence bar. Divergence is the share of cells that are alive in one grid and dead in the other: `divergence = count(alive_a != alive_b) / total_cells * 100%`. The fork menu offers two options: "Fork with same rules" (to study sensitivity to initial conditions) or "Fork with different rule" (to compare rule behavior from identical starting states). The fork-point generation and rule labels are displayed in a status bar. Ctrl+F opens the fork menu only while you are scrubbed back; without a scrubbed frame the key goes to the active mode. Ctrl+F again exits the split view.
+Forking copies the primary grid (cells, rules, topology) into a secondary grid. Both grids advance in lockstep from the fork point. The split view renders them side by side with dual sparklines and a divergence bar. Divergence is the share of cells that are alive in one grid and dead in the other: `divergence = count(alive_a != alive_b) / total_cells * 100%`. The fork menu offers two options: "Fork with same rules" (to study sensitivity to initial conditions) or "Fork with different rule" (to compare rule behavior from identical starting states). The fork-point generation and rule labels are displayed in a status bar. Ctrl+F opens the fork menu only while you are scrubbed back; without a scrubbed frame the key goes to the active mode. Ctrl+F or `q` exits the split view and returns to the primary timeline.
 
 ### What to explore
 
