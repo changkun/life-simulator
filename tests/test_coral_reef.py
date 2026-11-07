@@ -68,3 +68,16 @@ def test_entities_include_herbivores():
     from life.modes.coral_reef import ENT_HERB_FISH
     herb_count = sum(1 for e in app.reef_entities if e["type"] == ENT_HERB_FISH)
     assert herb_count > 0, "Should have herbivorous fish"
+
+
+def test_entity_list_does_not_double_each_step():
+    import random
+    random.seed(1)
+    app = _make_app()
+    app.reef_mode = True
+    app._reef_init(0)
+    start = len(app.reef_entities)
+    for _ in range(20):
+        app._reef_step()
+    assert len(app.reef_entities) <= start * 2
+    assert len({id(e) for e in app.reef_entities}) == len(app.reef_entities)

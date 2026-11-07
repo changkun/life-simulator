@@ -489,7 +489,6 @@ def _reef_step(self):
 
     # ── 2. Mobile entity updates ────────────────────────────────
     new_entities = []
-    entity_positions = set()
 
     for ent in entities:
         er, ec = ent["r"], ent["c"]
@@ -647,14 +646,8 @@ def _reef_step(self):
         ent["r"] = max(0, min(rows - 1, ent["r"]))
         ent["c"] = max(0, min(cols - 1, ent["c"]))
 
-        pos = (ent["r"], ent["c"])
-        if ent["energy"] > 0:
-            new_entities.append(ent)
-            entity_positions.add(pos)
-
+    # Survivors stay in place; only newborns are added, dead are dropped.
     entities.extend(new_entities)
-
-    # Remove dead entities
     self.reef_entities = [e for e in entities if e["energy"] > 0]
 
     # ── 3. Occasional spawning of plankton ──────────────────────
