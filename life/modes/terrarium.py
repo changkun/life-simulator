@@ -17,8 +17,6 @@ TERRARIUM_DIR = os.path.join(SAVE_DIR, "terrarium")
 TERRARIUM_STATE_FILE = os.path.join(TERRARIUM_DIR, "state.json")
 TERRARIUM_CHRONICLE_FILE = os.path.join(TERRARIUM_DIR, "chronicle.json")
 
-# How many generations per real-world second during fast-forward catch-up
-CATCHUP_GENS_PER_SEC = 10.0
 # Maximum generations to fast-forward when away (cap to avoid huge delays)
 MAX_CATCHUP_GENS = 50000
 # How often to sample the simulation for events during fast-forward
