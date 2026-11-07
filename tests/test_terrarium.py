@@ -3,6 +3,7 @@ import json
 
 import pytest
 
+from life.constants import SPEEDS
 from tests.conftest import make_mock_app
 from life.modes import terrarium
 from life.modes.terrarium import register
@@ -126,3 +127,28 @@ def test_summary_scroll_stops_at_last_line(paths, monkeypatch):
     app.terrarium_summary_scroll = 500
     app._draw_terrarium_chronicle_view(24, 80)
     assert app.terrarium_summary_scroll == 40 - (24 - 5)
+
+
+def test_damaged_save_starts_fresh(paths):
+    paths.mkdir()
+    (paths / "state.json").write_text(json.dumps({"grid": {"rows": 5}}))
+    app = _make_app()
+    assert app._terrarium_load_state() is False
+    (paths / "state.json").write_text("[]")
+    assert app._terrarium_load_state() is False
+
+
+def test_out_of_range_speed_index_is_clamped(paths, monkeypatch):
+    app = _make_app()
+    app.terrarium_mode = True
+    app._terrarium_save_state()
+    with open(terrarium.TERRARIUM_STATE_FILE) as f:
+        state = json.load(f)
+    state["speed_idx"] = 99
+    state["save_time"] -= 3600
+    with open(terrarium.TERRARIUM_STATE_FILE, "w") as f:
+        json.dump(state, f)
+    monkeypatch.setattr(terrarium, "MAX_CATCHUP_GENS", 10)
+    app2 = _make_app()
+    assert app2._terrarium_load_state() is True
+    assert app2.speed_idx == len(SPEEDS) - 1

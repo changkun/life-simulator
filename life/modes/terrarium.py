@@ -222,6 +222,9 @@ def _terrarium_load_state(self) -> bool:
             state = json.load(f)
     except (json.JSONDecodeError, OSError):
         return False
+    grid_data = state.get("grid") if isinstance(state, dict) else None
+    if not isinstance(grid_data, dict) or not {"rows", "cols", "generation", "cells"} <= grid_data.keys():
+        return False  # damaged save: start a fresh terrarium instead of crashing
 
     # Restore grid
     self.grid.load_dict(state["grid"])
@@ -238,7 +241,7 @@ def _terrarium_load_state(self) -> bool:
 
     # Restore display
     from life.colors import COLORMAP_NAMES
-    self.speed_idx = state.get("speed_idx", 2)
+    self.speed_idx = _clamp_speed_idx(state.get("speed_idx", 2))
     cmap = state.get("colormap", "viridis")
     if cmap in COLORMAP_NAMES:
         self.tc_colormap = cmap
@@ -298,11 +301,19 @@ def _terrarium_load_state(self) -> bool:
     return True
 
 
+def _clamp_speed_idx(idx) -> int:
+    """Return idx as a valid index into SPEEDS."""
+    from life.constants import SPEEDS
+    if not isinstance(idx, int):
+        return 2
+    return max(0, min(idx, len(SPEEDS) - 1))
+
+
 def _terrarium_catchup(self, elapsed_seconds: float, state: dict):
     """Fast-forward the simulation through elapsed real time."""
     # Calculate generations to simulate based on the speed setting
     from life.constants import SPEEDS
-    speed_idx = state.get("speed_idx", 2)
+    speed_idx = _clamp_speed_idx(state.get("speed_idx", 2))
     gens_per_sec = 1.0 / max(SPEEDS[speed_idx], 0.01)
     target_gens = int(elapsed_seconds * gens_per_sec)
     target_gens = min(target_gens, MAX_CATCHUP_GENS)
