@@ -383,6 +383,11 @@ def _rmut_step(self):
                     self.rmut_current_birth, self.rmut_current_survival
                 )
 
+            # A dead grid cannot show whether a mutant is viable, so re-seed
+            # it first (this is how "From Nothing" finds its first rule).
+            if grid.population == 0:
+                _seed_grid(grid, self.rmut_density)
+
             # Save state for potential revert
             self.rmut_saved_cells = [row[:] for row in grid.cells]
             self.rmut_saved_gen = self.rmut_generation
