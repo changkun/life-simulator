@@ -187,6 +187,17 @@ class TestPuzzle:
         self.app._handle_puzzle_planning_key(ord("d"))
         assert self.app.draw_mode is None
 
+    def test_draw_mode_cleared_on_run_and_exit(self):
+        """A draw or erase mode left on in planning must not leak out of puzzle mode."""
+        self.app._puzzle_start_planning(PUZZLES[0])
+        self.app._handle_puzzle_planning_key(ord("d"))
+        self.app._puzzle_run()
+        assert self.app.draw_mode is None
+        self.app._puzzle_start_planning(PUZZLES[0])
+        self.app._handle_puzzle_planning_key(ord("x"))
+        self.app._handle_puzzle_planning_key(27)
+        assert self.app.draw_mode is None
+
     def test_planning_erase_mode(self):
         """'x' enters erase mode, erases on movement."""
         self.app._puzzle_start_planning(PUZZLES[1])

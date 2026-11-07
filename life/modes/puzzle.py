@@ -29,6 +29,7 @@ def _exit_puzzle_mode(self):
     self.puzzle_placed_cells.clear()
     self.puzzle_state_hashes.clear()
     self.puzzle_win_gen = None
+    self.draw_mode = None
     self._flash("Puzzle mode OFF")
 
 
@@ -46,6 +47,7 @@ def _puzzle_start_planning(self, puzzle: dict):
     self.puzzle_peak_pop = 0
     self.puzzle_score = 0
     self.puzzle_initial_bbox = None
+    self.draw_mode = None
     # Clear grid for a fresh start
     self.grid.clear()
     self.running = False
@@ -73,6 +75,7 @@ def _puzzle_run(self):
         self._flash(f"Too many cells! Max {max_cells}, you placed {n}")
         return
     self.puzzle_phase = "running"
+    self.draw_mode = None
     self.puzzle_start_pop = n
     self.puzzle_sim_gen = 0
     self.puzzle_peak_pop = n
