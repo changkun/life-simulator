@@ -1,10 +1,10 @@
-"""Mode: wfc — simulation mode for the life package."""
+"""Wave Function Collapse — tiles collapse one cell at a time under local adjacency rules."""
 import curses
 import random
 
 
 def _enter_wfc_mode(self):
-    """Enter WFC mode — show preset menu."""
+    """Enter Wave Function Collapse mode and show the preset menu."""
     self.wfc_menu = True
     self.wfc_menu_sel = 0
     self._flash("Wave Function Collapse — select a configuration")
@@ -12,26 +12,25 @@ def _enter_wfc_mode(self):
 
 
 def _exit_wfc_mode(self):
-    """Exit WFC mode."""
+    """Exit Wave Function Collapse mode."""
     self.wfc_mode = False
     self.wfc_menu = False
     self.wfc_running = False
     self.wfc_grid = []
     self.wfc_collapsed = []
-    self._flash("WFC mode OFF")
+    self._flash("Wave Function Collapse OFF")
 
 
 
 def _wfc_init(self, preset_idx: int):
-    """Initialize WFC simulation with the given preset."""
-    import random as _rng
+    """Start the simulation with the given preset."""
     name, _desc, num_tiles, _tile_names, adj_rules = self.WFC_PRESETS[preset_idx]
 
     self.wfc_preset_name = name
     self.wfc_num_tiles = num_tiles
     self.wfc_preset_idx = preset_idx
 
-    # Make adjacency bidirectional/symmetric
+    # Rules are made symmetric: if A allows B to its North, B allows A to its South.
     opposites = {"N": "S", "S": "N", "E": "W", "W": "E"}
     self.wfc_adjacency = {}
     for t in range(num_tiles):
@@ -39,8 +38,6 @@ def _wfc_init(self, preset_idx: int):
         for d in ("N", "S", "E", "W"):
             self.wfc_adjacency[t][d] = set(adj_rules.get(t, {}).get(d, set()))
 
-    # Enforce symmetry: if tile A allows tile B to its North,
-    # then tile B must allow tile A to its South
     for t in range(num_tiles):
         for d in ("N", "S", "E", "W"):
             od = opposites[d]
@@ -54,7 +51,6 @@ def _wfc_init(self, preset_idx: int):
     rows, cols = self.wfc_rows, self.wfc_cols
     all_tiles = set(range(num_tiles))
 
-    # Initialize every cell with all possibilities
     self.wfc_grid = [[set(all_tiles) for _ in range(cols)] for _ in range(rows)]
     self.wfc_collapsed = [[-1] * cols for _ in range(rows)]
 
@@ -70,8 +66,7 @@ def _wfc_init(self, preset_idx: int):
 
 
 def _wfc_step(self):
-    """Perform one WFC collapse step: pick lowest-entropy cell, collapse, propagate."""
-    import random as _rng
+    """Collapse the lowest-entropy cell to a random tile and propagate."""
 
     if self.wfc_complete or self.wfc_contradiction:
         return
@@ -80,7 +75,7 @@ def _wfc_step(self):
     grid = self.wfc_grid
     collapsed = self.wfc_collapsed
 
-    # Find the uncollapsed cell with lowest entropy (smallest number of possibilities)
+    # Entropy is the number of tiles a cell still allows.
     min_entropy = self.wfc_num_tiles + 1
     candidates = []
     for r in range(rows):
@@ -97,21 +92,16 @@ def _wfc_step(self):
                     candidates.append((r, c))
 
     if not candidates:
-        # All cells collapsed
         self.wfc_complete = True
         self.wfc_running = False
         self._flash("WFC complete! All cells collapsed.")
         return
 
-    # Pick a random cell among lowest-entropy candidates
-    cr, cc = _rng.choice(candidates)
-
-    # Collapse: pick a random tile from possibilities
-    tile = _rng.choice(list(grid[cr][cc]))
+    cr, cc = random.choice(candidates)
+    tile = random.choice(list(grid[cr][cc]))
     grid[cr][cc] = {tile}
     collapsed[cr][cc] = tile
 
-    # Propagate constraints
     self._wfc_propagate(cr, cc)
 
     self.wfc_generation += 1
@@ -127,13 +117,12 @@ def _wfc_contradict(self):
 
 
 def _wfc_propagate(self, start_r: int, start_c: int):
-    """Propagate constraints from a collapsed cell using BFS."""
+    """Narrow neighbouring cells outward from (start_r, start_c) until nothing changes."""
     rows, cols = self.wfc_rows, self.wfc_cols
     grid = self.wfc_grid
     collapsed = self.wfc_collapsed
     adjacency = self.wfc_adjacency
 
-    # Direction offsets: (dr, dc, direction_name)
     dirs = [(-1, 0, "N"), (1, 0, "S"), (0, 1, "E"), (0, -1, "W")]
     stack = [(start_r, start_c)]
 
@@ -146,14 +135,12 @@ def _wfc_propagate(self, start_r: int, start_c: int):
             if nr < 0 or nr >= rows or nc < 0 or nc >= cols:
                 continue
             if collapsed[nr][nc] != -1:
-                continue  # already collapsed, skip
+                continue
 
-            # Compute what tiles are allowed in neighbor based on current cell
             allowed = set()
             for t in current_tiles:
                 allowed |= adjacency[t][d]
 
-            # Intersect with neighbor's current possibilities
             neighbor_before = len(grid[nr][nc])
             grid[nr][nc] &= allowed
 
@@ -161,9 +148,7 @@ def _wfc_propagate(self, start_r: int, start_c: int):
                 self._wfc_contradict()
                 return
 
-            # If we reduced possibilities, propagate further
             if len(grid[nr][nc]) < neighbor_before:
-                # Auto-collapse if only one option left
                 if len(grid[nr][nc]) == 1:
                     collapsed[nr][nc] = next(iter(grid[nr][nc]))
                 stack.append((nr, nc))
@@ -171,7 +156,7 @@ def _wfc_propagate(self, start_r: int, start_c: int):
 
 
 def _handle_wfc_menu_key(self, key: int) -> bool:
-    """Handle input in WFC preset menu."""
+    """Handle keys in the preset menu."""
     n = len(self.WFC_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.wfc_menu_sel = (self.wfc_menu_sel + 1) % n
@@ -187,7 +172,7 @@ def _handle_wfc_menu_key(self, key: int) -> bool:
 
 
 def _handle_wfc_key(self, key: int) -> bool:
-    """Handle input in active WFC simulation."""
+    """Handle keys while the simulation runs."""
     if key == ord(" "):
         if self.wfc_complete or self.wfc_contradiction:
             return True
@@ -196,10 +181,8 @@ def _handle_wfc_key(self, key: int) -> bool:
     elif key in (ord("n"), ord(".")):
         self._wfc_step()
     elif key == ord("r"):
-        # Restart with same preset
         self._wfc_init(self.wfc_preset_idx)
     elif key == ord("s") or key == ord("S"):
-        # Adjust steps per frame
         if key == ord("s"):
             self.wfc_steps_per_frame = min(50, self.wfc_steps_per_frame + 1)
         else:
@@ -214,7 +197,7 @@ def _handle_wfc_key(self, key: int) -> bool:
 
 
 def _draw_wfc_menu(self, max_y: int, max_x: int):
-    """Draw the WFC preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Wave Function Collapse ── Select Configuration ──"
     try:
@@ -239,7 +222,7 @@ def _draw_wfc_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hint = " [j/k]=navigate  [Enter]=select  [q]=cancel"
+    hint = " j/k=select  Enter=start  q=cancel"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
                            curses.color_pair(6) | curses.A_DIM)
@@ -249,19 +232,17 @@ def _draw_wfc_menu(self, max_y: int, max_x: int):
 
 
 def _draw_wfc(self, max_y: int, max_x: int):
-    """Draw the active WFC simulation."""
+    """Draw the tile grid."""
     self.stdscr.erase()
     rows, cols = self.wfc_rows, self.wfc_cols
     collapsed = self.wfc_collapsed
     grid = self.wfc_grid
     preset_tiles = self.WFC_PRESET_TILES[self.wfc_preset_idx]
 
-    # Count collapsed cells
     num_collapsed = sum(1 for r in range(rows) for c in range(cols) if collapsed[r][c] != -1)
     total = rows * cols
     pct = num_collapsed * 100 // total if total > 0 else 0
 
-    # Title bar
     if self.wfc_contradiction:
         state = "✗ CONTRADICTION"
     elif self.wfc_complete:
@@ -286,7 +267,6 @@ def _draw_wfc(self, max_y: int, max_x: int):
         for c in range(view_cols):
             tile_idx = collapsed[r][c]
             if tile_idx != -1:
-                # Collapsed cell — render the tile
                 display_idx = preset_tiles[tile_idx] if tile_idx < len(preset_tiles) else 0
                 if display_idx < len(self.WFC_TILE_CHARS):
                     ch, color = self.WFC_TILE_CHARS[display_idx]
@@ -298,7 +278,6 @@ def _draw_wfc(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
             else:
-                # Uncollapsed — show entropy as brightness
                 entropy = len(grid[r][c])
                 if entropy <= 1:
                     ch = "!!"
@@ -317,8 +296,7 @@ def _draw_wfc(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    # Bottom hint bar
-    hint = " [Space]=run  [n]=step  [r]=restart  [s/S]=speed  [q]=quit"
+    hint = " Space=run  n=step  r=restart  s/S=speed  q=exit"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
                            curses.color_pair(6) | curses.A_DIM)
@@ -329,7 +307,7 @@ def _draw_wfc(self, max_y: int, max_x: int):
 
 
 def register(App):
-    """Register wfc mode methods on the App class."""
+    """Register Wave Function Collapse mode on the App class."""
     App._enter_wfc_mode = _enter_wfc_mode
     App._exit_wfc_mode = _exit_wfc_mode
     App._wfc_init = _wfc_init
