@@ -3393,10 +3393,6 @@ class App:
         if self._tt_handle_key(key):
             return True
 
-        # ── Universal topology key handling ──
-        if self._topology_handle_key(key):
-            return True
-
         # ── Parameter tuner key handling ──
         if key == ord('P') and self._get_active_mode_prefix() is not None:
             self._toggle_param_tuner()
@@ -4850,12 +4846,6 @@ class App:
             else:
                 self._enter_boids_mode()
             return True
-        if key == ord("0"):
-            if self.plife_mode:
-                self._exit_plife_mode()
-            else:
-                self._enter_plife_mode()
-            return True
         if key == ord("Y"):
             if self.nbody_mode:
                 self._exit_nbody_mode()
@@ -4867,12 +4857,6 @@ class App:
                 self._exit_dla_mode()
             else:
                 self._enter_dla_mode()
-            return True
-        if key == ord("E"):
-            if self.sir_mode:
-                self._exit_sir_mode()
-            else:
-                self._enter_sir_mode()
             return True
         if key == ord("P"):
             if self.sandpile_mode:
@@ -4915,12 +4899,6 @@ class App:
                 self._exit_lv_mode()
             else:
                 self._enter_lv_mode()
-            return True
-        if key == ord("K"):
-            if self.schelling_mode:
-                self._exit_schelling_mode()
-            else:
-                self._enter_schelling_mode()
             return True
         if key == ord("@"):
             if self.spd_mode:
@@ -5006,12 +4984,6 @@ class App:
             else:
                 self._enter_attractor_mode()
             return True
-        if key == ord("^"):
-            if self.qwalk_mode:
-                self._exit_qwalk_mode()
-            else:
-                self._enter_qwalk_mode()
-            return True
         if key == ord(";"):
             if self.terrain_mode:
                 self._exit_terrain_mode()
@@ -5048,23 +5020,11 @@ class App:
             else:
                 self._enter_fireworks_mode()
             return True
-        if key == 2:  # Ctrl+B — Fractal Explorer
-            if self.fractal_mode:
-                self._exit_fractal_mode()
-            else:
-                self._enter_fractal_mode()
-            return True
         if key == 4:  # Ctrl+D — Navier-Stokes Fluid Dynamics
             if self.ns_mode:
                 self._exit_ns_mode()
             else:
                 self._enter_ns_mode()
-            return True
-        if key == 16:  # Ctrl+P — Double Pendulum
-            if self.dpend_mode:
-                self._exit_dpend_mode()
-            else:
-                self._enter_dpend_mode()
             return True
         if key == 18:  # Ctrl+R — Rayleigh-Bénard Convection
             if self.rbc_mode:
@@ -5078,12 +5038,6 @@ class App:
             else:
                 self._enter_chladni_mode()
             return True
-        if key == 20:  # Ctrl+T — Cellular Potts Model
-            if self.cpm_mode:
-                self._exit_cpm_mode()
-            else:
-                self._enter_cpm_mode()
-            return True
         if key == 7:  # Ctrl+G — Chaos Game / IFS Fractal
             if self.ifs_mode:
                 self._exit_ifs_mode()
@@ -5095,12 +5049,6 @@ class App:
                 self._exit_magfield_mode()
             else:
                 self._enter_magfield_mode()
-            return True
-        if key == 5:  # Ctrl+E — FDTD Electromagnetic Wave Propagation
-            if self.fdtd_mode:
-                self._exit_fdtd_mode()
-            else:
-                self._enter_fdtd_mode()
             return True
         if key == 1:  # Ctrl+A — Smoothed Particle Hydrodynamics
             if self.sph_mode:
@@ -6859,12 +6807,10 @@ class App:
             "║  L         Maze Generation & Pathfinding      ║",
             "║  Y         N-Body Gravity (orbital sim)        ║",
             "║  D         DLA (diffusion-limited aggregation) ║",
-            "║  E         Epidemic / SIR disease spread      ║",
             "║  P         Abelian Sandpile (fractal grains)  ║",
             "║  O         Forest Fire (growth & lightning)  ║",
             "║  U         Cyclic Cellular Automaton         ║",
             "║  J         Predator-Prey (Lotka-Volterra)    ║",
-            "║  K         Schelling Segregation Model       ║",
             "║  @         Prisoner's Dilemma (Game Theory)  ║",
             "║  Q         Turmites (2D Turing Machine)      ║",
             "║  #         Ising Model (magnetic spins)      ║",
@@ -6876,12 +6822,10 @@ class App:
             "║  {         Chemotaxis (bacterial colonies)   ║",
             "║  }         MHD Plasma (magnetohydrodynamics) ║",
             "║  |         Strange Attractors (chaotic ODEs) ║",
-            "║  ^         Quantum Walk (interference patterns)║",
             "║  \"         Galaxy Formation (spiral dynamics)║",
             "║  Ctrl+D    Navier-Stokes Fluid (dye advection)║",
             "║  Ctrl+R    Rayleigh-Bénard Convection cells   ║",
             "║  Ctrl+L    Chladni Plate vibration patterns  ║",
-            "║  Ctrl+T    Cellular Potts Model (tissue sim)  ║",
             "║  Ctrl+G    Chaos Game / IFS Fractals          ║",
             "║  Ctrl+N    Magnetic Field Lines (particles)  ║",
             "║  g         Genome: export/import sim config    ║",

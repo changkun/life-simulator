@@ -74,13 +74,12 @@ def test_frame_count_increments_only_when_active():
     assert app.pp_frame_count == 1
 
 
-def test_handle_key_toggle_menu():
-    """Ctrl+V (key=22) toggles the pp_menu."""
+def test_open_menu_and_close_with_esc():
+    """The mode browser opens the menu; Esc closes it."""
     app = _make_app()
     assert app.pp_menu is False
-    consumed = app._pp_handle_key(22)
-    assert consumed is True
+    assert app._pp_handle_key(22) is False  # Ctrl+V belongs to the sparkline HUD
+    app._pp_open_menu()
     assert app.pp_menu is True
-    consumed = app._pp_handle_key(22)
-    assert consumed is True
+    assert app._pp_handle_key(27) is True
     assert app.pp_menu is False

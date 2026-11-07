@@ -1,7 +1,7 @@
 """Topology Mode — run grid simulations on non-Euclidean surfaces.
 
-Ctrl+W cycles the grid's boundary conditions through plane, torus, Klein
-bottle, Möbius strip and projective plane.
+The mode browser's Topology Mode entry cycles the grid's boundary conditions
+through plane, torus, Klein bottle, Möbius strip and projective plane.
 
 Supported topologies:
   plane            – hard edges, no wrapping (finite flat sheet)
@@ -71,16 +71,6 @@ def _topology_set(self, topo_name):
         self.grid.topology = topo_name
         info = TOPOLOGY_INFO[topo_name]
         self._flash(f"{info['symbol']} Topology: {info['label']} — {info['desc']}")
-
-
-# ── Key handling ────────────────────────────────────────────────────────────
-
-def _topology_handle_key(self, key):
-    """Handle topology keys. Return True if the key was consumed."""
-    if key == 23:  # Ctrl+W
-        _topology_cycle(self, 1)
-        return True
-    return False
 
 
 # ── Visual indicators ───────────────────────────────────────────────────────
@@ -249,6 +239,5 @@ def register(App):
     """Register topology methods on the App class."""
     App._topology_cycle = _topology_cycle
     App._topology_set = _topology_set
-    App._topology_handle_key = _topology_handle_key
     App._draw_topology_indicator = _draw_topology_indicator
     App._draw_topology_edges = _draw_topology_edges

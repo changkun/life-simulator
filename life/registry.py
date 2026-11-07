@@ -9,8 +9,10 @@ MODE_CATEGORIES = [
     "Game Theory & Social",
     "Fractals & Chaos",
     "Procedural & Computational",
+    "Audio & Visual",
     "Complex Simulations",
     "Meta Modes",
+    "Physics & Math",
 ]
 
 MODE_REGISTRY = [
@@ -33,14 +35,14 @@ MODE_REGISTRY = [
      "desc": "Continuous cellular automaton with smooth kernels", "attr": "lenia_mode", "enter": "_enter_lenia_mode", "exit": "_exit_lenia_mode"},
     {"name": "Turmites", "key": "Q", "category": "Classic CA",
      "desc": "2D Turing machines with colored states", "attr": "turmite_mode", "enter": "_enter_turmite_mode", "exit": "_exit_turmite_mode"},
-    {"name": "3D Game of Life", "key": "Ctrl+Shift+L", "category": "Classic CA",
+    {"name": "3D Game of Life", "key": "—", "category": "Classic CA",
      "desc": "Volumetric 3D cellular automaton with ASCII ray casting", "attr": "gol3d_mode", "enter": "_enter_gol3d_mode", "exit": "_exit_gol3d_mode"},
     # ── Particle & Swarm ──
     {"name": "Falling Sand", "key": "5", "category": "Particle & Swarm",
      "desc": "Particle physics sandbox with sand/water/fire", "attr": "sand_mode", "enter": "_enter_sand_mode", "exit": "_exit_sand_mode"},
     {"name": "Boids Flocking", "key": "9", "category": "Particle & Swarm",
      "desc": "Flocking simulation with separation/alignment/cohesion", "attr": "boids_mode", "enter": "_enter_boids_mode", "exit": "_exit_boids_mode"},
-    {"name": "Particle Life", "key": "0", "category": "Particle & Swarm",
+    {"name": "Particle Life", "key": "—", "category": "Particle & Swarm",
      "desc": "Attraction-based colored particle system", "attr": "plife_mode", "enter": "_enter_plife_mode", "exit": "_exit_plife_mode"},
     {"name": "Physarum Slime Mold", "key": "8", "category": "Particle & Swarm",
      "desc": "Agent-based slime mold network formation", "attr": "physarum_mode", "enter": "_enter_physarum_mode", "exit": "_exit_physarum_mode"},
@@ -61,7 +63,7 @@ MODE_REGISTRY = [
      "desc": "Magnetic spin system with temperature", "attr": "ising_mode", "enter": "_enter_ising_mode", "exit": "_exit_ising_mode"},
     {"name": "Kuramoto Oscillators", "key": "(", "category": "Physics & Waves",
      "desc": "Coupled phase oscillator synchronization", "attr": "kuramoto_mode", "enter": "_enter_kuramoto_mode", "exit": "_exit_kuramoto_mode"},
-    {"name": "Quantum Walk", "key": "^", "category": "Physics & Waves",
+    {"name": "Quantum Walk", "key": "—", "category": "Physics & Waves",
      "desc": "Quantum interference on a lattice", "attr": "qwalk_mode", "enter": "_enter_qwalk_mode", "exit": "_exit_qwalk_mode"},
     {"name": "Lightning", "key": "—", "category": "Physics & Waves",
      "desc": "Dielectric breakdown lightning bolt patterns", "attr": "lightning_mode", "enter": "_enter_lightning_mode", "exit": "_exit_lightning_mode"},
@@ -69,9 +71,9 @@ MODE_REGISTRY = [
      "desc": "Acoustic vibration nodal patterns", "attr": "chladni_mode", "enter": "_enter_chladni_mode", "exit": "_exit_chladni_mode"},
     {"name": "Magnetic Field Lines", "key": "Ctrl+N", "category": "Physics & Waves",
      "desc": "Dipole magnetic field visualization", "attr": "magfield_mode", "enter": "_enter_magfield_mode", "exit": "_exit_magfield_mode"},
-    {"name": "FDTD Electromagnetic Waves", "key": "Ctrl+E", "category": "Physics & Waves",
+    {"name": "FDTD Electromagnetic Waves", "key": "—", "category": "Physics & Waves",
      "desc": "Finite-difference time-domain EM propagation", "attr": "fdtd_mode", "enter": "_enter_fdtd_mode", "exit": "_exit_fdtd_mode"},
-    {"name": "Double Pendulum", "key": "Ctrl+P", "category": "Physics & Waves",
+    {"name": "Double Pendulum", "key": "—", "category": "Physics & Waves",
      "desc": "Chaotic double pendulum phase traces", "attr": "dpend_mode", "enter": "_enter_dpend_mode", "exit": "_exit_dpend_mode"},
     {"name": "Cloth Simulation", "key": "'", "category": "Physics & Waves",
      "desc": "Spring-mass cloth with gravity and wind", "attr": "cloth_mode", "enter": "_enter_cloth_mode", "exit": "_exit_cloth_mode"},
@@ -99,18 +101,18 @@ MODE_REGISTRY = [
      "desc": "Bacterial colony formation with chemotaxis", "attr": "chemo_mode", "enter": "_enter_chemo_mode", "exit": "_exit_chemo_mode"},
     {"name": "Forest Fire", "key": "O", "category": "Chemical & Biological",
      "desc": "Fire spread with growth and lightning strikes", "attr": "fire_mode", "enter": "_enter_fire_mode", "exit": "_exit_fire_mode"},
-    {"name": "SIR Epidemic", "key": "E", "category": "Chemical & Biological",
+    {"name": "SIR Epidemic", "key": "—", "category": "Chemical & Biological",
      "desc": "Disease spread model (Susceptible/Infected/Recovered)", "attr": "sir_mode", "enter": "_enter_sir_mode", "exit": "_exit_sir_mode"},
     {"name": "Lotka-Volterra", "key": "J", "category": "Chemical & Biological",
      "desc": "Predator-prey population dynamics", "attr": "lv_mode", "enter": "_enter_lv_mode", "exit": "_exit_lv_mode"},
     {"name": "Spiking Neural Network", "key": ")", "category": "Chemical & Biological",
      "desc": "Izhikevich neuron model with spike propagation", "attr": "snn_mode", "enter": "_enter_snn_mode", "exit": "_exit_snn_mode"},
-    {"name": "Cellular Potts Model", "key": "Ctrl+T", "category": "Chemical & Biological",
+    {"name": "Cellular Potts Model", "key": "—", "category": "Chemical & Biological",
      "desc": "Tissue/cell simulation with adhesion energy", "attr": "cpm_mode", "enter": "_enter_cpm_mode", "exit": "_exit_cpm_mode"},
     # ── Game Theory & Social ──
     {"name": "Spatial Prisoner's Dilemma", "key": "@", "category": "Game Theory & Social",
      "desc": "Cooperation vs defection on a grid", "attr": "spd_mode", "enter": "_enter_spd_mode", "exit": "_exit_spd_mode"},
-    {"name": "Schelling Segregation", "key": "K", "category": "Game Theory & Social",
+    {"name": "Schelling Segregation", "key": "—", "category": "Game Theory & Social",
      "desc": "Neighborhood preference-driven segregation", "attr": "schelling_mode", "enter": "_enter_schelling_mode", "exit": "_exit_schelling_mode"},
     {"name": "Rock-Paper-Scissors", "key": "&", "category": "Game Theory & Social",
      "desc": "Cyclic dominance spatial competition", "attr": "rps_mode", "enter": "_enter_rps_mode", "exit": "_exit_rps_mode"},
@@ -121,7 +123,7 @@ MODE_REGISTRY = [
      "desc": "Self-organized criticality with toppling", "attr": "sandpile_mode", "enter": "_enter_sandpile_mode", "exit": "_exit_sandpile_mode"},
     {"name": "Strange Attractors", "key": "|", "category": "Fractals & Chaos",
      "desc": "Lorenz, Rossler, and other chaotic ODEs", "attr": "attractor_mode", "enter": "_enter_attractor_mode", "exit": "_exit_attractor_mode"},
-    {"name": "Fractal Explorer", "key": "Ctrl+B", "category": "Fractals & Chaos",
+    {"name": "Fractal Explorer", "key": "—", "category": "Fractals & Chaos",
      "desc": "Mandelbrot and Julia set zoom explorer", "attr": "fractal_mode", "enter": "_enter_fractal_mode", "exit": "_exit_fractal_mode"},
     {"name": "Snowflake Growth", "key": "*", "category": "Fractals & Chaos",
      "desc": "Reiter crystal growth model", "attr": "snowflake_mode", "enter": "_enter_snowflake_mode", "exit": "_exit_snowflake_mode"},
@@ -142,18 +144,18 @@ MODE_REGISTRY = [
      "desc": "Procedural landscape with erosion simulation", "attr": "terrain_mode", "enter": "_enter_terrain_mode", "exit": "_exit_terrain_mode"},
     {"name": "3D Terrain Flythrough", "key": "Ctrl+Y", "category": "Procedural & Computational",
      "desc": "First-person 3D flight over procedural terrain", "attr": "flythrough_mode", "enter": "_enter_flythrough_mode", "exit": "_exit_flythrough_mode"},
-    {"name": "SDF Ray Marching", "key": "Ctrl+Shift+R", "category": "Procedural & Computational",
+    {"name": "SDF Ray Marching", "key": "—", "category": "Procedural & Computational",
      "desc": "Real-time 3D SDF volume rendering with ASCII shading", "attr": "raymarch_mode", "enter": "_enter_raymarch_mode", "exit": "_exit_raymarch_mode"},
-    {"name": "Shader Toy", "key": "Ctrl+Shift+S", "category": "Procedural & Computational",
+    {"name": "Shader Toy", "key": "—", "category": "Procedural & Computational",
      "desc": "Programmable pixel shader engine with ASCII output", "attr": "shadertoy_mode", "enter": "_enter_shadertoy_mode", "exit": "_exit_shadertoy_mode"},
     # ── Audio & Visual ──
-    {"name": "Music Visualizer", "key": "Ctrl+Shift+M", "category": "Audio & Visual",
+    {"name": "Music Visualizer", "key": "—", "category": "Audio & Visual",
      "desc": "Audio-reactive ASCII visualizer with spectrum, waveform & particles", "attr": "musvis_mode", "enter": "_enter_musvis_mode", "exit": "_exit_musvis_mode"},
-    {"name": "Snowfall & Blizzard", "key": "Ctrl+Shift+B", "category": "Audio & Visual",
+    {"name": "Snowfall & Blizzard", "key": "—", "category": "Audio & Visual",
      "desc": "Realistic snowfall with wind dynamics, accumulation, drifting & blizzard controls", "attr": "snowfall_mode", "enter": "_enter_snowfall_mode", "exit": "_exit_snowfall_mode"},
-    {"name": "Matrix Digital Rain", "key": "Ctrl+Shift+Z", "category": "Audio & Visual",
+    {"name": "Matrix Digital Rain", "key": "—", "category": "Audio & Visual",
      "desc": "Iconic falling green character streams with bright heads and fading tails", "attr": "matrix_mode", "enter": "_enter_matrix_mode", "exit": "_exit_matrix_mode"},
-    {"name": "Cellular Symphony", "key": "Ctrl+Shift+Y", "category": "Audio & Visual",
+    {"name": "Cellular Symphony", "key": "—", "category": "Audio & Visual",
      "desc": "Real-time sonification — grid rows become a sequencer turning CA patterns into emergent music", "attr": "symphony_mode", "enter": "_enter_symphony_mode", "exit": "_exit_symphony_mode"},
     # ── Complex Simulations ──
     {"name": "Traffic Flow", "key": "T", "category": "Complex Simulations",
@@ -174,61 +176,61 @@ MODE_REGISTRY = [
     {"name": "Evolution / GA", "key": "—", "category": "Meta Modes",
      "desc": "Genetic algorithm rule evolution", "attr": "evo_mode", "enter": "_enter_evo_mode", "exit": "_exit_evo_mode"},
     # ── Artificial Life ──
-    {"name": "Artificial Life Ecosystem", "key": "Ctrl+Shift+A", "category": "Chemical & Biological",
+    {"name": "Artificial Life Ecosystem", "key": "—", "category": "Chemical & Biological",
      "desc": "Neural-net creatures forage, flee, reproduce & evolve", "attr": "alife_mode", "enter": "_enter_alife_mode", "exit": "_exit_alife_mode"},
     # ── FPS Raycaster ──
-    {"name": "Doom Raycaster", "key": "Ctrl+Shift+D", "category": "Procedural & Computational",
+    {"name": "Doom Raycaster", "key": "—", "category": "Procedural & Computational",
      "desc": "Walkable 3D maze with ASCII raycasting, WASD movement & minimap", "attr": "doomrc_mode", "enter": "_enter_doomrc_mode", "exit": "_exit_doomrc_mode"},
     # ── Plate Tectonics & Mantle Convection ──
-    {"name": "Plate Tectonics & Mantle Convection", "key": "Ctrl+Shift+T", "category": "Physics & Waves",
+    {"name": "Plate Tectonics & Mantle Convection", "key": "—", "category": "Physics & Waves",
      "desc": "Mantle convection cells driving plate drift, subduction, ridges, orogenesis, transform quakes, hotspot volcanism & Wilson Cycle", "attr": "tectonic_mode", "enter": "_enter_tectonic_mode", "exit": "_exit_tectonic_mode"},
     # ── Atmospheric Weather ──
-    {"name": "Atmospheric Weather", "key": "Ctrl+Shift+W", "category": "Fluid Dynamics",
+    {"name": "Atmospheric Weather", "key": "—", "category": "Fluid Dynamics",
      "desc": "Dynamic weather with pressure systems, wind, clouds, rain & fronts", "attr": "weather_mode", "enter": "_enter_weather_mode", "exit": "_exit_weather_mode"},
     # ── Ocean Currents ──
-    {"name": "Ocean Currents", "key": "Ctrl+Shift+O", "category": "Fluid Dynamics",
+    {"name": "Ocean Currents", "key": "—", "category": "Fluid Dynamics",
      "desc": "Thermohaline circulation with temperature, salinity, currents & plankton blooms", "attr": "ocean_mode", "enter": "_enter_ocean_mode", "exit": "_exit_ocean_mode"},
     # ── Volcanic Eruption ──
-    {"name": "Volcanic Eruption", "key": "Ctrl+Shift+V", "category": "Physics & Waves",
+    {"name": "Volcanic Eruption", "key": "—", "category": "Physics & Waves",
      "desc": "Magma pressure, eruptions, lava flows, pyroclastic currents & ash dispersion", "attr": "volcano_mode", "enter": "_enter_volcano_mode", "exit": "_exit_volcano_mode"},
     # ── Black Hole Accretion Disk ──
     {"name": "Black Hole Accretion Disk", "key": "—", "category": "Physics & Waves",
      "desc": "Accretion disk, gravitational lensing, relativistic jets & Hawking radiation", "attr": "blackhole_mode", "enter": "_enter_blackhole_mode", "exit": "_exit_blackhole_mode"},
     # ── Solar System Orrery ──
-    {"name": "Solar System Orrery", "key": "Ctrl+Shift+Y", "category": "Physics & Waves",
+    {"name": "Solar System Orrery", "key": "—", "category": "Physics & Waves",
      "desc": "Overhead solar system view with Keplerian orbits, all 8 planets & asteroid belt", "attr": "orrery_mode", "enter": "_enter_orrery_mode", "exit": "_exit_orrery_mode"},
     # ── Planetary Accretion ──
     {"name": "Planetary Accretion & Solar System Formation", "key": "—", "category": "Physics & Waves",
      "desc": "Protoplanetary disk accretion — dust to planetesimals to planets with migration, impacts & resonances", "attr": "accretion_mode", "enter": "_enter_accretion_mode", "exit": "_exit_accretion_mode"},
     # ── Aurora Borealis ──
-    {"name": "Aurora Borealis", "key": "Ctrl+Shift+N", "category": "Physics & Waves",
+    {"name": "Aurora Borealis", "key": "—", "category": "Physics & Waves",
      "desc": "Northern Lights with solar wind, magnetic field lines & shimmering curtains of color", "attr": "aurora_mode", "enter": "_enter_aurora_mode", "exit": "_exit_aurora_mode"},
     # ── Pendulum Wave ──
-    {"name": "Pendulum Wave", "key": "Ctrl+Shift+P", "category": "Physics & Waves",
+    {"name": "Pendulum Wave", "key": "—", "category": "Physics & Waves",
      "desc": "Row of uncoupled pendulums with incremental lengths producing mesmerizing wave patterns", "attr": "pwave_mode", "enter": "_enter_pwave_mode", "exit": "_exit_pwave_mode"},
     # ── Tornado & Supercell Storm ──
     {"name": "Tornado & Supercell Storm", "key": "—", "category": "Physics & Waves",
      "desc": "Rotating supercell thunderstorm with tornado vortex, debris, rain curtains & lightning", "attr": "tornado_mode", "enter": "_enter_tornado_mode", "exit": "_exit_tornado_mode"},
     # ── Sorting Algorithm Visualizer ──
-    {"name": "Sorting Algorithm Visualizer", "key": "Ctrl+Shift+X", "category": "Procedural & Computational",
+    {"name": "Sorting Algorithm Visualizer", "key": "—", "category": "Procedural & Computational",
      "desc": "Animated bar-chart visualization of classic sorting algorithms with color-coded comparisons & swaps", "attr": "sortvis_mode", "enter": "_enter_sortvis_mode", "exit": "_exit_sortvis_mode"},
     # ── DNA Helix & Genetic Algorithm ──
-    {"name": "DNA Helix & Genetic Algorithm", "key": "Ctrl+Shift+G", "category": "Procedural & Computational",
+    {"name": "DNA Helix & Genetic Algorithm", "key": "—", "category": "Procedural & Computational",
      "desc": "Rotating 3D ASCII double helix with live genetic algorithm evolving bit-string organisms toward a fitness target", "attr": "dnahelix_mode", "enter": "_enter_dnahelix_mode", "exit": "_exit_dnahelix_mode"},
     # ── Fourier Epicycle Drawing ──
-    {"name": "Fourier Epicycle Drawing", "key": "Ctrl+Shift+F", "category": "Procedural & Computational",
+    {"name": "Fourier Epicycle Drawing", "key": "—", "category": "Procedural & Computational",
      "desc": "Draw a path, then watch spinning epicycles reconstruct it via Discrete Fourier Transform", "attr": "fourier_mode", "enter": "_enter_fourier_mode", "exit": "_exit_fourier_mode"},
     # ── Fluid Rope / Honey Coiling ──
-    {"name": "Fluid Rope / Honey Coiling", "key": "Ctrl+Shift+H", "category": "Fluid Dynamics",
+    {"name": "Fluid Rope / Honey Coiling", "key": "—", "category": "Fluid Dynamics",
      "desc": "Viscous fluid pouring simulation with rope coiling, folding & buckling patterns", "attr": "fluidrope_mode", "enter": "_enter_fluidrope_mode", "exit": "_exit_fluidrope_mode"},
     # ── Lissajous Curve / Harmonograph ──
-    {"name": "Lissajous Curve / Harmonograph", "key": "Ctrl+Shift+J", "category": "Fractals & Chaos",
+    {"name": "Lissajous Curve / Harmonograph", "key": "—", "category": "Fractals & Chaos",
      "desc": "Coupled pendulum oscillator tracing decaying Lissajous figures and harmonograph spirals in real-time ASCII", "attr": "lissajous_mode", "enter": "_enter_lissajous_mode", "exit": "_exit_lissajous_mode"},
     # ── Maze Solving Algorithm Visualizer ──
-    {"name": "Maze Solver Visualizer", "key": "Ctrl+Shift+K", "category": "Procedural & Computational",
+    {"name": "Maze Solver Visualizer", "key": "—", "category": "Procedural & Computational",
      "desc": "Watch BFS, DFS, A* & Wall Follower solve mazes with color-coded exploration", "attr": "mazesolver_mode", "enter": "_enter_mazesolver_mode", "exit": "_exit_mazesolver_mode"},
     # ── Ant Farm Simulation ──
-    {"name": "Ant Farm Simulation", "key": "Ctrl+Shift+Q", "category": "Chemical & Biological",
+    {"name": "Ant Farm Simulation", "key": "—", "category": "Chemical & Biological",
      "desc": "Side-view ant colony with tunnel digging, pheromone trails, foraging & emergent architecture", "attr": "antfarm_mode", "enter": "_enter_antfarm_mode", "exit": "_exit_antfarm_mode"},
     # ── Kaleidoscope / Symmetry Pattern Generator ──
     {"name": "Kaleidoscope / Symmetry Patterns", "key": "—", "category": "Audio & Visual",
@@ -240,10 +242,10 @@ MODE_REGISTRY = [
     {"name": "Particle Collider / Hadron Collider", "key": "—", "category": "Physics & Math",
      "desc": "CERN-inspired particle accelerator ring with collisions, decay showers, energy readouts & particle detection", "attr": "collider_mode", "enter": "_enter_collider_mode", "exit": "_exit_collider_mode"},
     # ── Screensaver / Demo Reel ──
-    {"name": "Screensaver / Demo Reel", "key": "Ctrl+Shift+C", "category": "Meta Modes",
+    {"name": "Screensaver / Demo Reel", "key": "—", "category": "Meta Modes",
      "desc": "Auto-cycling showcase that plays through all modes with smooth transitions", "attr": "screensaver_mode", "enter": "_enter_screensaver_mode", "exit": "_exit_screensaver_mode"},
     # ── Parameter Space Explorer ──
-    {"name": "Parameter Space Explorer", "key": "Ctrl+Shift+E", "category": "Meta Modes",
+    {"name": "Parameter Space Explorer", "key": "—", "category": "Meta Modes",
      "desc": "Grid of live simulations with varied parameters for visual parameter space exploration", "attr": "pexplorer_mode", "enter": "_enter_param_explorer_mode", "exit": "_exit_param_explorer_mode"},
     # ── Evolution Lab ──
     {"name": "Evolution Lab", "key": "—", "category": "Meta Modes",
@@ -252,38 +254,38 @@ MODE_REGISTRY = [
     {"name": "Auto-Discovery", "key": "—", "category": "Meta Modes",
      "desc": "Autonomous explorer that mutates rules & seeds, scores by visual complexity, curates a gallery of beautiful patterns", "attr": "adisco_mode", "enter": "_enter_adisco_mode", "exit": "_exit_adisco_mode"},
     # ── Evolutionary Playground ──
-    {"name": "Evolutionary Playground", "key": "Ctrl+Shift+I", "category": "Meta Modes",
+    {"name": "Evolutionary Playground", "key": "—", "category": "Meta Modes",
      "desc": "Breed novel CA rules through interactive natural selection with crossover & mutation", "attr": "ep_mode", "enter": "_enter_evo_playground", "exit": "_exit_evo_playground"},
     # ── Live Rule Editor ──
     {"name": "Live Rule Editor", "key": "—", "category": "Meta Modes",
      "desc": "Type Python expressions to define custom CA rules and watch them run live", "attr": "re_mode", "enter": "_enter_rule_editor_mode", "exit": "_exit_rule_editor_mode"},
     # ── Simulation Mashup ──
-    {"name": "Simulation Mashup", "key": "Ctrl+M", "category": "Meta Modes",
+    {"name": "Simulation Mashup", "key": "—", "category": "Meta Modes",
      "desc": "Layer two simulations on the same grid with coupling for emergent behavior", "attr": "mashup_mode", "enter": "_enter_mashup_mode", "exit": "_exit_mashup_mode"},
     # ── Battle Royale ──
-    {"name": "Battle Royale", "key": "Ctrl+Shift+U", "category": "Meta Modes",
+    {"name": "Battle Royale", "key": "—", "category": "Meta Modes",
      "desc": "4 CA factions fight for territory — last faction standing wins", "attr": "br_mode", "enter": "_enter_battle_royale", "exit": "_exit_battle_royale"},
     # ── Simulation Portal ──
-    {"name": "Simulation Portal", "key": "Ctrl+J", "category": "Meta Modes",
+    {"name": "Simulation Portal", "key": "—", "category": "Meta Modes",
      "desc": "Spatial gateways connecting two simulations at a boundary with cross-talk", "attr": "portal_mode", "enter": "_enter_portal_mode", "exit": "_exit_portal_mode"},
     # ── Split-Screen Dual Simulation ──
     {"name": "Split-Screen Dual Simulation", "key": "—", "category": "Meta Modes",
      "desc": "Run any two simulations side-by-side with independent state and toggle-able focus", "attr": "split_mode", "enter": "_enter_split_mode", "exit": "_exit_split_mode"},
     # ── Simulation Observatory ──
-    {"name": "Simulation Observatory", "key": "Ctrl+O", "category": "Meta Modes",
+    {"name": "Simulation Observatory", "key": "—", "category": "Meta Modes",
      "desc": "Tiled split-screen running 4-9 simulations simultaneously with synced controls", "attr": "obs_mode", "enter": "_enter_observatory_mode", "exit": "_exit_observatory_mode"},
     # ── Layer Compositing ──
-    {"name": "Layer Compositing", "key": "Ctrl+K", "category": "Meta Modes",
+    {"name": "Layer Compositing", "key": "—", "category": "Meta Modes",
      "desc": "Stack 2-4 simulations as transparent layers with blend modes (add, XOR, mask, multiply)", "attr": "comp_mode", "enter": "_enter_comp_mode", "exit": "_exit_comp_mode"},
     # ── Cinematic Demo Reel ──
     {"name": "Cinematic Demo Reel", "key": "—", "category": "Meta Modes",
      "desc": "Auto-playing director with crossfade transitions, camera moves & parameter sweeps", "attr": "cinem_mode", "enter": "_enter_cinematic_demo_mode", "exit": "_exit_cinematic_demo_mode"},
     # ── Topology Mode ──
-    {"name": "Topology Mode", "key": "Ctrl+W", "category": "Meta Modes",
+    {"name": "Topology Mode", "key": "—", "category": "Meta Modes",
      "desc": "Cycle grid surface: plane, torus, Klein bottle, Möbius strip, projective plane", "attr": None, "enter": "_topology_cycle", "exit": None},
     # ── Visual Post-Processing Pipeline ──
-    {"name": "Visual FX Pipeline", "key": "Ctrl+V", "category": "Meta Modes",
-     "desc": "Composable ASCII visual effects: scanlines, bloom, trails, edge detect, color cycling, CRT", "attr": None, "enter": None, "exit": None},
+    {"name": "Visual FX Pipeline", "key": "—", "category": "Meta Modes",
+     "desc": "Composable ASCII visual effects: scanlines, bloom, trails, edge detect, color cycling, CRT", "attr": None, "enter": "_pp_open_menu", "exit": None},
     # ── Simulation Recording & Export ──
     {"name": "Recording & Export", "key": "Ctrl+X", "category": "Meta Modes",
      "desc": "Record terminal frames and export as asciinema .cast or plain-text flipbook", "attr": "cast_recording", "enter": "_cast_rec_toggle", "exit": "_cast_rec_stop"},
@@ -300,10 +302,10 @@ MODE_REGISTRY = [
     {"name": "Ancestor Search", "key": "—", "category": "Meta Modes",
      "desc": "Reverse-engineer predecessors of any pattern; detect Garden of Eden states with no ancestor", "attr": "anc_mode", "enter": "_enter_ancestor_search", "exit": "_exit_ancestor_search"},
     # ── Hyperbolic Cellular Automata ──
-    {"name": "Hyperbolic Cellular Automata", "key": "Ctrl+H", "category": "Classic CA",
+    {"name": "Hyperbolic Cellular Automata", "key": "—", "category": "Classic CA",
      "desc": "Game of Life on hyperbolic tilings ({5,4}, {7,3}, etc.) rendered as a Poincaré disk", "attr": "hyp_mode", "enter": "_enter_hyp_mode", "exit": "_exit_hyp_mode"},
     # ── Graph-Based Cellular Automata ──
-    {"name": "Graph Cellular Automata", "key": "G", "category": "Classic CA",
+    {"name": "Graph Cellular Automata", "key": "—", "category": "Classic CA",
      "desc": "Game of Life on arbitrary network topologies: small-world, scale-free, random & more", "attr": "gca_mode", "enter": "_enter_gca_mode", "exit": "_exit_gca_mode"},
     # ── Self-Modifying Rules CA ──
     {"name": "Self-Modifying Rules CA", "key": "—", "category": "Meta Modes",
@@ -341,7 +343,7 @@ MODE_REGISTRY = [
     {"name": "Embryogenesis & Gastrulation", "key": "—", "category": "Chemical & Biological",
      "desc": "Multicellular development from zygote through cleavage, blastula, gastrulation & neurulation — morphogen gradients (BMP/Wnt/Nodal), cell fate determination via French Flag model, differential adhesion sorting, convergent extension & neural tube folding", "attr": "embryo_mode", "enter": "_enter_embryo_mode", "exit": "_exit_embryo_mode"},
     # ── Quantum Circuit Simulator ──
-    {"name": "Quantum Circuit Simulator", "key": "Ctrl+Q", "category": "Procedural & Computational",
+    {"name": "Quantum Circuit Simulator", "key": "—", "category": "Procedural & Computational",
      "desc": "Build & simulate quantum circuits with Bloch spheres, entanglement links & measurement histograms", "attr": "qcirc_mode", "enter": "_enter_qcirc_mode", "exit": "_exit_qcirc_mode"},
     # ── Electric Circuit Simulator ──
     {"name": "Electric Circuit Simulator", "key": "—", "category": "Physics & Waves",

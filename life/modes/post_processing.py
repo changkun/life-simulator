@@ -1,7 +1,8 @@
 """Visual FX Pipeline — stackable screen effects layered on top of any mode.
 
 Effects: scanlines, bloom, motion trails, edge detection, color cycling and
-CRT distortion.  The menu (1-6 toggle an effect) is meant to open with Ctrl+V.
+CRT distortion.  Open the menu from the mode browser (Visual FX Pipeline);
+1-6 toggle an effect and Esc closes it.
 """
 
 import curses
@@ -322,7 +323,7 @@ def _pp_draw_menu(self):
             pass
 
     # Hint bar
-    hint = "1-6=toggle  Ctrl+V/Esc=close"
+    hint = "1-6=toggle  Esc=close"
     hx = sx + (box_w - len(hint)) // 2
     try:
         self.stdscr.addstr(sy + box_h - 2, hx, hint, attr_hint)
@@ -360,18 +361,13 @@ def _pp_draw_indicator(self):
 
 # ── key handling ─────────────────────────────────────────────────────────
 
-def _pp_handle_key(self, key):
-    """Handle post-processing hotkeys.  Returns True if the key was consumed."""
-    if key == 22:  # Ctrl+V
-        self.pp_menu = not self.pp_menu
-        if not self.pp_menu:
-            if self.pp_active:
-                names = [n for eid, n in EFFECT_LIST if eid in self.pp_active]
-                self._flash("Visual FX: " + ", ".join(names))
-            else:
-                self._flash("Visual FX OFF")
-        return True
+def _pp_open_menu(self):
+    """Open the effect menu (the mode browser's Visual FX Pipeline entry)."""
+    self.pp_menu = True
 
+
+def _pp_handle_key(self, key):
+    """Handle keys while the effect menu is open. Return True if consumed."""
     if not self.pp_menu:
         return False
 
@@ -407,3 +403,4 @@ def register(App):
     App._pp_draw_menu = _pp_draw_menu
     App._pp_draw_indicator = _pp_draw_indicator
     App._pp_handle_key = _pp_handle_key
+    App._pp_open_menu = _pp_open_menu
