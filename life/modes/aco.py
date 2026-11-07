@@ -1,4 +1,4 @@
-"""Mode: aco — simulation mode for the life package."""
+"""Ant Colony Optimization — ants lay pheromone trails between a nest and food sources."""
 import curses
 import math
 import random
@@ -17,7 +17,7 @@ ACO_DENSITY = ["  ", "░░", "▒▒", "▓▓", "██"]
 
 
 def _enter_aco_mode(self):
-    """Enter ACO mode — show preset menu."""
+    """Show the Ant Colony Optimization preset menu."""
     self.aco_menu = True
     self.aco_menu_sel = 0
     self._flash("Ant Colony — select a configuration")
@@ -25,7 +25,7 @@ def _enter_aco_mode(self):
 
 
 def _exit_aco_mode(self):
-    """Exit ACO mode."""
+    """Leave Ant Colony Optimization and clear its state."""
     self.aco_mode = False
     self.aco_menu = False
     self.aco_running = False
@@ -37,7 +37,7 @@ def _exit_aco_mode(self):
 
 
 def _aco_init(self, preset_idx: int):
-    """Initialize ACO simulation with the given preset."""
+    """Start a simulation from the given preset."""
     name, _desc, evap, dep, diff, ratio, num_food, food_r = self.ACO_PRESETS[preset_idx]
     self.aco_preset_name = name
     self.aco_evaporation = evap
@@ -84,7 +84,7 @@ def _aco_init(self, preset_idx: int):
 
 
 def _aco_step(self):
-    """Advance ACO simulation by one step."""
+    """Advance the simulation by one step."""
     rows, cols = self.aco_rows, self.aco_cols
     pher = self.aco_pheromone
     nr, nc = self.aco_nest
@@ -189,7 +189,7 @@ def _aco_sense(self, ar: float, ac: float, heading: float, dist: float) -> float
 
 
 def _handle_aco_menu_key(self, key: int) -> bool:
-    """Handle input in ACO preset menu."""
+    """Handle keys in the preset menu."""
     n = len(self.ACO_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.aco_menu_sel = (self.aco_menu_sel + 1) % n
@@ -205,7 +205,7 @@ def _handle_aco_menu_key(self, key: int) -> bool:
 
 
 def _handle_aco_key(self, key: int) -> bool:
-    """Handle input in active ACO simulation."""
+    """Handle keys in the running simulation."""
     if key == ord(" "):
         self.aco_running = not self.aco_running
     elif key in (ord("n"), ord(".")):
@@ -384,7 +384,7 @@ def _draw_aco(self, max_y: int, max_x: int):
 
 
 def register(App):
-    """Register aco mode methods on the App class."""
+    """Register Ant Colony Optimization methods on the App class."""
     App.ACO_DENSITY = ACO_DENSITY
     App.ACO_PRESETS = ACO_PRESETS
     App._enter_aco_mode = _enter_aco_mode
