@@ -606,3 +606,19 @@ class TestDeterminism:
         rows_a = self._run_generations(110, 20)
         rows_b = self._run_generations(110, 20)
         assert rows_a == rows_b
+
+
+def test_row_history_is_bounded():
+    """Long runs must not grow the row history without limit."""
+    from life.modes.wolfram import WOLFRAM_MAX_ROWS
+    app = make_mock_app()
+    register(type(app))
+    app.wolfram_seed_mode = "center"
+    app.wolfram_rule = 90
+    app._wolfram_init()
+    for _ in range(WOLFRAM_MAX_ROWS + 50):
+        app._wolfram_step()
+    assert len(app.wolfram_rows) == WOLFRAM_MAX_ROWS
+    assert app.wolfram_dropped + len(app.wolfram_rows) - 1 == WOLFRAM_MAX_ROWS + 50
+    app._wolfram_init()
+    assert app.wolfram_dropped == 0

@@ -7,6 +7,8 @@ import time
 
 from life.constants import SPEEDS, SPEED_LABELS
 
+WOLFRAM_MAX_ROWS = 1000
+
 def _wolfram_apply_rule(self, rule_num: int, left: int, center: int, right: int) -> int:
     """Apply a Wolfram elementary rule. The 3-cell neighbourhood (left, center, right)
     forms a 3-bit index into the 8-bit rule number."""
@@ -37,6 +39,7 @@ def _wolfram_init(self):
         for c in range(self.wolfram_width):
             row0[c] = random.randint(0, 1)
     self.wolfram_rows = [row0]
+    self.wolfram_dropped = 0
 
 
 
@@ -53,6 +56,10 @@ def _wolfram_step(self):
         right = prev[(i + 1) % w]
         new_row[i] = self._wolfram_apply_rule(self.wolfram_rule, left, center, right)
     self.wolfram_rows.append(new_row)
+    # Keep memory bounded on long runs; only the newest rows are ever shown.
+    if len(self.wolfram_rows) > WOLFRAM_MAX_ROWS:
+        del self.wolfram_rows[0]
+        self.wolfram_dropped += 1
 
 
 
@@ -262,7 +269,7 @@ def _draw_wolfram(self, max_y: int, max_x: int):
     """Draw the Wolfram 1D automaton — rows cascade top to bottom."""
     # Title bar
     rule_bits = f"{self.wolfram_rule:08b}"
-    title = f" Wolfram Rule {self.wolfram_rule} [{rule_bits}]  Gen: {len(self.wolfram_rows) - 1}  Seed: {self.wolfram_seed_mode}"
+    title = f" Wolfram Rule {self.wolfram_rule} [{rule_bits}]  Gen: {self.wolfram_dropped + len(self.wolfram_rows) - 1}  Seed: {self.wolfram_seed_mode}"
     state = " PLAY" if self.wolfram_running else " PAUSE"
     title += f"  {state}"
     title = title[:max_x - 1]
@@ -328,7 +335,7 @@ def _draw_wolfram(self, max_y: int, max_x: int):
     if status_y > 0:
         pop = sum(self.wolfram_rows[-1]) if self.wolfram_rows else 0
         density = pop / self.wolfram_width * 100 if self.wolfram_width > 0 else 0
-        status = f" Rule: {self.wolfram_rule}{note}  |  Gen: {len(self.wolfram_rows) - 1}  |  Alive: {pop}/{self.wolfram_width} ({density:.0f}%)  |  Speed: {SPEED_LABELS[self.speed_idx]}"
+        status = f" Rule: {self.wolfram_rule}{note}  |  Gen: {self.wolfram_dropped + len(self.wolfram_rows) - 1}  |  Alive: {pop}/{self.wolfram_width} ({density:.0f}%)  |  Speed: {SPEED_LABELS[self.speed_idx]}"
         status = status[:max_x - 1]
         try:
             self.stdscr.addstr(status_y, 0, status, curses.color_pair(7) | curses.A_BOLD)
@@ -352,6 +359,7 @@ def _draw_wolfram(self, max_y: int, max_x: int):
 
 def register(App):
     """Register wolfram mode methods on the App class."""
+    App.wolfram_dropped = 0
     App._wolfram_apply_rule = _wolfram_apply_rule
     App._wolfram_init = _wolfram_init
     App._wolfram_step = _wolfram_step
