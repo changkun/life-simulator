@@ -236,7 +236,7 @@ def _exit_sortvis_mode(self):
 def _sortvis_init(self, preset: str):
     """Initialize sorting visualization from preset."""
     import random as _rnd
-    rows, cols = self.grid.rows, self.grid.cols
+    rows, cols = self.stdscr.getmaxyx()
     self.sortvis_rows = rows
     self.sortvis_cols = cols
     self.sortvis_generation = 0

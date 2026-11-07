@@ -379,3 +379,12 @@ def test_presets_structure():
         assert isinstance(name, str) and len(name) > 0
         assert isinstance(desc, str)
         assert key in ("bubble", "quick", "merge", "heap", "radix", "shell")
+
+
+def test_array_fits_screen_width():
+    """Every bar must fit on screen, whatever the grid size."""
+    app = _make_app()
+    app.stdscr = type(app.stdscr)(24, 80)
+    app._sortvis_init("quick")
+    assert len(app.sortvis_array) <= 80 - 4
+    assert app.sortvis_cols == 80
