@@ -1,20 +1,4 @@
-"""Electric Circuit Simulator — grid-based circuit builder with real-time
-current flow, voltage heatmap, and oscilloscope view.
-
-Users place components (batteries, resistors, capacitors, inductors, LEDs,
-switches, wires) on a grid and watch animated charge flow.  The simulator
-solves the circuit using Modified Nodal Analysis (Kirchhoff's laws) with
-transient response for reactive components (capacitors & inductors).
-
-Presets
--------
-1. Simple DC Loop       — battery + resistor, basic Ohm's law
-2. Voltage Divider      — two resistors splitting a voltage
-3. RC Charging Curve    — capacitor charging through resistor
-4. LC Oscillator        — energy sloshing between L and C
-5. RLC Resonance        — damped sinusoidal oscillation
-6. Wheatstone Bridge    — balanced bridge with galvanometer
-"""
+"""Electric Circuit Simulator — preset circuits solved by nodal analysis, with live current flow."""
 import curses
 import math
 import random
@@ -38,18 +22,6 @@ COMP_NAMES = {
     COMP_LED: "LED",
     COMP_SWITCH: "Switch",
     COMP_GROUND: "Ground",
-}
-
-# Visual characters for components (horizontal, vertical)
-COMP_CHARS = {
-    COMP_WIRE: ("─", "│"),
-    COMP_BATTERY: ("╠╣", "╦╩"),
-    COMP_RESISTOR: ("┤├", "┬┴"),
-    COMP_CAPACITOR: ("||", "═"),
-    COMP_INDUCTOR: ("∿∿", "∿"),
-    COMP_LED: ("▷|", "▽"),
-    COMP_SWITCH: ("/ ", "/ "),
-    COMP_GROUND: ("⏚", "⏚"),
 }
 
 # Direction constants
@@ -537,8 +509,6 @@ def _init_circuit(settings):
         "ind_currents": {},
         "switch_states": {},
         "charge_particles": [],
-        "voltage_history": [],
-        "current_history": [],
         "scope_data": [],
         "scope_data2": [],
         "power_total": 0.0,
@@ -659,6 +629,7 @@ def _exit_circuit_mode(self):
     """Exit Electric Circuit Simulator mode."""
     self.circuit_mode = False
     self.circuit_menu = False
+    self.circuit_running = False
     self.circuit_sim = None
 
 
@@ -825,9 +796,11 @@ def _draw_circuit(self, max_y, max_x):
     _draw_circuit_stats(self, sim, 1, view_w + 1, view_h, stats_w)
 
     # ── Footer ──
+    state = "play" if not self.circuit_running else "pause"
     paused = " PAUSED" if not self.circuit_running else ""
-    ac_hint = " ↑↓ freq ·" if sim.get("ac_source") else ""
-    hint = f" space pause · v view · s switch ·{ac_hint} +/- speed · r reset · q quit{paused}"
+    ac_hint = "  ↑↓=freq" if sim.get("ac_source") else ""
+    hint = (f" Space={state}  n=step  v=view  s=switch  +/-=spd{ac_hint}"
+            f"  R=menu  q=exit{paused}")
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
                            curses.A_DIM | curses.color_pair(7))
