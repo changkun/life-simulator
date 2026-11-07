@@ -1,9 +1,7 @@
-"""Braille-dot Sparkline Metrics HUD — real-time mini charts overlay.
+"""Sparkline Metrics HUD — braille mini charts of population, entropy, energy and diversity.
 
-Renders live sparkline charts for population, entropy, energy, and
-diversity index using Unicode braille characters (U+2800–U+28FF) for
-~2×4 sub-cell resolution per character.  Toggled with Ctrl+V across
-all 135 modes.  Auto-scales axes per metric.
+Each chart auto-scales and uses Unicode braille (U+2800–U+28FF), giving
+2×4 dots per character.  Toggled with Ctrl+V.
 """
 from __future__ import annotations
 
@@ -44,13 +42,8 @@ def _braille_sparkline(data: list[float], width: int, height: int) -> list[str]:
     if not data or width <= 0 or height <= 0:
         return [" " * width] * height
 
-    # Number of data columns we can represent
     n_cols = width * 2
-    # Take the most recent n_cols points (or pad with first value)
-    if len(data) >= n_cols:
-        vals = data[-n_cols:]
-    else:
-        vals = data[:]
+    vals = data[-n_cols:]
 
     lo = min(vals)
     hi = max(vals)
@@ -115,11 +108,7 @@ def _format_compact(value: float) -> str:
 # ── Energy computation ─────────────────────────────────────────────────────
 
 def _compute_energy(grid: "Grid") -> float:
-    """Compute a simple activity/energy metric.
-
-    Sum of all live cell values — for binary grids this equals population,
-    for multi-state grids it captures total excitation energy.
-    """
+    """Return the sum of all live cell values (the population for binary grids)."""
     total = 0.0
     for r in range(grid.rows):
         row = grid.cells[r]
@@ -131,11 +120,7 @@ def _compute_energy(grid: "Grid") -> float:
 
 
 def _compute_diversity(grid: "Grid") -> float:
-    """Compute a Shannon diversity index over cell states.
-
-    Returns the effective number of species (exp of Shannon entropy),
-    normalized to [0, 1] range based on the number of distinct states.
-    """
+    """Return the Shannon entropy of cell states, normalised to [0, 1] by ln(n_states)."""
     rows, cols = grid.rows, grid.cols
     total = rows * cols
     if total == 0:
@@ -154,7 +139,6 @@ def _compute_diversity(grid: "Grid") -> float:
         if cnt > 0:
             p = cnt / total
             entropy -= p * math.log(p)
-    # Normalize: max entropy = ln(n_states)
     max_ent = math.log(n_states)
     return entropy / max_ent if max_ent > 0 else 0.0
 
@@ -167,10 +151,10 @@ class SparklineHUDState:
     def __init__(self):
         self.active: bool = False
         self.max_points: int = 120  # history depth
-        self.pop_history: deque[float] = deque(maxlen=120)
-        self.entropy_history: deque[float] = deque(maxlen=120)
-        self.energy_history: deque[float] = deque(maxlen=120)
-        self.diversity_history: deque[float] = deque(maxlen=120)
+        self.pop_history: deque[float] = deque(maxlen=self.max_points)
+        self.entropy_history: deque[float] = deque(maxlen=self.max_points)
+        self.energy_history: deque[float] = deque(maxlen=self.max_points)
+        self.diversity_history: deque[float] = deque(maxlen=self.max_points)
         self.update_counter: int = 0
         # Which charts are visible (all on by default)
         self.show_pop: bool = True
@@ -191,16 +175,14 @@ class SparklineHUDState:
         self.pop_history.append(float(grid.population))
         self.entropy_history.append(entropy)
 
-        # Energy and diversity are moderately expensive — sample every 2 frames
-        if self.update_counter % 2 == 0 or len(self.energy_history) == 0:
+        # Energy and diversity scan the whole grid, so sample every 2nd frame
+        # and repeat the last value in between.
+        if self.update_counter % 2 == 0 or not self.energy_history:
             self.energy_history.append(_compute_energy(grid))
             self.diversity_history.append(_compute_diversity(grid))
         else:
-            # Carry forward last value
-            if self.energy_history:
-                self.energy_history.append(self.energy_history[-1])
-            if self.diversity_history:
-                self.diversity_history.append(self.diversity_history[-1])
+            self.energy_history.append(self.energy_history[-1])
+            self.diversity_history.append(self.diversity_history[-1])
 
 
 # ── Methods to register on App ─────────────────────────────────────────────
@@ -217,7 +199,7 @@ def _toggle_sparkline_hud(self):
 
 
 def _sparkline_hud_update(self):
-    """Update sparkline HUD metrics (call each frame when active)."""
+    """Sample the HUD metrics.  Call once per frame while the HUD is active."""
     if self.sparkline_hud.active:
         self.sparkline_hud.update(self.grid, self.analytics.last_entropy)
 
@@ -228,7 +210,6 @@ def _draw_sparkline_hud(self, max_y: int, max_x: int):
     if not hud.active:
         return
 
-    # Determine which charts to show
     charts: list[tuple[str, deque, int]] = []  # (label, data, color_pair)
     if hud.show_pop:
         charts.append(("POP", hud.pop_history, 1))       # green
