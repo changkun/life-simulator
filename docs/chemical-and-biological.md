@@ -356,7 +356,7 @@ Population is capped at rows*cols/15; the lowest-energy creatures are culled.
 
 Presets: Grassland, Predator-Prey, Desert, Coral Reef, Evolution Lab and Primordial Soup. They differ in starting populations, food density and regrowth, and mutation rate.
 
-**What to look for** — Watch population sparklines for Lotka-Volterra-like oscillations between herbivores and predators. Average trait statistics reveal evolutionary trends: speed often increases under predation pressure; size evolves toward an energy-efficiency optimum. "Evolution Lab" (high mutation) produces rapid adaptation visible within minutes. When the population crashes to zero, five fresh herbivores respawn. `s` toggles the stats panel, which tracks generation depth. `+`/`-` change food regrowth, `f` scatters extra food, and `<`/`>` change creature speed.
+**What to look for** — Watch the population sparklines for oscillations between herbivores and predators, and the average trait statistics for evolutionary trends. "Evolution Lab" has the highest mutation rate (0.35), so traits drift fastest there. When the population crashes to zero, five fresh herbivores respawn. `s` toggles the stats panel, which tracks generation depth. `+`/`-` change food regrowth, `f` scatters extra food, and `<`/`>` change creature speed.
 
 **References**
 - Sims, K. "Evolving virtual creatures." *SIGGRAPH Conference Proceedings* (1994): 15-22. https://doi.org/10.1145/192161.192170
