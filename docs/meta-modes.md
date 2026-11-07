@@ -191,7 +191,7 @@ Live Rule Editor lets you type Python expressions that define custom cellular au
 
 ### How it works
 
-Birth and survival expressions are compiled with Python's `compile()` into code objects, then evaluated per-cell each generation using a restricted `eval()` sandbox (no `__builtins__`). The sandbox exposes `sum`, `len`, `min`, `max`, `any`, `all`, `abs`, `int`, `float`, `math`, and `random`. Expressions like `sum(neighbors) == 3 and age < 10` let you create age-dependent rules, positional biases, or stochastic behavior. `Enter` edits the selected expression, `Tab` switches fields, and `i` imports a rule from Evolutionary Playground. Ten starter snippets are provided. Rules can be saved to and loaded from `~/.life_saves/custom_rules.json`.
+Birth and survival expressions are compiled with Python's `compile()` into code objects, then evaluated per-cell each generation using a restricted `eval()` sandbox (no `__builtins__`). The sandbox exposes `sum`, `len`, `min`, `max`, `any`, `all`, `abs`, `int`, `float`, `math`, and `random`. Expressions like `sum(neighbors) == 3 and age < 10` let you create age-dependent rules, positional biases, or stochastic behavior. `Enter` edits the selected expression, `Tab` switches fields, and `i` imports a rule from Evolutionary Playground. Ten starter snippets are provided. `+`/`-` change the speed, `r` randomizes the grid, `c` clears it, `S` saves the rule and `m` returns to the menu. Rules are saved to and loaded from `~/.life_saves/custom_rules.json`.
 
 ### What to explore
 
@@ -336,7 +336,8 @@ The dominant layer determines the cell's display color. `screen` is an inverse m
 - "Breathing Shapes": Reaction-Diffusion masked by Game of Life.
 - Use `Tab` to cycle focus between layers, then `+`/`-` to adjust opacity in real time.
 - Press `t`/`T` to slow down or speed up the focused layer.
-- Press `b` to cycle the blend mode of the focused layer (not the base layer).
+- Press `b` to cycle the blend mode of the focused layer (the base layer always uses Add).
+- Press `r` to reset all layers and `R` to return to the menu. A custom stack holds 2--4 layers.
 
 ---
 
@@ -654,7 +655,7 @@ The engine operates in a generate-evaluate-breed cycle:
 
 4. **Breed**: The next batch is produced through crossover and mutation from the top six gallery entries and the three best candidates of the round.
 
-The gallery browser lists entries by score. `Enter` adopts the selected rule into the main grid, `x` removes an entry, and `W` saves the gallery to `~/.life_saves/auto_discovery_gallery.json`. The start menu can load the saved gallery to continue from it.
+The gallery browser lists entries by score. `Enter` adopts the selected rule into the main grid, `x` removes an entry, and `W` saves the gallery to `~/.life_saves/auto_discovery_gallery.json`. In the explorer, `a` adopts the rule under the cursor. The start menu can load the saved gallery to continue from it.
 
 ### What to explore
 
