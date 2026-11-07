@@ -139,7 +139,7 @@ Seed placement modes: random, edge, bicrystal, center
 
 **What to look for**
 
-With anisotropy at zero, grains grow as roughly circular Voronoi cells. As anisotropy increases, grains elongate along their preferred angles, producing faceted crystals resembling real metallographic micrographs. Grain boundaries (highlighted as distinct characters) form triple junctions where three grains meet, a universal feature of polycrystalline materials. The bicrystal mode with just two seeds demonstrates how misorientation angle affects boundary morphology.
+With anisotropy at zero, grains grow as roughly circular Voronoi cells. As anisotropy increases, grains elongate along their preferred angles, producing faceted crystals resembling real metallographic micrographs. Grain boundaries (highlighted as distinct characters) form triple junctions where three grains meet, a universal feature of polycrystalline materials. The Bicrystal preset, with just two seeds, shows a single grain boundary. The other presets are Fine Microstructure, Coarse Grains, Columnar Growth, Dendritic Arms, Isotropic Foam, Sparse Nucleation and Radial Burst. `a`/`A` raise or lower the anisotropy while it runs, and `+`/`-` change the steps per frame.
 
 **References**
 
