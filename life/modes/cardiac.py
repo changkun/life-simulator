@@ -1,37 +1,4 @@
-"""Mode: cardiac — Cardiac Electrophysiology & Arrhythmia.
-
-Simulates the heart's electrical conduction system as a 2D tissue slab.
-SA node pacemaker cells auto-fire at ~60 bpm, propagating action potential
-wavefronts through atrial and ventricular myocyte grids via the AV node
-(with physiological delay), bundle of His, and Purkinje fiber fast-conduction
-pathways.
-
-Electrophysiology is modeled with simplified FitzHugh-Nagumo kinetics:
-  dV/dt = V - V³/3 - W + I_stim
-  dW/dt = ε(V + a - bW)
-where V is membrane voltage (fast variable), W is recovery (slow variable),
-and I_stim represents external or pacemaker current.  Ion channel dynamics
-are layered on top: Na⁺ fast inward (depolarization), Ca²⁺ plateau, K⁺
-repolarization.  The tissue exhibits depolarization → plateau → repolarization
-→ refractory period cycling.
-
-Re-entry circuits form when wavefronts encounter refractory tissue and
-spiral around obstacles, producing ventricular tachycardia.  An ECG trace
-is derived from summed dipole vectors across the tissue.  Defibrillation
-delivers a massive current pulse to reset all cells simultaneously.
-
-Three views:
-  1) Tissue activation map — wavefront propagation with conduction anatomy
-     (SA node ♥, AV node ◆, His bundle ═, Purkinje ─, atrial/ventricular
-      myocytes colored by voltage/phase)
-  2) Real-time ECG strip — 12-lead-style traces derived from dipole vectors
-  3) Time-series sparkline graphs — heart rate, conduction velocity, APD,
-     refractory fraction, etc.
-
-Six presets:
-  Normal Sinus Rhythm, Atrial Fibrillation, Ventricular Tachycardia,
-  AV Block, Long QT Syndrome, Defibrillation Rescue
-"""
+"""Cardiac Electrophysiology & Arrhythmia — heart tissue with a conduction system, ECG and defibrillation."""
 import curses
 import math
 import random
@@ -68,10 +35,9 @@ CARDIAC_PRESETS = [
 # ══════════════════════════════════════════════════════════════════════
 
 _NEIGHBORS_4 = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-_NEIGHBORS_8 = [(-1, -1), (-1, 0), (-1, 1), (0, -1),
-                (0, 1), (1, -1), (1, 0), (1, 1)]
 
-# FitzHugh-Nagumo parameters
+# FitzHugh-Nagumo kinetics: dV/dt = V - V^3/3 - W + I, dW/dt = eps*(V + a - b*W).
+# Na+, Ca2+ and K+ activation variables add to I as a simplified ion-channel layer.
 _FHN_A = 0.7        # recovery offset
 _FHN_B = 0.8        # recovery coupling
 _FHN_EPSILON = 0.08  # recovery timescale (slow)
@@ -111,17 +77,6 @@ TISSUE_AV_NODE = 4
 TISSUE_HIS = 5
 TISSUE_PURKINJE = 6
 TISSUE_SCAR = 7
-
-_TISSUE_NAMES = {
-    TISSUE_EMPTY: "empty",
-    TISSUE_ATRIAL: "atrial",
-    TISSUE_VENTRICULAR: "ventricular",
-    TISSUE_SA_NODE: "SA node",
-    TISSUE_AV_NODE: "AV node",
-    TISSUE_HIS: "His",
-    TISSUE_PURKINJE: "Purkinje",
-    TISSUE_SCAR: "scar",
-}
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -193,7 +148,6 @@ def _cardiac_init(self, preset_idx: int):
 
     # AV node state
     self.cardiac_av_buffer = []  # queued activations with delay
-    self.cardiac_av_block_ratio = 0  # 0=normal, >0 = drop fraction
 
     # Long QT modifier
     self.cardiac_k_modifier = 1.0  # <1 = delayed repolarization
@@ -270,8 +224,6 @@ def _cardiac_build_anatomy(self, pid, rows, cols):
             if 0 <= rr < rows and 0 <= cc < cols:
                 tissue[rr][cc] = TISSUE_SA_NODE
                 diff[rr][cc] = _DIFF_NORMAL
-    self.cardiac_sa_r = sa_r
-    self.cardiac_sa_c = sa_c
 
     # AV node — junction between atria and ventricles, near septum
     av_c = mid_c
@@ -355,8 +307,7 @@ def _cardiac_build_anatomy(self, pid, rows, cols):
                 self.cardiac_refract[scar_r][cc] = 8
 
     elif pid == "avblock":
-        # AV node conducts only ~50% of beats (2nd degree Mobitz Type I)
-        self.cardiac_av_block_ratio = 0.5
+        # Mobitz Type I: the AV node drops every 4th atrial beat
         self.cardiac_av_wenckebach_count = 0
         self.cardiac_av_wenckebach_period = 4  # conduct 3, drop 1
 
@@ -806,7 +757,7 @@ def _draw_cardiac_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hint = "[↑/↓] select  [Enter] start  [q] back"
+    hint = "↑/↓=select  Enter=start  q=exit"
     try:
         self.stdscr.addstr(max_y - 2, max(0, (max_x - len(hint)) // 2), hint,
                            curses.color_pair(7))
@@ -917,7 +868,7 @@ def _draw_cardiac_tissue(self, max_y: int, max_x: int):
         hr_str = "-- bpm"
 
     status = (f" {self.cardiac_preset_name} | tick {gen} | {hr_str} | "
-              f"defib:{self.cardiac_defib_count} | [v]iew [d]efib [space]pause [r]estart [q]uit")
+              f"defib:{self.cardiac_defib_count} | v=view  d=defib  Space=play  r=reset  q=exit")
     try:
         self.stdscr.addstr(max_y - 2, 0, status[:max_x - 1],
                            curses.color_pair(7) | curses.A_BOLD)
@@ -1030,7 +981,7 @@ def _draw_cardiac_ecg(self, max_y: int, max_x: int):
             pass
 
     # Status bar
-    status = "[v]iew [d]efib [space]pause [r]estart [q]uit"
+    status = "Space=play  n=step  v=view  d=defib  +/-=speed  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(max_y - 1, 2, status[:max_x - 3], curses.color_pair(7))
     except curses.error:
@@ -1103,7 +1054,7 @@ def _draw_cardiac_graphs(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    status = "[v]iew [d]efib [space]pause [r]estart [q]uit"
+    status = "Space=play  n=step  v=view  d=defib  +/-=speed  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(max_y - 1, 2, status[:max_x - 3], curses.color_pair(7))
     except curses.error:
