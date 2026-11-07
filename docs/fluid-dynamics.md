@@ -30,7 +30,7 @@ BGK collision:
 where:
   rho = sum_i f_i          (density)
   u   = sum_i e_i * f_i / rho  (macroscopic velocity)
-  omega = relaxation parameter (keys limit it to 0.5 - 1.99)
+  omega = relaxation parameter (keys limit it to 0.5 - 1.95)
   nu  = (1/omega - 0.5) / 3    (kinematic viscosity)
 ```
 
