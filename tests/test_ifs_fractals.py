@@ -209,6 +209,14 @@ class TestIFSFractals:
         assert not any(self.app.ifs_points[r][0] or self.app.ifs_points[r][-1]
                        for r in range(self.app.ifs_rows))
 
+    def test_menu_lists_all_presets_on_short_screen(self):
+        """All presets are drawn at 24 rows, so each can be selected by eye."""
+        drawn = []
+        self.app.stdscr.addstr = lambda y, x, text, *a: drawn.append(text)
+        self.app._draw_ifs_menu(24, 80)
+        for name, _desc, _pid in IFS_PRESETS:
+            assert any(name in t for t in drawn), name
+
     # ── Stability ──
 
     def test_no_nan_or_inf_after_many_steps(self):

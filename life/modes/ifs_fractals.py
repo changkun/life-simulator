@@ -334,7 +334,7 @@ def _draw_ifs_menu(self, max_y: int, max_x: int):
     n = len(self.IFS_PRESETS)
     for i, (name, desc, _pid) in enumerate(self.IFS_PRESETS):
         y = 5 + i
-        if y >= max_y - 14:
+        if y >= max_y - 3:
             break
         line = f"  {name:<22s} {desc}"
         attr = curses.color_pair(6)
