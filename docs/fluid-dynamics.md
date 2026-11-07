@@ -63,7 +63,7 @@ Stam splitting (per timestep dt):
 
   1. Diffusion (implicit Gauss-Seidel, 20 iterations):
      x[r][c] = (x0[r][c] + a * sum_neighbors(x)) / (1 + a * n_neighbors)
-     where a = dt * nu * N^2
+     where a = dt * nu * rows * cols
 
   2. Pressure projection (Gauss-Seidel, 20 iterations):
      div = -0.5 * (h_x*(vx[c+1]-vx[c-1]) + h_y*(vy[r+1]-vy[r-1]))
@@ -82,9 +82,13 @@ Parameters:
   iterations = 20      (Gauss-Seidel relaxation count)
 ```
 
-The dye field is passively advected through the velocity field and undergoes slow dissipation (multiplied by 0.999 each step). Users can interactively inject dye and momentum at the cursor position, and place or remove circular obstacles.
+The grid wraps at the edges. Obstacle cells hold zero velocity and dye. The dye field is passively advected through the velocity field and loses 0.1% per step. The Jet Stream and Karman Vortices presets feed fluid in at the left wall. A soft sponge over the last sixth of the columns removes dye there, so it does not wrap around and flood the left side.
 
-**What to look for.** The Vortex Pair preset shows two counter-rotating vortices that orbit and merge. The Karman Vortices preset demonstrates vortex shedding behind a circular obstacle, with dye bands making the alternating wake visible. The Shear Layer preset seeds Kelvin-Helmholtz instability: opposing flows create rolling vortices along the interface. Reduce viscosity to see finer turbulent structures; increase it to see smooth laminar flow.
+**What to look for.** The Vortex Pair preset shows two counter-rotating vortices that orbit and merge. The Karman Vortices preset sends a uniform flow past a circular obstacle, with dye bands making the wake visible. The Shear Layer preset seeds Kelvin-Helmholtz instability: opposing flows create rolling vortices along the interface. Halve the viscosity with `b` to see finer structures, or double it with `V` for smoother flow.
+
+**Keys.** Arrow keys or `h`/`j`/`k`/`l` move the cursor. `f` or `Enter` injects dye and momentum along the cursor's last move. `o` places or removes a circular obstacle. `v` cycles dye, velocity, vorticity and pressure views. `+`/`-` change inject strength, `[`/`]` inject radius, `<`/`>` steps per frame. `c` clears dye, `C` clears velocity. `Space` play/pause, `n` step, `R` menu, `q` exit.
+
+**Presets:** Dye Playground, Vortex Pair, Jet Stream, Karman Vortices, Four Corners, Shear Layer.
 
 **References.**
 - Stam, J. "Stable Fluids." *Proceedings of SIGGRAPH 1999*, ACM, 1999. https://doi.org/10.1145/311535.311548
