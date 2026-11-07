@@ -1,4 +1,4 @@
-"""Mode: qwalk — simulation mode for the life package."""
+"""Quantum Walk — discrete-time quantum walk on a 2D grid with Hadamard, Grover or DFT coins."""
 import curses
 import math
 import random
@@ -274,8 +274,6 @@ def _handle_qwalk_key(self, key: int) -> bool:
         self._flash("Quantum Walk — select a configuration")
     elif key in (27, ord("q")):
         self._exit_qwalk_mode()
-    else:
-        return True
     return True
 
 
