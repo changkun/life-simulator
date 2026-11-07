@@ -820,7 +820,7 @@ def _draw_spacetime(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [v]=viz [g/G]=gravity [l/L]=lens [f/F]=drag [↑↓←→]=move [Enter]=toggle [r]=reset [q]=exit"
+            hint = " Space=play n=step v=view g/G=grav l/L=lens f/F=drag Enter=cell r=reset q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
