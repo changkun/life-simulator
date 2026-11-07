@@ -1,4 +1,4 @@
-"""Mode: cpm — simulation mode for the life package."""
+"""Cellular Potts Model — cells as pixel domains that sort, migrate and grow by Metropolis energy minimization."""
 import curses
 import math
 import random
@@ -35,7 +35,6 @@ def _exit_cpm_mode(self):
 
 def _cpm_init(self, preset_idx: int):
     """Initialize CPM simulation with the given preset."""
-    import random as _rnd
     name, _desc, preset_id = self.CPM_PRESETS[preset_idx]
     self.cpm_preset_name = name
     self.cpm_generation = 0
@@ -77,7 +76,7 @@ def _cpm_init(self, preset_idx: int):
         spacing = int(target_a ** 0.5) + 1
         for rr in range(r0, r1, spacing):
             for cc in range(c0, c1, spacing):
-                ctype = 1 if _rnd.random() < 0.5 else 2
+                ctype = 1 if random.random() < 0.5 else 2
                 # Fill a small square for this cell
                 half = spacing // 2
                 for dr in range(-half, half + 1):
@@ -288,8 +287,6 @@ def _cpm_init(self, preset_idx: int):
 
 def _cpm_step(self):
     """One Metropolis step of the Cellular Potts Model."""
-    import random as _rnd
-    import math
     rows, cols = self.cpm_rows, self.cpm_cols
     grid = self.cpm_grid
     J = self.cpm_J
@@ -301,12 +298,12 @@ def _cpm_step(self):
         self._cpm_diffuse_chem()
 
     # Pick a random pixel
-    r = _rnd.randint(0, rows - 1)
-    c = _rnd.randint(0, cols - 1)
+    r = random.randint(0, rows - 1)
+    c = random.randint(0, cols - 1)
     current = grid[r][c]
 
     # Find a random neighbor (4-connected)
-    dr, dc = _rnd.choice([(-1, 0), (1, 0), (0, -1), (0, 1)])
+    dr, dc = random.choice([(-1, 0), (1, 0), (0, -1), (0, 1)])
     nr, nc = r + dr, c + dc
     if nr < 0 or nr >= rows or nc < 0 or nc >= cols:
         self.cpm_generation += 1
@@ -337,9 +334,6 @@ def _cpm_step(self):
             nbr_id = 0
         else:
             nbr_id = grid[nr2][nc2]
-
-        if nbr_id == source and nbr_id == target:
-            continue
 
         type_nbr = self.cpm_cell_type[nbr_id] if nbr_id > 0 else 0
 
@@ -375,7 +369,7 @@ def _cpm_step(self):
         accepted = True
     else:
         prob = math.exp(-delta_H / max(T, 0.01))
-        if _rnd.random() < prob:
+        if random.random() < prob:
             accepted = True
 
     if accepted:
