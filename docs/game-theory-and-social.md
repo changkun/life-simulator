@@ -31,7 +31,7 @@ Payoff Matrix (row = focal player, column = opponent):
   Score(i) = sum of payoffs from all 8 neighbor interactions
 ```
 
-After scoring, each cell adopts the strategy (cooperate or defect) of whichever cell in its Moore neighborhood (including itself) achieved the highest total score. This deterministic imitation rule produces sharp boundaries between cooperator clusters and defector regions.
+After scoring, all cells update at once. Each cell compares its own score with its 8 Moore neighbors and adopts the strategy of the highest-scoring one. A neighbor must score strictly higher than the cell itself to win, so ties keep the current strategy. Among neighbors with the same top score, the first one found (scanning from the top-left) wins. This deterministic imitation rule produces sharp boundaries between cooperator clusters and defector regions.
 
 ### Presets
 
@@ -49,10 +49,11 @@ After scoring, each cell adopts the strategy (cooperate or defect) of whichever 
 ### What to look for
 
 - **Cluster formation**: Cooperators survive by huddling into compact groups where interior cells earn high mutual-cooperation payoffs, insulating them from exploitation at the boundary.
-- **Phase transition at T ~ 1.65**: Below this threshold cooperators dominate; above it defectors sweep the grid. At the critical value, fractal-like boundaries appear.
-- **Snowdrift coexistence**: When P and S are nonzero (Hawk-Dove variant), cooperators and defectors can stably coexist in dynamic equilibrium.
-- **Invasion dynamics**: Try the "Mostly Defectors" preset to watch whether a small cooperator seed can bootstrap itself into a surviving cluster.
-- **Temptation tuning**: Press `t`/`T` during simulation to raise or lower T and watch cooperation collapse or recover in real time.
+- **Temptation threshold**: With R = 1 and P = S = 0, a higher T makes defection more rewarding. "Critical Threshold" (T = 1.65) sits near the transition, so the outcome varies from run to run. Restart with `r` a few times and compare.
+- **Snowdrift coexistence**: "Snowdrift / Hawk-Dove" sets P and S above zero. Watch whether both strategies persist.
+- **Invasion dynamics**: Try "Mostly Defectors" to see whether a small cooperator seed survives as a cluster.
+- **Temptation tuning**: Press `t` to raise T and `T` to lower it, in steps of 0.05 between 0 and 5. Scores are recomputed at once.
+- **Keys**: `Space` play/pause, `n` step, `+`/`-` steps per frame, `<`/`>` speed, `r` restart, `R` menu, `q` or `Esc` exit.
 
 ### References
 
