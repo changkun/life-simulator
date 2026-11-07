@@ -327,41 +327,6 @@ def _draw_schelling(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-# ══════════════════════════════════════════════════════════════════════
-#  Spatial Prisoner's Dilemma (Evolutionary Game Theory) — Mode @
-# ══════════════════════════════════════════════════════════════════════
-
-# Each preset: (name, description, T, R, P, S, init_coop_frac)
-# T=temptation, R=reward, P=punishment, S=sucker
-SPD_PRESETS = [
-    ("Classic",
-     "Standard PD — cooperators form clusters",
-     1.5, 1.0, 0.0, 0.0, 0.5),
-    ("Weak Dilemma",
-     "Low temptation — cooperation spreads easily",
-     1.2, 1.0, 0.0, 0.0, 0.5),
-    ("Strong Dilemma",
-     "High temptation — defection dominates",
-     2.0, 1.0, 0.0, 0.0, 0.5),
-    ("Snowdrift / Hawk-Dove",
-     "Mutual defection is costly — coexistence regime",
-     1.5, 1.0, 0.1, 0.5, 0.5),
-    ("Stag Hunt",
-     "High reward for mutual cooperation",
-     1.2, 1.5, 0.0, 0.0, 0.4),
-    ("Critical Threshold",
-     "Right at the phase transition — fragile clusters",
-     1.65, 1.0, 0.0, 0.0, 0.5),
-    ("Mostly Defectors",
-     "Few cooperators try to survive",
-     1.4, 1.0, 0.0, 0.0, 0.15),
-    ("Mostly Cooperators",
-     "Defectors try to invade cooperative society",
-     1.4, 1.0, 0.0, 0.0, 0.85),
-]
-
-
-
 
 def register(App):
     """Register schelling mode methods on the App class."""

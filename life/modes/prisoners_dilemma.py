@@ -7,6 +7,35 @@ import time
 
 from life.constants import SPEEDS
 
+# Each preset: (name, description, T, R, P, S, init_coop_frac)
+# T=temptation, R=reward, P=punishment, S=sucker
+SPD_PRESETS = [
+    ("Classic",
+     "Standard PD — cooperators form clusters",
+     1.5, 1.0, 0.0, 0.0, 0.5),
+    ("Weak Dilemma",
+     "Low temptation — cooperation spreads easily",
+     1.2, 1.0, 0.0, 0.0, 0.5),
+    ("Strong Dilemma",
+     "High temptation — defection dominates",
+     2.0, 1.0, 0.0, 0.0, 0.5),
+    ("Snowdrift / Hawk-Dove",
+     "Mutual defection is costly — coexistence regime",
+     1.5, 1.0, 0.1, 0.5, 0.5),
+    ("Stag Hunt",
+     "High reward for mutual cooperation",
+     1.2, 1.5, 0.0, 0.0, 0.4),
+    ("Critical Threshold",
+     "Right at the phase transition — fragile clusters",
+     1.65, 1.0, 0.0, 0.0, 0.5),
+    ("Mostly Defectors",
+     "Few cooperators try to survive",
+     1.4, 1.0, 0.0, 0.0, 0.15),
+    ("Mostly Cooperators",
+     "Defectors try to invade cooperative society",
+     1.4, 1.0, 0.0, 0.0, 0.85),
+]
+
 def _enter_spd_mode(self):
     """Enter Spatial Prisoner's Dilemma mode — show preset menu."""
     self.spd_menu = True
@@ -344,7 +373,6 @@ def _draw_spd(self, max_y: int, max_x: int):
 
 def register(App):
     """Register spd mode methods on the App class."""
-    from life.modes.schelling import SPD_PRESETS
     App.SPD_PRESETS = SPD_PRESETS
     App._enter_spd_mode = _enter_spd_mode
     App._exit_spd_mode = _exit_spd_mode
