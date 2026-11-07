@@ -686,13 +686,9 @@ def _draw_topo_field(self, max_y, max_x, view_rows, view_cols):
     trails = self.topo_soliton_trails
     gen = self.topo_soliton_generation
 
-    # Draw trail dots (faded)
-    trail_set = set()
-    for (tr, tc, tq, tg) in trails:
-        if tr < view_rows and tc < view_cols:
-            age = gen - tg
-            if age < 100:
-                trail_set.add((tr, tc, tq))
+    # Positions visited by a defect in the last 100 steps are drawn dimmed.
+    trail_set = {(tr, tc) for (tr, tc, _tq, tg) in trails
+                 if tr < view_rows and tc < view_cols and gen - tg < 100}
 
     for r in range(view_rows):
         sy = 1 + r
@@ -721,22 +717,12 @@ def _draw_topo_field(self, max_y, max_x, view_rows, view_cols):
                     pass
                 continue
 
-            # Trail marker
-            if (r, c, 1.0) in trail_set or any(tr == r and tc == c for tr, tc, tq, tg in []):
-                pass  # trails shown via field colouring below
-
             # Show field direction
             th = theta[r][c]
             arrow = _angle_to_arrow(th)
             cp = _angle_to_color(th)
 
-            # Dim trail positions
-            is_trail = False
-            for (tr, tc, tq) in trail_set:
-                if tr == r and tc == c:
-                    is_trail = True
-                    break
-
+            is_trail = (r, c) in trail_set
             attr = curses.A_DIM if is_trail else 0
             try:
                 self.stdscr.addstr(sy, sx, arrow, curses.color_pair(cp) | attr)
