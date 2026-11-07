@@ -607,3 +607,17 @@ class TestClothPhysicsEdgeCases:
             self.app._cloth_step()
         final_x = self.app.cloth_points[idx][0]
         assert final_x < initial_x, "Negative wind should push points left"
+
+
+def test_pinned_points_never_move():
+    app = _make_app()
+    app.cloth_mode = True
+    app.cloth_preset_name = "Hammock"
+    app._cloth_init("hammock")
+    # Pin two adjacent points and stretch the pair beyond rest length.
+    a, b = app.cloth_points[1], app.cloth_points[2]
+    a[4] = b[4] = 1.0
+    b[0] += 0.5
+    before = (a[0], a[1], b[0], b[1])
+    app._cloth_step()
+    assert (a[0], a[1], b[0], b[1]) == before

@@ -190,6 +190,8 @@ def _cloth_step(self):
             ox = dx * 0.5 * diff
             oy = dy * 0.5 * diff
 
+            if p1[4] > 0.5 and p2[4] > 0.5:
+                continue
             if p1[4] < 0.5 and p2[4] < 0.5:
                 p1[0] -= ox
                 p1[1] -= oy
