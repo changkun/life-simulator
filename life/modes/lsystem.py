@@ -373,6 +373,9 @@ def _lsystem_build_preset(self, preset: str) -> None:
             px = cx - spread + i * spread
             self.lsystem_plants.append(_make_plant("cactus", float(px), base_y, mutation=0.1))
 
+    # The per-preset values above are nominal; _make_plant clamps each plant's
+    # depth to keep strings bounded, so report the depth actually reachable.
+    self.lsystem_max_depth = max((p["max_depth"] for p in self.lsystem_plants), default=0)
     self._lsystem_rebuild_all()
 
 
