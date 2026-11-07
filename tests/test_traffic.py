@@ -31,3 +31,19 @@ class TestTraffic:
         self.app._exit_traffic_mode()
         assert self.app.traffic_mode is False
         assert self.app.traffic_running is False
+
+    def test_density_keys_change_car_count(self):
+        self.app._traffic_init(0)
+        cells = self.app.traffic_rows * self.app.traffic_cols
+
+        def cars():
+            return sum(v >= 0 for row in self.app.traffic_grid for v in row)
+
+        before = cars()
+        self.app._handle_traffic_key(ord("D"))
+        assert cars() == round(self.app.traffic_density * cells)
+        assert cars() > before
+        self.app._handle_traffic_key(ord("d"))
+        self.app._handle_traffic_key(ord("d"))
+        assert cars() == round(self.app.traffic_density * cells)
+        assert cars() < before

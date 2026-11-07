@@ -194,6 +194,23 @@ def _traffic_compute_stats(self):
 #  Simulation step
 # ══════════════════════════════════════════════════════════════════════════
 
+def _traffic_set_density(self, density):
+    """Add or remove random cars until the road holds the given density."""
+    grid = self.traffic_grid
+    rows, cols = self.traffic_rows, self.traffic_cols
+    target = round(density * rows * cols)
+    cars = [(r, c) for r in range(rows) for c in range(cols) if grid[r][c] >= 0]
+    if len(cars) > target:
+        for r, c in random.sample(cars, len(cars) - target):
+            grid[r][c] = -1
+    elif len(cars) < target:
+        empty = [(r, c) for r in range(rows) for c in range(cols)
+                 if grid[r][c] == -1]
+        for r, c in random.sample(empty, min(len(empty), target - len(cars))):
+            grid[r][c] = 0
+    self._traffic_compute_stats()
+
+
 def _traffic_gap(grid, r, c, cols):
     """Distance to next car ahead on lane r from position c (periodic)."""
     for d in range(1, cols):
@@ -387,10 +404,12 @@ def _handle_traffic_key(self, key: int) -> bool:
     # Density
     if key == ord("d"):
         self.traffic_density = max(0.01, self.traffic_density - 0.05)
+        self._traffic_set_density(self.traffic_density)
         self._flash(f"Density: {self.traffic_density:.2f}")
         return True
     if key == ord("D"):
         self.traffic_density = min(0.95, self.traffic_density + 0.05)
+        self._traffic_set_density(self.traffic_density)
         self._flash(f"Density: {self.traffic_density:.2f}")
         return True
     # Slowdown probability
@@ -745,6 +764,7 @@ def register(App):
     App._exit_traffic_mode = _exit_traffic_mode
     App._traffic_init = _traffic_init
     App._traffic_compute_stats = _traffic_compute_stats
+    App._traffic_set_density = _traffic_set_density
     App._traffic_step = _traffic_step
     App._handle_traffic_menu_key = _handle_traffic_menu_key
     App._handle_traffic_key = _handle_traffic_key
