@@ -1,25 +1,4 @@
-"""Mode: Superfluid Helium — quantum vortex dynamics simulation.
-
-Simulates superfluid helium (He-II) below the lambda point, featuring:
-  1. Quantized vortex filaments with circulation κ = h/m_He
-  2. Vortex reconnection events that redistribute energy
-  3. Kelvin wave cascades along vortex cores
-  4. Two-fluid model: superfluid (inviscid, irrotational) + normal component
-  5. Second sound waves: temperature/entropy oscillations
-  6. Lambda-point phase transition at T_λ ≈ 2.17 K
-
-Physics:
-  - Vortices are point objects in 2D (cross-section of 3D filaments)
-  - Same-sign vortices co-rotate; opposite-sign reconnect and annihilate
-  - Biot-Savart velocity: each vortex induces v ∝ κ/(2πr) azimuthally
-  - Mutual friction: coupling between normal and superfluid components
-  - Superfluid fraction ρ_s/ρ varies with temperature (0 at T_λ, 1 at T=0)
-
-Visualization:
-  - Vortex view: vortex positions with circulation arrows and velocity field
-  - Density view: superfluid density perturbations (second sound)
-  - Energy view: kinetic energy spectrum (Kolmogorov cascade)
-"""
+"""Superfluid Helium — quantized vortices, reconnection and second sound in He-II."""
 import curses
 import math
 import random
@@ -92,22 +71,10 @@ def _sf_density_color(rho: float) -> int:
         return 3   # yellow (normal-dominant)
 
 
-def _sf_temp_color(T: float) -> int:
-    """Map temperature to color."""
-    if T > T_LAMBDA:
-        return 1   # red (above lambda point, normal fluid)
-    elif T > 1.5:
-        return 3   # yellow (partial superfluid)
-    elif T > 0.8:
-        return 6   # white (mostly superfluid)
-    else:
-        return 5   # cyan (deep superfluid)
-
-
 # ── Enter / Exit ─────────────────────────────────────────────────────────────
 
 def _enter_superfluid_mode(self):
-    """Enter Superfluid Helium mode — show preset menu."""
+    """Enter Superfluid Helium mode and show the preset menu."""
     self.superfluid_menu = True
     self.superfluid_menu_sel = 0
     self._flash("Superfluid Helium — select a configuration")
@@ -124,7 +91,7 @@ def _exit_superfluid_mode(self):
 # ── Initialisation ───────────────────────────────────────────────────────────
 
 def _superfluid_init(self, preset_idx: int):
-    """Set up the superfluid simulation for the chosen preset."""
+    """Set up the simulation for the chosen preset."""
     name, _desc, kind = SUPERFLUID_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(16, max_y - 4)
@@ -630,17 +597,13 @@ def _compute_velocity_field(self):
 
 
 def _compute_energy_spectrum(self):
-    """Compute a simplified energy spectrum from the velocity field.
-
-    Groups energy by wavenumber shell to show Kolmogorov-like cascade.
-    """
+    """Bin the kinetic energy of the velocity field into radial shells."""
     rows, cols = self.superfluid_rows, self.superfluid_cols
     vx = self.superfluid_vx
     vy = self.superfluid_vy
 
     n_bins = min(20, min(rows, cols) // 2)
     spectrum = [0.0] * n_bins
-    max_k = n_bins
 
     # Sample energy from velocity field in radial shells
     cr, cc = rows // 2, cols // 2
@@ -664,7 +627,7 @@ def _compute_energy_spectrum(self):
 # ── Key handlers ─────────────────────────────────────────────────────────────
 
 def _handle_superfluid_menu_key(self, key: int) -> bool:
-    """Handle input in Superfluid preset menu."""
+    """Handle keys in the Superfluid Helium preset menu."""
     n = len(SUPERFLUID_PRESETS)
     if key in (curses.KEY_UP, ord("k")):
         self.superfluid_menu_sel = (self.superfluid_menu_sel - 1) % n
@@ -679,7 +642,7 @@ def _handle_superfluid_menu_key(self, key: int) -> bool:
 
 
 def _handle_superfluid_key(self, key: int) -> bool:
-    """Handle input in active Superfluid simulation."""
+    """Handle keys while Superfluid Helium is running."""
     if key == ord(" "):
         self.superfluid_running = not self.superfluid_running
         self._flash("Running" if self.superfluid_running else "Paused")
@@ -779,7 +742,7 @@ def _handle_superfluid_key(self, key: int) -> bool:
 # ── Drawing ──────────────────────────────────────────────────────────────────
 
 def _draw_superfluid_menu(self, max_y: int, max_x: int):
-    """Draw the Superfluid Helium preset selection menu."""
+    """Draw the Superfluid Helium preset menu."""
     self.stdscr.erase()
     title = "── Superfluid Helium (He-II) ── Select Configuration ──"
     try:
@@ -804,7 +767,7 @@ def _draw_superfluid_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate [Enter]=select [q]=cancel"
+        hint = " j/k=select  Enter=start  q=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -813,7 +776,7 @@ def _draw_superfluid_menu(self, max_y: int, max_x: int):
 
 
 def _draw_superfluid(self, max_y: int, max_x: int):
-    """Draw the active Superfluid Helium simulation."""
+    """Draw the Superfluid Helium simulation."""
     self.stdscr.erase()
     rows, cols = self.superfluid_rows, self.superfluid_cols
     T = self.superfluid_T
@@ -867,9 +830,9 @@ def _draw_superfluid(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = (" [Space]=play [n]=step [v]=view [t/T]=temp "
-                    "[f/F]=friction [c/C]=counterflow [p]=pair "
-                    "[s]=sound [click]=pair [r]=reset [R]=menu [q]=exit")
+            hint = (" Space=play  n=step  v=view  +/-=speed  t/T=temp  "
+                    "f/F=friction  c/C=counterflow  p=pair  s=pulse  "
+                    "click=pair  r=reset  R=menu  q=exit")
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -1048,19 +1011,6 @@ def _draw_superfluid_energy(self, max_y, max_x, view_rows, view_cols):
         if 3 <= sy < max_y - 2 and x < max_x - 1:
             try:
                 self.stdscr.addstr(sy, x, "─", curses.color_pair(3) | curses.A_DIM)
-            except curses.error:
-                pass
-
-    # Also show vortex positions in lower portion
-    v_start_y = 3
-    for v in self.superfluid_vortices:
-        sc = int(v[0]) * 2
-        sr = int(v[1]) + v_start_y
-        if v_start_y <= sr < base_y - chart_height and 0 <= sc < max_x - 1:
-            cp = _sf_color_by_circ(v[2])
-            try:
-                self.stdscr.addstr(sr, sc, _VORTEX_CORE,
-                                   curses.color_pair(cp) | curses.A_BOLD)
             except curses.error:
                 pass
 
