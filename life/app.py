@@ -175,7 +175,6 @@ class App:
         self.mp_sim_gens: int = MP_SIM_GENS
         self.mp_start_gen: int = 0
         self.mp_territory_bonus: list[int] = [0, 0]  # cells in opponent's half
-        self.mp_state_dirty = False  # host: state changed, needs broadcast
         self.mp_host_port: int = MP_DEFAULT_PORT
         self.mp_connect_addr: str = ""
         # Puzzle / challenge mode state
@@ -304,7 +303,6 @@ class App:
         self.anc_draw_cursor_r = 0
         self.anc_draw_cursor_c = 0
         self.anc_draw_cells = None
-        self.anc_solutions_page = 0
         self.anc_view_sel = 0
         self.anc_birth = {3}
         self.anc_survival = {2, 3}
@@ -561,7 +559,6 @@ class App:
         self.nca_es_pop = 8
         self.nca_es_lr = 0.05
         self.nca_es_sigma = 0.03
-        self.nca_seed = -1
         self.nca_state = None
         self.nca_params = None
         self.nca_target = None
@@ -579,7 +576,6 @@ class App:
         self.nca_draw_cursor_c = 0
         self.nca_phase = "idle"
         self.nca_view = 0
-        self.nca_rng = None
         # Live Rule Editor mode state
         self.re_mode = False
         self.re_menu = False
@@ -1909,7 +1905,6 @@ class App:
         self.cpm_chem_field: list[list[float]] = []  # chemical concentration
         self.cpm_chem_lambda: float = 0.0         # chemotaxis strength
         self.cpm_chem_decay: float = 0.01         # chemical decay rate
-        self.cpm_chem_source_type: int = 0        # which cell type secretes
         self.cpm_area_cache: list[int] = []       # cached area per cell ID
 
         # ── FDTD Electromagnetic Wave Propagation state ──
@@ -1971,7 +1966,6 @@ class App:
         self.rbc_Ra: float = 1000.0              # Rayleigh number
         self.rbc_Pr: float = 0.71                # Prandtl number
         self.rbc_dt: float = 0.005               # timestep
-        self.rbc_dx: float = 1.0                 # grid spacing
         self.rbc_T_hot: float = 1.0              # bottom temperature
         self.rbc_T_cold: float = 0.0             # top temperature
         self.rbc_viz_mode: int = 0               # 0=temperature, 1=velocity, 2=vorticity
@@ -2041,8 +2035,6 @@ class App:
         self.doomrc_show_help: bool = True
         self.doomrc_speed: float = 0.15   # movement speed
         self.doomrc_rot_speed: float = 0.08
-        self.doomrc_wall_chars: str = "█▓▒░·"  # near to far wall shading
-        self.doomrc_floor_chars: str = "#x=-.  "  # far to near floor shading
 
         # ── Tectonic Plates state ──
         self.tectonic_mode = False
@@ -2224,7 +2216,6 @@ class App:
         self.pwave_lengths: list[float] = []
         self.pwave_angles: list[float] = []
         self.pwave_g: float = 9.81
-        self.pwave_base_length: float = 1.0
         self.pwave_realign_time: float = 60.0
         self.pwave_show_info: bool = False
         self.pwave_trail: list[list[tuple[int, int]]] = []
@@ -2274,7 +2265,6 @@ class App:
         self.tornado_cloud_radius: float = 15.0
         # Wind field
         self.tornado_updraft_strength: float = 1.0
-        self.tornado_downdraft_strength: float = 0.5
 
         # ── Sorting Algorithm Visualizer state ──
         self.sortvis_mode: bool = False
@@ -6789,8 +6779,6 @@ class App:
         ("Coral Reef",     "Underwater coral and seaweed colony",              "coral_reef"),
         ("Desert",         "Sparse cacti in arid landscape",                   "desert"),
     ]
-
-    WFC_UNCOLLAPSED_CHAR = "??"
 
     # Presets define tile sets with adjacency rules
     # Each preset: (name, description, num_tiles, tile_names, adjacency_rules)
