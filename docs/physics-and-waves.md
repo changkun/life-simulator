@@ -1100,11 +1100,11 @@ Parameters:
 Vortex imprinting uses superposed atan2 phase profiles with toroidal wrapping. Skyrmion textures are initialized as radial Néel-type profiles: θ is the azimuthal angle plus π(1 − d/R), where d is the distance from the core and R the texture radius.
 
 **Presets** — Six configurations explore different regimes of topological defect physics:
-- **Vortex Gas**: Random vortex–antivortex pairs in the XY field (T=0.1, K=1.0) — watch opposite-charge defects orbit each other via the log potential and annihilate on contact
-- **BKT Transition**: Start near the Berezinskii-Kosterlitz-Thouless transition (T=0.5) — increase temperature to watch bound pairs unbind and proliferate, decrease to rebind them
-- **Skyrmion Lattice**: DMI-stabilised magnetic skyrmions (D=0.5, H=0.3) — particle-like topological solitons that resist annihilation due to the energy barrier from antisymmetric exchange
+- **Vortex Gas**: Random vortex–antivortex pairs in the XY field (T=0.1, K=1.0) — watch opposite-charge defects attract and annihilate on contact
+- **BKT Transition**: Start at T=0.5, K=1.0 with six imprinted pairs — raise the temperature to see more defects appear, lower it to let them annihilate
+- **Skyrmion Lattice**: Five radial (Néel-type) textures with DMI (D=0.5, H=0.3, T=0.02). The field is a single angle, so the counters show XY vortices and antivortices, not a skyrmion number
 - **Domain Walls**: Ising-like domain walls between ordered regions (K=1.5) — watch walls coarsen and straighten as the system minimizes gradient energy
-- **Vortex Dipoles**: Tightly bound vortex–antivortex pairs (separation ≈ 3 cells) that propagate as composite solitons — the bound pair moves perpendicular to its dipole axis
+- **Vortex Dipoles**: Three tightly bound vortex–antivortex pairs (T=0.05) — the overdamped dynamics pull each pair together, so the defect count falls
 - **Turbulent Defects**: High-temperature disordered field (T=0.8, K=0.8) producing a dense tangle of interacting defects — topological turbulence
 
 **Visualization modes** (cycle with `v`):
@@ -1114,7 +1114,7 @@ Vortex imprinting uses superposed atan2 phase profiles with toroidal wrapping. S
 
 **Controls**: `Space` play/pause, `n`/`.` single step, `v` cycle view, `t`/`T` increase/decrease temperature, `k`/`K` increase/decrease stiffness, `d`/`D` increase/decrease DMI, `h`/`H` increase/decrease external field, `+`/`-` adjust steps per frame, left-click place vortex, right-click place antivortex, `c` clear trails, `r` reset, `R` return to menu, `q` exit mode.
 
-**What to look for** — Start with the Vortex Gas preset and watch how opposite-charge defects spiral toward each other and annihilate, reducing the total defect count over time. The title bar tracks ⊕ (vortex) and ⊖ (antivortex) counts along with the net topological charge Q, which is conserved (always zero for pair-created defects). Switch to the BKT Transition preset and slowly increase temperature with `t` — at around T ≈ 0.9 (depending on stiffness), you'll see the sudden proliferation of free vortices as the BKT transition unbinds pairs. The Skyrmion Lattice preset demonstrates how DMI creates an energy barrier that prevents skyrmion collapse; try reducing DMI with `D` to watch skyrmions shrink and eventually annihilate. Place your own vortex–antivortex pairs by clicking and watch them interact. In Charge view, the trail system reveals the trajectories defects follow before annihilation.
+**What to look for** — Start with the Vortex Gas preset and watch opposite-charge defects move toward each other and annihilate, reducing the defect count over time. The imprinted fields also contain extra defect pairs from the toroidal seams, so the starting count can be higher than the number of pairs placed. The title bar shows the ⊕ (vortex) and ⊖ (antivortex) counts and the net topological charge Q. Switch to the BKT Transition preset and raise the temperature with `t` to see more defects appear; lower it with `T` to let them annihilate. The Skyrmion Lattice preset shows the textures that DMI and the field shape; change DMI with `d`/`D` and watch the result. Click to place a vortex or right-click for an antivortex. In Charge view, the trails show the paths defects follow before annihilation.
 
 **References**
 - Berezinskii, V.L. "Destruction of Long-range Order in One-dimensional and Two-dimensional Systems Possessing a Continuous Symmetry Group," *Soviet Physics JETP*, 34, 1972.
