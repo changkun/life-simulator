@@ -26,6 +26,24 @@ DLA_CRYSTAL_CHARS = ["█", "▓", "▒", "░", "∙"]
 DLA_WALKER_CHAR = "·"
 # Steps without any attachment after which the crystal counts as complete.
 DLA_IDLE_LIMIT = 400
+# A walker that has not attached after DLA_LIFE_PER_CELL moves per grid cell
+# (at least DLA_MIN_LIFE moves) is retired and respawned.
+DLA_LIFE_PER_CELL = 2.0
+DLA_MIN_LIFE = 1000
+# How often (in steps) to look for walkers sealed inside crystal pockets.
+DLA_CULL_EVERY = 20
+# Hexagonal neighbour offsets (odd-r layout: odd rows are drawn half a cell
+# to the right), indexed by row parity.  Used by the six-fold preset so that
+# 60-degree rotations map lattice cells onto lattice cells exactly.
+DLA_HEX_NEIGHBORS = (
+    ((0, -1), (0, 1), (-1, -1), (-1, 0), (1, -1), (1, 0)),   # even row
+    ((0, -1), (0, 1), (-1, 0), (-1, 1), (1, 0), (1, 1)),     # odd row
+)
+# Consecutive failed ring spawns before falling back to random free cells,
+# and the crystal-free margin required for such a fallback spawn.
+DLA_RING_FAILS = 6
+DLA_FALLBACK_CLEARANCE = 2
+DLA_RING_CLEARANCE = 2
 
 def _enter_dla_mode(self):
     """Enter DLA mode — show preset menu."""
@@ -101,7 +119,10 @@ def _dla_init(self, preset_idx: int):
         self.dla_seeds = [(cr, cc)]
         self.dla_crystal_count = 1
         self.dla_symmetry = 6
-        self.dla_num_walkers = 300
+        # Every attachment is copied into up to 12 symmetric images, so far
+        # fewer walkers give the same deposition rate; many more fill the
+        # disc solid instead of growing thin arms.
+        self.dla_num_walkers = 30
         self.dla_steps_per_frame = 10
         self.dla_stickiness = 0.7  # lower stickiness = more branching
 
@@ -139,6 +160,15 @@ def _dla_init(self, preset_idx: int):
         self.dla_num_walkers = 400
         self.dla_steps_per_frame = 10
 
+    # Seed-aware spawn geometry: the spawn region must enclose the seeds.
+    if setup_key != "electro":
+        seed_extent = max(
+            (math.hypot(sr - cr, sc - cc) for sr, sc in self.dla_seeds),
+            default=0.0)
+        self.dla_max_radius = max(self.dla_max_radius, seed_extent)
+    self.dla_reach = None
+    self.dla_walker_born = {}
+
     # Spawn initial walkers
     self._dla_spawn_walkers()
 
@@ -149,55 +179,113 @@ def _dla_init(self, preset_idx: int):
 
 
 def _dla_spawn_walkers(self):
-    """Spawn walkers on a ring around the crystal."""
+    """Spawn walkers on a ring around the crystal.
+
+    The ring is a circle while the crystal is small.  Once the circle hits
+    the short side of the grid, only that axis is capped: the ring becomes an
+    ellipse fitted to the grid, so the crystal can keep growing into the
+    wide dimension of a rectangular grid.
+    """
     rows, cols = self.dla_rows, self.dla_cols
     cr, cc = rows // 2, cols // 2
     # Spawn radius is a bit beyond the max crystal radius
-    spawn_r = min(self.dla_max_radius + 10, min(rows, cols) // 2 - 1)
+    want_r = self.dla_max_radius + 10
+    sym = self.dla_symmetry > 1
+    if sym:
+        # Six-fold symmetry needs an isotropic region.
+        axis_r = axis_c = min(want_r, min(rows, cols) // 2 - 1)
+    else:
+        axis_r = min(want_r, rows // 2 - 1)
+        axis_c = min(want_r, cols // 2 - 1)
+    spawn_r = max(axis_r, axis_c)
     self.dla_spawn_radius = spawn_r
     grid = self.dla_grid
+    reach = getattr(self, "dla_reach", None)
+    if not (isinstance(reach, list) and len(reach) == rows
+            and len(reach[0]) == cols):
+        reach = None
 
     # Bounded attempts: the spawn region may be (nearly) full of crystal.
     attempts = 0
+    ring_fails = 0
     max_attempts = 20 * max(1, self.dla_num_walkers)
     while len(self.dla_walkers) < self.dla_num_walkers and attempts < max_attempts:
         attempts += 1
-        if self.dla_symmetry > 1:
-            # For symmetric presets, spawn uniformly
-            angle = random.random() * 2 * math.pi
-            dist = spawn_r * (0.8 + 0.4 * random.random())
-            wr = cr + int(dist * math.sin(angle))
-            wc = cc + int(dist * math.cos(angle))
-        elif self.dla_bias_r != 0.0:
+        clearance = DLA_RING_CLEARANCE
+        if ring_fails >= DLA_RING_FAILS and not (sym or self.dla_bias_r != 0.0):
+            # The ring is (nearly) full of crystal: spawn at a random free
+            # cell of the grid that is a few cells clear of the crystal, so
+            # the open parts of the grid still get filled diffusively.
+            wr = random.randint(0, rows - 1)
+            wc = random.randint(0, cols - 1)
+            clearance = DLA_FALLBACK_CLEARANCE
+        elif not sym and self.dla_bias_r != 0.0:
             # Biased drift (e.g. electrodeposition): spawn from opposite side
             wr = random.randint(0, max(1, rows // 3))
             wc = random.randint(0, cols - 1)
         else:
-            # General: spawn on ring around center
+            # General: spawn on a (possibly elliptical) ring around center
             angle = random.random() * 2 * math.pi
-            dist = spawn_r * (0.8 + 0.4 * random.random())
-            wr = cr + int(dist * math.sin(angle))
-            wc = cc + int(dist * math.cos(angle))
-        # Clamp to grid
-        wr = max(0, min(rows - 1, wr))
-        wc = max(0, min(cols - 1, wc))
+            scale = 0.8 + 0.4 * random.random()
+            wr = cr + int(axis_r * scale * math.sin(angle))
+            wc = cc + int(axis_c * scale * math.cos(angle))
+        # Points that fall off the grid are rejected, not clamped: clamping
+        # piles walkers onto the border line and grows a solid wall there.
+        if not (0 <= wr < rows and 0 <= wc < cols):
+            continue
         if grid[wr][wc] != 0:
             continue
+        if reach is not None and not reach[wr][wc]:
+            continue  # sealed inside a crystal pocket
         # Never spawn a walker touching the crystal: it would attach on
         # its first move, so once the crystal reaches the (grid-capped)
         # spawn ring the spawn itself would grow the crystal along the
         # ring instead of walkers diffusing in from outside.
         touching = False
-        for ar in range(max(0, wr - 1), min(rows, wr + 2)):
+        for ar in range(max(0, wr - clearance), min(rows, wr + clearance + 1)):
             row = grid[ar]
-            for ac in range(max(0, wc - 1), min(cols, wc + 2)):
+            for ac in range(max(0, wc - clearance), min(cols, wc + clearance + 1)):
                 if row[ac] > 0:
                     touching = True
                     break
             if touching:
                 break
-        if not touching:
+        if touching:
+            if clearance == DLA_RING_CLEARANCE:
+                ring_fails += 1
+        else:
             self.dla_walkers.append([wr, wc])
+            ring_fails = 0
+
+
+
+def _dla_reachable(self):
+    """Flood-fill (8-connected) the free cells reachable from the grid edge.
+
+    Returns a list of bytearrays (1 = a walker there can still wander out to
+    the open space) or None when the whole border is crystal.
+    """
+    rows, cols = self.dla_rows, self.dla_cols
+    grid = self.dla_grid
+    reach = [bytearray(cols) for _ in range(rows)]
+    stack = []
+    for r in range(rows):
+        for c in ((0, cols - 1) if 0 < r < rows - 1 else range(cols)):
+            if grid[r][c] == 0 and not reach[r][c]:
+                reach[r][c] = 1
+                stack.append((r, c))
+    if not stack:
+        return None
+    while stack:
+        r, c = stack.pop()
+        for nr in range(max(0, r - 1), min(rows, r + 2)):
+            grow = grid[nr]
+            rrow = reach[nr]
+            for nc in range(max(0, c - 1), min(cols, c + 2)):
+                if grow[nc] == 0 and not rrow[nc]:
+                    rrow[nc] = 1
+                    stack.append((nr, nc))
+    return reach
 
 
 
@@ -214,12 +302,34 @@ def _dla_step(self):
     new_walkers = []
     attached_any = False
 
+    # Retire walkers that cannot attach: those sealed inside crystal pockets
+    # (found by flood fill) and those that have wandered for too long.
+    if gen % DLA_CULL_EVERY == 0 or not isinstance(
+            getattr(self, "dla_reach", None), list):
+        self.dla_reach = self._dla_reachable()
+        reach = self.dla_reach
+        if reach is not None:
+            self.dla_walkers = [w for w in self.dla_walkers if reach[w[0]][w[1]]]
+    hexlat = self.dla_symmetry == 6
+    max_life = max(DLA_MIN_LIFE, DLA_LIFE_PER_CELL * rows * cols)
+    born = getattr(self, "dla_walker_born", None)
+    if not isinstance(born, dict):
+        born = {}
+    new_born = {}
+
     for w in self.dla_walkers:
         wr, wc = w[0], w[1]
+        b = born.get(id(w), gen)
+        if gen - b > max_life:
+            continue  # lifetime exceeded: drop, respawn below
+        new_born[id(w)] = b
 
         # Random walk with optional bias
-        dr = random.choice([-1, 0, 1])
-        dc = random.choice([-1, 0, 1])
+        if hexlat:
+            dr, dc = random.choice(DLA_HEX_NEIGHBORS[wr & 1])
+        else:
+            dr = random.choice([-1, 0, 1])
+            dc = random.choice([-1, 0, 1])
         if self.dla_bias_r != 0.0 and random.random() < abs(self.dla_bias_r):
             dr = -1 if self.dla_bias_r < 0 else 1
         if self.dla_bias_c != 0.0 and random.random() < abs(self.dla_bias_c):
@@ -242,8 +352,9 @@ def _dla_step(self):
 
         # Check if adjacent to crystal
         adjacent = False
-        for adr, adc in [(-1, 0), (1, 0), (0, -1), (0, 1),
-                         (-1, -1), (-1, 1), (1, -1), (1, 1)]:
+        for adr, adc in (DLA_HEX_NEIGHBORS[nr & 1] if hexlat else
+                         [(-1, 0), (1, 0), (0, -1), (0, 1),
+                          (-1, -1), (-1, 1), (1, -1), (1, 1)]):
             ar, ac = nr + adr, nc + adc
             if 0 <= ar < rows and 0 <= ac < cols and grid[ar][ac] > 0:
                 adjacent = True
@@ -270,6 +381,8 @@ def _dla_step(self):
             new_walkers.append(w)
 
     self.dla_walkers = new_walkers
+    self.dla_walker_born = {id(w): new_born[id(w)] for w in new_walkers
+                            if id(w) in new_born}
     self.dla_generation = gen
 
     # Replenish walkers
@@ -289,40 +402,79 @@ def _dla_step(self):
 
 
 
+def _dla_symmetric_images(self, r: int, c: int):
+    """Return the distinct cells that are images of (r, c) under the preset's
+    symmetry group, the cell itself first.
+
+    Six-fold: the lattice is hexagonal (odd-r offset rows), so the six 60
+    degree rotations and the mirror images are exact in cube coordinates --
+    no rounding, hence no duplicate or stray cells.  Other fold counts rotate
+    the offset in Euclidean space and round (grid cells are drawn two
+    characters wide, i.e. square, so no aspect correction is needed).
+    """
+    cr, cc = self.dla_rows // 2, self.dla_cols // 2
+    sym = self.dla_symmetry
+    images = [(r, c)]
+    seen = {(r, c)}
+
+    def add(rr, rc):
+        if (rr, rc) not in seen:
+            seen.add((rr, rc))
+            images.append((rr, rc))
+
+    if sym == 6:
+        # odd-r offset -> cube (x, y, z), relative to the centre cell
+        cx = cc - (cr - (cr & 1)) // 2
+        x = c - (r - (r & 1)) // 2 - cx
+        z = r - cr
+        y = -x - z
+        for mirror in (False, True):
+            px, py, pz = (x, z, y) if mirror else (x, y, z)
+            for _ in range(6):
+                rz = cr + pz
+                rx = cx + px
+                add(rz, rx + (rz - (rz & 1)) // 2)
+                px, py, pz = -pz, -px, -py
+    else:
+        dr, dc = r - cr, c - cc
+        for k in range(1, sym):
+            angle = 2 * math.pi * k / sym
+            add(int(round(cr + dr * math.cos(angle) - dc * math.sin(angle))),
+                int(round(cc + dr * math.sin(angle) + dc * math.cos(angle))))
+    return images
+
+
+
 def _dla_attach_symmetric(self, r: int, c: int, gen: int):
-    """Attach a crystal cell with rotational symmetry."""
+    """Attach a crystal cell together with its symmetric images.
+
+    The walker's own cell is always attached.  Images are deduplicated and
+    only placed where they touch the existing crystal, so symmetric copies
+    extend the arms instead of scattering detached cells.
+    """
     rows, cols = self.dla_rows, self.dla_cols
     cr, cc = rows // 2, cols // 2
     grid = self.dla_grid
-    sym = self.dla_symmetry
 
-    # Get offset from center
-    dr = r - cr
-    dc = c - cc
-
-    for k in range(sym):
-        angle = 2 * math.pi * k / sym
-        cos_a = math.cos(angle)
-        sin_a = math.sin(angle)
-        # Rotate the offset
-        rr = int(round(cr + dr * cos_a - dc * sin_a))
-        rc = int(round(cc + dr * sin_a + dc * cos_a))
-        if 0 <= rr < rows and 0 <= rc < cols and grid[rr][rc] == 0:
-            grid[rr][rc] = gen
-            self.dla_crystal_count += 1
-            dist = math.sqrt((rr - cr) ** 2 + (rc - cc) ** 2)
-            if dist > self.dla_max_radius:
-                self.dla_max_radius = dist
-        # Also mirror for full snowflake symmetry
-        if sym == 6:
-            rr2 = int(round(cr + dc * sin_a + dr * cos_a))
-            rc2 = int(round(cc + dc * cos_a - dr * sin_a))
-            if 0 <= rr2 < rows and 0 <= rc2 < cols and grid[rr2][rc2] == 0:
-                grid[rr2][rc2] = gen
-                self.dla_crystal_count += 1
-                dist2 = math.sqrt((rr2 - cr) ** 2 + (rc2 - cc) ** 2)
-                if dist2 > self.dla_max_radius:
-                    self.dla_max_radius = dist2
+    for i, (rr, rc) in enumerate(self._dla_symmetric_images(r, c)):
+        if not (0 <= rr < rows and 0 <= rc < cols) or grid[rr][rc] != 0:
+            continue
+        if i > 0:
+            touching = False
+            for ar in range(max(0, rr - 1), min(rows, rr + 2)):
+                for ac in range(max(0, rc - 1), min(cols, rc + 2)):
+                    if grid[ar][ac] > 0:
+                        touching = True
+                        break
+                if touching:
+                    break
+            if not touching:
+                continue
+        grid[rr][rc] = gen
+        self.dla_crystal_count += 1
+        dist = math.sqrt((rr - cr) ** 2 + (rc - cc) ** 2)
+        if dist > self.dla_max_radius:
+            self.dla_max_radius = dist
 
 
 
@@ -367,8 +519,10 @@ def _handle_dla_key(self, key: int) -> bool:
         self.dla_stickiness = max(0.1, min(1.0, self.dla_stickiness + delta))
         self._flash(f"Stickiness: {self.dla_stickiness:.1f}")
     elif key == ord("w") or key == ord("W"):
-        delta = 50 if key == ord("w") else -50
-        self.dla_num_walkers = max(50, min(2000, self.dla_num_walkers + delta))
+        # Finer steps below 100 (Snowflake runs with 30 walkers)
+        step = 50 if self.dla_num_walkers >= 100 else 10
+        delta = step if key == ord("w") else -step
+        self.dla_num_walkers = max(10, min(2000, self.dla_num_walkers + delta))
         self._flash(f"Walkers: {self.dla_num_walkers}")
     elif key == ord("+") or key == ord("="):
         self.dla_steps_per_frame = min(50, self.dla_steps_per_frame + 2)
@@ -446,6 +600,8 @@ def _draw_dla(self, max_y: int, max_x: int):
     # Use color pairs: 1=red, 2=green, 3=yellow, 4=blue, 5=magenta, 6=cyan, 7=white
     max_gen = max(gen, 1)
 
+    hexlat = self.dla_symmetry == 6
+
     # Draw crystal cells
     for r in range(min(rows, view_rows)):
         for c in range(min(cols, view_cols)):
@@ -486,7 +642,7 @@ def _draw_dla(self, max_y: int, max_x: int):
                     ch = "░"
 
                 try:
-                    self.stdscr.addstr(1 + r, c * 2, ch + " ",
+                    self.stdscr.addstr(1 + r, c * 2 + (r & 1 if hexlat else 0), ch + " ",
                                        curses.color_pair(cp) | attr_extra)
                 except curses.error:
                     pass
@@ -496,7 +652,7 @@ def _draw_dla(self, max_y: int, max_x: int):
         wr, wc = w[0], w[1]
         if 0 <= wr < view_rows and 0 <= wc < view_cols:
             try:
-                self.stdscr.addstr(1 + wr, wc * 2, "· ",
+                self.stdscr.addstr(1 + wr, wc * 2 + (wr & 1 if hexlat else 0), "· ",
                                    curses.color_pair(1) | curses.A_DIM)
             except curses.error:
                 pass
@@ -536,7 +692,9 @@ def register(App):
     App._exit_dla_mode = _exit_dla_mode
     App._dla_init = _dla_init
     App._dla_spawn_walkers = _dla_spawn_walkers
+    App._dla_reachable = _dla_reachable
     App._dla_step = _dla_step
+    App._dla_symmetric_images = _dla_symmetric_images
     App._dla_attach_symmetric = _dla_attach_symmetric
     App._handle_dla_menu_key = _handle_dla_menu_key
     App._handle_dla_key = _handle_dla_key

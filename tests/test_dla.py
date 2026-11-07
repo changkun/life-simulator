@@ -4,7 +4,7 @@ import random
 import pytest
 from tests.conftest import make_mock_app
 from life.modes.dla import register
-from life.modes.dla import DLA_PRESETS
+from life.modes.dla import DLA_PRESETS, DLA_HEX_NEIGHBORS, DLA_MIN_LIFE, DLA_CULL_EVERY
 from life.constants import SPEEDS
 
 
@@ -327,26 +327,62 @@ class TestDLAStep:
 
 class TestDLASymmetry:
     def test_snowflake_symmetric_attachment(self):
-        """Snowflake (6-fold) attachment should place cells at symmetric positions."""
+        """Attaching next to the seed copies the cell into all six hex sectors."""
         random.seed(42)
         app = _make_dla_app()
         app._dla_init(2)  # Snowflake
+        cr, cc = app.dla_rows // 2, app.dla_cols // 2
+        app._dla_attach_symmetric(cr, cc + 1, 2)  # hex neighbour of the seed
+        placed = {(r, c) for r in range(app.dla_rows) for c in range(app.dla_cols)
+                  if app.dla_grid[r][c] == 2}
+        assert placed == {(cr + dr, cc + dc)
+                          for dr, dc in DLA_HEX_NEIGHBORS[cr & 1]}
+        assert app.dla_crystal_count == 7
+
+    def test_symmetric_attach_places_no_detached_copies(self):
+        """Copies that would not touch the crystal are not scattered around."""
+        random.seed(42)
+        app = _make_dla_app()
+        app._dla_init(2)
+        cr, cc = app.dla_rows // 2, app.dla_cols // 2
+        app._dla_attach_symmetric(cr + 8, cc + 3, 2)  # nowhere near the seed
+        # seed + the cell itself (+ at most a mirror image beside it); the
+        # old rounding scattered up to a dozen copies around the ring
+        assert app.dla_crystal_count <= 3
+
+    def test_symmetric_attach_counts_match_grid(self):
+        """Rounded images may coincide; each grid cell is counted once."""
+        random.seed(42)
+        app = _make_dla_app()
+        app._dla_init(2)
+        app.dla_symmetry = 5  # rounded (non-hex) rotation path
+        cr, cc = app.dla_rows // 2, app.dla_cols // 2
+        for off in ((0, 1), (1, 1), (0, 2), (1, 2)):
+            app._dla_attach_symmetric(cr + off[0], cc + off[1], 2)
+        cells = sum(1 for row in app.dla_grid for v in row if v > 0)
+        assert cells == app.dla_crystal_count
+
+    def test_snowflake_stays_six_fold_and_thin(self):
+        """A grown snowflake is invariant under 60-degree rotation and does
+        not fill the disc solid."""
+        random.seed(1)
+        app = _make_dla_app()
+        app._dla_init(2)
+        for _ in range(700):
+            app._dla_step()
         rows, cols = app.dla_rows, app.dla_cols
         cr, cc = rows // 2, cols // 2
-        initial_count = app.dla_crystal_count
-        # Manually trigger symmetric attachment at offset (3, 0) from center
-        app._dla_attach_symmetric(cr + 3, cc, 2)
-        # Should have placed at least 6 cells (one per symmetry sector)
-        assert app.dla_crystal_count > initial_count
-        # Check that multiple symmetric positions are filled
-        filled_positions = []
-        for k in range(6):
-            angle = 2 * math.pi * k / 6
-            rr = int(round(cr + 3 * math.cos(angle)))
-            rc = int(round(cc + 3 * math.sin(angle)))
-            if 0 <= rr < rows and 0 <= rc < cols:
-                filled_positions.append(app.dla_grid[rr][rc] > 0)
-        assert sum(filled_positions) >= 4  # Most positions should be filled
+        grid = app.dla_grid
+        assert app.dla_crystal_count > 100
+        checked = 0
+        for r in range(rows):
+            for c in range(cols):
+                if grid[r][c] > 0 and math.hypot(r - cr, c - cc) < 10:
+                    for ir, ic in app._dla_symmetric_images(r, c):
+                        assert grid[ir][ic] > 0
+                    checked += 1
+        assert checked > 20
+        assert app.dla_crystal_count < 0.5 * rows * cols
 
     def test_symmetry_mirror_updates_max_radius(self):
         """Mirror cells in sym==6 should update dla_max_radius."""
@@ -578,3 +614,131 @@ class TestDLACompletion:
         assert app.dla_crystal_count == count and app.dla_generation == gen
         app._dla_init(0)
         assert not app.dla_complete
+
+
+class TestDLASpawnGeometry:
+    def test_spawn_region_uses_wide_axis_once_capped(self):
+        """On a wide grid the capped circle becomes an ellipse."""
+        random.seed(5)
+        app = _make_dla_app()
+        app._dla_init(0)
+        rows, cols = app.dla_rows, app.dla_cols
+        assert cols > rows + 10, "needs a clearly rectangular grid"
+        cr, cc = rows // 2, cols // 2
+        app.dla_max_radius = 1000.0  # circle long since capped
+        app.dla_num_walkers = 400
+        app.dla_walkers = []
+        app._dla_spawn_walkers()
+        assert len(app.dla_walkers) == 400
+        cap = min(rows, cols) // 2 - 1
+        assert max(abs(w[1] - cc) for w in app.dla_walkers) > cap + 6
+        for wr, wc in app.dla_walkers:
+            assert 0 <= wr < rows and 0 <= wc < cols
+
+    def test_crystal_reaches_beyond_the_circle(self):
+        """Growth is not confined to a circle of the short half-axis."""
+        random.seed(1)
+        app = _make_dla_app()
+        app._dla_init(0)
+        cc = app.dla_cols // 2
+        cap = min(app.dla_rows, app.dla_cols) // 2 - 1
+        for _ in range(3000):
+            app._dla_step()
+            if app.dla_complete:
+                break
+        assert app.dla_complete
+        far = sum(1 for row in app.dla_grid for c, v in enumerate(row)
+                  if v > 0 and abs(c - cc) > cap + 4)
+        assert far > 100
+        assert app.dla_crystal_count > 0.40 * app.dla_rows * app.dla_cols
+
+    def test_spawn_stays_clear_of_crystal_when_ring_is_full(self):
+        """The fallback for a blocked ring still starts walkers away from it."""
+        random.seed(8)
+        app = _make_dla_app()
+        app._dla_init(0)
+        rows, cols = app.dla_rows, app.dla_cols
+        for r in range(rows):
+            for c in range(0, cols, 6):
+                app.dla_grid[r][c] = 1
+        app.dla_walkers = []
+        app._dla_spawn_walkers()
+        assert app.dla_walkers
+        for wr, wc in app.dla_walkers:
+            for ar in range(max(0, wr - 1), min(rows, wr + 2)):
+                for ac in range(max(0, wc - 1), min(cols, wc + 2)):
+                    assert app.dla_grid[ar][ac] == 0
+
+    @pytest.mark.parametrize("preset", [1, 4, 5])
+    def test_initial_radius_covers_seeds(self, preset):
+        """Multi-seed, line and ring spawn geometry starts from the seeds."""
+        app = _make_dla_app()
+        app._dla_init(preset)
+        cr, cc = app.dla_rows // 2, app.dla_cols // 2
+        extent = max(math.hypot(r - cr, c - cc) for r, c in app.dla_seeds)
+        assert extent > 6
+        assert app.dla_max_radius >= extent - 1e-9
+        # Nothing starts inside or on top of the seeds.
+        assert app.dla_walkers
+        for wr, wc in app.dla_walkers:
+            assert app.dla_grid[wr][wc] == 0
+
+
+class TestDLACulling:
+    def _pocket_app(self):
+        app = _make_dla_app()
+        app._dla_init(0)
+        app.dla_stickiness = 0.0  # never attach: isolates the culling
+        app.dla_num_walkers = 1
+        r0, c0 = 5, 5
+        for r in range(r0, r0 + 9):
+            for c in range(c0, c0 + 9):
+                if r in (r0, r0 + 8) or c in (c0, c0 + 8):
+                    app.dla_grid[r][c] = 1
+        return app, (r0 + 4, c0 + 4)
+
+    def test_walker_sealed_in_pocket_is_culled_and_replaced(self):
+        random.seed(2)
+        app, (pr, pc) = self._pocket_app()
+        trapped = [pr, pc]
+        app.dla_walkers = [trapped]
+        for _ in range(DLA_CULL_EVERY + 2):
+            app._dla_step()
+        assert not any(w is trapped for w in app.dla_walkers)
+        assert len(app.dla_walkers) == app.dla_num_walkers
+        w = app.dla_walkers[0]
+        assert not (6 <= w[0] <= 12 and 6 <= w[1] <= 12)
+
+    def test_spawn_skips_sealed_pockets(self):
+        random.seed(2)
+        app, _ = self._pocket_app()
+        app.dla_reach = app._dla_reachable()
+        app.dla_num_walkers = 300
+        app.dla_walkers = []
+        app._dla_spawn_walkers()
+        for w in app.dla_walkers:
+            assert not (6 <= w[0] <= 12 and 6 <= w[1] <= 12)
+
+    def test_old_walker_is_retired_and_respawned(self):
+        random.seed(3)
+        app = _make_dla_app()
+        app._dla_init(0)
+        app.dla_stickiness = 0.0
+        app.dla_num_walkers = 5
+        app.dla_walkers = []
+        app._dla_spawn_walkers()
+        app._dla_step()  # registers birth times
+        old = app.dla_walkers[0]
+        app.dla_walker_born[id(old)] = app.dla_generation - DLA_MIN_LIFE * 100
+        app._dla_step()
+        assert not any(w is old for w in app.dla_walkers)
+        assert len(app.dla_walkers) == app.dla_num_walkers
+
+    def test_live_count_tracks_target_while_growing(self):
+        """No pile-up of dead walkers: count stays at target during growth."""
+        random.seed(4)
+        app = _make_dla_app()
+        app._dla_init(0)
+        for _ in range(60):
+            app._dla_step()
+        assert len(app.dla_walkers) == app.dla_num_walkers
