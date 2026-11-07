@@ -54,3 +54,14 @@ def test_left_arrow_moves_cursor():
     app.adisco_cursor = 2
     app._handle_adisco_key(curses.KEY_LEFT)
     assert app.adisco_cursor == 1
+
+
+def test_skip_feeds_period_detectors_and_scores():
+    app = _make_app()
+    app._enter_adisco_mode()
+    app._adisco_init()
+    app._handle_adisco_key(ord("S"))
+    assert app.adisco_phase == "scored"
+    assert app.adisco_sim_step == app.adisco_eval_steps
+    assert all(d.hashes for d in app.adisco_period_detectors)
+    assert all("total" in f for f in app.adisco_fitness)

@@ -753,13 +753,10 @@ def _handle_adisco_key(self, key):
     # Skip to scoring
     if key == ord("S"):
         if self.adisco_phase == "simulating":
-            remaining = self.adisco_eval_steps - self.adisco_sim_step
-            for _ in range(remaining):
-                for i, grid in enumerate(self.adisco_sims):
-                    _step_sim(grid)
-                    self.adisco_pop_histories[i].append(grid.population)
-                self.adisco_sim_step += 1
-            _adisco_score_and_curate(self)
+            # The last step scores the round. Use _adisco_step so the
+            # periodicity detectors see the skipped steps too.
+            for _ in range(self.adisco_eval_steps - self.adisco_sim_step):
+                _adisco_step(self)
         return True
 
     # Force breed now
