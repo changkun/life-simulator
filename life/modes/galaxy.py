@@ -281,8 +281,6 @@ def _galaxy_init(self, preset: str):
     self.galaxy_softening = 1.0
     self.galaxy_view = "combined"
     self.galaxy_show_halo = False
-    self.galaxy_density = [[0.0] * self.galaxy_cols for _ in range(self.galaxy_rows)]
-    self.galaxy_gas_grid = [[0.0] * self.galaxy_cols for _ in range(self.galaxy_rows)]
     self._galaxy_build_particles(preset)
 
 
@@ -437,8 +435,6 @@ def _exit_galaxy_mode(self):
     self.galaxy_menu = False
     self.galaxy_running = False
     self.galaxy_particles = []
-    self.galaxy_density = []
-    self.galaxy_gas_grid = []
 
 
 

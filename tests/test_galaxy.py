@@ -34,8 +34,6 @@ class TestGalaxyEnterExit:
         assert app.galaxy_menu is False
         assert app.galaxy_running is False
         assert app.galaxy_particles == []
-        assert app.galaxy_density == []
-        assert app.galaxy_gas_grid == []
 
 
 class TestGalaxyInit:
@@ -118,14 +116,6 @@ class TestGalaxyInit:
         app = _make_galaxy_app()
         app._galaxy_init("barred")
         assert len(app.galaxy_particles) == 260  # 80 bar + 180 arms
-
-    def test_density_grids_initialized(self):
-        app = _make_galaxy_app()
-        app._galaxy_init("dwarf")
-        rows, cols = app.galaxy_rows, app.galaxy_cols
-        assert len(app.galaxy_density) == rows
-        assert len(app.galaxy_density[0]) == cols
-        assert len(app.galaxy_gas_grid) == rows
 
 
 class TestGalaxyStep:

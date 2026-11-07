@@ -1703,8 +1703,6 @@ class App:
         self.galaxy_softening: float = 1.0
         self.galaxy_rows: int = 0
         self.galaxy_cols: int = 0
-        self.galaxy_density: list[list[float]] = []
-        self.galaxy_gas_grid: list[list[float]] = []
         self.galaxy_view: str = "combined"
         self.galaxy_show_halo: bool = False
         self.galaxy_arm_count: int = 2
@@ -3680,8 +3678,8 @@ class App:
                         lambda r, c: min(1.0, sand[r][c]) if r < len(sand) and c < len(sand[0]) else 0.0,
                         0, 0, rows, cols)
 
-        # Galaxy: the mode never fills galaxy_density, so bin the particles
-        # the way its draw code does (column = x, row = y, weight = mass).
+        # Galaxy: bin the particles the way its draw code does
+        # (column = x, row = y, weight = mass).
         if self.galaxy_mode and self.galaxy_rows > 0 and self.galaxy_particles:
             d = [[0.0] * self.galaxy_cols for _ in range(self.galaxy_rows)]
             for p in self.galaxy_particles:
