@@ -1,26 +1,13 @@
-"""Mode: artificial chemistry — spontaneous emergence of self-replicating molecules.
-
-Cells represent abstract molecules (short rule-strings) that drift, collide,
-and react via pattern-matching rules.  Reactions can cleave, concatenate, or
-transform molecules.  Over time, autocatalytic cycles form — sets of molecules
-that catalyze each other's production — and occasionally genuine self-replicators
-emerge from the noise.
-
-The display shows the primordial soup in real-time with color-coded molecule
-types, plus live metrics tracking molecular diversity, longest polymer,
-autocatalytic cycle count, and replicator detection.
-"""
+"""Artificial Chemistry — molecules drift, collide and react, and autocatalytic cycles and self-replicators emerge."""
 
 import curses
-import math
 import random
 import time
-from collections import Counter, defaultdict
+from collections import Counter
 
 # ── Molecule alphabet & constants ────────────────────────────────────
 ALPHABET = "ABCDEFGH"
 MAX_MOL_LEN = 16       # max molecule string length
-MIN_MOL_LEN = 1
 ENERGY_PER_BOND = 0.3  # energy released per bond formed
 MAX_TRACKED = 1000     # size at which catalyst/replicator tables drop molecules no longer on the grid
 
@@ -56,11 +43,11 @@ CELL_NAMES = {
 # they react to produce products.
 
 def _can_concatenate(m1, m2):
-    """Check if two molecules can concatenate (join end-to-end)."""
+    """Return True if two molecules can join end to end."""
     return len(m1) + len(m2) <= MAX_MOL_LEN
 
 def _can_cleave(mol):
-    """Check if a molecule can be cleaved (split)."""
+    """Return True if a molecule is long enough to split."""
     return len(mol) >= 3
 
 def _complement(ch):
@@ -69,13 +56,13 @@ def _complement(ch):
     return ALPHABET[(idx + 4) % len(ALPHABET)]
 
 def _template_match(template, target):
-    """Check if target is a complement of template (like base pairing)."""
+    """Return True if target is the complement of template (like base pairing)."""
     if len(template) != len(target):
         return False
     return all(_complement(a) == b for a, b in zip(template, target))
 
 def _find_catalytic_site(catalyst, reactant):
-    """Check if catalyst has a subsequence that matches the reactant prefix."""
+    """Return True if the catalyst contains the complement of the reactant's first two characters."""
     if len(catalyst) < 2 or len(reactant) < 2:
         return False
     # Catalyst must contain the complement of the reactant's first 2 chars
@@ -139,7 +126,7 @@ _NBRS8 = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 # ════════════════════════════════════════════════════════════════════════
 
 def _enter_achem_mode(self):
-    """Enter Artificial Chemistry mode — show preset menu."""
+    """Show the Artificial Chemistry preset menu."""
     self.achem_menu = True
     self.achem_menu_sel = 0
     self._flash("Artificial Chemistry — select a scenario")
@@ -157,7 +144,7 @@ def _exit_achem_mode(self):
 
 
 def _achem_init(self, preset_idx: int):
-    """Initialize the Artificial Chemistry simulation with the given preset."""
+    """Start a new simulation from the preset at preset_idx."""
     (name, _desc, density, food_rate, react_prob, cleave_prob, drift_speed,
      mutation_rate, energy_decay, extras) = self.ACHEM_PRESETS[preset_idx]
 
@@ -276,9 +263,6 @@ def _achem_step(self):
                 if random.random() > react_prob:
                     continue
 
-                # Determine reaction type
-                reaction_done = False
-
                 # a) Template-directed replication
                 if (extras.get("template_replication") and
                         len(mol1) >= 3 and len(mol2) >= 2):
@@ -315,14 +299,10 @@ def _achem_step(self):
                                 reacted.add((r, c))
                                 reacted.add((nr, nc))
                                 self.achem_total_replications += 1
-                                reaction_done = True
                                 # Track potential replicator
                                 if _template_match(mol1, comp):
                                     self.achem_replicator_seqs.add(mol1)
                                 break
-
-                if reaction_done:
-                    continue
 
                 # b) Catalysis
                 if extras.get("catalysis") and len(mol1) >= 3:
@@ -345,11 +325,7 @@ def _achem_step(self):
                             if mol1 not in self.achem_catalytic_pairs:
                                 self.achem_catalytic_pairs[mol1] = set()
                             self.achem_catalytic_pairs[mol1].add(transformed)
-                            reaction_done = True
                             break
-
-                if reaction_done:
-                    continue
 
                 # c) Concatenation
                 if (_can_concatenate(mol1, mol2) and
@@ -365,12 +341,6 @@ def _achem_step(self):
                     reacted.add((nr, nc))
                     self.achem_total_reactions += 1
                     break
-
-                # d) Cleavage (splitting)
-                if (_can_cleave(mol1) and random.random() < cleave_prob and
-                        grid[nr][nc] is None):
-                    # Not consumed — this path is for spontaneous cleavage
-                    pass
 
     # Place new molecules from replication
     for pr, pc, mol, e in new_mols:
@@ -605,7 +575,6 @@ def _handle_achem_key(self, key: int) -> bool:
         self.achem_view = views[(idx + 1) % len(views)]
         self._flash(f"View: {self.achem_view}")
         return True
-    # Reactivity: e/E
     if key == ord("e"):
         self.achem_react_prob = max(0.05, self.achem_react_prob - 0.05)
         self._flash(f"Reactivity: {self.achem_react_prob:.2f}")
@@ -614,7 +583,6 @@ def _handle_achem_key(self, key: int) -> bool:
         self.achem_react_prob = min(1.0, self.achem_react_prob + 0.05)
         self._flash(f"Reactivity: {self.achem_react_prob:.2f}")
         return True
-    # Food rate: f/F
     if key == ord("f"):
         self.achem_food_rate = max(0.005, self.achem_food_rate - 0.005)
         self._flash(f"Food rate: {self.achem_food_rate:.3f}")
@@ -623,7 +591,6 @@ def _handle_achem_key(self, key: int) -> bool:
         self.achem_food_rate = min(0.2, self.achem_food_rate + 0.005)
         self._flash(f"Food rate: {self.achem_food_rate:.3f}")
         return True
-    # Mutation rate: u/U
     if key == ord("u"):
         self.achem_mutation_rate = max(0.0, self.achem_mutation_rate - 0.01)
         self._flash(f"Mutation rate: {self.achem_mutation_rate:.2f}")
@@ -632,7 +599,7 @@ def _handle_achem_key(self, key: int) -> bool:
         self.achem_mutation_rate = min(0.5, self.achem_mutation_rate + 0.01)
         self._flash(f"Mutation rate: {self.achem_mutation_rate:.2f}")
         return True
-    # Drop food at mouse click
+    # A mouse click drops a short polymer into an empty cell.
     if key == curses.KEY_MOUSE:
         try:
             _, mx, my, _, _ = curses.getmouse()
@@ -681,7 +648,7 @@ def _draw_achem_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+        hint = " j/k=navigate  Enter=select  q=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -792,7 +759,7 @@ def _draw_achem(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [v]=view [e/E]=reactivity [f/F]=food [u/U]=mutation [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " q=exit  R=menu  Space=play  n=step  v=view  e/E=reactivity  f/F=food  u/U=mutation  +/-=speed  r=reset"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
