@@ -688,7 +688,7 @@ Presets: EF3 Wedge Tornado, Rope Tornado, Supercell Outbreak (one large
 
 ## Electric Circuit Simulator
 
-**Background** — Electric circuits are described by Kirchhoff's laws (conservation of charge and energy), Ohm's law, and the constitutive relations of reactive components. This simulator uses Modified Nodal Analysis (MNA) to solve DC circuits and transient analysis for RC, LC, and RLC circuits. Users can build circuits from batteries, resistors, capacitors, inductors, LEDs, and switches, and observe real-time current flow, voltage heatmaps, and oscilloscope traces.
+**Background** — Electric circuits are described by Kirchhoff's laws (conservation of charge and energy), Ohm's law, and the constitutive relations of reactive components. This simulator uses Modified Nodal Analysis (MNA) to solve DC circuits and transient analysis for RC, LC, and RLC circuits. The app offers six fixed preset circuits (there is no circuit editor) and shows real-time current flow, a voltage heatmap, and oscilloscope traces. Press v to switch between the three views.
 
 **Formulation** — The simulator solves circuit equations at each timestep:
 
@@ -701,23 +701,25 @@ Component equations:
   Capacitor:  I = C * dV/dt                 (discretized: I = C*(V_new - V_old)/dt)
   Inductor:   V = L * dI/dt                 (discretized: V = L*(I_new - I_old)/dt)
   Battery:    V_node1 - V_node2 = V_source
-  LED:        forward-biased: small resistance; reverse: open circuit
-  Switch:     open (infinite R) or closed (zero R)
+  LED:        fixed 100 Ohm resistor (no diode behaviour; no preset uses one)
+  Switch:     closed = wire, open = near-infinite resistance
+  Wire:       conductance of 1000 S
 
-Transient integration: Backward Euler for stability
-  Capacitor companion model: I_eq = C/dt * V + I_history
-  Inductor companion model:  V_eq = L/dt * I + V_history
+Transient integration: Backward Euler, dt = 0.001 s
+  Capacitor companion model: conductance C/dt, current source (C/dt) * V_prev
+  Inductor companion model:  conductance dt/L, current source I_prev
 
 Presets:
   Simple DC Loop:    9V battery + 100 Ohm resistor → I = 90mA
   Voltage Divider:   12V with 1k + 2k Ohm → V_out = 8V
-  RC Charging:       V(t) = V0 * (1 - exp(-t/RC)), tau = R*C
-  LC Oscillator:     f = 1 / (2*pi*sqrt(L*C))
-  RLC Resonance:     damped sinusoid, Q = (1/R)*sqrt(L/C)
-  Wheatstone Bridge: balanced when R1/R2 = R3/R4
+  RC Charging Curve: 5V, 1k Ohm, 1 mF; V(t) = V0 * (1 - exp(-t/RC)), tau = R*C
+  LC Oscillator:     5V, switch S1, 100 mH, 1 mF; f = 1 / (2*pi*sqrt(L*C))
+  RLC Resonance:     AC source (5 V, 10 Hz), 50 Ohm, 50 mH, 100 uF;
+                     series Q = (1/R)*sqrt(L/C)
+  Wheatstone Bridge: 10V; balanced when R1/R2 = R3/R4
 ```
 
-**What to look for** — Animated charge-flow particles move along wires, speeding up through high-current segments. The "RC Charging" preset shows the classic exponential voltage rise on the oscilloscope. The "LC Oscillator" demonstrates energy sloshing between capacitor (electric field) and inductor (magnetic field). The "RLC Resonance" preset shows damped oscillations with the Q-factor determining how many cycles persist.
+**What to look for** — Animated charge-flow particles move along wires, speeding up through high-current segments. The "RC Charging" preset shows the classic exponential voltage rise on the oscilloscope. The "LC Oscillator" demonstrates energy sloshing between capacitor (electric field) and inductor (magnetic field). The "RLC Resonance" preset is driven by an AC source; use the up and down arrow keys to change its frequency (0.5 to 200 Hz) and press s to toggle switches.
 
 **References**
 - Ho, C.-W. et al. "The modified nodal approach to network analysis," *IEEE Transactions on Circuits and Systems*, 1975. https://doi.org/10.1109/TCS.1975.1084079
