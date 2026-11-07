@@ -223,9 +223,9 @@ Life fraction:   life / max_life determines spark brightness
 
 **Presets (6):** Grand Finale, Gentle Evening, Crossette Show, Willow Garden, Ring Parade, Random Mix.
 
-**Controls:** `Space`=play/pause, `n`=step, `f` or `Enter`=launch a rocket, `a`=auto-launch on/off, `g/G`=gravity up/down, `w/W`=wind up/down, `l/L`=launch rate up/down, `+/-` or `>/<`=steps per frame (1-10), `r`=reset, `R`=menu, `q`=exit.
+**Controls:** `Space`=play/pause, `n`=step, `f` or `Enter`=launch a rocket, `a`=auto-launch on/off, `g/G`=gravity up/down, `w/W`=wind up/down, `l/L`=launch rate up/down, `+/-` or `>/<`=steps per frame (1-10), `r`=reset, `R`=menu, `q` or `Esc`=exit.
 
-**What to look for.** Grand Finale has the highest launch rate (0.18) and mixes all patterns. Willow shells leave long, drooping trails because their gravity multiplier is higher. Crossette shells cascade: each sub-spark flies outward, then bursts into its own secondary burst. Higher gravity pulls sparks down faster. Wind drifts all active particles sideways. The preset's pattern applies to the three opening rockets and to manual launches. Auto-launched rockets pick a random pattern.
+**What to look for.** Grand Finale has the highest launch rate (0.18) and mixes all patterns. Willow shells leave long, drooping trails because their gravity multiplier is higher. Crossette shells cascade: each sub-spark flies outward, then bursts into its own secondary burst. Higher gravity pulls sparks down faster. Wind drifts all active particles sideways. The preset picks the burst pattern for every rocket: the three opening rockets, manual launches, and auto-launched rockets. Crossette Show, Willow Garden, and Ring Parade always use their own pattern. Gentle Evening picks spherical or willow. Grand Finale and Random Mix pick any of the four.
 
 **References.**
 - Reeves, W.T. "Particle Systems -- A Technique for Modeling a Class of Fuzzy Objects." *ACM Transactions on Graphics*, 2(2), 91-108, 1983. https://doi.org/10.1145/357318.357320
