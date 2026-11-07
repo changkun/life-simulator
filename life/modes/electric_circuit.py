@@ -60,6 +60,18 @@ DIR_UP = 3
 
 DIR_DELTA = {DIR_RIGHT: (0, 1), DIR_DOWN: (1, 0), DIR_LEFT: (0, -1), DIR_UP: (-1, 0)}
 
+
+def _comp_end(comp):
+    """Return the (row, col) where a component ends.
+
+    Wires and grounds span one grid cell.  Every other component spans two,
+    which is how the presets lay them out.
+    """
+    ctype, row, col, direction = comp[0], comp[1], comp[2], comp[3]
+    dr, dc = DIR_DELTA[direction]
+    n = 1 if ctype in (COMP_WIRE, COMP_GROUND) else 2
+    return row + dr * n, col + dc * n
+
 # ── Presets ──────────────────────────────────────────────────────────────
 
 CIRCUIT_PRESETS = [
@@ -191,31 +203,40 @@ CIRCUIT_PRESETS = [
      "Balanced bridge — null galvanometer when R1/R2 = R3/R4",
      {
          "components": [
-             (COMP_BATTERY, 1, 4, DIR_RIGHT, 10.0, "10V"),
-             (COMP_WIRE, 1, 6, DIR_DOWN, 0, ""),
-             # Top-right branch: R1
-             (COMP_RESISTOR, 2, 6, DIR_DOWN, 100.0, "R1 100Ω"),
-             # Middle node right
-             (COMP_WIRE, 4, 6, DIR_DOWN, 0, ""),
-             # Bottom-right branch: R2
-             (COMP_RESISTOR, 5, 6, DIR_DOWN, 200.0, "R2 200Ω"),
-             (COMP_WIRE, 7, 6, DIR_LEFT, 0, ""),
-             (COMP_WIRE, 7, 5, DIR_LEFT, 0, ""),
-             (COMP_WIRE, 7, 4, DIR_LEFT, 0, ""),
-             (COMP_WIRE, 7, 3, DIR_LEFT, 0, ""),
-             (COMP_WIRE, 7, 2, DIR_UP, 0, ""),
-             # Bottom-left branch: R4
+             (COMP_BATTERY, 2, 0, DIR_DOWN, 10.0, "10V"),
+             # Battery column on the left; top rail A (row 1), bottom rail D (row 7)
+             (COMP_WIRE, 1, 0, DIR_DOWN, 0, ""),
+             (COMP_WIRE, 4, 0, DIR_DOWN, 0, ""),
+             (COMP_WIRE, 5, 0, DIR_DOWN, 0, ""),
+             (COMP_WIRE, 6, 0, DIR_DOWN, 0, ""),
+             # Top rail
+             (COMP_WIRE, 1, 1, DIR_LEFT, 0, ""),
+             (COMP_WIRE, 1, 2, DIR_LEFT, 0, ""),
+             (COMP_WIRE, 1, 3, DIR_LEFT, 0, ""),
+             (COMP_WIRE, 1, 4, DIR_LEFT, 0, ""),
+             (COMP_WIRE, 1, 5, DIR_LEFT, 0, ""),
+             (COMP_WIRE, 1, 6, DIR_LEFT, 0, ""),
+             # Left branch: R3 above the bridge node (3, 2), R4 below it
+             (COMP_RESISTOR, 3, 2, DIR_UP, 200.0, "R3 200Ω"),
              (COMP_RESISTOR, 5, 2, DIR_UP, 400.0, "R4 400Ω"),
-             # Middle node left
-             (COMP_WIRE, 4, 2, DIR_UP, 0, ""),
-             # Top-left branch: R3
-             (COMP_RESISTOR, 2, 2, DIR_UP, 200.0, "R3 200Ω"),
-             (COMP_WIRE, 1, 2, DIR_RIGHT, 0, ""),
-             (COMP_WIRE, 1, 3, DIR_RIGHT, 0, ""),
-             # Bridge galvanometer (wire across middle)
-             (COMP_RESISTOR, 4, 3, DIR_RIGHT, 500.0, "Rg 500Ω"),
-             (COMP_WIRE, 4, 4, DIR_RIGHT, 0, ""),
-             (COMP_WIRE, 4, 5, DIR_RIGHT, 0, ""),
+             # Right branch: R1 above the bridge node (3, 6), R2 below it
+             (COMP_RESISTOR, 3, 6, DIR_UP, 100.0, "R1 100Ω"),
+             (COMP_RESISTOR, 5, 6, DIR_UP, 200.0, "R2 200Ω"),
+             # Bridge galvanometer between the two middle nodes
+             (COMP_WIRE, 3, 3, DIR_LEFT, 0, ""),
+             (COMP_RESISTOR, 3, 3, DIR_RIGHT, 500.0, "Rg 500Ω"),
+             (COMP_WIRE, 3, 5, DIR_RIGHT, 0, ""),
+             # Bottom rail
+             (COMP_WIRE, 6, 2, DIR_UP, 0, ""),
+             (COMP_WIRE, 7, 2, DIR_UP, 0, ""),
+             (COMP_WIRE, 7, 0, DIR_RIGHT, 0, ""),
+             (COMP_WIRE, 7, 1, DIR_RIGHT, 0, ""),
+             (COMP_WIRE, 7, 3, DIR_LEFT, 0, ""),
+             (COMP_WIRE, 7, 4, DIR_LEFT, 0, ""),
+             (COMP_WIRE, 7, 5, DIR_LEFT, 0, ""),
+             (COMP_WIRE, 7, 6, DIR_LEFT, 0, ""),
+             (COMP_WIRE, 6, 6, DIR_UP, 0, ""),
+             (COMP_WIRE, 7, 6, DIR_UP, 0, ""),
          ],
          "ac_source": False,
          "ac_freq": 0,
@@ -248,9 +269,9 @@ def _build_circuit(sim):
 
     for comp in components:
         ctype, row, col, direction, value, label = comp
-        dr, dc = DIR_DELTA[direction]
+        end_r, end_c = _comp_end(comp)
         node_a = get_node(row, col)
-        node_b = get_node(row + dr, col + dc)
+        node_b = get_node(end_r, end_c)
         edges.append((node_a, node_b, ctype, value, label, row, col))
 
     sim["node_map"] = node_map
@@ -584,8 +605,7 @@ def _step_circuit(sim):
             ctype, row, col, direction, value, label = comp
             if ctype in (COMP_CAPACITOR, COMP_INDUCTOR) and not found_reactive:
                 node_a = sim["node_map"].get((row, col))
-                dr, dc = DIR_DELTA[direction]
-                node_b = sim["node_map"].get((row + dr, col + dc))
+                node_b = sim["node_map"].get(_comp_end(comp))
                 if node_a is not None and node_b is not None:
                     voltages = sim.get("node_voltages", [])
                     if node_a < len(voltages) and node_b < len(voltages):
@@ -599,8 +619,7 @@ def _step_circuit(sim):
                 ctype, row, col, direction, value, label = comp
                 if ctype == COMP_BATTERY:
                     node_a = sim["node_map"].get((row, col))
-                    dr, dc = DIR_DELTA[direction]
-                    node_b = sim["node_map"].get((row + dr, col + dc))
+                    node_b = sim["node_map"].get(_comp_end(comp))
                     if node_a is not None and node_b is not None:
                         voltages = sim.get("node_voltages", [])
                         if node_a < len(voltages) and node_b < len(voltages):
@@ -1001,7 +1020,6 @@ def _draw_schematic(self, sim, top, left, height, width):
 
         sy = top + 1 + (row - min_r) * scale_y
         sx = left + 2 + (col - min_c) * scale_x
-        dr, dc = DIR_DELTA[direction]
 
         # Place charge dot along the component path
         phase = (phase_offset + row * 0.1 + col * 0.07) % 1.0
@@ -1033,10 +1051,7 @@ def _draw_schematic(self, sim, top, left, height, width):
             # Count components at this node
             count = 0
             for comp in components:
-                cr, cc = comp[1], comp[2]
-                d = comp[3]
-                ddr, ddc = DIR_DELTA[d]
-                if (cr, cc) == (r, c) or (cr + ddr, cc + ddc) == (r, c):
+                if (comp[1], comp[2]) == (r, c) or _comp_end(comp) == (r, c):
                     count += 1
 
             if count >= 2 and abs(v) > 0.001:

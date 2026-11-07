@@ -68,3 +68,30 @@ def test_dc_loop_has_state_after_stepping():
     assert len(sim) > 3, "Circuit sim should have meaningful state after stepping"
     # Step counter should have advanced
     assert sim.get("step", 0) > 0, "Step counter should advance"
+
+
+def test_presets_carry_current():
+    """Every preset forms a closed loop, so some branch carries current."""
+    from life.modes.electric_circuit import _init_circuit, _step_circuit
+    for _name, _desc, settings in CIRCUIT_PRESETS:
+        sim = _init_circuit(settings)
+        for _ in range(20):
+            _step_circuit(sim)
+        assert max(abs(i) for i in sim["branch_currents"].values()) > 1e-4, _name
+
+
+def test_ohms_law_and_divider():
+    """The DC loop draws V/R; the divider draws V/(R1+R2)."""
+    from life.modes.electric_circuit import _init_circuit
+    loop = _init_circuit(CIRCUIT_PRESETS[0][2])
+    assert abs(max(abs(i) for i in loop["branch_currents"].values()) - 0.09) < 1e-3
+    div = _init_circuit(CIRCUIT_PRESETS[1][2])
+    assert abs(max(abs(i) for i in div["branch_currents"].values()) - 0.004) < 1e-4
+
+
+def test_wheatstone_bridge_is_balanced():
+    """R1/R2 = R3/R4, so the galvanometer carries no current."""
+    from life.modes.electric_circuit import _init_circuit
+    sim = _init_circuit(CIRCUIT_PRESETS[5][2])
+    assert abs(sim["branch_currents"][(3, 3)]) < 1e-6
+    assert abs(sim["branch_currents"][(3, 2)]) > 1e-3
