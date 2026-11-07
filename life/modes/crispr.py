@@ -1,27 +1,4 @@
-"""Mode: crispr — CRISPR-Cas9 Gene Editing & Repair simulation.
-
-Models the molecular mechanics of CRISPR gene editing on a 2D DNA strand
-visualization: guide RNA scanning along a double helix searching for PAM
-sequences (NGG), Cas9 binding and R-loop formation, double-strand break (DSB)
-cutting, competing DNA repair pathways (NHEJ error-prone rejoining with indel
-mutations vs HDR template-directed precise repair), off-target cleavage at
-partially-matching sites, base editing (nCas9 + deaminase, C→T without DSB),
-prime editing (nCas9 + RT), and — at the population level — gene drive
-propagation through a breeding population showing super-Mendelian inheritance
-spreading an edited allele.
-
-Three views:
-  1) DNA strand map — double helix with base pairs, gRNA-Cas9 scanning,
-     PAM highlights, cut sites, repair activity, edit annotations
-  2) Population gene drive — 2D grid of diploid organisms colored by
-     genotype, breeding with Mendelian/super-Mendelian inheritance
-  3) Time-series sparkline graphs (cuts, repairs, indels, HDR success,
-     off-target hits, edited fraction, drive allele freq, fitness, etc.)
-
-Six presets:
-  Precise Gene Knockout, HDR Knock-In, Off-Target Mutagenesis,
-  Gene Drive Spread, Base Editing (nCas9), Prime Editing
-"""
+"""CRISPR-Cas9 Gene Editing & Repair — Cas9 editing, DNA repair and gene drive spread."""
 import curses
 import random
 
@@ -255,7 +232,7 @@ def _introduce_mismatches(guide, n_mismatches):
 # ══════════════════════════════════════════════════════════════════════
 
 def _enter_crispr_mode(self):
-    """Enter CRISPR mode — show preset menu."""
+    """Show the CRISPR preset menu."""
     self.crispr_menu = True
     self.crispr_menu_sel = 0
     self._flash("CRISPR-Cas9 Gene Editing & Repair — select scenario")
@@ -267,7 +244,7 @@ _KEEP_ON_EXIT = frozenset({'crispr_mode', 'crispr_menu', 'crispr_menu_sel', 'cri
 
 
 def _exit_crispr_mode(self):
-    """Exit CRISPR mode."""
+    """Leave CRISPR mode and free its simulation state."""
     self.crispr_mode = False
     self.crispr_menu = False
     self.crispr_running = False
@@ -285,7 +262,7 @@ def _exit_crispr_mode(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _crispr_init(self, preset_idx: int):
-    """Initialize the CRISPR simulation with the given preset."""
+    """Start the simulation with the given preset."""
     name, _desc, settings = CRISPR_PRESETS[preset_idx]
 
     max_y, max_x = self.stdscr.getmaxyx()
@@ -461,7 +438,7 @@ def _crispr_init(self, preset_idx: int):
 # ══════════════════════════════════════════════════════════════════════
 
 def _crispr_step(self):
-    """Advance the CRISPR simulation by one tick."""
+    """Advance the simulation by one tick."""
     gen = self.crispr_generation
     settings = self.crispr_settings
     dna = self.crispr_dna
@@ -801,7 +778,7 @@ def _crispr_step(self):
 
 
 def _add_event(self, tick, msg):
-    """Add an event to the log (keep last 20)."""
+    """Append an event to the log, keeping the last 20."""
     self.crispr_event_log.append((tick, msg))
     if len(self.crispr_event_log) > 20:
         self.crispr_event_log = self.crispr_event_log[-20:]
@@ -816,7 +793,7 @@ _NBRS8 = [(-1, -1), (-1, 0), (-1, 1), (0, -1),
 
 
 def _update_population(self):
-    """Update the breeding population for gene drive spread."""
+    """Age, kill and breed the gene drive population for one tick."""
     rows = self.crispr_pop_rows
     cols = self.crispr_pop_cols
     pop = self.crispr_pop
@@ -1040,7 +1017,7 @@ def _draw_crispr_menu(self, max_y, max_x):
             except curses.error:
                 pass
 
-    hint = " [↑/↓/j/k]=select [Enter]=start [q/Esc]=back"
+    hint = " ↑/↓/j/k=select  Enter=start  q/Esc=exit"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
                            curses.color_pair(6) | curses.A_DIM)
@@ -1073,7 +1050,7 @@ def _draw_crispr_dna(self, max_y, max_x):
     vis_start = scroll
     vis_end = min(dna_len, vis_start + vis_width)
 
-    # ── Row 1: Position ruler ──
+    # ── Position ruler ──
     y_ruler = 2
     ruler = ""
     for i in range(vis_start, vis_end):
@@ -1096,7 +1073,7 @@ def _draw_crispr_dna(self, max_y, max_x):
     target_pam = self.crispr_target_pam
     guide_start = target_pam - _GUIDE_LEN
 
-    # ── Row 2: Guide RNA (if aligned) ──
+    # ── Guide RNA (if aligned) ──
     y_guide = 3
     try:
         self.stdscr.addstr(y_guide, 0, "gRNA", curses.color_pair(4) | curses.A_DIM)
@@ -1127,7 +1104,7 @@ def _draw_crispr_dna(self, max_y, max_x):
             except curses.error:
                 pass
 
-    # ── Row 3: Sense strand (5'→3') ──
+    # ── Sense strand (5'→3') ──
     y_sense = 5
     try:
         self.stdscr.addstr(y_sense, 0, "5'", curses.color_pair(6))
@@ -1164,7 +1141,7 @@ def _draw_crispr_dna(self, max_y, max_x):
     except curses.error:
         pass
 
-    # ── Row 4: Base pair bonds ──
+    # ── Base pair bonds ──
     y_bonds = 6
     for i in range(vis_start, vis_end):
         x = 4 + (i - vis_start)
@@ -1205,7 +1182,7 @@ def _draw_crispr_dna(self, max_y, max_x):
             except curses.error:
                 pass
 
-    # ── Row 5: Antisense strand (3'→5') ──
+    # ── Antisense strand (3'→5') ──
     y_anti = 7
     try:
         self.stdscr.addstr(y_anti, 0, "3'", curses.color_pair(6))
@@ -1229,7 +1206,7 @@ def _draw_crispr_dna(self, max_y, max_x):
     except curses.error:
         pass
 
-    # ── Row 6: Cas9 positions ──
+    # ── Cas9 positions ──
     y_cas9 = 9
     try:
         self.stdscr.addstr(y_cas9, 0, "Cas9", curses.color_pair(5) | curses.A_DIM)
@@ -1351,7 +1328,7 @@ def _draw_crispr_dna(self, max_y, max_x):
         pass
 
     # ── Controls hint ──
-    hint = " [v]iew [←/→]scroll [Space]pause [n]step [r]eset [R/m]enu [q]uit"
+    hint = " Space=play  n=step  v=view  ←/→=scroll  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
                            curses.color_pair(7) | curses.A_DIM)
@@ -1517,7 +1494,7 @@ def _draw_crispr_population(self, max_y, max_x):
     except curses.error:
         pass
 
-    hint = " [v]iew [Space]pause [n]step [r]eset [R/m]enu [q]uit"
+    hint = " Space=play  n=step  v=view  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
                            curses.color_pair(7) | curses.A_DIM)
@@ -1593,7 +1570,7 @@ def _draw_crispr_graphs(self, max_y, max_x):
                 except curses.error:
                     pass
 
-    hint = " [v]iew [Space]pause [n]step [r]eset [R/m]enu [q]uit"
+    hint = " Space=play  n=step  v=view  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(max_y - 1, 2, hint[:max_x - 3],
                            curses.color_pair(7) | curses.A_DIM)
@@ -1606,7 +1583,7 @@ def _draw_crispr_graphs(self, max_y, max_x):
 # ══════════════════════════════════════════════════════════════════════
 
 def _draw_crispr(self, max_y, max_x):
-    """Route to the correct view."""
+    """Draw the current view."""
     if self.crispr_view == "dna":
         _draw_crispr_dna(self, max_y, max_x)
     elif self.crispr_view == "population":
