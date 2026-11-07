@@ -3274,7 +3274,7 @@ class App:
 
     def _any_menu_open(self) -> bool:
         """Return True if any menu or non-simulation overlay is active."""
-        if self.mode_browser or self.show_help or self.blueprint_menu:
+        if self.dashboard or self.mode_browser or self.show_help or self.blueprint_menu:
             return True
         # Non-mode menus
         _fixed_menus = [
