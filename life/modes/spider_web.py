@@ -1,20 +1,4 @@
-"""Mode: sweb — Spider Orb Web Construction & Prey Capture.
-
-An orb-weaving spider builds its web in real time — laying radial frame threads,
-then spiraling sticky capture silk — then prey insects blunder into the web,
-triggering vibration waves that propagate through the silk network.  The spider
-detects vibration direction/intensity to locate and rush toward trapped prey.
-Wind gusts deform the elastic web structure, damaged sections get repaired, and
-web geometry adapts to repeated prey capture patterns.
-
-Emergent phenomena:
-  - Structural web construction: frame → radii → auxiliary spiral → sticky spiral
-  - Vibration propagation through thread network
-  - Prey flight & capture with glue droplets on spiral threads
-  - Wind deformation of elastic thread network
-  - Web repair & adaptation toward high-capture zones
-  - Silk reserve management across different silk types
-"""
+"""Spider Orb Web Construction & Prey Capture — a spider reads web vibrations to catch prey while wind strains and breaks the silk."""
 import curses
 import math
 import random
@@ -56,8 +40,6 @@ SILK_FRAME = 0      # dragline — strong, non-sticky
 SILK_RADIAL = 1     # radii from hub — strong, non-sticky
 SILK_AUX = 2        # auxiliary spiral (temporary scaffold)
 SILK_STICKY = 3     # capture spiral — elastic, has glue droplets
-
-_SILK_NAMES = ["Frame", "Radial", "Auxiliary", "Sticky"]
 
 # Thread states
 THREAD_OK = 0
@@ -162,7 +144,7 @@ class _Prey:
 class _Spider:
     """The orb-weaving spider."""
     __slots__ = ('x', 'y', 'state', 'target_node', 'silk_reserve',
-                 'energy', 'build_progress', 'captures', 'target_prey',
+                 'energy', 'captures', 'target_prey',
                  'repair_list', 'capture_zones')
 
     def __init__(self, x, y):
@@ -172,7 +154,6 @@ class _Spider:
         self.target_node = -1
         self.silk_reserve = 100.0
         self.energy = 1.0
-        self.build_progress = 0  # tracks which step of construction
         self.captures = 0
         self.target_prey = -1
         self.repair_list = []     # thread indices that need repair
@@ -184,14 +165,14 @@ class _Spider:
 # ══════════════════════════════════════════════════════════════════════
 
 def _enter_sweb_mode(self):
-    """Enter spider web mode — show preset menu."""
+    """Enter Spider Orb Web and show the preset menu."""
     self.sweb_mode = True
     self.sweb_menu = True
     self.sweb_menu_sel = 0
 
 
 def _exit_sweb_mode(self):
-    """Exit spider web mode."""
+    """Exit Spider Orb Web and drop its state."""
     self.sweb_mode = False
     self.sweb_menu = False
     self.sweb_running = False
@@ -208,7 +189,7 @@ def _exit_sweb_mode(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _sweb_init(self, preset_idx: int):
-    """Initialize spider web simulation for the chosen preset."""
+    """Start the chosen preset."""
     name, _desc, pid = SWEB_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(20, max_y - 4)
@@ -256,11 +237,8 @@ def _sweb_init(self, preset_idx: int):
     self.sweb_silk_history = []
     self.sweb_prey_count_history = []
 
-    # Construction state
     self.sweb_num_radii = 24
     self.sweb_spiral_spacing = 1.2
-    self.sweb_build_phase = 0  # 0=frame, 1=radii, 2=aux, 3=sticky, 4=done
-    self.sweb_build_step = 0
 
     # Preset tuning
     if pid == "storm":
@@ -288,7 +266,7 @@ def _sweb_init(self, preset_idx: int):
 
 
 def _sweb_build_web(self, pid):
-    """Build the orb web structure — frame, radii, spirals."""
+    """Build the whole web: frame, radii, auxiliary and sticky spirals."""
     nodes = self.sweb_nodes
     threads = self.sweb_threads
     cx = self.sweb_cx
@@ -401,7 +379,6 @@ def _sweb_build_web(self, pid):
                 if d < radius * 0.5:
                     threads.append(_Thread(a, b, SILK_STICKY))
 
-    self.sweb_build_phase = 4  # construction complete
     self.sweb_spider.state = SP_WAITING
 
     # Build adjacency for vibration propagation
@@ -424,8 +401,7 @@ def _sweb_build_adjacency(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _sweb_step(self):
-    """Advance spider web simulation by one tick."""
-    nodes = self.sweb_nodes
+    """Advance the simulation by one step."""
     threads = self.sweb_threads
     spider = self.sweb_spider
     prey_list = self.sweb_prey
@@ -483,7 +459,7 @@ def _sweb_step(self):
 
 
 def _sweb_update_wind(self, gen, pid):
-    """Update wind vector — gusts and steady component."""
+    """Update the wind vector from its sine base and random gusts."""
     base_strength = self.sweb_wind_strength
     # Sinusoidal base + random gusts
     wx = base_strength * math.sin(gen * 0.02) * 0.5
@@ -658,7 +634,7 @@ def _sweb_update_prey(self):
         prey.y += self.sweb_wind_y * 0.005
 
         # Check collision with sticky threads
-        for ti, t in enumerate(threads):
+        for t in threads:
             if t.state == THREAD_BROKEN or t.silk_type != SILK_STICKY:
                 continue
             n0 = nodes[t.n0]
@@ -884,7 +860,7 @@ def _sweb_check_threads(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _handle_sweb_menu_key(self, key: int) -> bool:
-    """Handle key input in the preset selection menu."""
+    """Handle keys in the preset menu."""
     n = len(SWEB_PRESETS)
     if key == ord("q") or key == 27:
         self.sweb_mode = False
@@ -903,7 +879,7 @@ def _handle_sweb_menu_key(self, key: int) -> bool:
 
 
 def _handle_sweb_key(self, key: int) -> bool:
-    """Handle key input during simulation."""
+    """Handle keys while the simulation is running."""
     if key == ord("q") or key == 27:
         self._exit_sweb_mode()
         return True
@@ -954,7 +930,7 @@ def _handle_sweb_key(self, key: int) -> bool:
 # ══════════════════════════════════════════════════════════════════════
 
 def _draw_sweb_menu(self, max_y: int, max_x: int):
-    """Draw the preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
 
     title = "── Spider Orb Web Construction & Prey Capture ── Select Scenario ──"
@@ -983,7 +959,7 @@ def _draw_sweb_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hints = " [↑/↓] Navigate   [Enter] Select   [q/Esc] Back"
+    hints = " ↑/↓=select  Enter=start  q=back"
     hy = max_y - 2
     if 0 < hy < max_y:
         try:
@@ -998,7 +974,7 @@ def _draw_sweb_menu(self, max_y: int, max_x: int):
 # ══════════════════════════════════════════════════════════════════════
 
 def _draw_sweb(self, max_y: int, max_x: int):
-    """Draw the active spider web simulation."""
+    """Draw the active view."""
     self.stdscr.erase()
 
     spider = self.sweb_spider
@@ -1033,7 +1009,7 @@ def _draw_sweb(self, max_y: int, max_x: int):
     if hasattr(self, 'message') and self.message and now - self.message_time < 3.0:
         hint = f" {self.message}"
     else:
-        hint = " [Space]=play [n]=step [v]=view [+/-]=speed [r]=reset [R]=menu [q]=exit"
+        hint = " Space=play  n=step  v=view  +/-=speed  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                            curses.color_pair(6) | curses.A_DIM)
@@ -1063,9 +1039,7 @@ def _draw_sweb_web(self, max_y: int, max_x: int):
         sy = int(wy * y_scale) + 1
         return sy, sx
 
-    # Draw threads using line characters
-    # Build a character buffer
-    buf = {}  # (sy, sx) -> (char, attr)
+    buf = {}  # (sy, sx) -> (char, attr); later threads overwrite earlier ones
 
     for t in threads:
         if t.state == THREAD_BROKEN:
@@ -1090,7 +1064,6 @@ def _draw_sweb_web(self, max_y: int, max_x: int):
         if t.state == THREAD_STRESSED:
             color = curses.color_pair(1)
 
-        # Bresenham-ish line drawing
         dx = abs(sx1 - sx0)
         dy = abs(sy1 - sy0)
         steps = max(dx, dy, 1)
@@ -1116,14 +1089,12 @@ def _draw_sweb_web(self, max_y: int, max_x: int):
                     ch = '○' if t.vibration > 0.6 else '∙'
                 buf[(cy, cx)] = (ch, color)
 
-    # Draw buffer
     for (sy, sx), (ch, attr) in buf.items():
         try:
             self.stdscr.addstr(sy, sx, ch, attr)
         except curses.error:
             pass
 
-    # Draw prey
     for prey in self.sweb_prey:
         if not prey.alive:
             continue
@@ -1237,7 +1208,7 @@ def _draw_sweb_vibration(self, max_y: int, max_x: int):
                     pass
 
     # Draw vibrating nodes
-    for ni, node in enumerate(nodes):
+    for node in nodes:
         if node.vibration > 0.05:
             sy, sx = to_screen(node.x, node.y)
             if 1 <= sy < max_y - 2 and 1 <= sx < max_x - 1:
@@ -1365,7 +1336,7 @@ def _draw_sweb_sparkline(self, base_y, base_x, height, width,
 # ══════════════════════════════════════════════════════════════════════
 
 def register(App):
-    """Register spider web mode methods on the App class."""
+    """Register Spider Orb Web methods on the App class."""
     App.SWEB_PRESETS = SWEB_PRESETS
     App._enter_sweb_mode = _enter_sweb_mode
     App._exit_sweb_mode = _exit_sweb_mode
