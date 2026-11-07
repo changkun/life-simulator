@@ -347,8 +347,7 @@ class _ReverseSolver:
         """Generator that yields after each significant solver step for visualization."""
         # Initial propagation
         if not self._propagate():
-            self.is_garden_of_eden = True
-            self.failed = True
+            self._fail()
             return
 
         yield  # show propagation results
@@ -359,21 +358,16 @@ class _ReverseSolver:
         while True:
             var = self._pick_variable()
             if var is None:
-                # All variables assigned — verify
-                if self._verify_solution():
-                    sol = [row[:] for row in self.pred]
-                    self.solutions.append(sol)
+                # All variables assigned.  Skip duplicates of earlier answers.
+                if self._verify_solution() and not self._is_excluded():
+                    self.solutions.append(self._snapshot())
                     self.solved = True
                     return
-                else:
-                    # Should not happen if propagation is correct, but backtrack
-                    if not stack:
-                        self.is_garden_of_eden = True
-                        self.failed = True
-                        return
-
-            if var is None:
-                return
+                resumed = yield from self._backtrack(stack)
+                if not resumed:
+                    self._fail()
+                    return
+                continue
 
             r, c = var
             self.current_cell = (r, c)
@@ -382,7 +376,6 @@ class _ReverseSolver:
 
             # Try ALIVE first, then DEAD
             snap = self._snapshot()
-            tried_alive = False
 
             for try_state in (_CellState.ALIVE, _CellState.DEAD):
                 self.pred[r][c] = try_state
@@ -390,17 +383,8 @@ class _ReverseSolver:
 
                 if try_state == _CellState.ALIVE:
                     self.confirmed_cells.add((r, c))
-                    tried_alive = True
 
-                # Check local consistency
-                consistent = self._is_consistent(r, c)
-                if consistent:
-                    for nr, nc in self._neighbors(r, c):
-                        if not self._is_consistent(nr, nc):
-                            consistent = False
-                            break
-
-                if consistent and self._propagate():
+                if self._assign_ok(r, c) and self._propagate():
                     # Push to stack and continue
                     stack.append((r, c, try_state, snap))
                     self.exploring.discard((r, c))
@@ -421,42 +405,57 @@ class _ReverseSolver:
                 # Both values failed — need to backtrack further
                 self.exploring.discard((r, c))
                 self.rejected_cells.add((r, c))
-
-                backtracked = False
-                while stack:
-                    prev_r, prev_c, prev_state, prev_snap = stack.pop()
-                    self._restore(prev_snap)
-                    self.backtracks += 1
-                    self.last_backtrack = (prev_r, prev_c)
-
-                    if prev_state == _CellState.ALIVE:
-                        # Try DEAD instead
-                        self.pred[prev_r][prev_c] = _CellState.DEAD
-                        self.cells_decided += 1
-                        self.confirmed_cells.discard((prev_r, prev_c))
-
-                        consistent = self._is_consistent(prev_r, prev_c)
-                        if consistent:
-                            for nr, nc in self._neighbors(prev_r, prev_c):
-                                if not self._is_consistent(nr, nc):
-                                    consistent = False
-                                    break
-
-                        if consistent and self._propagate():
-                            stack.append((prev_r, prev_c, _CellState.DEAD, prev_snap))
-                            backtracked = True
-                            yield
-                            break
-                        else:
-                            self._restore(prev_snap)
-                            self.cells_decided -= 1
-
-                    yield  # show backtrack progress
-
-                if not backtracked and not stack:
-                    self.is_garden_of_eden = True
-                    self.failed = True
+                resumed = yield from self._backtrack(stack)
+                if not resumed:
+                    self._fail()
                     return
+
+    def _assign_ok(self, r, c):
+        """Check that the cell just assigned and its neighbors stay consistent."""
+        if not self._is_consistent(r, c):
+            return False
+        return all(self._is_consistent(nr, nc) for nr, nc in self._neighbors(r, c))
+
+    def _backtrack(self, stack):
+        """Undo choices until one can flip from ALIVE to DEAD.
+
+        Yields for visualization and returns True once the search can
+        continue, or False when no choice is left to flip.
+        """
+        while stack:
+            prev_r, prev_c, prev_state, prev_snap = stack.pop()
+            self._restore(prev_snap)
+            self.backtracks += 1
+            self.last_backtrack = (prev_r, prev_c)
+
+            if prev_state == _CellState.ALIVE:
+                # Try DEAD instead
+                self.pred[prev_r][prev_c] = _CellState.DEAD
+                self.cells_decided += 1
+                self.confirmed_cells.discard((prev_r, prev_c))
+
+                if self._assign_ok(prev_r, prev_c) and self._propagate():
+                    stack.append((prev_r, prev_c, _CellState.DEAD, prev_snap))
+                    yield
+                    return True
+                self._restore(prev_snap)
+                self.cells_decided -= 1
+
+            yield  # show backtrack progress
+        return False
+
+    def _is_excluded(self):
+        """Return True if the current assignment repeats an excluded solution."""
+        return self.pred in self.exclude
+
+    def _fail(self):
+        """Mark the search as exhausted.
+
+        With nothing excluded, no predecessor exists in the search region,
+        which makes the target a Garden of Eden there.
+        """
+        self.failed = True
+        self.is_garden_of_eden = not self.exclude
 
     def get_solution_grid(self):
         """Return the solution as a 2D list of 0/1."""
@@ -525,14 +524,17 @@ def _capture_target(self):
     self.reverse_life_target_cols = cols
 
 
-def _init_solver(self):
-    """Create a fresh solver for the current target."""
+def _init_solver(self, exclude=()):
+    """Create a fresh solver for the current target.
+
+    ``exclude`` lists predecessors the new search must not return again.
+    """
     rows = self.reverse_life_target_rows
     cols = self.reverse_life_target_cols
     self.reverse_life_solver = _ReverseSolver(
         self.reverse_life_target, rows, cols,
         birth=self.grid.birth, survival=self.grid.survival,
-        pad=self.reverse_life_search_pad,
+        pad=self.reverse_life_search_pad, exclude=exclude,
     )
     self.reverse_life_running = False
 
@@ -586,8 +588,7 @@ def _handle_reverse_life_key(self, key):
 
     if key == ord('n'):  # find next alternative
         if solver and solver.solved:
-            # Reset and find another solution (simplified: just restart)
-            _init_solver(self)
+            _init_solver(self, solver.exclude + solver.solutions)
             self.reverse_life_running = True
         return True
 
@@ -725,7 +726,7 @@ def _draw_reverse_life(self, max_y=None, max_x=None):
     if solver and solver.solved:
         status = "SOLVED"
     elif solver and solver.failed:
-        status = "GARDEN OF EDEN" if solver.is_garden_of_eden else "FAILED"
+        status = "GARDEN OF EDEN" if solver.is_garden_of_eden else "NO MORE"
 
     hdr = f" REVERSE LIFE — {status} "
     try:
@@ -785,12 +786,21 @@ def _draw_reverse_life(self, max_y=None, max_x=None):
 
     # ── Garden of Eden message ──
     if solver and solver.is_garden_of_eden:
-        msg = " ★ GARDEN OF EDEN — No predecessor exists! ★ "
+        msg = " ★ GARDEN OF EDEN — no predecessor in the search region ★ "
         gy = min(max_y - 2, grid_top + grid_rows + 1)
         gx = max(0, (max_x - len(msg)) // 2)
         try:
             scr.addstr(gy, gx, msg,
                        curses.color_pair(_PAIR_BASE + _CP_GARDEN) | curses.A_BOLD)
+        except curses.error:
+            pass
+
+    elif solver and solver.failed:
+        msg = " No other predecessor in the search region "
+        gy = min(max_y - 2, grid_top + grid_rows + 1)
+        gx = max(0, (max_x - len(msg)) // 2)
+        try:
+            scr.addstr(gy, gx, msg, dim_pair)
         except curses.error:
             pass
 

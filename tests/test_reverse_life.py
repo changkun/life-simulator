@@ -72,3 +72,52 @@ def test_search_pad_keys_change_region():
     app._handle_reverse_life_key(ord("+"))
     assert app.reverse_life_search_pad == 3
     assert app.reverse_life_solver.total_cells > small
+
+
+def _block_app():
+    app = _make_app()
+    app._enter_reverse_life_mode()
+    app.reverse_life_preset_idx = 0
+    rl._load_preset(app)
+    return app
+
+
+def test_n_finds_a_different_predecessor():
+    app = _block_app()
+    first = _solve(app.reverse_life_solver)
+    assert first.solved
+    app._handle_reverse_life_key(ord("n"))
+    second = _solve(app.reverse_life_solver)
+    assert second.solved
+    assert second.get_solution_grid() != first.get_solution_grid()
+    assert _forward(second.get_solution_grid(), second.birth,
+                    second.survival) == app.reverse_life_target
+
+
+def test_alternatives_run_out_without_claiming_garden_of_eden():
+    app = _block_app()
+    app.reverse_life_search_pad = 0
+    rl._init_solver(app)
+    seen = 0
+    while True:
+        solver = _solve(app.reverse_life_solver)
+        if not solver.solved:
+            break
+        seen += 1
+        assert seen < 50
+        app._handle_reverse_life_key(ord("n"))
+    assert seen >= 1
+    assert solver.failed
+    assert not solver.is_garden_of_eden
+
+
+def test_lone_cell_without_padding_is_garden_of_eden():
+    app = _make_app()
+    app._enter_reverse_life_mode()
+    app.grid.cells[5][5] = 1
+    app.reverse_life_search_pad = 0
+    rl._capture_target(app)
+    rl._init_solver(app)
+    solver = _solve(app.reverse_life_solver)
+    assert solver.failed
+    assert solver.is_garden_of_eden
