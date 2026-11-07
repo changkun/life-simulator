@@ -55,7 +55,7 @@ Uncollapsed cells show how many tiles they still allow: `▓▓` for four or mor
 
 **Background**
 
-Maze generation algorithms construct perfect mazes -- connected graphs where exactly one path exists between any two cells. Three classical approaches are implemented: the recursive backtracker (depth-first search), Prim's algorithm (randomized minimum spanning tree), and Kruskal's algorithm (union-find based edge merging). These algorithms date to the early study of graph theory and remain foundational in computer science education.
+Maze generation algorithms construct perfect mazes -- connected graphs where exactly one path exists between any two cells. Three generators are implemented: the recursive backtracker (depth-first search), Prim's algorithm (randomized minimum spanning tree), and Kruskal's algorithm (edge merging with disjoint sets). Four solvers then run on the finished maze: A*, Dijkstra, BFS and DFS. The six presets pair them as Classic DFS + A*, Prim + Dijkstra, Kruskal + BFS, Backtracker + DFS, Prim + A*, and Kruskal + Dijkstra.
 
 **Formulation**
 
@@ -94,7 +94,7 @@ Pathfinding (after generation):
 
 **What to look for**
 
-The recursive backtracker produces long, winding corridors with a bias toward depth. Prim's algorithm creates shorter, more branching passages. Kruskal's generates uniform spanning trees. During solving, compare how A* (guided by Manhattan distance heuristic) explores far fewer cells than BFS or DFS to find the same path. The solver visualization colors explored cells, frontier cells, and the final solution path distinctly.
+The recursive backtracker produces long, winding corridors with a bias toward depth. Prim's algorithm creates shorter, more branching passages. Kruskal's algorithm joins random cell pairs, so it grows the maze everywhere at once. During solving, compare how A* (guided by the Manhattan distance heuristic) explores fewer cells than Dijkstra or BFS to find the shortest path. Explored cells and the final solution path are drawn in different styles. `Space` plays, `n` steps, `s`/`S` change the steps per frame, `r` reseeds, and `R` returns to the menu.
 
 **References**
 
