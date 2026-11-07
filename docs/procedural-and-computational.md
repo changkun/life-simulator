@@ -595,7 +595,7 @@ Start with all circles enabled, then use `[` and `]` to change the count. With f
 
 **Background**
 
-This mode focuses on comparing pathfinding algorithms by generating a maze instantly and then animating the solving process step-by-step. Four algorithms are implemented: A* (optimal, heuristic-guided), BFS (optimal, exhaustive), DFS (non-optimal, depth-first), and the right-hand wall follower (a simple rule requiring no memory of visited cells). These algorithms represent fundamentally different search strategies with distinct performance characteristics.
+This mode focuses on comparing pathfinding algorithms by generating a maze instantly and then animating the solving process step-by-step. Four algorithms are implemented: A* (optimal, heuristic-guided), BFS (optimal, exhaustive), DFS (non-optimal, depth-first), and the right-hand wall follower (a simple rule requiring no memory of visited cells). The eight presets are A* Search (Medium), BFS (Medium), DFS (Medium), Wall Follower (Medium), A* (Small), A* (Large), BFS (Large) and DFS (Large). Small mazes are at most 21x21 cells, medium at most 41x51, and large fill the terminal.
 
 **Formulation**
 
@@ -628,11 +628,12 @@ Solving algorithms:
     Works only on simply-connected mazes (no loops)
 
 Path reconstruction: trace parent pointers from end to start
+  (the wall follower's path is its full trail, including revisits)
 ```
 
 **What to look for**
 
-Compare the explored cell count across algorithms on the same maze. A* typically explores a narrow corridor toward the goal, while BFS floods outward uniformly. DFS may find a long, winding path quickly or get trapped in dead ends far from the goal. The wall follower traces the maze boundary, often visiting cells multiple times -- its trail shows characteristic repeated visits to corridors. The frontier (cells in the queue, shown as highlighted blocks) reveals each algorithm's search strategy: A*'s frontier clusters near the goal, BFS's frontier forms a wavefront, DFS's frontier is a single deep tendril.
+Compare the explored cell count across algorithms on the same maze. A* typically explores a narrow corridor toward the goal, while BFS floods outward uniformly. DFS may find a long, winding path quickly or get trapped in dead ends far from the goal. The wall follower traces the maze boundary, often visiting cells multiple times -- its trail shows characteristic repeated visits to corridors. The frontier (cells in the queue, shown as highlighted blocks) reveals each algorithm's search strategy: A*'s frontier clusters near the goal, BFS's frontier forms a wavefront, DFS's frontier is a single deep tendril. `Space` plays, `n` steps, `s`/`S` change the steps per frame, and `r` generates a new maze.
 
 **References**
 
