@@ -553,12 +553,16 @@ Fever mechanic:
   fever_mult = 1.0 + 0.08 × (T - 37) — boosts immune kinetics
   Tissue damage when T > 40°C — excessive fever is self-destructive
 
+Motile immune cells step into empty, debris or tissue cells; entering tissue swaps places with it.
+
 Entity behaviors (15 types):
   Tissue (..)      : healthy barrier, replenishes complement
-  Bacteria (@@)    : replicate to adjacent cells at replicate_rate × fever_mult
-                     mutate antigen (flip random bit) at mutate_rate
+  Bacteria (@@)    : replicate into adjacent empty cells at replicate_rate
+                     (× 0.4 when opsonized); a copy flips a random antigen bit
+                     at mutate_rate
   Virus (vv)       : infect adjacent tissue → infected state
-                     infected tissue releases viral copies at replicate_rate
+                     infected tissue older than 5 steps releases viral copies
+                     at 0.7 × replicate_rate and lyses after 18 steps
   Neutrophil (NN)  : fast first responder, chemotaxis up cytokine gradient
                      kills adjacent pathogens, shorter lifespan
   Macrophage (MM)  : phagocytose pathogen/debris, present antigen
@@ -590,7 +594,7 @@ Allergic hypersensitivity: pre-sensitized mast cells with matching receptors
 
 **What to look for** — "Normal Bacterial Infection" shows the full immune cascade: neutrophils rush to the wound, macrophages phagocytose and present antigen, dendritic cells activate naive T cells which differentiate and expand, B cells begin antibody production, and the infection is gradually contained. "Viral Invasion" demonstrates intracellular replication requiring killer T cells to clear infected tissue. "Cytokine Storm" shows immune overreaction: with reduced cytokine decay, TNF-α and IL-6 accumulate without bound, fever spikes above 40°C, and tissue damage from inflammation exceeds pathogen damage — a runaway positive feedback loop. "Immunodeficiency" reveals how T-cell depletion cripples the adaptive response, leaving innate immunity to fight alone. "Allergic Hypersensitivity" shows mast cell degranulation flooding the tissue with histamine-like cytokine bursts causing collateral damage to healthy tissue. "Vaccination & Re-exposure" produces a dramatically faster secondary response — pre-seeded memory cells reactivate with clonal bursts within steps rather than requiring the full naive → dendritic → activation cascade.
 
-Press `v` to cycle the cell map, the cytokine/antibody heatmap and the time-series graphs. `p` injects a pathogen wave at the wound, `i` deploys an immune boost near the lymph node region, and `u` flips one bit of the pathogen antigen so existing receptors match worse.
+Press `v` to cycle the cell map, the cytokine/antibody heatmap and the time-series graphs. `p` injects a pathogen wave at the wound, `i` deploys an immune boost near the lymph node region, and `u` flips one bit of the pathogen antigen so existing receptors match worse. `+`/`-` set the steps per frame.
 
 **References**
 - Perelson, A. S. & Weisbuch, G. "Immunology for physicists." *Reviews of Modern Physics* 69 (1997): 1219-1268. https://doi.org/10.1103/RevModPhys.69.1219
