@@ -78,6 +78,7 @@ _VEGF_DIFFUSE = 0.08
 _SPROUT_VEGF_THRESH = 0.15  # VEGF level for tip cell activation
 _SPROUT_PROB = 0.08
 _BRANCH_PROB = 0.03
+_MAX_TIPS = 60              # cap on active tips; branching is otherwise exponential
 _ANASTOMOSE_RADIUS = 2.5    # merge distance for tip meeting vessel
 _STALK_HOPS = 4             # segments behind a tip that it cannot merge with
 
@@ -630,7 +631,8 @@ def _angio_step(self):
         tip.c = new_c
 
         # Branching
-        if (best_vegf > _SPROUT_VEGF_THRESH and random.random() < _BRANCH_PROB):
+        if (best_vegf > _SPROUT_VEGF_THRESH and random.random() < _BRANCH_PROB
+                and len(self.angio_tips) < _MAX_TIPS):
             branch_heading = tip.heading + random.choice([-60, 60]) + random.uniform(-10, 10)
             new_tip = _TipCell(tip.r, tip.c, tip.node_idx, branch_heading)
             new_tips.append(new_tip)
@@ -638,7 +640,7 @@ def _angio_step(self):
         new_tips.append(tip)
 
     # New sprouts from existing vessels
-    if random.random() < _SPROUT_PROB * drug_factor:
+    if random.random() < _SPROUT_PROB * drug_factor and len(self.angio_tips) < _MAX_TIPS:
         if self.angio_nodes:
             candidates = []
             for ni, node in enumerate(self.angio_nodes):

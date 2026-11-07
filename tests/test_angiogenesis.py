@@ -61,3 +61,12 @@ def test_tips_grow_instead_of_fusing_with_their_own_stalk():
     assert len(app.angio_tips) > 0
     assert len(app.angio_nodes) > nodes0
 
+
+def test_tip_count_is_capped():
+    from life.modes.angiogenesis import _MAX_TIPS
+    import random
+    random.seed(2)
+    app = _started(0)
+    for _ in range(250):
+        app._angio_step()
+        assert len(app.angio_tips) <= _MAX_TIPS * 2
