@@ -148,7 +148,7 @@ def _combined_distance(entry1, entry2, weights=(0.4, 0.3, 0.3)):
 
 # ── Clustering (UPGMA-style) ─────────────────────────────────────────
 
-def _cluster_entries(entries):
+def _cluster_entries(entries, weights=(0.4, 0.3, 0.3)):
     """UPGMA hierarchical clustering. Returns a tree node structure.
     Each node: {"label": str, "children": [node, ...], "dist": float,
                 "entry": dict_or_None, "idx": int_or_None}
@@ -175,7 +175,7 @@ def _cluster_entries(entries):
     dist = {}
     for i in range(n):
         for j in range(i + 1, n):
-            dist[(i, j)] = _combined_distance(entries[i], entries[j])
+            dist[(i, j)] = _combined_distance(entries[i], entries[j], weights)
 
     active = list(range(n))
     next_id = n
@@ -437,7 +437,7 @@ def _phylo_analyze(self):
     # Build tree
     # Limit to top 40 entries for performance
     subset = entries[:40]
-    self.phylo_tree = _cluster_entries(subset)
+    self.phylo_tree = _cluster_entries(subset, weights)
     self.phylo_tree_lines = _render_tree(self.phylo_tree, max_width=70) if self.phylo_tree else []
 
     # Find conserved motifs
@@ -453,7 +453,7 @@ def _phylo_analyze(self):
     self.phylo_families = sorted(families.items(), key=lambda x: -len(x[1]))
 
     # Build lineage from round data
-    self.phylo_lineage = _build_lineage(entries)
+    self.phylo_lineage = _build_lineage(entries, weights)
 
     self.phylo_mode = True
     self.phylo_menu = False
@@ -465,7 +465,7 @@ def _phylo_analyze(self):
                 f"{len(self.phylo_motifs)} motifs found")
 
 
-def _build_lineage(entries):
+def _build_lineage(entries, weights=(0.4, 0.3, 0.3)):
     """Build lineage relationships from round ordering."""
     lineage = []
     # Group by round
@@ -485,7 +485,7 @@ def _build_lineage(entries):
             best_parent = None
             best_dist = float("inf")
             for parent in prev_entries:
-                d = _combined_distance(parent, child)
+                d = _combined_distance(parent, child, weights)
                 if d < best_dist:
                     best_dist = d
                     best_parent = parent
