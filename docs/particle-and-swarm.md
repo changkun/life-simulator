@@ -333,11 +333,26 @@ Position update:
     pos_new = (pos_old + v_new) mod grid_size
 ```
 
-Presets: Primordial Soup (6 types, random rules), Symbiosis (4 types, seed 42), Clusters (3 types, high friction 0.6), Predator-Prey (5 types, low friction 0.3), Galaxy (4 types, large radius 25), Chaos (8 types, high force 0.07).
+The matrix is not symmetric, so type A can chase type B while B flees.
+
+### Presets
+
+- **Primordial Soup**: 6 types, random rules, friction 0.5.
+- **Symbiosis**: 4 types, fixed seed 42, friction 0.4.
+- **Clusters**: 3 types, fixed seed 123, friction 0.6.
+- **Predator-Prey**: 5 types, fixed seed 7, friction 0.3.
+- **Galaxy**: 4 types, fixed seed 314, large radius 25, friction 0.35.
+- **Chaos**: 8 types, random rules, force scale 0.07, friction 0.25.
+
+Presets with a seed give the same rules every time; the others draw new rules on each reset.
+
+### Controls
+
+`f`/`F` change friction, `d`/`D` the maximum interaction radius, and `g`/`G` the force scale. `x` draws a new random matrix and keeps the particles. `+`/`-` set steps per frame. `r` resets the preset.
 
 ### What to look for
 
-The force profile is key: universal short-range repulsion prevents collapse, while the type-dependent mid-range zone creates the diversity. With certain random matrices, "organisms" spontaneously form — tight clusters that orbit each other, predator-type particles chasing prey-types, or stable symbiotic pairs. Pressing `x` re-randomizes the interaction matrix, dramatically reshaping the ecosystem in real time. Higher friction yields more stable structures; lower friction produces chaotic, high-energy dynamics.
+The force profile is key: universal short-range repulsion prevents collapse, while the type-dependent mid-range zone creates the diversity. With some matrices, lifelike structures appear: clusters that orbit each other, types that chase other types, or stable pairs. Press `x` to re-randomize the matrix and reshape the ecosystem in real time. Higher friction damps motion and favors stable structures; lower friction gives faster, more chaotic dynamics.
 
 ### References
 
@@ -350,7 +365,7 @@ The force profile is key: universal short-range repulsion prevents collapse, whi
 
 ### Background
 
-This model simulates the transport network behavior of *Physarum polycephalum*, a slime mold that constructs near-optimal networks between food sources. Jeff Jones (2010) developed the agent-based model used here, where mobile agents deposit a chemical trail, sense the trail gradient, and steer toward higher concentrations. The resulting patterns — branching networks, rings, and Voronoi-like tessellations — have been shown to approximate minimum spanning trees and even replicate the Tokyo rail network.
+This model simulates the transport network behavior of *Physarum polycephalum*, a slime mold that constructs near-optimal networks between food sources. Jeff Jones (2010) developed the agent-based model used here, where mobile agents deposit a chemical trail, sense the trail gradient, and steer toward higher concentrations. The resulting patterns include branching networks, rings, and Voronoi-like tessellations. Real *Physarum* has been shown to build networks comparable to the Tokyo rail system (Tero et al., 2010).
 
 ### Formulation
 
@@ -377,11 +392,28 @@ Trail diffusion and decay (per tick):
     T_new[r][c] = max(0, (3x3 box blur of T at (r,c)) / 9 - decay_rate)
 ```
 
-Parameters: sensor_angle (SA), sensor_distance (SD), turn_speed (TS), move_speed (MS), deposit amount, decay rate. Default Physarum preset: SA=0.40, SD=9.0, TS=0.45, deposit=0.5, decay=0.015.
+Parameters: sensor angle (SA, radians), sensor distance (SD), turn speed (TS, radians), move speed (MS), deposit amount (dep), decay rate (dec). Agents start in a disc at the centre, heading inward. The agent count is a fraction of the grid area.
+
+### Presets
+
+| Preset | SA | SD | TS | MS | dep | dec | Agents / cell |
+|---|---|---|---|---|---|---|---|
+| Explorer | 0.40 | 9.0 | 0.30 | 1.0 | 0.5 | 0.020 | 0.15 |
+| Dense Web | 0.30 | 5.0 | 0.40 | 1.0 | 0.8 | 0.010 | 0.30 |
+| Tendrils | 0.60 | 12.0 | 0.20 | 1.5 | 0.3 | 0.030 | 0.10 |
+| Pulsing | 0.35 | 7.0 | 0.50 | 0.8 | 1.0 | 0.040 | 0.20 |
+| Maze Solver | 0.25 | 8.0 | 0.60 | 1.0 | 0.6 | 0.015 | 0.25 |
+| Galaxy | 0.80 | 10.0 | 0.15 | 1.2 | 0.4 | 0.025 | 0.12 |
+
+The menu descriptions of Pulsing ("rhythmic contraction") and Maze Solver ("finds shortest paths between food") are only labels. The mode has no food sources or walls.
+
+### Controls
+
+`a`/`A` change SA, `s`/`S` change SD, `t`/`T` change TS, and `d`/`D` change the decay rate. `+`/`-` set steps per frame. `r` re-seeds the agents with the preset values.
 
 ### What to look for
 
-Initially chaotic agents rapidly self-organize into branching network structures. The sensor angle controls network topology: narrow angles (SA < 0.3) produce tight, rope-like strands, while wider angles yield broader, more diffuse patterns. Higher decay rates force agents to reinforce only the strongest paths, producing sparser networks. The system exhibits positive feedback — trails attract more agents, which deposit more trail — counterbalanced by decay, creating a dynamic equilibrium.
+Chaotic agents self-organize into branching networks. The sensor angle shapes the network: narrow angles (SA < 0.3) give tight strands, and wider angles give broader, more diffuse patterns. Higher decay keeps only the strongest trails and gives sparser networks. Trails attract agents, which deposit more trail; decay counterbalances this feedback.
 
 ### References
 
