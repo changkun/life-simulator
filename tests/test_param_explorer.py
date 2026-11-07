@@ -97,3 +97,47 @@ def test_zoom_narrows_parameter_range():
     zoomed_span_y = app.pexplorer_py_range[1] - app.pexplorer_py_range[0]
     assert zoomed_span_x < full_span_x, "Zoomed x-range should be narrower"
     assert zoomed_span_y < full_span_y, "Zoomed y-range should be narrower"
+
+
+def test_zoom_in_narrows_each_time_and_out_widens():
+    app = _make_app()
+    app._pexplorer_init(0)
+    full = app.pexplorer_px_full
+    full_span = full[1] - full[0]
+    span0 = app.pexplorer_px_range[1] - app.pexplorer_px_range[0]
+    px, py = app.pexplorer_params[2][2]
+    app._pexplorer_zoom(0.4, px, py)
+    span1 = app.pexplorer_px_range[1] - app.pexplorer_px_range[0]
+    app._pexplorer_zoom(0.4, px, py)
+    span2 = app.pexplorer_px_range[1] - app.pexplorer_px_range[0]
+    assert span1 < span0 and span2 < span1
+    assert span2 >= 0.05 * full_span - 1e-12
+    app._pexplorer_zoom(1.5, px, py)
+    span3 = app.pexplorer_px_range[1] - app.pexplorer_px_range[0]
+    assert span3 > span2
+    lo, hi = app.pexplorer_px_range
+    assert full[0] <= lo and hi <= full[1]
+
+
+def test_zoom_out_key_widens_range():
+    app = _make_app()
+    app._pexplorer_init(0)
+    px, py = app.pexplorer_params[1][1]
+    app._pexplorer_zoom(0.4, px, py)
+    before = app.pexplorer_px_range[1] - app.pexplorer_px_range[0]
+    app._handle_pexplorer_key(ord("z"))
+    after = app.pexplorer_px_range[1] - app.pexplorer_px_range[0]
+    assert after > before
+
+
+def test_steps_per_frame_survives_zoom():
+    app = _make_app()
+    app._enter_param_explorer_mode()
+    app._pexplorer_init(0)
+    app._handle_pexplorer_key(ord("+"))
+    steps = app.pexplorer_steps_per_frame
+    assert steps == 3
+    app._handle_pexplorer_key(10)
+    assert app.pexplorer_steps_per_frame == steps
+    app._enter_param_explorer_mode()
+    assert app.pexplorer_steps_per_frame == 2

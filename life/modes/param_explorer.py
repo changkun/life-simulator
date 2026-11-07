@@ -218,6 +218,8 @@ def _enter_param_explorer_mode(self):
     """Enter parameter space explorer — show mode selection menu."""
     self.pexplorer_menu = True
     self.pexplorer_menu_sel = 0
+    self.pexplorer_steps_per_frame = 2
+    self.pexplorer_preset_idx = -1
     self._flash("Parameter Space Explorer — select a mode to explore")
 
 
@@ -230,11 +232,25 @@ def _exit_param_explorer_mode(self):
     self._flash("Parameter Space Explorer OFF")
 
 
-def _pexplorer_init(self, mode_idx=0, center_x=None, center_y=None):
+def _window(center, span, full_lo, full_hi):
+    """Return (lo, hi) of width span around center, shifted to stay in the full range.
+
+    The default span is 40% of the full range; the minimum is 5%.
+    """
+    full = full_hi - full_lo
+    span = 0.4 * full if span is None else span
+    span = max(0.05 * full, min(full, span))
+    lo = max(full_lo, min(full_hi - span, center - span / 2))
+    return lo, lo + span
+
+
+def _pexplorer_init(self, mode_idx=0, center_x=None, center_y=None,
+                    span_x=None, span_y=None):
     """Initialize the parameter explorer grid.
 
     Creates a grid_rows x grid_cols array of mini-simulations, each with
-    parameters linearly interpolated across the grid.
+    parameters linearly interpolated across the grid.  With a center, the
+    range spans span_x and span_y (default 40% of the full range) around it.
     """
     max_y, max_x = self.stdscr.getmaxyx()
 
@@ -268,23 +284,9 @@ def _pexplorer_init(self, mode_idx=0, center_x=None, center_y=None):
     px_label, px_min, px_max = mode_def["param_x"]
     py_label, py_min, py_max = mode_def["param_y"]
 
-    # If center provided, create a neighborhood around it
-    px_span = (px_max - px_min) * 0.4  # zoom to 40% of full range
-    py_span = (py_max - py_min) * 0.4
-
     if center_x is not None and center_y is not None:
-        # Clamp center so the range stays within bounds
-        px_lo = max(px_min, center_x - px_span / 2)
-        px_hi = min(px_max, center_x + px_span / 2)
-        py_lo = max(py_min, center_y - py_span / 2)
-        py_hi = min(py_max, center_y + py_span / 2)
-        # Ensure minimum span
-        if px_hi - px_lo < (px_max - px_min) * 0.05:
-            px_lo = center_x - (px_max - px_min) * 0.025
-            px_hi = center_x + (px_max - px_min) * 0.025
-        if py_hi - py_lo < (py_max - py_min) * 0.05:
-            py_lo = center_y - (py_max - py_min) * 0.025
-            py_hi = center_y + (py_max - py_min) * 0.025
+        px_lo, px_hi = _window(center_x, span_x, px_min, px_max)
+        py_lo, py_hi = _window(center_y, span_y, py_min, py_max)
     else:
         px_lo, px_hi = px_min, px_max
         py_lo, py_hi = py_min, py_max
@@ -328,7 +330,7 @@ def _pexplorer_init(self, mode_idx=0, center_x=None, center_y=None):
     self.pexplorer_step_fn = mode_def["step"]
     self.pexplorer_sample_fn = mode_def["sample"]
     self.pexplorer_generation = 0
-    self.pexplorer_steps_per_frame = 2
+    self.pexplorer_steps_per_frame = getattr(self, "pexplorer_steps_per_frame", 0) or 2
 
     self.pexplorer_mode = True
     self.pexplorer_menu = False
@@ -344,6 +346,15 @@ def _pexplorer_step(self):
         for sim in row:
             step_fn(sim, spf)
     self.pexplorer_generation += spf
+
+
+def _pexplorer_zoom(self, factor, center_x, center_y):
+    """Rebuild the grid around a center, scaling the current range span by factor."""
+    px_lo, px_hi = self.pexplorer_px_range
+    py_lo, py_hi = self.pexplorer_py_range
+    self._pexplorer_init(self.pexplorer_mode_idx, center_x=center_x, center_y=center_y,
+                         span_x=(px_hi - px_lo) * factor,
+                         span_y=(py_hi - py_lo) * factor)
 
 
 def _handle_pexplorer_menu_key(self, key):
@@ -406,29 +417,15 @@ def _handle_pexplorer_key(self, key):
     # Enter/click: zoom into selected tile's parameters
     if key in (10, 13, curses.KEY_ENTER):
         px, py = self.pexplorer_params[self.pexplorer_sel_r][self.pexplorer_sel_c]
-        self._flash(f"Zooming into {self.pexplorer_px_label}={px:.4f} {self.pexplorer_py_label}={py:.4f}")
-        self._pexplorer_init(self.pexplorer_mode_idx, center_x=px, center_y=py)
+        self._pexplorer_zoom(0.4, px, py)
         self.pexplorer_running = True
+        self._flash(f"Zoomed in on {self.pexplorer_px_label}={px:.4f} {self.pexplorer_py_label}={py:.4f}")
         return True
-    # Zoom out: widen parameter range back toward full
+    # Zoom out: widen the range by 50%, keeping the same center
     if key == ord("z") or key == ord("-"):
         px_lo, px_hi = self.pexplorer_px_range
         py_lo, py_hi = self.pexplorer_py_range
-        px_full_lo, px_full_hi = self.pexplorer_px_full
-        py_full_lo, py_full_hi = self.pexplorer_py_full
-        # Expand range by 50%
-        cx = (px_lo + px_hi) / 2
-        cy = (py_lo + py_hi) / 2
-        new_span_x = min((px_hi - px_lo) * 1.5, px_full_hi - px_full_lo)
-        new_span_y = min((py_hi - py_lo) * 1.5, py_full_hi - py_full_lo)
-        self._pexplorer_init(self.pexplorer_mode_idx, center_x=cx, center_y=cy)
-        # Override ranges with wider ones
-        self.pexplorer_px_range = (max(px_full_lo, cx - new_span_x / 2),
-                                    min(px_full_hi, cx + new_span_x / 2))
-        self.pexplorer_py_range = (max(py_full_lo, cy - new_span_y / 2),
-                                    min(py_full_hi, cy + new_span_y / 2))
-        # Reinit with new ranges
-        self._pexplorer_init(self.pexplorer_mode_idx, center_x=cx, center_y=cy)
+        self._pexplorer_zoom(1.5, (px_lo + px_hi) / 2, (py_lo + py_hi) / 2)
         self._flash("Zoomed out")
         return True
     # Reset to full range
@@ -448,10 +445,8 @@ def _handle_pexplorer_key(self, key):
         presets = mode_def.get("presets", [])
         if presets:
             # Cycle to next preset
-            idx = getattr(self, '_pexplorer_preset_idx', -1) + 1
-            if idx >= len(presets):
-                idx = 0
-            self._pexplorer_preset_idx = idx
+            idx = (getattr(self, "pexplorer_preset_idx", -1) + 1) % len(presets)
+            self.pexplorer_preset_idx = idx
             name, px, py = presets[idx]
             self._pexplorer_init(self.pexplorer_mode_idx, center_x=px, center_y=py)
             self.pexplorer_running = True
@@ -489,9 +484,9 @@ def _handle_pexplorer_key(self, key):
                 px, py = self.pexplorer_params[tile_r][tile_c]
                 # Double-click or button-press to zoom
                 if bstate & (curses.BUTTON1_DOUBLE_CLICKED if hasattr(curses, 'BUTTON1_DOUBLE_CLICKED') else 0):
-                    self._pexplorer_init(self.pexplorer_mode_idx, center_x=px, center_y=py)
+                    self._pexplorer_zoom(0.4, px, py)
                     self.pexplorer_running = True
-                    self._flash(f"Zooming into {self.pexplorer_px_label}={px:.4f}")
+                    self._flash(f"Zoomed in on {self.pexplorer_px_label}={px:.4f}")
                 else:
                     self._flash(f"Selected: {self.pexplorer_px_label}={px:.4f} {self.pexplorer_py_label}={py:.4f}")
         except curses.error:
@@ -826,6 +821,7 @@ def register(App):
     App._exit_param_explorer_mode = _exit_param_explorer_mode
     App._pexplorer_init = _pexplorer_init
     App._pexplorer_step = _pexplorer_step
+    App._pexplorer_zoom = _pexplorer_zoom
     App._handle_pexplorer_menu_key = _handle_pexplorer_menu_key
     App._handle_pexplorer_key = _handle_pexplorer_key
     App._draw_pexplorer_menu = _draw_pexplorer_menu
