@@ -103,3 +103,15 @@ def test_menu_accepts_all_enter_keys():
         app.br_menu_sel = len(PRESETS)
         app._handle_br_menu_key(key)
         assert app.br_menu_phase == 1
+
+
+def test_no_stepping_after_draw():
+    """After a draw (winner == -2) neither Space nor n restarts play."""
+    app = _make_app()
+    app.br_winner = -2
+    app.br_running = False
+    app.br_generation = 5
+    app._handle_br_key(ord(" "))
+    assert app.br_running is False
+    app._handle_br_key(ord("n"))
+    assert app.br_generation == 5

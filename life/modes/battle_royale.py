@@ -261,7 +261,7 @@ def _br_init(self, faction_ids):
 
 def _br_do_step(self):
     """Advance one generation and check for a winner or a draw."""
-    if self.br_winner >= 0:
+    if self.br_winner != -1:
         return  # the battle is over
 
     self.br_owner, self.br_age = _br_step(
@@ -580,12 +580,12 @@ def _handle_br_key(self, key):
         self._exit_battle_royale()
         return True
     if key == ord(" "):
-        if self.br_winner < 0:
+        if self.br_winner == -1:
             self.br_running = not self.br_running
             self._flash("Playing" if self.br_running else "Paused")
         return True
     if key == ord("n") or key == ord("."):
-        if self.br_winner < 0:
+        if self.br_winner == -1:
             self.br_running = False
             self._br_do_step()
         return True
