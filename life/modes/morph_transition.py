@@ -5,7 +5,7 @@ number of frames while the new mode draws normally.  Hooks into
 _exit_current_modes (capture) and _tc_refresh (blend).
 
 Toggle with 'G' (Shift+G).  Adjust duration with '[' / ']'.
-Cycle easing curve with Ctrl+T.
+Cycle easing curve with ':'.
 """
 
 import curses
@@ -191,8 +191,8 @@ def _morph_handle_key(self, key):
         self._flash(f"Morph duration: {self.morph_duration} frames")
         return True
 
-    # Ctrl+T (20) — cycle easing curve
-    if key == 20:
+    # ':' — cycle easing curve (Ctrl+T belongs to the phase bookmarks)
+    if key == ord(":"):
         self.morph_easing_idx = (self.morph_easing_idx + 1) % len(EASING_FUNCS)
         easing_name = EASING_FUNCS[self.morph_easing_idx][0]
         self._flash(f"Morph easing: {easing_name}")

@@ -1,6 +1,6 @@
 """Genome Sharing — encode a simulation's configuration as a short code and load it back.
 
-Press g to export the current setup as a shareable code (mode abbreviation, dash, payload),
+Press z to export the current setup as a shareable code (mode abbreviation, dash, payload),
 or to paste a code and reproduce that setup.
 """
 import base64
@@ -345,7 +345,7 @@ def _get_speeds():
 
 def _genome_handle_key(self, key):
     """Handle the genome sharing key (g).  Return True if handled."""
-    if key != ord("g"):
+    if key != ord("z"):
         return False
 
     # Don't interfere with mode-specific key handlers

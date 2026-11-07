@@ -156,7 +156,7 @@ def _draw_iso(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [I]=exit 3D [arrows]=move cursor [H]=heatmap [M]=sound [+/-]=zoom [?]=help [q]=quit"
+            hint = " [Space]=play [n]=step [v]=exit 3D [arrows]=move cursor [H]=heatmap [M]=sound [+/-]=zoom [?]=help [q]=quit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)

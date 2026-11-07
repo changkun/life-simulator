@@ -49,7 +49,7 @@ def test_keys_toggle_and_clamp():
     for _ in range(40):
         app._morph_handle_key(ord("]"))
     assert app.morph_duration == 120
-    app._morph_handle_key(20)
+    app._morph_handle_key(ord(":"))
     assert app.morph_easing_idx == 2
     app._morph_handle_key(ord("G"))
     assert not app.morph_enabled and not app._morph_active

@@ -95,6 +95,29 @@ def test_click_in_game_of_life_still_draws(monkeypatch):
     assert app.grid.population == 1
 
 
+def test_life_keys_for_isometric_gif_genome_and_blueprints(monkeypatch):
+    """v, a, z and w reach features whose old keys other toggles took."""
+    prompts = []
+    monkeypatch.setattr(App, "_prompt_text", lambda self, p: prompts.append(p))
+    app = run_app([ord("v"), ord("a"), ord("z")])
+    assert app.iso_mode
+    assert app.recording
+    assert prompts and prompts[0].startswith("Genome")
+
+    def with_blueprint(app):
+        app.blueprints = {"dot": {"description": "one cell", "cells": [(0, 0)]}}
+
+    assert run_app([ord("w")], with_blueprint).blueprint_menu
+
+
+def test_genome_works_inside_a_mode(monkeypatch):
+    prompts = []
+    monkeypatch.setattr(App, "_prompt_text", lambda self, p: prompts.append(p))
+    app = run_app([10, -1, ord("z")], _enter("ising_mode"))
+    assert app.ising_mode
+    assert prompts and prompts[0].startswith("Genome")
+
+
 def test_scanner_reads_every_mode_handler():
     """Every mode handler binds q or Esc; if the scan misses both, it is blind."""
     blind = [md["attr"] for md in MODE_DISPATCH

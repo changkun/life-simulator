@@ -3424,6 +3424,10 @@ class App:
         if self._pp_handle_key(key):
             return True
 
+        # ── Genome sharing (z, export or import the current setup) ──
+        if self._genome_handle_key(key):
+            return True
+
         return False
 
     def _dispatch_mode_key(self, key: int) -> bool:
@@ -4707,7 +4711,7 @@ class App:
             tc_label = "truecolor" if self.tc_buf.enabled else "256-color"
             self._flash(f"Colormap: {self.tc_colormap} ({tc_label})")
             return True
-        if key == ord("I"):
+        if key == ord("v"):
             self.iso_mode = not self.iso_mode
             if self.iso_mode:
                 self._flash("3D Isometric view ON (cell height = age)")
@@ -4763,6 +4767,13 @@ class App:
         if key == ord("W"):
             self._enter_blueprint_mode()
             return True
+        if key == ord("w"):
+            if self.blueprints:
+                self.blueprint_menu = True
+                self.blueprint_sel = 0
+            else:
+                self._flash("No blueprints saved yet (press W to capture one)")
+            return True
         if key == ord("T"):
             if self.traffic_mode:
                 self._exit_traffic_mode()
@@ -4781,7 +4792,7 @@ class App:
             else:
                 self._enter_evo_mode()
             return True
-        if key == ord("G"):
+        if key == ord("a"):
             self._toggle_recording()
             return True
         if key == ord("1"):
@@ -5089,8 +5100,6 @@ class App:
                     self._flash("♫ Generative Soundscape ON (bass+melody+harmony+rhythm)")
             else:
                 self._flash("Sonification OFF")
-            return True
-        if self._genome_handle_key(key):
             return True
         if key == ord("N"):
             # Multiplayer: prompt for host or connect
@@ -6693,7 +6702,7 @@ class App:
             if self.message and now - self.message_time < 3.0:
                 hint = f" {self.message}"
             else:
-                hint = " [Space]=play [n]=step [u]=rewind [/]=scrub10 [b]=bookmark [B]=bookmarks [p]=patterns [t]=stamp [W]=blueprint [T]=blueprints [e]=edit [d]=draw [F]=search [H]=heatmap [K]=colormap [I]=3D [Tab]=minimap [1]=wolfram [2]=ant [3]=hex [M]=sound [R]=rules [V]=compare [Z]=race [C]=puzzles [N]=multiplayer [G]=record GIF [s]=save [o]=load [+/-]=zoom [0]=reset zoom [</>]=speed [?]=help [q]=quit"
+                hint = " [Space]=play [n]=step [u]=rewind [/]=scrub10 [b]=bookmark [B]=bookmarks [p]=patterns [t]=stamp [W]=blueprint [w]=blueprints [e]=edit [d]=draw [F]=search [H]=heatmap [K]=colormap [v]=3D [Tab]=minimap [1]=wolfram [2]=ant [3]=hex [M]=sound [R]=rules [V]=compare [Z]=race [C]=puzzles [N]=multiplayer [a]=record GIF [s]=save [o]=load [+/-]=zoom [0]=reset zoom [</>]=speed [?]=help [q]=quit"
             hint = hint[:max_x - 1]
             try:
                 self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -6782,11 +6791,12 @@ class App:
             "║  t         Stamp pattern at cursor            ║",
             "║  R         Rule editor (B../S.. presets)      ║",
             "║  W         Blueprint: select region & save      ║",
+            "║  w         Blueprint library (stamp or delete)  ║",
             "║  T         Traffic Flow (Nagel-Schreckenberg) ║",
             "║  F         Fluid Dynamics (Lattice Boltzmann)  ║",
             "║  f         Pattern search (find known shapes) ║",
             "║  H         Toggle heatmap (cell activity)      ║",
-            "║  I         Toggle 3D isometric view            ║",
+            "║  v         Toggle 3D isometric view            ║",
             "║  Tab       Toggle minimap overlay              ║",
             "║  V         Compare two rules side-by-side     ║",
             "║  Z         Race 2-4 rules with scoreboard      ║",
@@ -6828,8 +6838,8 @@ class App:
             "║  Ctrl+L    Chladni Plate vibration patterns  ║",
             "║  Ctrl+G    Chaos Game / IFS Fractals          ║",
             "║  Ctrl+N    Magnetic Field Lines (particles)  ║",
-            "║  g         Genome: export/import sim config    ║",
-            "║  G         Record/stop GIF (export frames)   ║",
+            "║  z         Genome: export/import sim config    ║",
+            "║  a         Record/stop GIF (export frames)   ║",
             "║  Ctrl+U    Scripting & Choreography (.show)  ║",
             "║  Ctrl+E    Long-exposure capture start/stop   ║",
             "║  Ctrl+F    Freeze/unfreeze exposure composite  ║",
