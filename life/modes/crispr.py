@@ -23,7 +23,6 @@ Six presets:
   Gene Drive Spread, Base Editing (nCas9), Prime Editing
 """
 import curses
-import math
 import random
 
 # ══════════════════════════════════════════════════════════════════════
@@ -32,7 +31,6 @@ import random
 
 _BASES = "ACGT"
 _COMPLEMENT = {"A": "T", "T": "A", "C": "G", "G": "C"}
-_PAM = "NGG"  # Cas9 PAM sequence (N = any base)
 
 # Guide RNA length
 _GUIDE_LEN = 20
@@ -46,15 +44,8 @@ _CAS_PAM_FOUND = 1
 _CAS_RLOOP = 2
 _CAS_CUTTING = 3
 _CAS_RELEASED = 4
-_CAS_NICKASE = 5     # nCas9 — nicks one strand only
 _CAS_BASE_EDIT = 6   # base editing — deaminase active
 _CAS_PRIME_EDIT = 7  # prime editing — RT active
-
-_CAS_STATE_NAMES = {
-    _CAS_SCANNING: "scan", _CAS_PAM_FOUND: "PAM", _CAS_RLOOP: "R-loop",
-    _CAS_CUTTING: "cut", _CAS_RELEASED: "done", _CAS_NICKASE: "nick",
-    _CAS_BASE_EDIT: "base-ed", _CAS_PRIME_EDIT: "prime-ed",
-}
 
 # DSB repair states
 _DSB_UNREPAIRED = 0
@@ -97,12 +88,6 @@ _GT_WT_DISRUPTED = 3   # one disrupted (NHEJ indel) allele
 _GT_DISRUPTED = 4      # homozygous disrupted
 _GT_RESISTANT = 5      # drive-resistant (modified PAM)
 _GT_EMPTY = 6          # empty grid cell
-
-_GT_NAMES = {
-    _GT_WT_WT: "WT/WT", _GT_WT_EDIT: "WT/Ed", _GT_EDIT_EDIT: "Ed/Ed",
-    _GT_WT_DISRUPTED: "WT/Dis", _GT_DISRUPTED: "Dis/Dis",
-    _GT_RESISTANT: "Resist", _GT_EMPTY: "",
-}
 
 _GT_CHARS = {
     _GT_WT_WT: "●●", _GT_WT_EDIT: "●○", _GT_EDIT_EDIT: "○○",
@@ -414,7 +399,7 @@ def _crispr_init(self, preset_idx: int):
     # ── Population grid for gene drive ──
     self.crispr_gene_drive = settings.get("gene_drive", False)
     if self.crispr_gene_drive:
-        pop_rows = max(15, (max_y - 6) // 1)
+        pop_rows = max(15, max_y - 6)
         pop_cols = max(20, (max_x - 2) // 3)
     else:
         pop_rows = 10
@@ -553,7 +538,7 @@ def _crispr_step(self):
                 elif cas9.is_prime_editor:
                     cas9.state = _CAS_PRIME_EDIT
                     cas9.timer = 0
-                elif cas9.is_nickase and not cas9.is_base_editor and not cas9.is_prime_editor:
+                elif cas9.is_nickase:
                     # Pure nickase — nick one strand
                     dsb = _DSBSite(cas9.target_pos, is_off_target=is_off,
                                    nick_only=True)
@@ -867,7 +852,7 @@ def _update_population(self):
                 if 0 <= nr < rows and 0 <= nc < cols:
                     if pop[nr][nc] == _GT_EMPTY:
                         empty_nbrs.append((nr, nc))
-                    elif pop[nr][nc] != _GT_EMPTY:
+                    else:
                         partner_nbrs.append((nr, nc))
             if not empty_nbrs or not partner_nbrs:
                 continue
@@ -1256,7 +1241,6 @@ def _draw_crispr_dna(self, max_y, max_x):
             x = 4 + (pos - vis_start)
             if x >= max_x - 1:
                 continue
-            state_name = _CAS_STATE_NAMES.get(cas9.state, "?")
             if cas9.state == _CAS_SCANNING:
                 ch, cp = "→" if cas9.direction > 0 else "←", 5
             elif cas9.state == _CAS_PAM_FOUND:
@@ -1267,8 +1251,6 @@ def _draw_crispr_dna(self, max_y, max_x):
                 ch, cp = "✂", 1
             elif cas9.state in (_CAS_BASE_EDIT, _CAS_PRIME_EDIT):
                 ch, cp = "✎", 2
-            elif cas9.state == _CAS_NICKASE:
-                ch, cp = "╱", 4
             else:
                 ch, cp = "·", 7
             try:
