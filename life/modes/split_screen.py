@@ -1,10 +1,9 @@
-"""Mode: split_screen — dual simulation side-by-side with independent state."""
+"""Split-Screen Dual Simulation — two mini-simulations side by side, optionally coupled."""
 import curses
 import time
 
 from life.constants import SPEEDS
 
-# Reuse the mini-simulation engines from mashup mode
 from life.modes.mashup import MASHUP_SIMS, _ENGINES
 
 _DENSITY = " ░▒▓█"
@@ -19,7 +18,7 @@ _RIGHT_COLOR = 3  # green-ish
 SPLIT_PRESETS = [
     ("Game of Life vs Lenia-style RD", "gol", "rd",
      "Classic discrete CA alongside continuous reaction-diffusion"),
-    ("Boids vs N-Body (Physarum)", "boids", "physarum",
+    ("Boids vs Physarum", "boids", "physarum",
      "Flocking swarm next to slime mold network"),
     ("Wave Equation vs Ising Model", "wave", "ising",
      "Continuous waves beside magnetic spin dynamics"),
@@ -41,7 +40,7 @@ SPLIT_PRESETS = [
 # ════════════════════════════════════════════════════════════════════
 
 def _enter_split_mode(self):
-    """Enter split-screen mode — show preset/custom selection menu."""
+    """Open the split-screen preset menu."""
     self.split_menu = True
     self.split_menu_sel = 0
     self.split_menu_phase = 0  # 0=presets, 1=pick left, 2=pick right
@@ -50,7 +49,7 @@ def _enter_split_mode(self):
 
 
 def _exit_split_mode(self):
-    """Exit split-screen mode and clean up."""
+    """Leave split-screen mode."""
     self.split_mode = False
     self.split_menu = False
     self.split_running = False
@@ -65,16 +64,14 @@ def _exit_split_mode(self):
 # ════════════════════════════════════════════════════════════════════
 
 def _split_init(self, left_id, right_id):
-    """Initialize dual panes with the given simulations."""
+    """Create both panes from the given engine ids and start the split view."""
     max_y, max_x = self.stdscr.getmaxyx()
 
-    # Each pane gets half the terminal width (minus divider)
-    pane_w = max(10, (max_x - 3) // 2)  # -3 for divider column + margins
-    pane_h = max(5, max_y - 3)           # -3 for title bar + hint bar
+    pane_w = max(10, (max_x - 3) // 2)  # half the width, minus divider and margins
+    pane_h = max(5, max_y - 3)           # minus title bar and hint bar
 
-    # Simulation grid dimensions per pane
-    sim_rows = max(4, pane_h - 2)        # -2 for pane title + padding
-    sim_cols = max(4, (pane_w - 1) // 2) # each cell = 2 chars wide
+    sim_rows = max(4, pane_h - 2)        # minus pane title and padding
+    sim_cols = max(4, (pane_w - 1) // 2) # each cell is two characters wide
 
     def make_pane(sim_id):
         init_fn, _, dens_fn = _ENGINES[sim_id]
@@ -106,7 +103,7 @@ def _split_init(self, left_id, right_id):
 # ════════════════════════════════════════════════════════════════════
 
 def _split_step(self):
-    """Advance both panes by one generation with optional bidirectional coupling."""
+    """Advance both panes by one generation, feeding each the other's density."""
     left = self.split_left
     right = self.split_right
     if left is None or right is None:
@@ -114,19 +111,17 @@ def _split_step(self):
 
     coupling = getattr(self, "split_coupling", 0.0)
 
-    # Snapshot densities from previous frame *before* stepping,
-    # so each sim reacts to the other's last state (Jacobi-style).
-    density_l = left["density"]   # feed to right sim
-    density_r = right["density"]  # feed to left sim
+    # Read both densities before stepping, so neither pane sees the other's
+    # new state (Jacobi-style).
+    density_l = left["density"]
+    density_r = right["density"]
 
     _, step_l, dens_l = _ENGINES[left["sim_id"]]
     _, step_r, dens_r = _ENGINES[right["sim_id"]]
 
-    # Each simulation receives the OTHER pane's density as input.
     step_l(left["state"], density_r, coupling)
     step_r(right["state"], density_l, coupling)
 
-    # Refresh density maps after stepping.
     left["density"] = dens_l(left["state"])
     right["density"] = dens_r(right["state"])
 
@@ -140,7 +135,7 @@ def _split_step(self):
 # ════════════════════════════════════════════════════════════════════
 
 def _draw_split_menu(self, max_y, max_x):
-    """Draw the split-screen mode selection menu."""
+    """Draw the preset and engine-picker menu."""
     self.stdscr.erase()
     phase = self.split_menu_phase
 
@@ -219,7 +214,7 @@ def _draw_split_menu(self, max_y, max_x):
     # Hint bar
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [Up/Down]=navigate  [Enter]=select  [Esc]=back/exit"
+        hint = " Up/Down=navigate  Enter=select  Esc=back/exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -232,7 +227,7 @@ def _draw_split_menu(self, max_y, max_x):
 # ════════════════════════════════════════════════════════════════════
 
 def _handle_split_menu_key(self, key):
-    """Handle input in the split-screen selection menu."""
+    """Handle keys in the preset and engine-picker menu."""
     if key == -1:
         return True
     phase = self.split_menu_phase
@@ -271,12 +266,9 @@ def _handle_split_menu_key(self, key):
         elif phase == 1:
             sim_id = MASHUP_SIMS[self.split_menu_sel]["id"]
             if self.split_pick_left is None:
-                # First pick → left pane
                 self.split_pick_left = sim_id
                 self.split_menu_sel = 0
-                # Stay in phase 1 for right pick
             else:
-                # Second pick → right pane, launch!
                 self._split_init(self.split_pick_left, sim_id)
         return True
     return True
@@ -287,7 +279,7 @@ def _handle_split_menu_key(self, key):
 # ════════════════════════════════════════════════════════════════════
 
 def _draw_split(self, max_y, max_x):
-    """Draw dual-pane split-screen view."""
+    """Draw both panes, the divider and the hint bar."""
     self.stdscr.erase()
 
     if self.split_left is None or self.split_right is None:
@@ -356,7 +348,7 @@ def _draw_split(self, max_y, max_x):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [Tab]=focus [c]=coupling [+/-]=adjust [r]=reset [s]=swap [R]=menu [q]=exit"
+            hint = " Space=play  n=step  Tab=focus  c/+/-=coupling  r=reset  s=swap  R=menu  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -422,7 +414,7 @@ def _draw_split_pane(self, pane, pane_idx, oy, ox, pane_h, pane_w, max_y, max_x,
 # ════════════════════════════════════════════════════════════════════
 
 def _handle_split_key(self, key):
-    """Handle input during active split-screen simulation."""
+    """Handle keys in the split view."""
     if key == -1:
         return True
     if key == ord("q") or key == 27:
