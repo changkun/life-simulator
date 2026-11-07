@@ -87,3 +87,12 @@ def test_density_maps_refreshed_each_step():
     assert app.mashup_generation == 1
     assert len(app.mashup_density_a) == app.mashup_rows
     assert len(app.mashup_density_b) == app.mashup_rows
+
+
+def test_reset_keeps_coupling():
+    app = _make_app()
+    app._mashup_init("gol", "wave")
+    app.mashup_coupling = 0.8
+    app._handle_mashup_key(ord("r"))
+    assert app.mashup_coupling == 0.8
+    assert app.mashup_generation == 0

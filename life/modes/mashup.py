@@ -863,7 +863,9 @@ def _handle_mashup_key(self, key):
         self._flash("Coupling: 0.50 (default)")
         return True
     if key == ord("r"):
+        coupling = self.mashup_coupling  # keep the user's setting
         self._mashup_init(self.mashup_sim_a_id, self.mashup_sim_b_id)
+        self.mashup_coupling = coupling
         self._flash("Reset!")
         return True
     if key == ord("R"):
