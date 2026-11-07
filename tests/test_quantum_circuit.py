@@ -115,3 +115,12 @@ def test_entanglement_pairs_ignores_product_states():
     assert _entanglement_pairs([0.5, 0.5, 0.5, 0.5], 2) == []
     bell = [1 / math.sqrt(2), 0, 0, 1 / math.sqrt(2)]
     assert _entanglement_pairs(bell, 2) == [(0, 1)]
+
+
+def test_deutsch_jozsa_balanced_measures_all_ones():
+    """The balanced oracle must make the three input qubits read 111."""
+    app = _make_app()
+    app._qcirc_init(3)
+    app._qcirc_run_full()
+    for label, p in _measure_probabilities(app.qcirc_state, 4):
+        assert label[:3] == "111", (label, p)

@@ -50,6 +50,7 @@ QCIRC_PRESETS = [
           # balanced oracle: CNOT from each input to output
           ("CNOT", [0, 3], []),
           ("CNOT", [1, 3], []),
+          ("CNOT", [2, 3], []),
           ("H", [0], []), ("H", [1], []), ("H", [2], []),
           ("M", [0], []), ("M", [1], []), ("M", [2], []),
       ],
