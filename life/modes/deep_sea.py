@@ -318,15 +318,13 @@ def _enter_deepsea_mode(self):
 
 def _exit_deepsea_mode(self):
     """Exit Deep-Sea mode — cleanup all state."""
+    for attr in list(vars(self)):
+        if attr.startswith('deepsea_'):
+            delattr(self, attr)
+    # The App constructor defines these flags, so they must outlive the cleanup.
     self.deepsea_mode = False
     self.deepsea_menu = False
     self.deepsea_running = False
-    for attr in list(vars(self)):
-        if attr.startswith('deepsea_') and attr != 'deepsea_mode':
-            try:
-                delattr(self, attr)
-            except AttributeError:
-                pass
 
 
 def _deepsea_init(self, preset_idx):
