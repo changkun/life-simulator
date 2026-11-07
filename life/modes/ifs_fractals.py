@@ -1,4 +1,4 @@
-"""Mode: ifs — simulation mode for the life package."""
+"""Chaos Game / IFS Fractals — fractals drawn point by point by random affine maps."""
 import curses
 import math
 import random
@@ -53,14 +53,12 @@ def _ifs_init(self, preset_idx: int):
     self.ifs_rows = max(10, max_y - 3)
     self.ifs_cols = max(10, max_x - 1)
 
-    # Initialize density and color fields
     self.ifs_points = [[0] * self.ifs_cols for _ in range(self.ifs_rows)]
     self.ifs_color_field = [[-1] * self.ifs_cols for _ in range(self.ifs_rows)]
 
     self.ifs_steps_per_frame = 200
     self.ifs_colorize = True
 
-    # Define IFS transforms: (a, b, c, d, e, f, probability)
     if preset_id == "sierpinski":
         # Sierpinski triangle: 3 contractions toward vertices
         self.ifs_transforms = [
@@ -131,7 +129,6 @@ def _ifs_init(self, preset_idx: int):
 
     elif preset_id == "koch":
         # Koch snowflake via IFS
-        import math
         s = 1.0 / 3
         cos60 = math.cos(math.pi / 3)
         sin60 = math.sin(math.pi / 3)
@@ -146,7 +143,6 @@ def _ifs_init(self, preset_idx: int):
 
     elif preset_id == "crystal":
         # Symmetric crystal / snowflake pattern
-        import math
         transforms = []
         n_arms = 6
         for i in range(n_arms):
@@ -198,8 +194,7 @@ def _ifs_init(self, preset_idx: int):
 
 
 def _ifs_iterate(self):
-    """Perform one iteration of the IFS chaos game."""
-    # Choose transform by probability
+    """Apply one randomly chosen transform to the current point."""
     r = random.random()
     cumulative = 0.0
     chosen = 0
@@ -218,7 +213,7 @@ def _ifs_iterate(self):
 
 
 def _ifs_step(self):
-    """Advance IFS fractal by one point iteration and plot it."""
+    """Advance the chaos game by one point and plot it."""
     self._ifs_iterate()
 
     rows = self.ifs_rows
@@ -293,7 +288,6 @@ def _handle_ifs_key(self, key: int) -> bool:
         self._flash(f"Points/frame: {self.ifs_steps_per_frame}")
         return True
     if key == ord("x"):
-        # Clear the canvas and restart
         self.ifs_points = [[0] * self.ifs_cols for _ in range(self.ifs_rows)]
         self.ifs_color_field = [[-1] * self.ifs_cols for _ in range(self.ifs_rows)]
         self.ifs_total_points = 0
@@ -378,7 +372,6 @@ def _draw_ifs_menu(self, max_y: int, max_x: int):
 
 def _draw_ifs(self, max_y: int, max_x: int):
     """Draw the Chaos Game / IFS Fractal simulation."""
-    import math
     self.stdscr.erase()
     rows = self.ifs_rows
     cols = self.ifs_cols
