@@ -549,14 +549,6 @@ def _handle_anc_search_key(self, key):
             self._exit_ancestor_search()
             self._flash("Ancestor loaded to main grid — step forward to see target")
         return True
-    if key == ord("+") or key == ord("="):
-        self.anc_grid_h = min(30, self.anc_grid_h + 2)
-        self.anc_grid_w = min(40, self.anc_grid_w + 2)
-        return True
-    if key == ord("-") or key == ord("_"):
-        self.anc_grid_h = max(6, self.anc_grid_h - 2)
-        self.anc_grid_w = max(8, self.anc_grid_w - 2)
-        return True
     return True
 
 
