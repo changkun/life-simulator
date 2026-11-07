@@ -1,6 +1,6 @@
 # Complex Simulations & Audio-Visual
 
-Multi-physics systems and aesthetic visualizations — where science meets art in the terminal.
+Physics, ecology, and climate simulations, plus audio-visual modes. Each entry lists the mode's background, formulation, presets, controls, and what to look for.
 
 ---
 
