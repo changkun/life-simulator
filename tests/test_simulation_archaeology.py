@@ -1,4 +1,6 @@
 """Tests for Simulation Archaeology."""
+import curses
+
 from tests.conftest import make_mock_app
 from life.modes import simulation_archaeology as sa
 
@@ -37,6 +39,8 @@ class _Screen:
         self.writes.clear()
 
     def addstr(self, y, x, text, *attrs):
+        if not (0 <= y < 24 and 0 <= x < 80):
+            raise curses.error("outside the screen")
         self.writes.append((y, x, text))
 
 
@@ -71,3 +75,19 @@ def test_enter_variants_submit_and_start():
         assert app.archaeo_solved is True
         app._handle_archaeo_key(enter)
         assert app.archaeo_solved is False  # next puzzle
+
+
+def test_answer_visible_on_small_screen_with_all_clues(monkeypatch):
+    """Many revealed clues must not push the result and answer off a 24-row screen."""
+    monkeypatch.setattr(curses, "has_colors", lambda: False)
+    monkeypatch.setattr(curses, "color_pair", lambda n: 0)
+    app = _make_app()
+    app.stdscr = _Screen()
+    sa._generate_puzzle(app)
+    app.archaeo_revealed_clues = set(sa._CLUE_TYPES)
+    app.archaeo_last_result = "CORRECT! +10pts"
+    app.archaeo_show_answer = True
+    app._draw_archaeo()
+    texts = [t for y, x, t in app.stdscr.writes]
+    assert any(t.startswith("CORRECT") for t in texts)
+    assert any(t.startswith("Answer:") for t in texts)

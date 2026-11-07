@@ -867,64 +867,47 @@ def _draw_control_panel(self, px, panel_w, max_y, max_x):
         self.stdscr.addstr(py, px, f"Revealed: {clue_count}/{total_clues}", curses.A_DIM)
         py += 1
 
-        if "entropy" in self.archaeo_revealed_clues:
-            self.stdscr.addstr(py, px, f"Entropy: {self.archaeo_artifact_entropy:.3f}"[:pw])
-            py += 1
-
-        if "symmetry" in self.archaeo_revealed_clues:
+        revealed = self.archaeo_revealed_clues
+        clue_lines = []
+        if "entropy" in revealed:
+            clue_lines.append(f"Entropy: {self.archaeo_artifact_entropy:.3f}")
+        if "symmetry" in revealed:
             sym = self.archaeo_artifact_symmetry
-            self.stdscr.addstr(py, px, f"Sym H:{sym['horiz']:.2f} V:{sym['vert']:.2f} R:{sym['rot180']:.2f}"[:pw])
-            py += 1
-
-        if "stability" in self.archaeo_revealed_clues:
-            self.stdscr.addstr(py, px, f"Stability: {self.archaeo_artifact_stability}"[:pw])
-            py += 1
-
-        if "population" in self.archaeo_revealed_clues:
-            self.stdscr.addstr(py, px, f"Final pop: {self.archaeo_artifact_pop_pct:.1f}%"[:pw])
-            py += 1
-
-        if "birth_count" in self.archaeo_revealed_clues:
-            self.stdscr.addstr(py, px, f"Birth digits: {len(self.archaeo_answer_birth)}"[:pw])
-            py += 1
-
-        if "survival_count" in self.archaeo_revealed_clues:
-            self.stdscr.addstr(py, px, f"Survival digits: {len(self.archaeo_answer_survival)}"[:pw])
-            py += 1
-
-        if "birth_hint" in self.archaeo_revealed_clues:
-            # Show one random birth digit
-            if self.archaeo_answer_birth:
-                hint_d = min(self.archaeo_answer_birth)
-                self.stdscr.addstr(py, px, f"Birth contains: {hint_d}"[:pw])
-                py += 1
-
-        if "survival_hint" in self.archaeo_revealed_clues:
-            if self.archaeo_answer_survival:
-                hint_d = min(self.archaeo_answer_survival)
-                self.stdscr.addstr(py, px, f"Survival contains: {hint_d}"[:pw])
-                py += 1
-
-        if "density" in self.archaeo_revealed_clues:
-            self.stdscr.addstr(py, px, f"Init density: ~{self.archaeo_answer_density:.0%}"[:pw])
-            py += 1
-
-        if "periodicity" in self.archaeo_revealed_clues:
+            clue_lines.append(f"Sym H:{sym['horiz']:.2f} V:{sym['vert']:.2f} R:{sym['rot180']:.2f}")
+        if "stability" in revealed:
+            clue_lines.append(f"Stability: {self.archaeo_artifact_stability}")
+        if "population" in revealed:
+            clue_lines.append(f"Final pop: {self.archaeo_artifact_pop_pct:.1f}%")
+        if "birth_count" in revealed:
+            clue_lines.append(f"Birth digits: {len(self.archaeo_answer_birth)}")
+        if "survival_count" in revealed:
+            clue_lines.append(f"Survival digits: {len(self.archaeo_answer_survival)}")
+        if "birth_hint" in revealed and self.archaeo_answer_birth:
+            clue_lines.append(f"Birth contains: {min(self.archaeo_answer_birth)}")
+        if "survival_hint" in revealed and self.archaeo_answer_survival:
+            clue_lines.append(f"Survival contains: {min(self.archaeo_answer_survival)}")
+        if "density" in revealed:
+            clue_lines.append(f"Init density: ~{self.archaeo_answer_density:.0%}")
+        if "periodicity" in revealed:
             p = self.archaeo_artifact_period
-            if p:
-                self.stdscr.addstr(py, px, f"Period: {p}"[:pw])
-            else:
-                self.stdscr.addstr(py, px, "Period: none detected"[:pw])
-            py += 1
+            clue_lines.append(f"Period: {p}" if p else "Period: none detected")
+        if "timeline" in revealed:
+            clue_lines.append("Timeline: [t] to view")
 
-        if "timeline" in self.archaeo_revealed_clues:
-            self.stdscr.addstr(py, px, "Timeline: [t] to view"[:pw])
+        # The last three rows above the status bar belong to the result and answer.
+        clue_bottom = max_y - 4
+        shown = clue_lines[:max(0, clue_bottom - py)]
+        for line in shown:
+            self.stdscr.addstr(py, px, line[:pw])
             py += 1
+        if len(shown) < len(clue_lines) and shown:
+            self.stdscr.addstr(py - 1, px, f"... {len(clue_lines) - len(shown) + 1} more clues"[:pw], curses.A_DIM)
 
         py += 1
 
         # Population sparkline
-        if self.archaeo_pop_history and "population" in self.archaeo_revealed_clues:
+        if (self.archaeo_pop_history and "population" in revealed
+                and py + 2 < clue_bottom):
             self.stdscr.addstr(py, px, "── Pop History ──", curses.A_BOLD)
             py += 1
             spark = _sparkline(self.archaeo_pop_history, pw)
