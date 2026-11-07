@@ -374,17 +374,21 @@ def _draw_symbiosis_menu(self, max_y, max_x):
                 self.stdscr.addstr(y, 2, line[:max_x - 4], attr)
             except curses.error:
                 pass
-            if sel:
+
+        ci = len(SYMBIOSIS_PRESETS)
+        # The selected preset's description goes below the list, not under its
+        # own row, where the next preset would overwrite it.
+        if self.symbiosis_menu_sel < ci:
+            desc = SYMBIOSIS_PRESETS[self.symbiosis_menu_sel]["desc"]
+            if 5 + ci + 2 < max_y - 1:
                 try:
-                    self.stdscr.addstr(y + 1, 6, preset["desc"][:max_x - 8],
+                    self.stdscr.addstr(5 + ci + 2, 4, desc[:max_x - 6],
                                        curses.color_pair(6) | curses.A_DIM)
                 except curses.error:
                     pass
 
         # Custom option
-        ci = len(SYMBIOSIS_PRESETS)
-        # Account for description lines
-        y = 5 + ci + 1
+        y = 5 + ci
         if y < max_y - 3:
             sel = self.symbiosis_menu_sel == ci
             marker = "▸ " if sel else "  "
