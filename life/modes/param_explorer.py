@@ -1,17 +1,4 @@
-"""Mode: param_explorer — Parameter Space Explorer.
-
-Displays a grid of live simulation thumbnails, each running the same mode
-but with slightly varied parameters.  Click on the most interesting tile
-to re-center the grid around its parameters and explore the neighborhood.
-
-Currently supports exploring parameter spaces for:
-  - Reaction-Diffusion (Gray-Scott): feed rate vs kill rate
-  - Lenia: mu vs sigma
-  - Boids: separation vs cohesion
-  - Physarum: sensor angle vs sensor distance
-  - Ising Model: temperature vs external field
-  - And any other mode with 2 tunable numeric parameters
-"""
+"""Parameter Space Explorer — a grid of live mini-simulations, each run with different parameters."""
 import curses
 import math
 import random
@@ -414,7 +401,7 @@ def _handle_pexplorer_key(self, key):
         px, py = self.pexplorer_params[self.pexplorer_sel_r][self.pexplorer_sel_c]
         self._flash(f"Selected: {self.pexplorer_px_label}={px:.4f} {self.pexplorer_py_label}={py:.4f}")
         return True
-    # Enter/click: zoom into selected tile's parameters
+    # Enter: zoom into selected tile's parameters
     if key in (10, 13, curses.KEY_ENTER):
         px, py = self.pexplorer_params[self.pexplorer_sel_r][self.pexplorer_sel_c]
         self._pexplorer_zoom(0.4, px, py)
@@ -428,7 +415,7 @@ def _handle_pexplorer_key(self, key):
         self._pexplorer_zoom(1.5, (px_lo + px_hi) / 2, (py_lo + py_hi) / 2)
         self._flash("Zoomed out")
         return True
-    # Reset to full range
+    # Back to the mode menu
     if key == ord("R") or key == ord("m"):
         self.pexplorer_mode = False
         self.pexplorer_running = False
@@ -578,7 +565,7 @@ def _draw_pexplorer_menu(self, max_y, max_x):
         "neighborhood.  Press 'p' to jump to known interesting presets.",
         "",
         "Use arrow keys to select tiles, Enter to zoom in, 'z' to zoom out,",
-        "'r' to reset to full range, 'p' to cycle presets.",
+        "'r' to reset to the full range, 'p' to cycle presets.",
     ]
     for i, info in enumerate(info_lines):
         iy = info_y + i
@@ -591,7 +578,7 @@ def _draw_pexplorer_menu(self, max_y, max_x):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+        hint = " j/k=navigate  Enter=select  q=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
@@ -704,7 +691,6 @@ def _draw_pexplorer(self, max_y, max_x):
             # Bottom border
             by = tile_y + th
             if by < max_y - 2:
-                corner_l = _TILE_CORNER_BL if col == 0 else _TILE_T_UP if row == gr - 1 else _TILE_CROSS
                 if col == 0:
                     corner_l = _TILE_T_RIGHT if row < gr - 1 else _TILE_CORNER_BL
                 else:
@@ -807,7 +793,8 @@ def _draw_pexplorer(self, max_y, max_x):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [←→↑↓]=select [Enter]=zoom in [z]=zoom out [p]=preset [r]=reset [+/-]=steps [R]=menu [q]=exit"
+            hint = (" Space=play  n=step  arrows=select  Enter=zoom in  z=zoom out  p=preset"
+                    "  r=reset  +/_=steps  >/<=speed  R=menu  q=exit")
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
