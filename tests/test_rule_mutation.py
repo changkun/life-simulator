@@ -43,3 +43,15 @@ def test_lineage_parent_is_the_rule_that_was_mutated():
         if len(app.rmut_lineage) > n:
             assert app.rmut_lineage[-1].parent_str == before
     assert len(app.rmut_lineage) > 3
+
+
+def test_full_reset_cancels_a_mutant_under_test():
+    random.seed(5)
+    app = _make_app()
+    _start(app, "Entropy Climber")
+    for _ in range(rm._EVAL_WINDOW + 5):
+        app._rmut_step()
+    assert app.rmut_eval_phase == "evaluating"
+    app._handle_rmut_key(ord("R"))
+    assert app.rmut_eval_phase == "stable"
+    assert app.rmut_candidate_birth is None

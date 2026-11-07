@@ -553,6 +553,10 @@ def _handle_rmut_key(self, key):
         self.rmut_grid.survival = set(survival)
         _seed_grid(self.rmut_grid, self.rmut_density)
         self.rmut_periodicity.reset()
+        # Drop any mutant under test; it was derived from the old rule.
+        self.rmut_eval_phase = "stable"
+        self.rmut_candidate_birth = None
+        self.rmut_candidate_survival = None
         self.rmut_lineage.append(
             LineageNode(rule_string(birth, survival), 0.0,
                         self.rmut_generation, "random", True)
