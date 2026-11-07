@@ -28,3 +28,17 @@ def test_mips_slows_particles_in_crowds():
     speed = math.hypot(app.active_matter_particles[0][3],
                        app.active_matter_particles[0][4])
     assert speed < app.active_matter_v0 * 0.9
+
+
+def test_click_adds_particles_up_to_a_cap(monkeypatch):
+    import curses
+    from life.modes import active_matter as am
+    app = _make_app()
+    app._active_matter_init(0)
+    monkeypatch.setattr(curses, "getmouse", lambda: (0, 10, 5, 0, 0), raising=False)
+    before = len(app.active_matter_particles)
+    app._handle_active_matter_key(curses.KEY_MOUSE)
+    assert len(app.active_matter_particles) == before + 15
+    for _ in range(1000):
+        app._handle_active_matter_key(curses.KEY_MOUSE)
+    assert len(app.active_matter_particles) < am.MAX_PARTICLES + 15

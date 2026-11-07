@@ -29,6 +29,9 @@ ACTIVE_MATTER_PRESETS = [
      "contractile"),
 ]
 
+# Upper bound on particles, so repeated clicks cannot slow the step to a crawl.
+MAX_PARTICLES = 3000
+
 # ── Glyphs & colors ─────────────────────────────────────────────────────
 _DIR_ARROWS = ["→→", "↗↗", "↑↑", "↖↖", "←←", "↙↙", "↓↓", "↘↘"]
 _DENSITY_CHARS = ["  ", "· ", "░░", "▒▒", "▓▓", "██"]
@@ -483,7 +486,9 @@ def _handle_active_matter_key(self, key: int) -> bool:
             # Drop a cluster of particles at click location
             r_click = my - 1
             c_click = mx // 2
-            if 0 <= r_click < self.active_matter_rows and 0 <= c_click < self.active_matter_cols:
+            if (0 <= r_click < self.active_matter_rows
+                    and 0 <= c_click < self.active_matter_cols
+                    and len(self.active_matter_particles) < MAX_PARTICLES):
                 for _ in range(15):
                     pr = (r_click + random.gauss(0, 1.5)) % self.active_matter_rows
                     pc = (c_click + random.gauss(0, 1.5)) % self.active_matter_cols
