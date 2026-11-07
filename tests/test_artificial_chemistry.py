@@ -78,3 +78,15 @@ def test_init_populates_grid():
                     for c in range(app.achem_cols)
                     if app.achem_grid[r][c] is not None)
     assert mol_count > 0
+
+
+def test_tracked_tables_stay_bounded():
+    from life.modes.artificial_chemistry import MAX_TRACKED
+    app = _make_app()
+    app._achem_init(1)
+    for i in range(5 * MAX_TRACKED):
+        app.achem_catalytic_pairs["X%d" % i] = {"Y"}
+        app.achem_replicator_seqs.add("X%d" % i)
+    app._achem_step()  # generation 0 runs the periodic pruning
+    assert len(app.achem_catalytic_pairs) <= MAX_TRACKED
+    assert len(app.achem_replicator_seqs) <= MAX_TRACKED

@@ -22,6 +22,7 @@ ALPHABET = "ABCDEFGH"
 MAX_MOL_LEN = 16       # max molecule string length
 MIN_MOL_LEN = 1
 ENERGY_PER_BOND = 0.3  # energy released per bond formed
+MAX_TRACKED = 1000     # size at which catalyst/replicator tables drop molecules no longer on the grid
 
 # Cell types for display
 CELL_EMPTY = 0
@@ -450,6 +451,7 @@ def _achem_step(self):
 
     # ── 6. Detect autocatalytic cycles ───────────────────────────
     if gen % 20 == 0:
+        _achem_prune_tracked(self)
         self._achem_detect_cycles()
 
     # ── 7. Collect statistics ────────────────────────────────────
@@ -477,6 +479,21 @@ def _achem_compute_stats(self):
                 if len(mol) > longest:
                     longest = len(mol)
     return len(species), longest
+
+
+def _achem_prune_tracked(self):
+    """Drop catalysts and replicators that have left the grid once the tables are large.
+
+    Without this the tables gain thousands of one-off sequences per
+    hundred steps, and cycle detection slows down with them.
+    """
+    pairs = self.achem_catalytic_pairs
+    seqs = self.achem_replicator_seqs
+    if len(pairs) <= MAX_TRACKED and len(seqs) <= MAX_TRACKED:
+        return
+    present = {mol for row in self.achem_grid for mol in row if mol is not None}
+    self.achem_catalytic_pairs = {m: v for m, v in pairs.items() if m in present}
+    self.achem_replicator_seqs = {m for m in seqs if m in present}
 
 
 def _achem_detect_cycles(self):
