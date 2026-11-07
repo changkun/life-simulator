@@ -1,13 +1,11 @@
-"""Mode: screensaver — auto-cycling demo reel that showcases all simulation modes."""
+"""Screensaver / Demo Reel — cycles unattended through the simulation modes."""
 import curses
-import math
 import random
 import time
 
 from life.registry import MODE_DISPATCH, MODE_REGISTRY
 
 
-# ── Screensaver presets ──
 SCREENSAVER_PRESETS = [
     ("All Modes — Sequential", "Cycle through every mode in category order", "all_sequential"),
     ("All Modes — Shuffle", "Random order through all modes", "all_shuffle"),
@@ -25,19 +23,18 @@ SCREENSAVER_PRESETS = [
 
 
 def _enter_screensaver_mode(self):
-    """Enter Screensaver / Demo Reel mode — show preset menu."""
+    """Show the preset menu."""
     self.screensaver_menu = True
     self.screensaver_menu_sel = 0
 
 
 def _exit_screensaver_mode(self):
-    """Exit Screensaver mode — clean up and exit any active sub-mode."""
+    """Leave the screensaver and exit the running sub-mode."""
     # Clear our own flags first: _exit_current_modes() calls the exit hook of
     # every active mode, including this one, and would otherwise recurse.
     active = self.screensaver_active_mode
     self.screensaver_mode = False
     self.screensaver_active_mode = None
-    # Exit whatever mode is currently running
     if active is not None:
         self._exit_current_modes()
     self.screensaver_menu = False
@@ -48,7 +45,7 @@ def _exit_screensaver_mode(self):
 
 
 def _screensaver_build_playlist(self):
-    """Build the playlist of mode entries based on preset."""
+    """Return the playlist of mode registry entries for the current preset."""
     preset = self.screensaver_preset_name
     favorites = set()
     try:
@@ -83,7 +80,7 @@ def _screensaver_build_playlist(self):
         playlist = list(all_modes)
 
     if not playlist:
-        # Fallback to all modes if filter produced empty list
+        # The filter matched nothing (for example, no favorites yet).
         playlist = list(all_modes)
         random.shuffle(playlist)
 
@@ -91,7 +88,7 @@ def _screensaver_build_playlist(self):
 
 
 def _screensaver_init(self, preset: str):
-    """Initialize screensaver from a preset key."""
+    """Start the screensaver from a preset key."""
     self.screensaver_preset_name = preset
     self.screensaver_menu = False
     self.screensaver_mode = True
@@ -102,24 +99,23 @@ def _screensaver_init(self, preset: str):
     self.screensaver_playlist_idx = 0
     self.screensaver_mode_start_time = time.monotonic()
     self.screensaver_active_mode = None
-    self.screensaver_transition_phase = 0.0  # 0 = not transitioning
+    self.screensaver_transition_phase = 0.0
     self.screensaver_transition_buf = []
-    self.screensaver_overlay_alpha = 1.0  # overlay fade
+    self.screensaver_overlay_alpha = 1.0
     self.screensaver_paused = False
 
-    # Launch first mode
     _screensaver_launch_current(self)
 
 
 def _screensaver_launch_current(self):
-    """Launch the current playlist entry."""
+    """Exit the running mode and launch the current playlist entry."""
     if not self.screensaver_playlist:
         return
 
     idx = self.screensaver_playlist_idx % len(self.screensaver_playlist)
     entry = self.screensaver_playlist[idx]
 
-    # Save screensaver state before _exit_current_modes (which clears all mode flags)
+    # _exit_current_modes clears every mode flag, including our own: save them.
     ss_state = {
         "mode": self.screensaver_mode,
         "running": self.screensaver_running,
@@ -132,10 +128,8 @@ def _screensaver_launch_current(self):
         "show_overlay": self.screensaver_show_overlay,
     }
 
-    # Exit any current sub-mode
     self._exit_current_modes()
 
-    # Restore screensaver state
     self.screensaver_mode = ss_state["mode"]
     self.screensaver_running = ss_state["running"]
     self.screensaver_playlist = ss_state["playlist"]
@@ -146,17 +140,15 @@ def _screensaver_launch_current(self):
     self.screensaver_paused = ss_state["paused"]
     self.screensaver_show_overlay = ss_state["show_overlay"]
 
-    # Enter the new mode
     enter_fn = getattr(self, entry["enter"], None)
     if enter_fn:
         enter_fn()
 
-    # If mode opened a menu, try to auto-select first preset
     _screensaver_auto_select_preset(self, entry)
 
     self.screensaver_active_mode = entry
     self.screensaver_mode_start_time = time.monotonic()
-    self.screensaver_transition_phase = 1.0  # start fade-in
+    self.screensaver_transition_phase = 1.0
     self.screensaver_overlay_alpha = 1.0
 
 
@@ -184,7 +176,7 @@ _MENU_PHASE = {
 
 
 def _screensaver_dispatch_entry(entry):
-    """Return the MODE_DISPATCH row for a playlist entry (or None)."""
+    """Return the MODE_DISPATCH row for a playlist entry, or None."""
     for md in MODE_DISPATCH:
         if md["attr"] == entry["attr"]:
             return md
@@ -302,10 +294,9 @@ def _screensaver_auto_select_preset(self, entry):
 
 
 def _screensaver_advance(self):
-    """Advance to the next mode in the playlist."""
+    """Launch the next mode, wrapping (and reshuffling) at the end."""
     self.screensaver_playlist_idx += 1
     if self.screensaver_playlist_idx >= len(self.screensaver_playlist):
-        # Loop or reshuffle
         if "shuffle" in self.screensaver_preset_name:
             random.shuffle(self.screensaver_playlist)
         self.screensaver_playlist_idx = 0
@@ -313,12 +304,12 @@ def _screensaver_advance(self):
 
 
 def _screensaver_step(self):
-    """Advance the screensaver — handle timing and transitions."""
+    """Advance the screensaver by one tick: step the sub-mode, fade, switch on timeout."""
     now = time.monotonic()
     self.screensaver_generation += 1
     self.screensaver_time = now
 
-    # Fade-in overlay (decreases from 1.0 to 0.0 over ~1 second)
+    # The dissolve fades out over about 20 ticks.
     if self.screensaver_transition_phase > 0:
         self.screensaver_transition_phase = max(0, self.screensaver_transition_phase - 0.05)
 
@@ -331,17 +322,15 @@ def _screensaver_step(self):
     else:
         self.screensaver_overlay_alpha = 0.0
 
-    # Step the active sub-mode
     if self.screensaver_active_mode and not self.screensaver_paused:
         _screensaver_step_submode(self)
 
-    # Check if it's time to advance
     if not self.screensaver_paused and elapsed > self.screensaver_interval:
         _screensaver_advance(self)
 
 
 def _screensaver_step_submode(self):
-    """Step the currently active sub-mode's simulation."""
+    """Step the active sub-mode if it is running."""
     entry = self.screensaver_active_mode
     if entry is None:
         return
@@ -362,7 +351,7 @@ def _screensaver_step_submode(self):
 
 
 def _handle_screensaver_menu_key(self, key):
-    """Handle keys in the screensaver preset selection menu."""
+    """Handle keys in the preset menu."""
     if key == -1:
         return True
 
@@ -381,7 +370,6 @@ def _handle_screensaver_menu_key(self, key):
         self.screensaver_menu_sel = min(n - 1, self.screensaver_menu_sel + 5)
         return True
 
-    # +/- to adjust interval
     if key == ord("+") or key == ord("="):
         self.screensaver_interval = min(120, self.screensaver_interval + 5)
         return True
@@ -403,27 +391,23 @@ def _handle_screensaver_menu_key(self, key):
 
 
 def _handle_screensaver_key(self, key):
-    """Handle keys during screensaver playback."""
+    """Handle keys during playback."""
     if key == -1:
         return True
 
-    # Escape / q = exit screensaver
     if key == 27 or key == ord("q"):
         _exit_screensaver_mode(self)
         self._dashboard_init()
         return True
 
-    # Space = pause/resume cycling
     if key == ord(" "):
         self.screensaver_paused = not self.screensaver_paused
         return True
 
-    # n / Right = skip to next mode
     if key == ord("n") or key == curses.KEY_RIGHT:
         _screensaver_advance(self)
         return True
 
-    # p / Left = go to previous mode
     if key == ord("p") or key == curses.KEY_LEFT:
         if self.screensaver_playlist:
             self.screensaver_playlist_idx = (
@@ -431,7 +415,6 @@ def _handle_screensaver_key(self, key):
             _screensaver_launch_current(self)
         return True
 
-    # +/- adjust interval
     if key == ord("+") or key == ord("="):
         self.screensaver_interval = min(120, self.screensaver_interval + 5)
         return True
@@ -439,7 +422,6 @@ def _handle_screensaver_key(self, key):
         self.screensaver_interval = max(5, self.screensaver_interval - 5)
         return True
 
-    # i = toggle info overlay
     if key == ord("i"):
         self.screensaver_show_overlay = not self.screensaver_show_overlay
         return True
@@ -448,7 +430,7 @@ def _handle_screensaver_key(self, key):
 
 
 def _draw_screensaver_menu(self, max_y, max_x):
-    """Draw the screensaver preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     n = len(SCREENSAVER_PRESETS)
 
@@ -512,14 +494,12 @@ def _draw_screensaver_menu(self, max_y, max_x):
 
 
 def _draw_screensaver_overlay(self, max_y, max_x):
-    """Draw the mode name/category overlay on top of current mode content."""
+    """Draw the mode name box over the running mode."""
     entry = self.screensaver_active_mode
     if entry is None:
         return
 
-    # Info overlay (shown at bottom)
     if not self.screensaver_show_overlay and self.screensaver_overlay_alpha <= 0:
-        # Still show minimal status bar
         _draw_screensaver_status_bar(self, max_y, max_x)
         return
 
@@ -547,7 +527,6 @@ def _draw_screensaver_overlay(self, max_y, max_x):
 
     if by + box_h < max_y and bx + box_w < max_x:
         try:
-            # Semi-transparent box
             top_border = "┌" + "─" * (box_w - 2) + "┐"
             self.stdscr.addstr(by, bx, top_border[:max_x - bx - 1], attr_dim)
             name_line = f"│ {name}".ljust(box_w - 1) + "│"
@@ -563,7 +542,7 @@ def _draw_screensaver_overlay(self, max_y, max_x):
 
 
 def _draw_screensaver_status_bar(self, max_y, max_x):
-    """Draw the thin status bar at the very bottom."""
+    """Draw the status bar on the last row."""
     entry = self.screensaver_active_mode
     if entry is None:
         return
@@ -588,11 +567,10 @@ def _draw_screensaver_status_bar(self, max_y, max_x):
 
 
 def _draw_screensaver_transition(self, max_y, max_x):
-    """Draw fade-in transition effect."""
+    """Draw the dissolve that covers a freshly launched mode."""
     if self.screensaver_transition_phase <= 0:
         return
 
-    # Simple dissolve: draw random block characters over the screen
     density = self.screensaver_transition_phase
     chars = "░▒▓█"
     n_cells = int(max_y * max_x * density * 0.3)
@@ -608,20 +586,13 @@ def _draw_screensaver_transition(self, max_y, max_x):
 
 
 def _draw_screensaver(self, max_y, max_x):
-    """Draw the screensaver — delegates to the active sub-mode then overlays."""
-    # The sub-mode's own draw function gets called by the normal draw dispatch.
-    # We just add our overlay and transition effects on top.
-    # This function is called AFTER the sub-mode has drawn itself.
-
-    # Draw transition dissolve effect
+    """Draw the dissolve and overlay on top of the sub-mode's own drawing."""
     _draw_screensaver_transition(self, max_y, max_x)
-
-    # Draw mode name/category overlay
     _draw_screensaver_overlay(self, max_y, max_x)
 
 
 def register(App):
-    """Register screensaver mode methods on the App class."""
+    """Register Screensaver / Demo Reel methods on the App class."""
     App._enter_screensaver_mode = _enter_screensaver_mode
     App._exit_screensaver_mode = _exit_screensaver_mode
     App._screensaver_init = _screensaver_init
