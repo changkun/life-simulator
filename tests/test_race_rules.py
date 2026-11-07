@@ -257,6 +257,31 @@ class TestRaceRules:
             if self.app.race_stats[i]["extinction_gen"] is not None:
                 assert g.generation == gen_after_extinct[i]
 
+    def test_step_race_ends_when_all_extinct(self):
+        """With every grid extinct the race must end instead of hanging."""
+        self.app._enter_race_mode()
+        for name in list(RULE_PRESETS.keys())[:2]:
+            p = RULE_PRESETS[name]
+            self.app.race_selected_rules.append(
+                (name, set(p["birth"]), set(p["survival"])))
+        self.app._start_race()
+        for _ in range(3):
+            self.app._step_race()
+        assert all(s["extinction_gen"] is not None for s in self.app.race_stats)
+        assert self.app.race_finished is True
+
+    def test_step_race_clock_follows_surviving_grid(self):
+        """The race clock must not freeze when the first grid goes extinct."""
+        self._setup_running_race()
+        self.app.race_stats[0]["extinction_gen"] = 0
+        self.app.race_grids[0].generation = self.app.race_start_gen
+        self.app.race_max_gens = 4
+        for _ in range(6):
+            self.app._step_race()
+            if self.app.race_finished:
+                break
+        assert self.app.race_finished is True
+
     def test_step_race_finishes_after_max_gens(self):
         self._setup_running_race()
         self.app.race_max_gens = 10

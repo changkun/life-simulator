@@ -260,9 +260,7 @@ def _draw_race(self, max_y: int, max_x: int):
 
     # Draw scoreboard at bottom
     sb_y = grid_area_h
-    gens_elapsed = 0
-    if self.race_grids:
-        gens_elapsed = self.race_grids[0].generation - self.race_start_gen
+    gens_elapsed = max(g.generation for g in self.race_grids) - self.race_start_gen
 
     # Progress bar
     progress = min(1.0, gens_elapsed / max(1, self.race_max_gens))
@@ -377,7 +375,8 @@ def _start_race(self):
 
 def _step_race(self):
     """Advance all race grids by one generation and update stats."""
-    gens_elapsed = 0
+    if not self.race_grids:
+        return
     for i, g in enumerate(self.race_grids):
         if self.race_stats[i]["extinction_gen"] is not None:
             # Already extinct — keep stepping but population stays 0
@@ -400,9 +399,11 @@ def _step_race(self):
                 stats["osc_period"] = g.generation - hashes[h]
             else:
                 hashes[h] = g.generation
-        gens_elapsed = g.generation - self.race_start_gen
-    # Check if race is over
-    if gens_elapsed >= self.race_max_gens and not self.race_finished:
+    # Extinct grids stop advancing, so take the furthest grid as the race clock.
+    # With every grid extinct nothing can change, so end the race.
+    gens_elapsed = max(g.generation for g in self.race_grids) - self.race_start_gen
+    all_extinct = all(s["extinction_gen"] is not None for s in self.race_stats)
+    if (gens_elapsed >= self.race_max_gens or all_extinct) and not self.race_finished:
         self._finish_race()
 
 
