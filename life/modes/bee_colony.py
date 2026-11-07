@@ -1,4 +1,4 @@
-"""Mode: bee — Bee Colony & Waggle Dance Communication Simulation.
+"""Bee Colony & Waggle Dance Communication — a honeybee colony with dance recruitment, comb and roles.
 
 Forager bees discover flower patches and return to the hive to perform waggle
 dances encoding distance and direction to food sources.  Recruit bees interpret
@@ -80,11 +80,6 @@ STATE_NURSING = 6
 STATE_GUARDING = 7
 STATE_FANNING = 8
 STATE_SCOUTING = 9
-
-# Dance types
-DANCE_NONE = 0
-DANCE_WAGGLE = 1   # distance > threshold
-DANCE_ROUND = 2    # close source
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -461,7 +456,6 @@ def _bee_step(self):
     fanner_count = sum(1 for b in bees if b.role == ROLE_FANNER and b.state == STATE_FANNING)
     heat_from_bees = len(bees) * 0.015
     cooling = fanner_count * 0.4
-    temp_target = 35.0
     self.bee_hive_temp += (self.bee_ambient_temp - self.bee_hive_temp) * 0.01
     self.bee_hive_temp += heat_from_bees * 0.01
     self.bee_hive_temp -= cooling * 0.1
@@ -603,9 +597,6 @@ def _bee_step(self):
     # ── 7. Alert decay ──
     if self.bee_alert_level > 0:
         self.bee_alert_level = max(0, self.bee_alert_level - 0.002)
-
-    # ── 8. Honey production from stored nectar ──
-    # (simplified: nectar brought in is already counted as honey)
 
     self.bee_generation += 1
 
@@ -1150,7 +1141,7 @@ def _draw_bee(self, max_y: int, max_x: int):
     hint_y = max_y - 1
     if hint_y > 0:
         now = time.monotonic()
-        if hasattr(self, 'message') and self.message and now - self.message_time < 3.0:
+        if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
             hint = " [Space]=play [n]=step [v]=view [+/-]=speed [r]=reset [R]=menu [q]=exit"
@@ -1294,11 +1285,6 @@ def _draw_bee_colony(self, max_y: int, max_x: int):
         bsy = int(self.bee_bear_y / y_scale) + 1
         if 1 <= bsy < max_y - 2 and 0 <= bsx < disp_cols - 1:
             try:
-                self.stdscr.addstr(bsy, bsx, "🐻"[:1], curses.color_pair(1) | curses.A_BOLD)
-            except curses.error:
-                pass
-            # Bear is big — draw as B
-            try:
                 self.stdscr.addstr(bsy, bsx, "B", curses.color_pair(1) | curses.A_BOLD)
             except curses.error:
                 pass
@@ -1306,8 +1292,6 @@ def _draw_bee_colony(self, max_y: int, max_x: int):
 
 def _draw_bee_dance(self, max_y: int, max_x: int):
     """Draw dance floor view — focused on waggle dance patterns."""
-    rows = self.bee_rows
-    cols = self.bee_cols
     hx = self.bee_hive_x
     hy = self.bee_hive_y
     hr = self.bee_hive_radius
