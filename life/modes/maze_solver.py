@@ -1,7 +1,6 @@
-"""Mode: mazesolver — simulation mode for the life package."""
+"""Maze Solver Visualizer — step-by-step A*, BFS, DFS and wall-follower solves of a generated maze."""
 import curses
 import heapq
-import math
 import random
 import time
 
@@ -18,7 +17,7 @@ MAZESOLVER_PRESETS = [
 
 
 def _enter_mazesolver_mode(self):
-    """Enter Maze Solver Visualizer mode — show preset menu."""
+    """Enter Maze Solver Visualizer and show the preset menu."""
     self.mazesolver_mode = True
     self.mazesolver_menu = True
     self.mazesolver_menu_sel = 0
@@ -29,7 +28,7 @@ def _enter_mazesolver_mode(self):
 
 
 def _exit_mazesolver_mode(self):
-    """Exit Maze Solver Visualizer mode."""
+    """Exit Maze Solver Visualizer and release its state."""
     self.mazesolver_mode = False
     self.mazesolver_menu = False
     self.mazesolver_running = False
@@ -48,7 +47,7 @@ def _exit_mazesolver_mode(self):
 
 
 def _mazesolver_init(self, preset_idx: int):
-    """Initialize maze solver simulation with the given preset."""
+    """Generate a maze for the preset and set up the chosen solver."""
     name, _desc, algo, maze_size = MAZESOLVER_PRESETS[preset_idx]
     self.mazesolver_preset_name = name
     self.mazesolver_algo = algo
@@ -77,12 +76,11 @@ def _mazesolver_init(self, preset_idx: int):
     self.mazesolver_cols = raw_cols if raw_cols % 2 == 1 else raw_cols - 1
     rows, cols = self.mazesolver_rows, self.mazesolver_cols
 
-    # Initialize grid: all walls, then generate maze instantly with backtracker
+    # Start from all walls and carve the whole maze at once.
     self.mazesolver_grid = [[0] * cols for _ in range(rows)]
     self.mazesolver_start = (1, 1)
     self.mazesolver_end = (rows - 2, cols - 2)
 
-    # Generate complete maze using recursive backtracker (instant)
     self.mazesolver_phase = "generating"
     self.mazesolver_gen_visited = set()
     self.mazesolver_gen_stack = []
@@ -90,7 +88,7 @@ def _mazesolver_init(self, preset_idx: int):
     self.mazesolver_grid[sr][sc] = 1
     self.mazesolver_gen_visited.add((sr, sc))
     self.mazesolver_gen_stack = [(sr, sc)]
-    # Run generation to completion
+    # Recursive backtracker.
     while self.mazesolver_gen_stack:
         cr, cc = self.mazesolver_gen_stack[-1]
         neighbors = []
@@ -150,7 +148,7 @@ def _mazesolver_init(self, preset_idx: int):
 
 
 def _mazesolver_step(self):
-    """Advance maze solver by one step."""
+    """Advance the solver by one step."""
     if self.mazesolver_solve_done or self.mazesolver_phase != "solving":
         return
     algo = self.mazesolver_algo
@@ -251,7 +249,7 @@ def _mazesolver_step(self):
 
 
 def _mazesolver_reconstruct_path(self):
-    """Trace back from end to start to build the solution path."""
+    """Build the solution path by following parents from the end back to the start."""
     path = []
     cur = self.mazesolver_end
     while cur != self.mazesolver_start and cur in self.mazesolver_solve_parent:
@@ -268,7 +266,7 @@ def _mazesolver_reconstruct_path(self):
 
 
 def _handle_mazesolver_menu_key(self, key: int) -> bool:
-    """Handle input in Maze Solver preset menu."""
+    """Handle a key press in the preset menu."""
     n = len(MAZESOLVER_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.mazesolver_menu_sel = (self.mazesolver_menu_sel + 1) % n
@@ -286,7 +284,7 @@ def _handle_mazesolver_menu_key(self, key: int) -> bool:
 
 
 def _handle_mazesolver_key(self, key: int) -> bool:
-    """Handle input in active Maze Solver simulation."""
+    """Handle a key press while the solver runs."""
     if key == ord(" "):
         self.mazesolver_running = not self.mazesolver_running
     elif key in (ord("n"), ord(".")):
@@ -325,7 +323,7 @@ def _safe_color_pair(n):
 
 
 def _draw_mazesolver_menu(self, max_y: int, max_x: int):
-    """Draw the Maze Solver preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Maze Solver Visualizer — Select Preset ──"
     try:
@@ -369,7 +367,7 @@ def _draw_mazesolver_menu(self, max_y: int, max_x: int):
 
 
 def _draw_mazesolver(self, max_y: int, max_x: int):
-    """Draw the active Maze Solver Visualizer."""
+    """Draw the maze, solver state and status lines."""
     self.stdscr.erase()
     rows, cols = self.mazesolver_rows, self.mazesolver_cols
     grid = self.mazesolver_grid
@@ -512,7 +510,7 @@ def _draw_mazesolver(self, max_y: int, max_x: int):
 
 
 def register(App):
-    """Register mazesolver mode methods on the App class."""
+    """Register Maze Solver Visualizer methods on the App class."""
     App._enter_mazesolver_mode = _enter_mazesolver_mode
     App._exit_mazesolver_mode = _exit_mazesolver_mode
     App._mazesolver_init = _mazesolver_init
