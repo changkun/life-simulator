@@ -712,7 +712,7 @@ The decision boundary view reveals how the network partitions input space. For X
 
 **Background**
 
-This mode simulates quantum circuits using full state-vector simulation, applying unitary gate operations to a 2^n-dimensional complex amplitude vector. Six preset circuits demonstrate fundamental quantum computing concepts: Bell state entanglement, GHZ states, quantum teleportation, the Deutsch-Jozsa algorithm, Grover's search, and the Quantum Fourier Transform. Qubit states are visualized as mini Bloch sphere projections, and repeated measurement builds probability histograms.
+This mode simulates quantum circuits using full state-vector simulation, applying unitary gate operations to a 2^n-dimensional complex amplitude vector. Six preset circuits demonstrate fundamental quantum computing concepts: Bell state entanglement, GHZ states, quantum teleportation, the Deutsch-Jozsa algorithm, Grover's search, and the Quantum Fourier Transform. Qubit states are drawn as mini Bloch sphere projections, and repeated runs build a histogram.
 
 **Formulation**
 
@@ -728,6 +728,7 @@ Gate operations (applied to state vector):
     |1> -> (|0> - |1>) / sqrt(2)
 
   Pauli-X (NOT):  |0> <-> |1>
+  Pauli-Y:        |0> -> i|1>,  |1> -> -i|0>
   Pauli-Z:        |1> -> -|1>
   S gate:         |1> -> i|1>
   T gate:         |1> -> e^(i*pi/4)|1>
@@ -742,21 +743,24 @@ Gate operations (applied to state vector):
     Collapse: zero out non-matching amplitudes, renormalize
 
 Bloch sphere projection for qubit q:
-  Compute reduced amplitudes (alpha_0, alpha_1) by tracing over other qubits
+  alpha_0, alpha_1 = square roots of the probabilities of q being 0 or 1,
+    with the relative phase taken from the summed amplitudes of each branch
   theta = 2 * acos(|alpha_0|)
   phi = phase(alpha_1) - phase(alpha_0)
   Display: project (sin(theta)*cos(phi), cos(theta)) onto 2D circle
 
-Entanglement detection:
-  purity = p0^2 + p1^2 where p0, p1 are reduced state probabilities
-  if purity < 0.99: qubit is entangled (mixed reduced state)
+Entanglement indicator (a heuristic):
+  purity = p0^2 + p1^2 where p0, p1 are the qubit's 0/1 probabilities
+  if purity < 0.99: qubit is flagged, and flagged qubits are linked in pairs
+  A lone qubit in superposition is flagged too, so a link is not proof of entanglement.
 
-Histogram: run circuit N times (100 or 1000 shots), sample from output distribution
+Histogram: run the full circuit N times (m = 100 shots, M = 1000 shots),
+  sample one basis state from each run's final distribution
 ```
 
 **What to look for**
 
-The Bell State circuit produces exactly two outcomes (|00> and |11>) with 50% probability each, while individual qubit measurements are completely random -- the hallmark of entanglement. In Grover's Search, watch the amplitude of the marked state |11> amplify from 25% to nearly 100% after one iteration of the oracle + diffusion operator. The Quantum Fourier Transform produces a uniform superposition of all basis states when applied to |100> (the binary representation of 4). The Bloch sphere projections show qubit states moving from the north pole (|0>) through the equator (superposition) during Hadamard gates.
+The Bell State circuit produces exactly two outcomes (|00> and |11>) with 50% probability each, while individual qubit measurements are completely random -- the hallmark of entanglement. In Grover's Search, the marked state |11> goes from 25% to 100% probability after one oracle + diffusion iteration. The Quantum Fourier Transform produces a uniform superposition of all basis states when applied to |100> (the binary representation of 4). The Bloch sphere projections show qubit states moving from the north pole (|0>) to the equator (superposition) at Hadamard gates. `Space` runs, `n` applies the next gate, `f` applies all remaining gates, `m`/`M` take 100/1000 shots, and `+`/`-` set the speed.
 
 **References**
 
