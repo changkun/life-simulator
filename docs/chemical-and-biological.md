@@ -196,14 +196,14 @@ Grass:
 Prey (herbivores):
   Move to a random grass neighbor (4-neighbors); else to an empty neighbor; else stay
   Eat the grass they step on: energy += prey_gain
-  Lose 1 energy per move; die when energy <= 0
+  Lose 1 energy per step, moving or not; die when energy <= 0
   Reproduce when energy >= prey_breed:
     split energy equally, offspring placed at the vacated cell
 
 Predators:
   Move onto a random prey neighbor if any; else to an empty or grass neighbor
   Eat prey: energy += pred_gain (prey dies)
-  Lose 1 energy per move; die when energy <= 0
+  Lose 1 energy per step, moving or not; die when energy <= 0
   Reproduce when energy >= pred_breed:
     split energy equally, offspring placed at the vacated cell
 
@@ -219,7 +219,7 @@ Parameters (preset ranges):
 
 Presets: Classic Oscillation, Predator Boom, Prey Paradise, Fast Dynamics, Sparse Savanna, Dense Jungle, Extinction Edge and Stable Coexistence.
 
-**What to look for** — A stacked bar shows the current share of grass, prey and predators, and the title bar shows the counts. Both species survive 1000-step runs in every preset, but the counts swing irregularly rather than in clean cycles. Prey usually drop in the first 50 steps from their high starting density. "Extinction Edge" keeps the fewest predators, and on a small terminal "Dense Jungle" can fall to one or two. Press `g`/`G` to change the grass regrowth time and `p`/`P` the predator breeding threshold; `b`/`B` change the prey breeding threshold. `+`/`-` set the steps per frame and `<`/`>` the speed.
+**What to look for** — A stacked bar shows the current share of grass, prey and predators, and the title bar shows the counts. Both species survive 1000-step runs in every preset, but the counts swing irregularly rather than in clean cycles. Prey usually drop in the first 50 steps from their high starting density. "Extinction Edge" keeps the fewest predators, and on a small terminal some presets drop to one or two predators before they recover. Press `g`/`G` to change the grass regrowth time and `p`/`P` the predator breeding threshold; `b`/`B` change the prey breeding threshold. `+`/`-` set the steps per frame and `<`/`>` the speed.
 
 **References**
 - Lotka, A. J. *Elements of Physical Biology.* Williams & Wilkins, 1925. https://archive.org/details/elementsofphysic017171mbp

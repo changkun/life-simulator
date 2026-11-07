@@ -357,6 +357,20 @@ class TestPredatorBehavior:
         for r, c in pred_cells:
             assert app.lv_energy[r][c] == 5  # 11 // 2 = 5
 
+    def test_prey_cant_move_loses_energy(self):
+        """Prey boxed in by other prey lose 1 energy and can starve, like predators."""
+        _setup_empty_grid(self.app)
+        app = self.app
+        app.lv_prey_breed = 100
+        app.lv_grid = [[1] * 5 for _ in range(5)]
+        app.lv_energy = [[5] * 5 for _ in range(5)]
+        app.lv_energy[2][2] = 1
+        app._lv_step()
+        prey = [app.lv_energy[r][c] for r in range(5) for c in range(5)
+                if app.lv_grid[r][c] == 1]
+        assert len(prey) == 24, "the prey with 1 energy should starve"
+        assert all(e == 4 for e in prey)
+
     def test_predator_cant_move_loses_energy(self):
         """Predator surrounded by predators can't move, loses energy."""
         _setup_empty_grid(self.app)

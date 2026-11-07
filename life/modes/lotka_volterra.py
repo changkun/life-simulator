@@ -170,7 +170,13 @@ def _lv_step(self):
             if empty:
                 nr, nc = random.choice(empty)
             else:
-                continue  # can't move
+                # Can't move, just lose energy
+                energy[r][c] -= 1
+                if energy[r][c] <= 0:
+                    grid[r][c] = -1
+                    timers[r][c] = self.lv_grass_regrow
+                    energy[r][c] = 0
+                continue
 
         # Check if destination is grass (eating)
         ate_grass = (grid[nr][nc] == 0)
