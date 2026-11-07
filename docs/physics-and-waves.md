@@ -488,13 +488,13 @@ Disk particles (Keplerian orbits with relativistic corrections):
   Frame dragging (Lense-Thirring): a_drag = spin*M/(r^3) * 0.5
   Relativistic precession: a *= (1 + 3*M/r^2 * 0.01)
   Viscous drag for angular momentum transport: v *= (1 - 0.001*accretion_rate*dt)
-  Innermost stable orbit: r_isco = 3*rs * (1 - spin*0.3)
+  Innermost stable orbit: r_isco = 3*rs * (1 - spin*0.3), used where disk particles respawn
   Temperature: T = min(1, M / (r*0.5 + 1))
   Accreted when r < rs (Schwarzschild radius)
 
 Jet particles:
   Mild gravitational pull, magnetic collimation: vx -= 0.02*dx*dt
-  Launched when disk matter crosses horizon (probability ~ jet_power)
+  Launched when disk matter crosses the horizon (probability 0.1 * jet_power)
 
 Hawking radiation:
   Radial escape with quantum randomness: v += gauss(0, 0.1) * dt
@@ -508,7 +508,7 @@ Gravitational lensing of background stars:
 Kerr spin parameter: 0.0 (Schwarzschild) to 0.99 (near-extremal Kerr)
 ```
 
-**What to look for** — The accretion disk glows brightest near the innermost orbit, with temperature-coded colors from cool blue to hot red. The photon ring marks the orbit of light at 1.5*rs. Relativistic jets emerge along the polar axis, collimated by magnetic forces. Background stars are visibly distorted near the black hole, with amplification producing bright arcs near the Einstein ring radius. The "Kerr Black Hole" preset shows pronounced frame-dragging effects.
+**What to look for** — The accretion disk glows brightest near the innermost orbit, with temperature-coded colors from cool blue to hot red. The photon ring marks the orbit of light at 1.5*rs. Relativistic jets emerge along the polar axis, collimated by magnetic forces. Background stars are visibly distorted near the black hole, with amplification producing bright arcs near the Einstein ring radius. The "Kerr (Spinning)" preset shows pronounced frame-dragging effects.
 
 **References**
 - Luminet, J.-P. "Image of a spherical black hole with thin accretion disk," *Astronomy and Astrophysics*, 1979. https://doi.org/10.1051/0004-6361/201629441
