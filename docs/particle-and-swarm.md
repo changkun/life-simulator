@@ -160,7 +160,7 @@ The Force Chains view shows the largest normal force at each contact midpoint, d
 
 ### Controls
 
-`v` cycles the view (Grains, Force Chains, Density). `g`/`G` change gravity strength, `t`/`T` tilt gravity sideways, `f`/`F` friction, `e`/`E` restitution, `s`/`S` shake amplitude, and `k`/`K` contact stiffness. `+`/`-` set steps per frame. A mouse click drops 12 grains.
+`v` cycles the view (Grains, Force Chains, Density). `g`/`G` change gravity strength, `t`/`T` tilt gravity sideways, `f`/`F` friction, `e`/`E` restitution, `s`/`S` shake amplitude, and `k`/`K` contact stiffness. `+`/`-` set steps per frame. A mouse click drops 12 grains, up to 1000 grains in total.
 
 ### What to look for
 
@@ -406,7 +406,7 @@ Parameters: sensor angle (SA, radians), sensor distance (SD), turn speed (TS, ra
 | Maze Solver | 0.25 | 8.0 | 0.60 | 1.0 | 0.6 | 0.015 | 0.25 |
 | Galaxy | 0.80 | 10.0 | 0.15 | 1.2 | 0.4 | 0.025 | 0.12 |
 
-The menu descriptions of Pulsing ("rhythmic contraction") and Maze Solver ("finds shortest paths between food") are only labels. The mode has no food sources or walls.
+The menu description of Pulsing ("Rhythmic contraction patterns") is only a label. Maze Solver is the preset with the highest turn speed; the mode has no food sources or walls.
 
 ### Controls
 
@@ -478,7 +478,7 @@ Returning ants steer straight at the nest rather than following pheromone, so tr
 
 ### Controls
 
-`e`/`E` raise and lower the evaporation rate, `d`/`D` the deposit strength, and `s`/`S` the steps per frame. Unlike the other modes, ACO has no `m` key for the menu; use `R`.
+`e`/`E` raise and lower the evaporation rate, `d`/`D` the deposit strength, and `s`/`S` the steps per frame (1 to 10). Unlike the other modes, ACO has no `m` key for the menu; use `R`.
 
 ### What to look for
 
