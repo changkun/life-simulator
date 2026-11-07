@@ -621,3 +621,17 @@ def test_pinned_points_never_move():
     before = (a[0], a[1], b[0], b[1])
     app._cloth_step()
     assert (a[0], a[1], b[0], b[1]) == before
+
+
+def test_flash_message_replaces_hint_bar():
+    import time
+    app = _make_app()
+    app._cloth_init("hanging")
+    app.cloth_preset_name = "Hanging Cloth"
+    app.cloth_running = False
+    drawn = []
+    app.stdscr.addstr = lambda *a, **k: drawn.append(a[2] if len(a) > 2 else "")
+    app.message = "Torn 4 constraints"
+    app.message_time = time.monotonic()
+    app._draw_cloth(40, 120)
+    assert any("Torn 4 constraints" in str(t) for t in drawn)

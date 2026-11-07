@@ -512,7 +512,7 @@ def _draw_cloth(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    if self.message and time.time() - self.message_time < 3.0:
+    if self.message and time.monotonic() - self.message_time < 3.0:
         hint = f" {self.message}"
     else:
         hint = " [Space]=play [n]=step [p]=pin [x]=tear [g/G]=grav [w/W]=wind [d/D]=damp [t/T]=tear [R]=menu [q]=exit"
