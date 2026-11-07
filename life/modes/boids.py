@@ -8,7 +8,7 @@ from life.constants import SPEEDS
 
 BOIDS_PRESETS = [
     # (name, description, num_ratio, sep_r, ali_r, coh_r, sep_w, ali_w, coh_w, max_spd)
-    ("Murmuration", "Tight flocks with predator avoidance", 0.08, 2.5, 7.0, 12.0, 2.5, 1.2, 1.0, 1.2),
+    ("Murmuration", "Tight flocks with strong separation", 0.08, 2.5, 7.0, 12.0, 2.5, 1.2, 1.0, 1.2),
     ("Fish School", "Slow, cohesive groups", 0.06, 3.0, 6.0, 10.0, 1.5, 1.5, 1.8, 0.6),
     ("Swarm", "Fast, loosely coupled agents", 0.10, 2.0, 10.0, 15.0, 1.0, 0.8, 0.5, 1.5),
     ("Migration", "Long-range aligned movement", 0.04, 3.0, 15.0, 20.0, 1.2, 2.0, 0.8, 1.0),

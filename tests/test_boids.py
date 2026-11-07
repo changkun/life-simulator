@@ -61,3 +61,7 @@ class TestBoids:
         assert self.app.boids_menu is False
         assert self.app.boids_running is False
         assert self.app.boids_agents == []
+
+
+def test_no_preset_claims_predators():
+    assert all("predator" not in p[1].lower() for p in BOIDS_PRESETS)

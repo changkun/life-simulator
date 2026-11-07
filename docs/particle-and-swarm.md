@@ -283,7 +283,7 @@ The boid count is a fraction of the grid area (at least 30). Each boid starts in
 | Dense Flock | 0.12 | 2.0 | 5.0 | 8.0 | 2.0 | 1.5 | 2.0 | 0.8 |
 | Chaos | 0.10 | 4.0 | 6.0 | 8.0 | 3.0 | 0.5 | 0.3 | 1.8 |
 
-The menu describes Murmuration as having "predator avoidance", but the code has no predator.
+No preset has a predator. The menu describes Murmuration as "Tight flocks with strong separation", which its separation weight of 2.5 matches.
 
 ### Controls
 
