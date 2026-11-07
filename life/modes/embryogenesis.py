@@ -1,9 +1,8 @@
-"""Mode: embryogenesis — Embryogenesis & Gastrulation simulation.
+"""Embryogenesis & Gastrulation — an embryo growing from one egg cell into germ layers.
 
-Model the development of a multicellular organism from a single fertilized egg
-through cleavage, blastula formation, gastrulation (invagination), and tissue
-differentiation — all driven by morphogen gradients, cell-cell signaling, and
-differential gene expression.
+A zygote cleaves into a blastula, gastrulates and folds a neural tube.
+Morphogen gradients (BMP, Wnt, Nodal) set cell fates; differential adhesion
+sorts the cells.
 
 Three visualization views:
   1. Cross-section — cell types with morphogen overlay, cavity, germ layers
@@ -152,16 +151,12 @@ def _sparkline(values, width):
     return "".join(out).ljust(width)
 
 
-def _clamp(v, lo=0.0, hi=1.0):
-    return max(lo, min(hi, v))
-
-
 def _dist(r1, c1, r2, c2):
     return math.sqrt((r1 - r2) ** 2 + (c1 - c2) ** 2)
 
 
 def _diffuse_field(field, rows, cols, coeff, decay=0.0):
-    """In-place diffusion + decay on a 2D float field."""
+    """Diffuse and decay a 2D float field in place."""
     buf = [[0.0] * cols for _ in range(rows)]
     for r in range(rows):
         for c in range(cols):
@@ -632,8 +627,6 @@ def _form_cavity(self, cells, grid, cavity, rows, cols, gen, params):
         return
 
     # Find center of mass
-    if not cells:
-        return
     cr = sum(c.r for c in cells) / len(cells)
     cc = sum(c.c for c in cells) / len(cells)
 
@@ -752,8 +745,7 @@ def _neurulation(self, cells, grid, rows, cols, params):
 # ── Differential adhesion sorting ──
 
 def _adhesion_sorting(cells, grid, rows, cols, params):
-    """Steinberg differential adhesion — cells swap to maximize
-    same-type neighbor contacts."""
+    """Swap unlike neighbours when that increases same-type contacts (Steinberg)."""
     same_adh = params["adhesion_same"]
     diff_adh = params["adhesion_diff"]
 
@@ -816,7 +808,7 @@ def _adhesion_score(cell, cells, grid, rows, cols, same_adh, diff_adh):
 # ── Twinning ──
 
 def _do_twinning(self, cells, grid, rows, cols):
-    """Separate 2-cell embryo into two isolated groups."""
+    """Move the second cell away from the first to start a twin embryo."""
     if len(cells) < 2:
         return
     # Move second cell far from first
@@ -895,7 +887,6 @@ def _handle_embryo_menu_key(self, key):
     elif key in (10, 13, curses.KEY_ENTER):
         _embryo_init(self, self.embryo_menu_sel)
     elif key == ord("q") or key == 27:
-        self.embryo_menu = False
         _exit_embryo_mode(self)
     return True
 
@@ -981,7 +972,7 @@ def _draw_embryo_menu(self, max_y, max_x):
                 pass
 
     if max_y - 1 > 0:
-        hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+        hint = " j/k=navigate  Enter=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -1289,7 +1280,7 @@ def _draw_embryo(self, max_y, max_x):
 
     # Help bar
     if max_y - 1 > 0:
-        hint = " [Space]=play [n]=step [v]=view [o]=morph overlay [g]=gastrulate [r]=reset [R]=menu [q]=exit"
+        hint = " Space=play  n=step  v=view  o=morphogen overlay  g=gastrulate  r=reset  R=menu  q=exit"
         try:
             self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
