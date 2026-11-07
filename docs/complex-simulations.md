@@ -117,9 +117,9 @@ Parameters:
 
 ## Smoke & Fire
 
-**Background.** This mode simulates combustion and buoyant fluid dynamics on an Eulerian grid. Temperature, smoke density, fuel, and velocity fields interact through simplified Navier-Stokes-like advection, diffusion, and buoyancy. The approach follows the seminal work of Stam (1999) on stable fluids, adapted for real-time ASCII rendering. Fire sources inject heat, which rises through buoyancy, consumes fuel through combustion, and generates smoke that dissipates over time.
+**Background.** This mode simulates combustion and buoyant fluid dynamics on an Eulerian grid. Temperature, smoke density, fuel, and velocity fields interact through simplified Navier-Stokes-like advection, diffusion, and buoyancy. The advection step follows Stam (1999) on stable fluids, simplified for ASCII rendering and without a pressure solve. Fire sources inject heat. Heat rises through buoyancy, burns fuel, and makes smoke that fades over time.
 
-**Formulation.** Five scalar fields are evolved each timestep: temperature T, smoke S, fuel F, and velocity (vx, vy).
+**Formulation.** Each step evolves temperature T, smoke S, fuel F, and the velocity (vx, vy).
 
 ```
 Buoyancy (heat rises):
@@ -145,6 +145,7 @@ Fire spread (when T > 0.4, to 4-connected neighbors):
 
 Smoke production:  S += T * smoke_rate * 0.3
 Cooling:           T -= cooling * (1 + height_fraction * 0.5)
+                   (height_fraction = 0 at the bottom row, near 1 at the top)
 Smoke dissipation: S *= 0.985;  S -= 0.003
 
 Semi-Lagrangian advection (bilinear interpolation):
@@ -158,14 +159,16 @@ Diffusion (4-neighbor averaging):
 
 Presets:           buoyancy  turbulence  cooling  smoke_rate  wind
   Campfire         0.15      0.04        0.012    0.3         0.0
-  Wildfire         0.12      0.06        0.008    0.4         0.02
-  Explosion        0.25      0.12        0.02     0.6         0.0
-  Candles          0.10      0.02        0.018    0.15        0.0
+  Wildfire Spread  0.12      0.06        0.008    0.4         0.02
+  Explosion Burst  0.25      0.12        0.02     0.6         0.0
+  Candle Row       0.10      0.02        0.018    0.15        0.0
   Inferno          0.20      0.08        0.006    0.5         0.01
-  Smokestack       0.18      0.05        0.01     0.5         0.03
+  Smoke Stack      0.18      0.05        0.01     0.5         0.03
 ```
 
-**What to look for.** The Campfire preset shows a steady flickering flame with a rising smoke plume. Wildfire demonstrates fire spread across a fuel-laden landscape with wind-driven propagation. The Explosion preset creates a radial blast wave with outward velocity. Increasing turbulence produces chaotic, billowing flames; increasing buoyancy makes flames taller and thinner. Fire sources flicker stochastically with intensity modulated by 0.7 + random * 0.3. Users can interactively place fire sources and fuel patches.
+**Controls:** `Space`=play/pause, `n`=step, arrows or `hjkl`=move cursor, `f` or `Enter`=add or remove a fire source at the cursor, `F`=add fuel around the cursor, `b/B`=buoyancy up/down, `t/T`=turbulence up/down, `w/W`=wind up/down, `c/C`=cooling up/down, `>/<`=steps per frame (1-10), `R`=menu, `q`=exit. There is no reset key. Use `R` and pick the scene again.
+
+**What to look for.** Campfire shows a steady flickering flame with a rising smoke plume. Wildfire Spread ignites fuel on the left, and the fire moves right across the fuel bed, helped by the wind. Explosion Burst starts with a radial velocity burst. More turbulence makes the flames billow. More buoyancy makes them taller and thinner. Fire sources flicker with intensity 0.7 + random * 0.3.
 
 **References.**
 - Stam, J. "Stable Fluids." *Proceedings of SIGGRAPH '99*, ACM, 121-128, 1999. https://doi.org/10.1145/311535.311548
