@@ -1,22 +1,4 @@
-"""Mode: tcrystal — Discrete Time Crystal.
-
-Simulates a discrete time crystal (DTC) where cells with spin-1/2 states
-spontaneously break time-translation symmetry under periodic Floquet driving.
-Each cell has a spin on the Bloch sphere (θ, φ) subject to:
-  1. A global periodic drive (imperfect π-pulse rotating all spins)
-  2. Nearest-neighbour Ising interactions (Jᵢⱼ Zᵢ Zⱼ)
-  3. Quenched disorder in local fields (many-body localization)
-
-The hallmark DTC phenomenon: the system responds at half the drive frequency
-(period-doubling), and this subharmonic response is robust against
-perturbations to the drive — a spontaneous breaking of discrete
-time-translation symmetry.
-
-Visualization:
-  - Color / glyph ↔ spin-z expectation ⟨σᶻ⟩ (up = warm, down = cool)
-  - Brightness ↔ oscillation amplitude (how strongly the spin period-doubles)
-  - Stroboscopic view shows the system sampled every 2 drive periods
-"""
+"""Time Crystal — a spin lattice under Floquet driving that responds at half the drive frequency."""
 import curses
 import math
 import random
@@ -47,8 +29,7 @@ TCRYSTAL_PRESETS = [
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
-_SPIN_CHARS_UP   = ["  ", "· ", "░░", "▒▒", "▓▓", "██"]
-_SPIN_CHARS_DOWN = ["  ", "· ", "░░", "▒▒", "▓▓", "██"]
+_SPIN_CHARS_UP = ["  ", "· ", "░░", "▒▒", "▓▓", "██"]
 
 
 def _sz_color(sz: float) -> int:
@@ -59,10 +40,8 @@ def _sz_color(sz: float) -> int:
         return 3   # yellow (weak up)
     elif sz > -0.15:
         return 6   # white (near zero)
-    elif sz > -0.5:
-        return 4   # blue (weak down)
     else:
-        return 4   # blue (strong down)
+        return 4   # blue (down)
 
 
 def _osc_color(amp: float) -> int:
@@ -88,7 +67,7 @@ def _neighbors(r, c, rows, cols):
 # ── Enter / Exit ─────────────────────────────────────────────────────────────
 
 def _enter_tcrystal_mode(self):
-    """Enter Time Crystal mode — show preset menu."""
+    """Enter Time Crystal mode and show the preset menu."""
     self.tcrystal_menu = True
     self.tcrystal_menu_sel = 0
     self._flash("Time Crystal — select a configuration")
@@ -458,7 +437,7 @@ def _handle_tcrystal_key(self, key: int) -> bool:
     elif key == ord("E"):
         self.tcrystal_epsilon = max(0.0, self.tcrystal_epsilon - 0.01)
         self._flash(f"Drive error ε: {self.tcrystal_epsilon:.2f}")
-    elif key == ord("j") and not (key in (curses.KEY_DOWN,)):
+    elif key == ord("j"):
         self.tcrystal_J = min(3.0, self.tcrystal_J + 0.1)
         self._flash(f"Ising coupling J: {self.tcrystal_J:.1f}")
     elif key == ord("J"):
@@ -524,7 +503,7 @@ def _draw_tcrystal_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate [Enter]=select [q]=cancel"
+        hint = " j/k=navigate  Enter=select  q=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -656,7 +635,8 @@ def _draw_tcrystal(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [v]=view [e/E]=drive ε [d/D]=disorder [click]=perturb [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = (" Space=play  n=step  v=view  e/E=drive ε  j/J=coupling  d/D=disorder  "
+                    "click=flip spin  +/-=speed  r=reset  R=menu  q=exit")
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
