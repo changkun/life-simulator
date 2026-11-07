@@ -1,8 +1,4 @@
-"""Universal Time-Travel History Scrubber for all simulation modes.
-
-Records N frames of state for the active mode, enabling rewind, fast-forward,
-and frame-by-frame stepping through any simulation's timeline.
-"""
+"""Time Travel — records the active mode's state so you can rewind and scrub through it."""
 import copy
 import curses
 import math
@@ -114,7 +110,7 @@ class _TTSnapshot:
 
 
 def _tt_snapshot(self, prefix):
-    """Capture a compact snapshot of all simulation state for the given mode prefix."""
+    """Capture the state of the mode with the given attribute prefix."""
     state = {}
     attr_prefix = prefix + "_"
     for attr_name in list(vars(self)):
@@ -152,7 +148,7 @@ def _tt_snapshot(self, prefix):
 
 
 def _tt_restore(self, snapshot):
-    """Restore mode state from a snapshot (fresh objects each time)."""
+    """Restore mode state from a snapshot, using fresh objects each time."""
     if isinstance(snapshot, _TTSnapshot):
         items = snapshot.state()
     else:  # plain dict (legacy / tests)
@@ -174,12 +170,12 @@ def _tt_history_bytes(self):
 
 
 def _tt_push(self):
-    """Push current state to the time-travel history buffer."""
+    """Append the current state to the history, trimming it to its limits."""
     prefix = self._tt_get_active_mode_prefix()
     if prefix is None:
         return
 
-    # If scrubbed back, truncate future history before pushing
+    # Recording from a scrubbed position drops the abandoned future.
     if self.tt_pos is not None:
         self.tt_history = self.tt_history[:self.tt_pos + 1]
         self.tt_pos = None
@@ -280,9 +276,10 @@ def _tt_pause_active_mode(self):
 
 
 def _tt_auto_record(self):
-    """Auto-record state each frame if the active mode is running.
+    """Record a snapshot of the running mode, thinned by the adaptive stride.
 
-    Called at the start of each main-loop iteration.
+    Called at the start of each main-loop iteration.  Skips frames where a
+    mode's generation has not advanced.
     """
     prefix = self._tt_get_active_mode_prefix()
     if prefix is None:
@@ -303,9 +300,7 @@ def _tt_auto_record(self):
         if current_gen == self._tt_last_gen:
             return  # No change
         self._tt_last_gen = current_gen
-    else:
-        # Fallback: record every frame for modes without generation counter
-        pass
+    # Modes without a generation counter record every frame.
 
     # Detect mode switch — clear history if prefix changed
     if self.tt_history and self.tt_history[-1].get("_prefix") != prefix:
@@ -329,7 +324,7 @@ def _tt_auto_record(self):
 
 
 def _tt_handle_key(self, key):
-    """Handle universal time-travel keys. Returns True if handled."""
+    """Handle the time-travel keys.  Return True if the key was consumed."""
     prefix = self._tt_get_active_mode_prefix()
     if prefix is None:
         return False  # GoL uses its own history/timeline system
@@ -356,7 +351,7 @@ def _tt_handle_key(self, key):
 
     # When scrubbing, Space resumes from current position
     if key == ord(" ") and self.tt_pos is not None:
-        # Truncate future, resume from current
+        # Drop the future and resume from here.
         self.tt_history = self.tt_history[:self.tt_pos + 1]
         self.tt_pos = None
         running_attr = f"{prefix}_running"
@@ -369,7 +364,7 @@ def _tt_handle_key(self, key):
 
 
 def _draw_tt_scrubber(self, max_y, max_x):
-    """Draw the time-travel scrubber bar overlay at the bottom of the screen."""
+    """Draw the timeline bar on the bottom row."""
     prefix = self._tt_get_active_mode_prefix()
     if prefix is None:
         return  # GoL has its own timeline rendering
@@ -382,7 +377,6 @@ def _draw_tt_scrubber(self, max_y, max_x):
     if bar_y <= 0:
         return
 
-    # Build label and position info
     if self.tt_pos is not None:
         gen_attr = f"{prefix}_generation"
         gen = getattr(self, gen_attr, "?")
