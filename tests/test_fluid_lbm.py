@@ -327,6 +327,30 @@ class TestFluidLBMBounceBack:
                     assert ux[r][c] == 0.0
                     assert uy[r][c] == 0.0
 
+    def test_bounce_back_reflects_incoming_population(self):
+        """A population streaming into a solid cell returns on the next step."""
+        app = self.app
+        app._fluid_init(0)
+        rows, cols = app.fluid_rows, app.fluid_cols
+        app.fluid_obstacle = [[False] * cols for _ in range(rows)]
+        app.fluid_f = [[[0.0] * 9 for _ in range(cols)] for _ in range(rows)]
+        r, c = rows // 2, cols // 2
+        app.fluid_obstacle[r][c] = True
+        app.fluid_f[r][c - 1][1] = 0.5  # moving east, into the obstacle
+        app._fluid_step()
+        assert app.fluid_f[r][c][3] == pytest.approx(0.5)
+        app._fluid_step()
+        assert app.fluid_f[r][c - 1][3] > 0.0
+
+    def test_wind_tunnel_stays_bounded(self):
+        """Flow past the cylinder keeps speeds near the inflow speed."""
+        self.app._fluid_init(0)
+        for _ in range(300):
+            self.app._fluid_step()
+        _, ux, uy = self.app._fluid_get_macros()
+        peak = max(abs(v) for row in ux for v in row)
+        assert peak < 0.5
+
     def test_obstacle_exists_in_wind_tunnel(self):
         """Wind Tunnel preset should have at least one obstacle cell."""
         self.app._fluid_init(0)

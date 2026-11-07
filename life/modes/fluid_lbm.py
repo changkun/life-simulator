@@ -185,11 +185,13 @@ def _fluid_step(self):
                 f_new[r][c][i] = f[sr][sc][i]
 
     # ── Bounce-back for obstacles ──
+    # Reflect the populations that just streamed into the solid cell.
     for r in range(rows):
         for c in range(cols):
             if obstacle[r][c]:
+                arrived = f_new[r][c][:]
                 for i in range(9):
-                    f_new[r][c][i] = f[r][c][opp[i]]
+                    f_new[r][c][i] = arrived[opp[i]]
 
     # ── Collision step (BGK) ──
     for r in range(rows):
