@@ -1,18 +1,4 @@
-"""Mode: wfire — Wildfire Spread & Firefighting Simulation.
-
-Rothermel-inspired fire propagation model on heterogeneous terrain with
-elevation, wind fields, multiple fuel types (grass/shrub/timber/urban),
-slope-driven acceleration, ember spotting for long-range ignition, smoke
-plume visualization, and active firefighting agents (firebreaks, water drops).
-
-Emergent phenomena:
-  - Crown fire transitions when surface intensity exceeds threshold
-  - Slope-driven fire acceleration (uphill runs)
-  - Ember spotting — long-range ignition ahead of the main front
-  - Fuel moisture dynamics affecting ignition probability
-  - Smoke plume dispersion following wind field
-  - Firefighting agents cutting firebreaks and dropping water
-"""
+"""Wildfire Spread & Firefighting — fire spreading over terrain with wind, slope, fuel and firefighters."""
 import curses
 import math
 import random
@@ -23,8 +9,8 @@ import time
 #  Constants
 # ══════════════════════════════════════════════════════════════════════
 
-# Fuel types: (name, base_spread_rate, heat_content, moisture_extinction,
-#               crown_threshold, ember_production, color_unburned)
+# Fuel types and their properties (spread rate, moisture of extinction,
+# crown-fire threshold, ember production).
 FUEL_GRASS = 0
 FUEL_SHRUB = 1
 FUEL_TIMBER = 2
@@ -508,8 +494,6 @@ def _wfire_step(self):
     wind_v = self.wfire_wind_v
     firebreak = self.wfire_firebreak
     rand = random.random
-    sqrt = math.sqrt
-    exp = math.exp
 
     spread_rate = self.wfire_spread_rate
     slope_factor = self.wfire_slope_factor
@@ -643,7 +627,6 @@ def _wfire_step(self):
             # Launch ember in wind direction with random range
             wu = wind_u[r][c]
             wv = wind_v[r][c]
-            w_mag = sqrt(wu * wu + wv * wv) + 0.01
             dist = random.randint(3, ember_range)
             # Add some random spread
             angle_pert = (rand() - 0.5) * 1.0
@@ -920,7 +903,7 @@ def _draw_wfire_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+        hint = " j/k=navigate  Enter=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -979,7 +962,7 @@ def _draw_wfire(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [w/W]=wind dir [s/S]=wind spd [v]=view [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  w/W=wind dir  s/S=wind speed  v=view  +/-=speed  r=reset  R=menu  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
