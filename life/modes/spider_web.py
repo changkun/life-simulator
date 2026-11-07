@@ -471,9 +471,13 @@ def _sweb_step(self):
         if len(hist) > 200:
             hist.pop(0)
 
-    # Clean up dead/escaped prey
+    # The spider targets prey by list index, so remap it across the filter.
+    target = (prey_list[spider.target_prey]
+              if 0 <= spider.target_prey < len(prey_list) else None)
     self.sweb_prey = [p for p in prey_list if p.alive and
                       0 <= p.x <= cols and 0 <= p.y <= rows]
+    spider.target_prey = (self.sweb_prey.index(target)
+                          if target in self.sweb_prey else -1)
 
     self.sweb_generation += 1
 
