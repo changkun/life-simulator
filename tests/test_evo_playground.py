@@ -87,3 +87,23 @@ def test_step_updates_population_history():
     app._ep_step()
     for i, h in enumerate(app.ep_pop_histories):
         assert len(h) == initial_hist_lens[i] + 1
+
+
+def test_a_key_adopts_rule_instead_of_moving_cursor():
+    app = _make_app()
+    app._ep_init()
+    app.ep_cursor = 1
+    birth = set(app.ep_genomes[1]["birth"])
+    app._handle_ep_key(ord("a"))
+    assert app.ep_mode is False
+    assert app.grid.birth == birth
+
+
+def test_arrow_keys_move_cursor():
+    import curses
+    app = _make_app()
+    app._ep_init()
+    app._handle_ep_key(curses.KEY_RIGHT)
+    assert app.ep_cursor == 1
+    app._handle_ep_key(curses.KEY_LEFT)
+    assert app.ep_cursor == 0

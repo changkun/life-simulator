@@ -422,16 +422,16 @@ def _handle_ep_key(self, key):
         return True
 
     # Navigate cursor
-    if key == curses.KEY_UP or key == ord("w"):
+    if key == curses.KEY_UP:
         self.ep_cursor = max(0, self.ep_cursor - gc)
         return True
-    if key == curses.KEY_DOWN or key == ord("s"):
+    if key == curses.KEY_DOWN:
         self.ep_cursor = min(pop_size - 1, self.ep_cursor + gc)
         return True
-    if key == curses.KEY_LEFT or key == ord("a"):
+    if key == curses.KEY_LEFT:
         self.ep_cursor = max(0, self.ep_cursor - 1)
         return True
-    if key == curses.KEY_RIGHT or key == ord("d"):
+    if key == curses.KEY_RIGHT:
         self.ep_cursor = min(pop_size - 1, self.ep_cursor + 1)
         return True
 
