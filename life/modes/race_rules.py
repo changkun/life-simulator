@@ -205,7 +205,7 @@ def _draw_race(self, max_y: int, max_x: int):
         label = label[:tile_w - 1]
         # Color the label: winner gets special highlight
         label_attr = curses.color_pair(7) | curses.A_BOLD
-        if self.race_finished and self.race_winner and name in self.race_winner:
+        if self.race_finished and self.race_winner == f"{name} ({rs})":
             label_attr = curses.color_pair(3) | curses.A_BOLD
         try:
             self.stdscr.addstr(origin_y, origin_x, label, label_attr)
