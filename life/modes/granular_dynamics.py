@@ -30,6 +30,9 @@ GRANULAR_PRESETS = [
      "drum"),
 ]
 
+# Cap on grains added by clicking; each step costs time roughly linear in the count.
+GRANULAR_MAX_PARTICLES = 1000
+
 # ── Glyphs & rendering helpers ──────────────────────────────────────────
 _GRAIN_CHARS = ["·", "●", "◉", "◆", "■", "⬢"]
 _FORCE_CHARS = ["  ", "··", "░░", "▒▒", "▓▓", "██"]
@@ -110,6 +113,9 @@ def _granular_init(self, preset_idx: int):
     self.granular_generation = 0
     self.granular_running = False
     self.granular_view = 0  # 0=grains, 1=force chains, 2=density
+    self.granular_kinetic_energy = 0.0
+    self.granular_jammed_fraction = 0.0
+    self.granular_max_force = 0.0
 
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(10, max_y - 4)
@@ -624,7 +630,9 @@ def _handle_granular_key(self, key: int) -> bool:
             _, mx, my, _, bstate = curses.getmouse()
             r_click = my - 1
             c_click = mx // 2
-            if 0 <= r_click < self.granular_rows and 0 <= c_click < self.granular_cols:
+            if len(self.granular_particles) >= GRANULAR_MAX_PARTICLES:
+                self._flash(f"Grain limit reached ({GRANULAR_MAX_PARTICLES})")
+            elif 0 <= r_click < self.granular_rows and 0 <= c_click < self.granular_cols:
                 # Drop a cluster of grains at click location
                 rng = random.Random()
                 for _ in range(12):
