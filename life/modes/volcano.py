@@ -1,8 +1,7 @@
-"""Mode: volcano — simulation mode for the life package."""
+"""Volcanic Eruption — magma pressure, lava flows, pyroclastic surges and wind-blown ash."""
 import curses
 import math
 import random
-import time
 
 VOLCANO_PRESETS = [
     ("Strombolian", "Mild, rhythmic eruptions with lava fountains and slow flows", "strombolian"),
@@ -20,7 +19,7 @@ ROCK_CHARS = ' .:;oO0@#'
 
 
 def _enter_volcano_mode(self):
-    """Enter Volcanic Eruption mode — show preset menu."""
+    """Show the scenario menu."""
     self.volcano_menu = True
     self.volcano_menu_sel = 0
     self._flash("Volcanic Eruption — select a scenario")
@@ -29,7 +28,7 @@ def _enter_volcano_mode(self):
 
 
 def _exit_volcano_mode(self):
-    """Exit Volcanic Eruption mode."""
+    """Leave the mode."""
     self.volcano_mode = False
     self.volcano_menu = False
     self.volcano_running = False
@@ -39,9 +38,7 @@ def _exit_volcano_mode(self):
 
 
 def _volcano_init(self, preset_idx: int):
-    """Initialize volcanic simulation from preset."""
-    import random as _rand
-    import math as _math
+    """Set up the terrain, vents and magma chamber for a scenario."""
 
     name, desc, ptype = VOLCANO_PRESETS[preset_idx]
     self.volcano_preset_name = name
@@ -61,7 +58,6 @@ def _volcano_init(self, preset_idx: int):
     self.volcano_rows = rows
     self.volcano_cols = cols
 
-    # Initialize grids
     self.volcano_terrain = [[0.0 for _ in range(cols)] for _ in range(rows)]
     self.volcano_lava = [[0.0 for _ in range(cols)] for _ in range(rows)]
     self.volcano_lava_temp = [[0.0 for _ in range(cols)] for _ in range(rows)]
@@ -74,8 +70,8 @@ def _volcano_init(self, preset_idx: int):
     self.volcano_particles = []
 
     # Base wind
-    self.volcano_wind_u = _rand.uniform(-0.5, 0.5)
-    self.volcano_wind_v = _rand.uniform(-0.3, 0.3)
+    self.volcano_wind_u = random.uniform(-0.5, 0.5)
+    self.volcano_wind_v = random.uniform(-0.3, 0.3)
 
     mid_r, mid_c = rows // 2, cols // 2
 
@@ -104,8 +100,8 @@ def _volcano_init(self, preset_idx: int):
             "recharge_rate": 0.005, "radius": min(rows, cols) // 3,
             "magma_volume": 0.9, "viscosity": 0.8,
         })
-        self.volcano_wind_u = _rand.uniform(0.3, 1.0)  # strong prevailing wind
-        self.volcano_wind_v = _rand.uniform(-0.3, 0.3)
+        self.volcano_wind_u = random.uniform(0.3, 1.0)  # strong prevailing wind
+        self.volcano_wind_v = random.uniform(-0.3, 0.3)
 
     elif ptype == "hawaiian":
         # Broad shield volcano with fluid lava
@@ -151,15 +147,15 @@ def _volcano_init(self, preset_idx: int):
             for c in range(cols):
                 dr = r - mid_r
                 dc = c - mid_c
-                dist = _math.sqrt(dr * dr + dc * dc)
+                dist = math.sqrt(dr * dr + dc * dc)
                 if dist < caldera_r:
                     depression = 0.25 * (1.0 - dist / caldera_r)
                     self.volcano_terrain[r][c] = max(0.05, self.volcano_terrain[r][c] - depression)
         # Multiple vents along the ring
         for angle in range(0, 360, 90):
-            rad = _math.radians(angle)
-            vr = int(mid_r + caldera_r * 0.7 * _math.sin(rad))
-            vc = int(mid_c + caldera_r * 1.2 * _math.cos(rad))
+            rad = math.radians(angle)
+            vr = int(mid_r + caldera_r * 0.7 * math.sin(rad))
+            vc = int(mid_c + caldera_r * 1.2 * math.cos(rad))
             vr = max(1, min(rows - 2, vr))
             vc = max(1, min(cols - 2, vc))
             self.volcano_vents.append({
@@ -177,14 +173,14 @@ def _volcano_init(self, preset_idx: int):
         # Gentle terrain with a rift
         for r in range(rows):
             for c in range(cols):
-                self.volcano_terrain[r][c] = 0.15 + _rand.uniform(-0.03, 0.03)
+                self.volcano_terrain[r][c] = 0.15 + random.uniform(-0.03, 0.03)
         # Build fissure line across the middle
         fissure_c_start = cols // 4
         fissure_c_end = cols * 3 // 4
         n_vents = 6
         for i in range(n_vents):
             vc = fissure_c_start + i * (fissure_c_end - fissure_c_start) // (n_vents - 1)
-            vr = mid_r + _rand.randint(-2, 2)
+            vr = mid_r + random.randint(-2, 2)
             self.volcano_vents.append({
                 "r": vr, "c": vc, "strength": 0.4, "active": True,
                 "type": "hawaiian", "eject_rate": 0.1, "lava_rate": 0.7,
@@ -205,33 +201,29 @@ def _volcano_init(self, preset_idx: int):
 
 
 def _volcano_build_cone(self, center_r, center_c, radius, peak_height):
-    """Build a volcanic cone on the terrain grid."""
-    import math as _math
-    import random as _rand
+    """Raise a cone with foothills on the terrain grid."""
     rows, cols = self.volcano_rows, self.volcano_cols
     radius = max(1, radius)
     for r in range(rows):
         for c in range(cols):
             dr = r - center_r
             dc = (c - center_c) * 0.6  # wider E-W for terminal aspect ratio
-            dist = _math.sqrt(dr * dr + dc * dc)
+            dist = math.sqrt(dr * dr + dc * dc)
             if dist < radius:
                 height = peak_height * (1.0 - dist / radius) ** 1.3
-                noise = _rand.uniform(-0.02, 0.02)
+                noise = random.uniform(-0.02, 0.02)
                 self.volcano_terrain[r][c] = max(self.volcano_terrain[r][c], height + noise)
             else:
                 # Gentle foothills
-                falloff = _math.exp(-(dist - radius) ** 2 / (radius * 0.5) ** 2)
-                base = 0.08 * falloff + _rand.uniform(-0.01, 0.01)
+                falloff = math.exp(-(dist - radius) ** 2 / (radius * 0.5) ** 2)
+                base = 0.08 * falloff + random.uniform(-0.01, 0.01)
                 self.volcano_terrain[r][c] = max(self.volcano_terrain[r][c], base)
 
 
 
 
 def _volcano_step(self):
-    """Advance volcanic simulation by one time step."""
-    import random as _rand
-    import math as _math
+    """Advance the eruption by one step."""
 
     self.volcano_generation += 1
     self.volcano_tick += 1
@@ -254,7 +246,7 @@ def _volcano_step(self):
         for ch in self.volcano_chambers:
             dr = vent["r"] - ch["r"]
             dc = vent["c"] - ch["c"]
-            if _math.sqrt(dr * dr + dc * dc) < ch["radius"]:
+            if math.sqrt(dr * dr + dc * dc) < ch["radius"]:
                 chamber = ch
                 break
         if not chamber:
@@ -281,15 +273,15 @@ def _volcano_step(self):
             # Eject particles (bombs, tephra)
             n_ejecta = int(vent["eject_rate"] * eruption_intensity * 5 * speed)
             for _ in range(min(n_ejecta, 20)):
-                angle = _rand.uniform(0, 2 * _math.pi)
-                eject_speed = _rand.uniform(1, 4) * eruption_intensity
+                angle = random.uniform(0, 2 * math.pi)
+                eject_speed = random.uniform(1, 4) * eruption_intensity
                 self.volcano_particles.append({
                     "r": float(vr), "c": float(vc),
-                    "vr": -_rand.uniform(0.5, 2.0) * eruption_intensity + _math.sin(angle) * eject_speed * 0.3,
-                    "vc": _math.cos(angle) * eject_speed,
-                    "life": _rand.randint(5, 25),
-                    "size": _rand.uniform(0.3, 1.0),
-                    "type": "bomb" if _rand.random() < 0.3 else "tephra",
+                    "vr": -random.uniform(0.5, 2.0) * eruption_intensity + math.sin(angle) * eject_speed * 0.3,
+                    "vc": math.cos(angle) * eject_speed,
+                    "life": random.randint(5, 25),
+                    "size": random.uniform(0.3, 1.0),
+                    "type": "bomb" if random.random() < 0.3 else "tephra",
                 })
 
             # Generate ash
@@ -300,7 +292,7 @@ def _volcano_step(self):
 
             # Pyroclastic density current generation (for explosive types)
             if vent["type"] in ("plinian", "vulcanian") and eruption_intensity > 0.5:
-                if _rand.random() < 0.15 * speed:
+                if random.random() < 0.15 * speed:
                     # Column collapse → pyroclastic flow
                     for dr in range(-2, 3):
                         for dc in range(-2, 3):
@@ -485,8 +477,8 @@ def _volcano_step(self):
     self.volcano_particles = surviving[:200]  # cap particle count
 
     # ── Wind variation ──
-    self.volcano_wind_u += _rand.uniform(-0.02, 0.02) * speed
-    self.volcano_wind_v += _rand.uniform(-0.02, 0.02) * speed
+    self.volcano_wind_u += random.uniform(-0.02, 0.02) * speed
+    self.volcano_wind_v += random.uniform(-0.02, 0.02) * speed
     self.volcano_wind_u = max(-2.0, min(2.0, self.volcano_wind_u))
     self.volcano_wind_v = max(-2.0, min(2.0, self.volcano_wind_v))
 
@@ -494,8 +486,7 @@ def _volcano_step(self):
 
 
 def _handle_volcano_menu_key(self, key: int) -> bool:
-    """Handle input in volcano preset menu."""
-    import curses
+    """Handle keys in the scenario menu."""
     n = len(VOLCANO_PRESETS)
     if key == curses.KEY_DOWN or key == ord('j'):
         self.volcano_menu_sel = (self.volcano_menu_sel + 1) % n
@@ -507,15 +498,13 @@ def _handle_volcano_menu_key(self, key: int) -> bool:
         self.volcano_menu = False
         self.volcano_mode = False
         self._flash("Volcanic Eruption cancelled")
-    else:
-        return True
     return True
 
 
 
 
 def _handle_volcano_key(self, key: int) -> bool:
-    """Handle input in active volcano simulation."""
+    """Handle keys while the eruption runs."""
     if key == -1:
         return True
     if key == ord(' '):
@@ -557,8 +546,7 @@ def _handle_volcano_key(self, key: int) -> bool:
 
 
 def _draw_volcano_menu(self, max_y: int, max_x: int):
-    """Draw volcano preset selection menu."""
-    import curses
+    """Draw the scenario menu."""
     title = "═══ Volcanic Eruption & Lava Flow ═══"
     try:
         self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
@@ -574,7 +562,7 @@ def _draw_volcano_menu(self, max_y: int, max_x: int):
             self.stdscr.addstr(y, 3, f"{marker}{name}", attr)
             self.stdscr.addstr(y + 1, 6, desc[:max_x - 8], curses.A_DIM)
         foot_y = min(5 + len(VOLCANO_PRESETS) * 2 + 1, max_y - 2)
-        self.stdscr.addstr(foot_y, 3, "Enter=Select  Esc=Cancel",
+        self.stdscr.addstr(foot_y, 3, "j/k=move  Enter=select  Esc=cancel",
                            curses.A_DIM | curses.color_pair(6))
     except curses.error:
         pass
@@ -584,7 +572,6 @@ def _draw_volcano_menu(self, max_y: int, max_x: int):
 
 def _volcano_terrain_color(self, elev: float) -> int:
     """Return curses color pair for terrain elevation."""
-    import curses
     if elev > 0.8:
         return curses.color_pair(1) | curses.A_BOLD   # peak = white bold
     elif elev > 0.6:
@@ -601,7 +588,6 @@ def _volcano_terrain_color(self, elev: float) -> int:
 
 def _volcano_lava_color(self, temp: float, thickness: float) -> int:
     """Return curses color pair for lava based on temperature."""
-    import curses
     if temp > 900:
         return curses.color_pair(4) | curses.A_BOLD    # incandescent = bright yellow
     elif temp > 700:
@@ -617,9 +603,7 @@ def _volcano_lava_color(self, temp: float, thickness: float) -> int:
 
 
 def _draw_volcano(self, max_y: int, max_x: int):
-    """Render volcanic simulation as ASCII volcanic landscape."""
-    import curses
-    import math as _math
+    """Draw the selected layer, ejecta, vents, status bar and help overlay."""
     rows, cols = self.volcano_rows, self.volcano_cols
     draw_rows = min(rows, max_y - 3)
     draw_cols = min(cols, max_x - 1)
@@ -836,11 +820,8 @@ def _draw_volcano(self, max_y: int, max_x: int):
             pass
 
 
-# Bind volcano methods to App class
-
-
 def register(App):
-    """Register volcano mode methods on the App class."""
+    """Register Volcanic Eruption methods on the App class."""
     App._enter_volcano_mode = _enter_volcano_mode
     App._exit_volcano_mode = _exit_volcano_mode
     App._volcano_init = _volcano_init
