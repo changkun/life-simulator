@@ -1,7 +1,5 @@
 """Mode: split_screen — dual simulation side-by-side with independent state."""
 import curses
-import math
-import random
 import time
 
 from life.constants import SPEEDS
@@ -78,7 +76,7 @@ def _split_init(self, left_id, right_id):
     sim_rows = max(4, pane_h - 2)        # -2 for pane title + padding
     sim_cols = max(4, (pane_w - 1) // 2) # each cell = 2 chars wide
 
-    def make_pane(sim_id, pane_idx):
+    def make_pane(sim_id):
         init_fn, _, dens_fn = _ENGINES[sim_id]
         state = init_fn(sim_rows, sim_cols)
         density = dens_fn(state)
@@ -92,8 +90,8 @@ def _split_init(self, left_id, right_id):
             "generation": 0,
         }
 
-    self.split_left = make_pane(left_id, 0)
-    self.split_right = make_pane(right_id, 1)
+    self.split_left = make_pane(left_id)
+    self.split_right = make_pane(right_id)
     self.split_generation = 0
     self.split_running = False
     self.split_focus = 0       # 0=left, 1=right
