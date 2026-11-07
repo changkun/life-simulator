@@ -294,10 +294,11 @@ def _draw_race(self, max_y: int, max_x: int):
         ext = str(stats["extinction_gen"] - self.race_start_gen) if stats["extinction_gen"] is not None else "alive"
         score_str = str(stats.get("final_score", "—")) if self.race_finished else "—"
         display_name = f"{name[:15]} {rs}"
-        medal = ""
+        rank_col = str(rank + 1)
         if self.race_finished and rank == 0:
-            medal = "👑 "
-        line = f" {medal}{rank+1:<3d} {display_name:<25s} {pop:>7d} {stats['peak_pop']:>7d} {osc:>6s} {ext:>8s} {score_str:>7s}"
+            # Crown inside the 3-wide "#" column, so the winner row stays aligned.
+            rank_col = "♛" + rank_col
+        line = f" {rank_col:<3s} {display_name:<25s} {pop:>7d} {stats['peak_pop']:>7d} {osc:>6s} {ext:>8s} {score_str:>7s}"
         line = line[:max_x - 1]
         attr = curses.color_pair(6)
         if self.race_finished and rank == 0:
