@@ -314,6 +314,26 @@ def _ns_project(self):
 
 
 
+# Velocity bound applied every step. Presets inject at most 60 and the
+# cursor injector 200 per press, so this only catches runaway values that
+# would otherwise reach inf/NaN and crash advection or drawing.
+NS_MAX_SPEED = 1000.0
+
+
+def _ns_sanitize(self):
+    """Keep velocity finite and bounded and dye finite (NaN -> 0)."""
+    lim = NS_MAX_SPEED
+    for field in (self.ns_vx, self.ns_vy):
+        for row in field:
+            for c, v in enumerate(row):
+                if not -lim <= v <= lim:  # also true for NaN
+                    row[c] = 0.0 if v != v else (lim if v > 0 else -lim)
+    for row in self.ns_dye:
+        for c, v in enumerate(row):
+            if not -1e300 < v < 1e300:  # NaN or +-inf
+                row[c] = 0.0
+
+
 # Presets that inject fluid at the left wall, and the soft dye sponge that
 # lets their dye leave through the right edge (last cols // 6 columns,
 # removing up to 25% of the dye per step at the far edge).
@@ -349,6 +369,8 @@ def _ns_step(self):
                 # Dye bands for visualization
                 if r % 8 < 2:
                     self.ns_dye[r][0] = 1.0
+
+    _ns_sanitize(self)
 
     # ── Velocity step ──
     # Swap vx/vx0 and vy/vy0
