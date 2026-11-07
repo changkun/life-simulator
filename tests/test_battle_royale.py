@@ -1,7 +1,7 @@
 """Tests for life.modes.battle_royale — Battle Royale mode."""
 import unittest.mock
 from tests.conftest import make_mock_app
-from life.modes.battle_royale import register
+from life.modes.battle_royale import register, PRESETS
 
 
 def _make_app():
@@ -93,3 +93,13 @@ def test_step_changes_grid_state():
     # Scores structure should still be valid
     assert len(app.br_scores) == 4
     assert all(s >= 0 for s in app.br_scores)
+
+
+def test_menu_accepts_all_enter_keys():
+    import curses
+    for key in (10, 13, curses.KEY_ENTER):
+        app = _make_app()
+        app._enter_battle_royale()
+        app.br_menu_sel = len(PRESETS)
+        app._handle_br_menu_key(key)
+        assert app.br_menu_phase == 1

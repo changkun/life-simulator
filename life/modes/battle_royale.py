@@ -562,7 +562,7 @@ def _handle_br_menu_key(self, key):
             self.br_menu_sel = (self.br_menu_sel - 1) % n_items
         elif key == curses.KEY_DOWN or key == ord("j"):
             self.br_menu_sel = (self.br_menu_sel + 1) % n_items
-        elif key == ord("\n") or key == ord(" "):
+        elif key in (10, 13, curses.KEY_ENTER, ord(" ")):
             if self.br_menu_sel < len(PRESETS):
                 _, ids, _ = PRESETS[self.br_menu_sel]
                 self._br_init(ids)
@@ -579,7 +579,7 @@ def _handle_br_menu_key(self, key):
             self.br_menu_sel = (self.br_menu_sel - 1) % n_items
         elif key == curses.KEY_DOWN or key == ord("j"):
             self.br_menu_sel = (self.br_menu_sel + 1) % n_items
-        elif key == ord("\n") or key == ord(" "):
+        elif key in (10, 13, curses.KEY_ENTER, ord(" ")):
             fid = FACTIONS[self.br_menu_sel]["id"]
             if fid not in self.br_custom_picks:
                 self.br_custom_picks.append(fid)
