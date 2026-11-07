@@ -243,6 +243,19 @@ class TestWFCPropagation:
         # Mountain allows {3,4} as East neighbor, intersecting with {0} = empty
         assert app.wfc_contradiction is True
 
+    def test_contradiction_stops_run_and_flashes(self):
+        """A contradiction found while propagating ends auto-run at once."""
+        app = _make_wfc_app()
+        app._wfc_init(0)
+        app.wfc_running = True
+        app.wfc_grid[2][2] = {4}
+        app.wfc_collapsed[2][2] = 4
+        app.wfc_grid[2][3] = {0}
+        app._wfc_propagate(2, 2)
+        assert app.wfc_contradiction is True
+        assert app.wfc_running is False
+        assert "Contradiction" in app.message
+
     def test_propagation_auto_collapses_single_option(self):
         """If propagation reduces a cell to 1 tile, it auto-collapses."""
         random.seed(42)
@@ -338,6 +351,13 @@ class TestWFCMenuKeys:
         app._enter_wfc_mode()
         app._handle_wfc_menu_key(ord("k"))
         assert app.wfc_menu_sel == len(type(app).WFC_PRESETS) - 1
+
+    def test_menu_keypad_enter_selects(self):
+        import curses
+        app = _make_wfc_app()
+        app._enter_wfc_mode()
+        app._handle_wfc_menu_key(curses.KEY_ENTER)
+        assert app.wfc_mode is True
 
     def test_menu_enter_selects(self):
         app = _make_wfc_app()

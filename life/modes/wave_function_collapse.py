@@ -88,9 +88,7 @@ def _wfc_step(self):
             if collapsed[r][c] == -1:
                 e = len(grid[r][c])
                 if e == 0:
-                    # Contradiction — no valid tiles for this cell
-                    self.wfc_contradiction = True
-                    self._flash("Contradiction! No valid tile. Press r to restart.")
+                    self._wfc_contradict()
                     return
                 if e < min_entropy:
                     min_entropy = e
@@ -117,6 +115,14 @@ def _wfc_step(self):
     self._wfc_propagate(cr, cc)
 
     self.wfc_generation += 1
+
+
+
+def _wfc_contradict(self):
+    """Stop the run: some cell has no valid tile left."""
+    self.wfc_contradiction = True
+    self.wfc_running = False
+    self._flash("Contradiction! No valid tile. Press r to restart.")
 
 
 
@@ -152,7 +158,7 @@ def _wfc_propagate(self, start_r: int, start_c: int):
             grid[nr][nc] &= allowed
 
             if len(grid[nr][nc]) == 0:
-                self.wfc_contradiction = True
+                self._wfc_contradict()
                 return
 
             # If we reduced possibilities, propagate further
@@ -171,7 +177,7 @@ def _handle_wfc_menu_key(self, key: int) -> bool:
         self.wfc_menu_sel = (self.wfc_menu_sel + 1) % n
     elif key in (ord("k"), curses.KEY_UP):
         self.wfc_menu_sel = (self.wfc_menu_sel - 1) % n
-    elif key in (ord("\n"), ord("\r")):
+    elif key in (ord("\n"), ord("\r"), curses.KEY_ENTER):
         self._wfc_init(self.wfc_menu_sel)
     elif key in (ord("q"), 27):
         self.wfc_menu = False
@@ -329,6 +335,7 @@ def register(App):
     App._wfc_init = _wfc_init
     App._wfc_step = _wfc_step
     App._wfc_propagate = _wfc_propagate
+    App._wfc_contradict = _wfc_contradict
     App._handle_wfc_menu_key = _handle_wfc_menu_key
     App._handle_wfc_key = _handle_wfc_key
     App._draw_wfc_menu = _draw_wfc_menu
