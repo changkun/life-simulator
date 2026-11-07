@@ -51,3 +51,10 @@ class TestForestFire:
         self.app._fire_init(0)
         self.app._exit_fire_mode()
         assert self.app.fire_mode is False
+
+    def test_menu_keypad_enter_starts(self):
+        import curses
+        self.app._enter_fire_mode()
+        self.app._handle_fire_menu_key(curses.KEY_ENTER)
+        assert self.app.fire_mode is True
+        assert self.app.fire_menu is False
