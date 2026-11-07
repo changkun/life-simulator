@@ -278,9 +278,8 @@ modes from the mode browser.
 
 ### Mode Browser
 
-Press `m` to open a categorized, scrollable browser of all simulation modes.
-Each entry shows the mode name, keyboard shortcut, and a brief description.
-Select any mode to enter it instantly.
+Press `m` to open the mode browser (also the dashboard shown at launch). It
+lists all modes by category, with search and favorites. Select a mode to enter it.
 
 ### Pattern Library
 
@@ -290,12 +289,11 @@ methuselahs, and more. Press `t` to stamp the selected pattern at the cursor.
 ### Rule Editor
 
 Press `R` to open the interactive rule editor. Toggle individual B/S bits to
-create custom cellular automaton rules, or select from presets. The simulation
-keeps running so changes are visible in real time.
+create custom cellular automaton rules, or select from presets.
 
 ### Timeline & Branching
 
-Every generation is recorded into a ring buffer. Rewind with `u`, scrub with
+The last 500 generations are kept in a history buffer. Rewind with `u`, scrub with
 `[`/`]`, and fork alternate timelines with `Ctrl+F` at any past point. Bookmarks
 (`b`/`B`) mark interesting states for later recall.
 
@@ -305,37 +303,36 @@ Press `Ctrl+W` to save a full simulation snapshot — grid state, active mode,
 mode-specific parameters, viewport position, zoom, speed, colormap, and more —
 to a named `.snapshot.json` file in `~/.life_saves/snapshots/`. Press `Ctrl+O`
 to browse saved snapshots with metadata preview, load one to resume exactly where
-you left off, or delete old ones. Works across all 130+ modes.
+you left off, or delete old ones.
 
 ### Heatmap & Overlays
 
-Press `H` for a heatmap that colors cells by age (blue → cyan → green → yellow →
-red → white). Ghost trails mark recently dead cells with a fading glow.
+Press `H` for a heatmap that colors each cell by how many generations it
+has been alive since the grid was last cleared or randomized.
 
 ### Truecolor & Colormaps
 
-On terminals that support 24-bit color (iTerm2, Kitty, Alacritty, Windows Terminal,
-GNOME Terminal), the simulator automatically uses continuous RGB gradients instead of
-the 256-color palette. Press `K` to cycle through 8 perceptually uniform colormaps:
-viridis, magma, inferno, plasma, ocean, thermal, terrain, and amber. Five modes
-(Reaction-Diffusion, Lenia, Fluid LBM, Physarum, Wave Equation) have dedicated
-truecolor rendering paths; all other modes benefit from enhanced `init_color()`
-redefinitions. Falls back gracefully to 256-color → 8-color on older terminals.
+Terminals that set `COLORTERM` to `truecolor` or `24bit` get continuous RGB
+gradients. Press `K` to cycle through 8 colormaps: viridis, magma, inferno,
+plasma, ocean, thermal, terrain, and amber. Reaction-Diffusion Textures, Lenia,
+Lattice Boltzmann Fluid, Physarum Slime Mold, and Wave Equation use the colormaps
+directly; other terminals use the 256-color palette.
 
 ### 3D Isometric View
 
 Press `I` to render the grid as an isometric 3D landscape where live cells are
-raised blocks with depth shading.
+raised blocks. Cell height shows age.
 
 ### Multiplayer
 
-Host a game with `--host` or join with `--connect HOST:PORT`. Multiple players
-share the same grid over TCP, each with their own cursor and drawing tools.
+Host a game with `--host` or join with `--connect HOST:PORT`. You can also press
+`N` in the app. Players share the same grid over TCP.
 
 ### Screensaver / Demo Reel
 
-Launch with `--screensaver` to auto-cycle through modes with smooth transitions.
-Configurable interval and ordering (sequential, shuffled, favorites).
+Launch with `--screensaver` to auto-cycle through modes with transitions.
+Set the interval with `--screensaver-interval` and the playlist with a preset:
+`all_sequential`, `all_shuffle`, `fav_sequential`, or `fav_shuffle`.
 
 ### GIF & Cast Recording
 
@@ -344,8 +341,8 @@ terminal frames and export as asciinema `.cast` or plain-text flipbook.
 
 ### Genome Sharing
 
-Press `g` to encode the current simulation configuration (mode, parameters,
-presets, grid state) as a shareable seed string. Paste a seed to reproduce
+Press `g` to encode the current simulation configuration (mode and parameters)
+as a shareable seed string. Paste a seed to reproduce
 someone else's exact configuration.
 
 ### Scripting & Choreography
@@ -358,24 +355,27 @@ transitions, parameter sweeps, and effect toggles for automated presentations.
 ```
 life.py            # Entry point
 life/
-  app.py           # Core application (~8000 lines)
+  app.py           # Core application and key handling
+  dashboard.py     # Landing screen and mode browser
+  analytics.py     # Analytics overlay and phase detector
   grid.py          # Grid / world management
-  colors.py        # Terminal color definitions
+  colors.py        # Color schemes and colormaps
   constants.py     # Shared constants
-  patterns.py      # Built-in pattern library
+  patterns.py      # Built-in patterns and puzzles
   registry.py      # Mode registry and categories
-  rules.py         # CA rule engine
+  rules.py         # CA rule presets and parsing
   sound.py         # Audio synthesis
   multiplayer.py   # TCP multiplayer
-  modes/           # 130 simulation mode modules
+  utils.py         # RLE parsing, GIF encoding, pattern recognition
+  modes/           # Simulation mode modules
 docs/              # Scientific guide (formulations & references)
 ```
 
 Design choices:
 
 - **Zero dependencies** — pure Python standard library, no pip packages
-- **Modular modes** — each simulation is a self-contained module in `life/modes/`
-- **Registry-driven** — modes declare themselves; the browser discovers them automatically
+- **Modular modes** — each simulation is a module in `life/modes/`
+- **Registry-driven** — `life/registry.py` lists every mode; the mode browser reads it
 - **Single entry point** — `uv run life` or `python life.py`
 
 ## License
