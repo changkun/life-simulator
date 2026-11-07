@@ -1144,37 +1144,41 @@ Decay if moisture < 0.2: algae -= 0.01
 Rock becomes algae-covered at density > 0.3, reverts at < 0.1
 ```
 
-Grazers (urchins eat 0.1/tick, limpets eat 0.05/tick) keep algae in check, creating visible grazing halos and bloom/crash cycles.
+Grazers (urchins eat up to 0.1/tick, limpets up to 0.05/tick) keep algae in check.
 
-**Species ecology.** Eight species in two categories — sessile (attached to rock) and mobile (free-moving):
+**Species ecology.** Eight species in two categories, sessile (attached to rock) and mobile. The "Preferred Zone" is where each species is placed at the start. "Exposed cost" is the energy lost per tick at low tide:
 
-| Species | Type | Preferred Zone | Feeding | Stress Tolerance | Special Mechanic |
-|---------|------|---------------|---------|-----------------|-----------------|
-| Barnacle | Sessile | High | Filter feed when submerged (+0.01/tick) | Moderate desiccation tolerance | Cements to rock |
-| Mussel | Sessile | Mid | Filter feed when submerged (+0.012/tick) | Good desiccation tolerance | Grows in size; competes for rock space |
-| Anemone | Sessile | Mid-Low | Filter feed when submerged (+0.008/tick) | Poor desiccation tolerance | Anchors in pools |
-| Kelp | Sessile | Low-Subtidal | Photosynthesis (light-dependent, +0.015×light) | Very poor exposure tolerance | Grows in size; grazed by urchins |
-| Limpet | Mobile | High-Mid | Grazes algae (0.05/tick) | High exposure tolerance | Tolerates drying (stress +0.003 vs +0.015) |
-| Sea Star | Mobile | Mid-Low | Predates mussels/barnacles (-0.3 prey energy, +0.15 own) | Poor exposure tolerance | Keystone predator; "wave of death" fronts |
-| Urchin | Mobile | Low-Subtidal | Grazes algae (0.1/tick) and kelp (-0.1 kelp energy) | Poor exposure tolerance | Creates urchin barrens |
-| Hermit Crab | Mobile | Mid-Low | Scavenges (+0.003/tick) | Moderate exposure tolerance | Vacancy-chain shell swaps |
+| Species | Type | Preferred Zone | Feeding | Exposed cost | Special Mechanic |
+|---------|------|---------------|---------|--------------|-----------------|
+| Barnacle | Sessile | High | Filter feeds when submerged (+0.01/tick) | -0.005 energy | Eaten by sea stars |
+| Mussel | Sessile | Mid | Filter feeds when submerged (+0.012/tick) | -0.004 energy | Grows in size; eaten by sea stars |
+| Anemone | Sessile | Mid-Low | Filter feeds when submerged (+0.008/tick) | -0.006 energy | Can sit in tide pools |
+| Kelp | Sessile | Low-Subtidal | Photosynthesis when submerged (+0.015 × light) | -0.01 energy, +0.04 stress | Grows in size; grazed by urchins |
+| Limpet | Mobile | High-Mid | Grazes algae (0.05/tick) | -0.001 energy, +0.003 stress | Moves even when exposed |
+| Sea Star | Mobile | Mid-Low | Eats mussels and barnacles on its cell when submerged (-0.3 prey energy, +0.15 own) | -0.003 energy, +0.015 stress | Moves only when submerged |
+| Urchin | Mobile | Low-Subtidal | Grazes algae (0.1/tick) and kelp (-0.1 kelp energy) | -0.003 energy, +0.015 stress | Moves only when submerged |
+| Hermit Crab | Mobile | Mid-Low | Scavenges (+0.003/tick) | -0.003 energy, +0.015 stress | Swaps shells with empty shells; can cross sand |
 
-**Organism lifecycle.** All organisms have energy (0–2.0+), age, and stress (0–1.0). Death occurs when energy ≤ 0, stress ≥ 1.0, or age exceeds lifespan (2000 for sessile, 3000 for mobile). Reproduction triggers when energy > 1.5 (sessile, 1% chance/tick) or > 1.6 (mobile, 0.8% chance/tick), budding/spawning a new individual in an adjacent cell. Sessile reproduction requires an unoccupied rock cell.
+Sessile organisms gain stress only when exposed, at (1 - moisture) × 0.02 + temperature × 0.015 per tick. All organisms lose stress when submerged.
 
-**Hermit crab vacancy chains.** Empty shells are tracked as (row, col, size) tuples. Each tick, hermit crabs check adjacent cells for shells larger than their current one. On finding one, they swap — dropping their old shell at their current position. Dead crabs release their shells. New crab offspring need shells to reproduce; without available shells, they receive tiny (0.2) makeshift shells. In the Hermit Crab Shell Economy preset, 40 crabs and 20 initial shells create dense, observable vacancy chain dynamics — a single large shell dropped into the population can trigger a cascade of swaps.
+**Organism lifecycle.** All organisms have energy, age, and stress (0-1). Death occurs when energy ≤ 0, stress ≥ 1.0, or age exceeds the lifespan (2000 ticks for sessile, 3000 for mobile). Reproduction needs energy above 1.5 (sessile, 1% chance/tick) or 1.6 (mobile, 0.8% chance/tick), and places a new individual in an adjacent cell. Sessile offspring need an unoccupied rock or pool cell.
 
-**Sea star wasting disease.** In the Sea Star Wasting Event preset, all sea stars begin with elevated stress (0.4–0.7) and accumulate additional disease stress (+0.005/tick). At stress > 0.7, they also hemorrhage energy (-0.02/tick). As stars die, their keystone predation is removed — mussels expand unchecked through the mid-zone, outcompeting barnacles and anemones for rock space. This reproduces the trophic cascade observed in the real 2013–2015 Sea Star Wasting Syndrome epidemic along the Pacific coast.
+**Hermit crab vacancy chains.** Empty shells are tracked as (row, col, size) tuples. Each tick, a hermit crab looks for empty shells within one cell. If one is larger than its own, the crab swaps and leaves its old shell at its position. Dead crabs release their shells. A new crab takes a random empty shell, or gets a small 0.2 shell if none exist. The Hermit Crab Shell Economy preset starts with 40 crabs and 20 empty shells.
+
+**Sea star wasting disease.** In the Sea Star Wasting Event preset, all sea stars start with stress 0.4-0.7 and gain +0.005 stress per tick. Above stress 0.7, they also lose 0.02 energy per tick. As stars die, predation on mussels and barnacles drops, and the mussels can spread through the mid zone. The preset is modeled on the 2013-2015 sea star wasting epidemic on the Pacific coast.
 
 **Presets (6):**
 
 | Preset | Character | Initial Configuration |
 |--------|-----------|----------------------|
-| Pacific Rocky Shore | Classic temperate intertidal with full zonation | Balanced populations (60 barnacles, 40 mussels, 25 anemones, 30 kelp, 20 limpets, 15 sea stars, 20 urchins, 15 hermit crabs), standard tidal range (A=0.35, T=240) |
-| Tropical Coral Flat | Warm shallow reef flat with low tidal range | Low amplitude (A=0.20), long period (T=300), more urchins (35) and anemones (40), fewer mussels (15) and kelp (15), more tide pools |
-| Mussel Bed Dominance | Dense mussel beds competing for rock space | 80 mussels dense-seeded in mid zone, 30 barnacles, standard tidal range |
-| Sea Star Wasting Event | Disease-stressed stars, cascading trophic effects | 30 sea stars with initial stress 0.4–0.7, ongoing disease stress accumulation, standard populations otherwise |
-| Extreme Tidal Range | Bay of Fundy–scale exposure/submersion | High amplitude (A=0.45), short period (T=180), dramatic water level swings exposing and drowning huge vertical range |
-| Hermit Crab Shell Economy | Dense hermit population with vacancy chain dynamics | 40 hermit crabs, 20 scattered empty shells of varying sizes, standard other populations |
+| Pacific Rocky Shore | Temperate intertidal with full zonation | Up to 60 barnacles, 40 mussels, 25 anemones, 30 kelp, 20 limpets, 15 sea stars, 20 urchins, 15 hermit crabs; tide A=0.35, T=240 |
+| Tropical Coral Flat | Shallow flat with a small tidal range | A=0.20, T=300; more urchins (35) and anemones (40), fewer mussels (15) and kelp (15), 6-12 tide pools instead of 4-8 |
+| Mussel Bed Dominance | Dense mussel beds competing for rock space | Up to 80 mussels in the mid zone, 30 barnacles, standard tide |
+| Sea Star Wasting Event | Disease-stressed sea stars | 30 sea stars with initial stress 0.4-0.7 and ongoing disease stress, standard otherwise |
+| Extreme Tidal Range | Bay of Fundy-scale tides | A=0.45, T=180; the water line sweeps a large part of the shore |
+| Hermit Crab Shell Economy | Dense hermit crab population with vacancy chains | 40 hermit crabs, 20 empty shells of varying sizes, standard otherwise |
+
+Starting counts are placement attempts. Some fail because the random cell is not suitable.
 
 **View modes (3, cycle with `v`):**
 1. **Shore** — spatial ecosystem rendering: rock (#), sand (:), tide pools (~), algae (./%); organisms as colored glyphs (^ barnacle, M mussel, * anemone, X sea star, o urchin, | kelp, @ hermit crab, n limpet); animated water line with > indicator; splash spray dots above waterline; zone labels (SPRAY/HIGH/MID/LOW/SUBTIDAL) on right edge; info bar showing sessile/mobile counts, shell count, and tide state
@@ -1183,7 +1187,7 @@ Grazers (urchins eat 0.1/tick, limpets eat 0.05/tick) keep algae in check, creat
 
 **Controls:** `Space`=play/pause, `n`/`.`=step, `v`=cycle views, `+/-`=simulation speed, `r`=reset, `R`/`m`=menu, `q`=exit.
 
-**What to look for.** In Pacific Rocky Shore, watch the tide pulse up and down — as water recedes, the exposed mid-zone organisms begin accumulating desiccation stress (barnacle ^ and mussel M glyphs turn red when stressed). Sea stars (X) hunt only when submerged, creating "wave of death" fronts that sweep through mussel beds at high tide. Switch to Graphs view to see the tide sparkline drive anti-correlated stress peaks. Mussel Bed Dominance shows competitive exclusion in action — dense mussel beds spread through budding, outcompeting barnacles for rock attachment sites. Sea Star Wasting Event is the most dramatic ecological story: watch stars gradually die off (their X glyphs vanishing), then switch to Graphs to see mussel populations explode as predation pressure disappears — a textbook trophic cascade. Extreme Tidal Range creates the most visually dynamic water movement: the waterline sweeps across nearly half the screen each cycle, alternately drowning and exposing huge swaths of shore. Hermit Crab Shell Economy is best watched in Shore view — track the @ symbols as they encounter empty shells and swap, dropping their old shells for other crabs to find. In Tropical Coral Flat, the gentle tide (low amplitude, long period) creates a more stable, species-rich community with less stress oscillation.
+**What to look for.** In Pacific Rocky Shore, watch the tide rise and fall. As the water recedes, exposed organisms gain stress. Sea stars (X) feed only while submerged, so predation fronts move with the tide. The Graphs view shows stress rising and falling with the tide. In Mussel Bed Dominance, the mussels spread by budding into free rock cells. In Sea Star Wasting Event, the stars die off (X glyphs vanish) and the Graphs view shows what happens to the mussel count as predation drops. Extreme Tidal Range sweeps the water line across a large part of the screen each cycle. Hermit Crab Shell Economy is best in the Shore view: follow the @ symbols as they swap shells. Tropical Coral Flat has a gentle tide, so exposure stress is smaller.
 
 **References.**
 - Connell, J. H. "Community interactions on marine rocky intertidal shores." *Annual Review of Ecology and Systematics*, 3, 169–192, 1972. https://doi.org/10.1146/annurev.es.03.110172.001125
