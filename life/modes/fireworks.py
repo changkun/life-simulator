@@ -1,4 +1,4 @@
-"""Mode: fireworks — simulation mode for the life package."""
+"""Fireworks — rockets and spark bursts under gravity, wind and drag."""
 import curses
 import math
 import random
@@ -35,7 +35,7 @@ def _fireworks_preset_id(self) -> str:
 
 
 def _fireworks_init(self, preset: str):
-    """Initialize fireworks simulation."""
+    """Reset the show for the given preset id and launch three rockets."""
     max_y, max_x = self.stdscr.getmaxyx()
     self.fireworks_rows = max(20, max_y - 3)
     self.fireworks_cols = max(20, max_x - 1)
@@ -76,23 +76,19 @@ def _fireworks_init(self, preset: str):
         self.fireworks_wind = 0.0
         self.fireworks_auto_launch = True
 
-    # Launch a few initial rockets
     for _ in range(3):
         self._fireworks_launch(preset)
 
 
-
 def _fireworks_launch(self, preset: str | None = None):
-    """Launch a single rocket from the bottom."""
+    """Launch one rocket from the bottom edge."""
     cols = self.fireworks_cols
     rows = self.fireworks_rows
-    # Random launch position along the bottom
     c = random.randint(cols // 6, cols * 5 // 6)
     r = float(rows - 1)
-    # Upward velocity with slight horizontal variance
     vr = -(random.uniform(1.2, 2.0))
     vc = random.uniform(-0.3, 0.3) + self.fireworks_wind
-    # Fuse = how high before exploding (fraction of screen)
+    # Fuse is the tick budget before the rocket bursts; it scales with screen height.
     fuse = random.randint(rows // 4, rows * 2 // 3)
     color = random.choice(self.FIREWORKS_COLORS)
 
@@ -112,7 +108,6 @@ def _fireworks_launch(self, preset: str | None = None):
     # rocket: [r, c, vr, vc, fuse, color, pattern]
     self.fireworks_rockets.append([r, c, vr, vc, fuse, color, pattern])
     self.fireworks_total_launched += 1
-
 
 
 def _fireworks_explode(self, r: float, c: float, color: int, pattern: str):
@@ -175,7 +170,6 @@ def _fireworks_explode(self, r: float, c: float, color: int, pattern: str):
             particles.append([r, c, vr, vc, life, life, color, "crossette", []])
 
 
-
 def _fireworks_step(self):
     """Advance the fireworks simulation by one tick."""
     gravity = self.fireworks_gravity
@@ -191,7 +185,6 @@ def _fireworks_step(self):
     new_rockets = []
     for rocket in self.fireworks_rockets:
         r, c, vr, vc, fuse, color, pattern = rocket
-        # Apply gravity (slows the upward motion)
         vr += gravity
         vc += wind
         r += vr
@@ -199,7 +192,6 @@ def _fireworks_step(self):
         fuse -= 1
 
         if fuse <= 0 or vr >= 0:
-            # Explode!
             self._fireworks_explode(r, c, color, pattern)
         elif 0 <= r < rows and 0 <= c < cols:
             rocket[0] = r
@@ -222,20 +214,17 @@ def _fireworks_step(self):
                 self._fireworks_explode(r, c, sub_color, "spherical")
             continue
 
-        # Store trail position
         trail.append((r, c))
         if len(trail) > 6:
             trail.pop(0)
 
-        # Apply gravity
         vr += gravity * (1.5 if kind == "willow" else 0.8)
         vc += wind
 
-        # Add slight random jitter
+        # Jitter keeps sparks from moving in perfect lines.
         vr += random.uniform(-0.02, 0.02)
         vc += random.uniform(-0.02, 0.02)
 
-        # Drag
         drag = 0.97 if kind == "willow" else 0.985
         vr *= drag
         vc *= drag
@@ -254,24 +243,21 @@ def _fireworks_step(self):
     self.fireworks_generation += 1
 
 
-
 def _enter_fireworks_mode(self):
-    """Enter fireworks mode — show preset menu."""
+    """Show the preset menu."""
     self.fireworks_menu = True
     self.fireworks_menu_sel = 0
     self._flash("Fireworks — select a show")
 
 
-
 def _exit_fireworks_mode(self):
-    """Exit fireworks mode."""
+    """Leave the mode and clear all particles."""
     self.fireworks_mode = False
     self.fireworks_menu = False
     self.fireworks_running = False
     self.fireworks_particles = []
     self.fireworks_rockets = []
     self._flash("Fireworks mode OFF")
-
 
 
 def _handle_fireworks_menu_key(self, key: int) -> bool:
@@ -301,7 +287,6 @@ def _handle_fireworks_menu_key(self, key: int) -> bool:
     return True
 
 
-
 def _handle_fireworks_key(self, key: int) -> bool:
     """Handle keys while in fireworks mode."""
     if key == -1:
@@ -326,16 +311,13 @@ def _handle_fireworks_key(self, key: int) -> bool:
         self._fireworks_init(self._fireworks_preset_id())
         self._flash("Reset!")
         return True
-    # Manual launch
     if key == ord("f") or key in (10, 13, curses.KEY_ENTER):
         self._fireworks_launch(self._fireworks_preset_id())
         return True
-    # Toggle auto-launch
     if key == ord("a"):
         self.fireworks_auto_launch = not self.fireworks_auto_launch
         self._flash(f"Auto-launch: {'ON' if self.fireworks_auto_launch else 'OFF'}")
         return True
-    # Gravity
     if key == ord("g"):
         self.fireworks_gravity = min(0.2, self.fireworks_gravity + 0.01)
         self._flash(f"Gravity: {self.fireworks_gravity:.2f}")
@@ -344,7 +326,6 @@ def _handle_fireworks_key(self, key: int) -> bool:
         self.fireworks_gravity = max(0.01, self.fireworks_gravity - 0.01)
         self._flash(f"Gravity: {self.fireworks_gravity:.2f}")
         return True
-    # Wind
     if key == ord("w"):
         self.fireworks_wind += 0.005
         self._flash(f"Wind: {self.fireworks_wind:.3f}")
@@ -353,7 +334,6 @@ def _handle_fireworks_key(self, key: int) -> bool:
         self.fireworks_wind -= 0.005
         self._flash(f"Wind: {self.fireworks_wind:.3f}")
         return True
-    # Launch rate
     if key == ord("l"):
         self.fireworks_launch_rate = min(0.5, self.fireworks_launch_rate + 0.02)
         self._flash(f"Launch rate: {self.fireworks_launch_rate:.2f}")
@@ -362,7 +342,6 @@ def _handle_fireworks_key(self, key: int) -> bool:
         self.fireworks_launch_rate = max(0.01, self.fireworks_launch_rate - 0.02)
         self._flash(f"Launch rate: {self.fireworks_launch_rate:.2f}")
         return True
-    # Speed
     if key == ord(">") or key == ord("+") or key == ord("="):
         self.fireworks_steps_per_frame = min(10, self.fireworks_steps_per_frame + 1)
         self._flash(f"Steps/frame: {self.fireworks_steps_per_frame}")
@@ -372,7 +351,6 @@ def _handle_fireworks_key(self, key: int) -> bool:
         self._flash(f"Steps/frame: {self.fireworks_steps_per_frame}")
         return True
     return True
-
 
 
 def _draw_fireworks_menu(self, max_y: int, max_x: int):
@@ -413,7 +391,7 @@ def _draw_fireworks_menu(self, max_y: int, max_x: int):
         "then fade with trailing sparks.",
         "",
         "Controls: f=launch, a=auto-launch, g/G=gravity, w/W=wind,",
-        "          l/L=launch rate, >/<=speed, r=reset, R=menu, q=exit",
+        "          l/L=launch rate, +/-=speed, n=step, r=reset, R=menu, q=exit",
     ]
     base_y = 5 + n + 1
     for i, line in enumerate(info_lines):
@@ -431,7 +409,6 @@ def _draw_fireworks_menu(self, max_y: int, max_x: int):
                            curses.color_pair(6) | curses.A_DIM)
     except curses.error:
         pass
-
 
 
 def _draw_fireworks(self, max_y: int, max_x: int):
@@ -479,7 +456,6 @@ def _draw_fireworks(self, max_y: int, max_x: int):
                 ch = spark_chars[0]
                 attr = curses.color_pair(color) | curses.A_DIM
 
-            # Crossette sub-rockets are brighter
             if kind == "crossette":
                 ch = "✦"
                 attr = curses.color_pair(color) | curses.A_BOLD
@@ -502,7 +478,6 @@ def _draw_fireworks(self, max_y: int, max_x: int):
                 self.stdscr.addstr(sr + 1, sc, ch, attr)
             except curses.error:
                 pass
-            # Rocket trail (a few chars below)
             for ti in range(1, 4):
                 tr = sr + ti
                 if 0 <= tr < view_rows:
@@ -544,7 +519,8 @@ def _draw_fireworks(self, max_y: int, max_x: int):
     if self.message and now - self.message_time < 3.0:
         hint = f" {self.message}"
     else:
-        hint = " [Space]=play [f]=launch [a]=auto [g/G]=grav [w/W]=wind [l/L]=rate [R]=menu [q]=exit"
+        hint = (" Space=play  f=launch  a=auto  g/G=gravity  w/W=wind  l/L=rate"
+                "  +/-=speed  r=reset  R=menu  q=exit")
     try:
         self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:
