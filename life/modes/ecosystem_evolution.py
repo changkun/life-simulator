@@ -832,12 +832,16 @@ def _evoeco_step(self):
 
                 # Convert some populations in specialized biomes
                 target_biome = random.choice(list(biomes_occupied))
-                converted = 0
-                for p in sp_pops:
-                    if biome[p["r"]][p["c"]] == target_biome and random.random() < 0.5:
-                        p["species_id"] = new_sp["id"]
-                        pop_grid[p["r"]][p["c"]] = new_sp["id"]
-                        converted += 1
+                in_target = [p for p in sp_pops
+                             if biome[p["r"]][p["c"]] == target_biome]
+                chosen = [p for p in in_target if random.random() < 0.5]
+                if not chosen:
+                    # A new species with no population would go extinct at once.
+                    chosen = [random.choice(in_target)]
+                converted = len(chosen)
+                for p in chosen:
+                    p["species_id"] = new_sp["id"]
+                    pop_grid[p["r"]][p["c"]] = new_sp["id"]
 
                 label = "Sympatric" if new_trophic == sp["trophic"] else "Trophic shift"
                 self.evoeco_log.append(
