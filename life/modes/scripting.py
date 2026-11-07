@@ -1,13 +1,8 @@
-"""Mode: scripting — Simulation Scripting & Choreography System.
-
-A meta-mode that lets users write and play back simple scripts (.show files)
-to orchestrate timed sequences of mode transitions, parameter sweeps,
-effect toggles, and layer changes.  Think of it as a programmable director
-for the entire simulation platform.
+"""Scripting & Choreography — plays .show scripts that sequence simulations, effects and parameter sweeps.
 
 Keybinding: Ctrl+U
 
-Example .show script (line-based DSL):
+Example .show script (one command per line):
 
     mode reaction_diffusion
     set feed 0.055 kill 0.062
@@ -23,15 +18,12 @@ Example .show script (line-based DSL):
 """
 
 import curses
-import math
 import os
-import re
 import time
 
 from life.constants import SPEEDS
-from life.modes.mashup import MASHUP_SIMS, _ENGINES
+from life.modes.mashup import _ENGINES
 from life.modes.post_processing import EFFECT_LIST
-from life.grid import Grid
 
 # ── Density characters for rendering ──
 _DENSITY = " ░▒▓█"
@@ -96,7 +88,7 @@ _SPEED_NAMES = {
 # ════════════════════════════════════════════════════════════════════
 
 def _parse_duration(s):
-    """Parse a duration string like '5s', '2.5s', '500ms' → seconds (float)."""
+    """Parse a duration such as '5s', '2.5s' or '500ms' into seconds."""
     s = s.strip().lower()
     if s.endswith("ms"):
         return float(s[:-2]) / 1000.0
@@ -108,13 +100,12 @@ def _parse_duration(s):
 def _parse_script(text):
     """Parse a .show script into a list of command dicts.
 
-    Returns list of dicts, each with a 'cmd' key and command-specific data.
-    Raises ValueError on parse errors.
+    Return a list of dicts, each with a 'cmd' key and command-specific data.
+    Raise ValueError on a syntax error.
     """
     commands = []
     for lineno, raw in enumerate(text.splitlines(), 1):
         line = raw.strip()
-        # Skip blank lines and comments
         if not line or line.startswith("#"):
             continue
         tokens = line.split()
@@ -379,7 +370,7 @@ loop
 # ════════════════════════════════════════════════════════════════════
 
 def _enter_scripting_mode(self):
-    """Enter Scripting & Choreography mode — show script selection menu."""
+    """Show the script menu."""
     self.script_menu = True
     self.script_menu_sel = 0
     self.script_menu_phase = 0  # 0=main menu, 1=load file prompt
@@ -388,7 +379,7 @@ def _enter_scripting_mode(self):
 
 
 def _exit_scripting_mode(self):
-    """Exit Scripting mode and clean up."""
+    """Leave Scripting & Choreography mode."""
     self.script_mode = False
     self.script_menu = False
     self.script_running = False
@@ -397,7 +388,6 @@ def _exit_scripting_mode(self):
     self.script_prev_density = None
     self.script_commands = []
     self.script_active_sweeps = []
-    # Clear any effects we turned on
     self.pp_active.clear()
     self._flash("Scripting mode OFF")
 
@@ -407,7 +397,7 @@ def _exit_scripting_mode(self):
 # ════════════════════════════════════════════════════════════════════
 
 def _script_init(self, script_text, script_name="Script"):
-    """Parse and initialize a script for playback."""
+    """Parse a script and start playing it. Return False on a parse error."""
     try:
         commands = _parse_script(script_text)
     except ValueError as e:
@@ -425,22 +415,20 @@ def _script_init(self, script_text, script_name="Script"):
     self.script_pause_start = 0.0
     self.script_name = script_name
     self.script_commands = commands
-    self.script_pc = 0  # program counter
+    self.script_pc = 0
     self.script_wait_until = 0.0
     self.script_generation = 0
-    self.script_active_sweeps = []  # list of active sweep animations
+    self.script_active_sweeps = []
     self.script_label = ""
     self.script_label_alpha = 0.0
     self.script_label_time = 0.0
     self.script_color = 6
     self.script_source = script_text
 
-    # Transition state
     self.script_crossfade = 0.0
     self.script_crossfade_duration = 0.0
     self.script_prev_density = None
 
-    # Simulation grid
     max_y, max_x = self.stdscr.getmaxyx()
     self.script_sim_rows = max(30, max_y)
     self.script_sim_cols = max(40, max_x // 2)
@@ -448,18 +436,16 @@ def _script_init(self, script_text, script_name="Script"):
     self.script_sim_id = ""
     self.script_density = None
 
-    # Execute commands up to the first wait/sweep (immediate setup)
     _script_execute_immediate(self)
     return True
 
 
 def _script_launch_sim(self, sim_id):
-    """Launch a new simulation engine."""
+    """Start a simulation engine, keeping the old density for the crossfade."""
     if sim_id not in _ENGINES:
         self._flash(f"Unknown engine: {sim_id}")
         return
 
-    # Save previous density for crossfade
     if self.script_density is not None:
         self.script_prev_density = [row[:] for row in self.script_density]
     else:
@@ -472,8 +458,7 @@ def _script_launch_sim(self, sim_id):
 
 
 def _script_execute_immediate(self):
-    """Execute commands starting at script_pc until we hit a blocking command
-    (wait, sweep) or reach the end."""
+    """Run commands from script_pc until a wait or sweep blocks or the script ends."""
     wraps = 0
     while self.script_pc < len(self.script_commands):
         cmd = self.script_commands[self.script_pc]
@@ -524,7 +509,6 @@ def _script_execute_immediate(self):
                 "start_time": time.monotonic(),
             }
             self.script_active_sweeps.append(sweep)
-            # Also set wait for the sweep duration
             self.script_wait_until = time.monotonic() + cmd["duration"]
             self.script_pc += 1
             return  # block until sweep completes
@@ -568,34 +552,30 @@ def _script_execute_immediate(self):
 
 
 def _script_step(self):
-    """Advance the script — step simulation, update sweeps and transitions."""
+    """Advance the script by one tick: step the engine, sweeps, fades and commands."""
     if not self.script_running or self.script_paused:
         return
 
     now = time.monotonic()
 
-    # Step the simulation engine if one is active
     if self.script_sim_state and self.script_sim_id:
         _, step_fn, dens_fn = _ENGINES[self.script_sim_id]
         step_fn(self.script_sim_state, None, 0.0)
         self.script_density = dens_fn(self.script_sim_state)
         self.script_generation += 1
 
-    # Update crossfade decay
     if self.script_crossfade > 0 and self.script_crossfade_duration > 0:
         decay_rate = 1.0 / (self.script_crossfade_duration * 20)
         self.script_crossfade = max(0.0, self.script_crossfade - decay_rate)
 
-    # Update active sweeps
     finished_sweeps = []
     for i, sweep in enumerate(self.script_active_sweeps):
         elapsed = now - sweep["start_time"]
         t = min(1.0, elapsed / max(0.01, sweep["duration"]))
-        # Smooth ease
+        # Smoothstep easing.
         t_smooth = t * t * (3.0 - 2.0 * t)
         val = sweep["from"] + (sweep["to"] - sweep["from"]) * t_smooth
 
-        # Apply the swept parameter
         pname = sweep["param"]
         if pname == "speed":
             self.speed_idx = max(0, min(len(SPEEDS) - 1, int(val)))
@@ -616,9 +596,7 @@ def _script_step(self):
         else:
             self.script_label_alpha = 0.0
 
-    # Check if we're waiting
     if now >= self.script_wait_until:
-        # Done waiting — advance to next commands
         _script_execute_immediate(self)
 
 
@@ -627,7 +605,7 @@ def _script_step(self):
 # ════════════════════════════════════════════════════════════════════
 
 def _draw_script_menu(self, max_y, max_x):
-    """Draw the script selection / load menu."""
+    """Draw the script menu."""
     self.stdscr.erase()
 
     # Title
@@ -694,7 +672,7 @@ def _draw_script_menu(self, max_y, max_x):
 
 
 def _draw_scripting(self, max_y, max_x):
-    """Draw the scripting playback — simulation with status and labels."""
+    """Draw the running simulation with its label and status bar."""
     self.stdscr.erase()
     color = self.script_color
 
@@ -771,7 +749,7 @@ def _draw_scripting(self, max_y, max_x):
 
 
 def _draw_script_label(self, max_y, max_x):
-    """Draw the label overlay."""
+    """Draw the label box."""
     alpha = self.script_label_alpha
     label = self.script_label
 
@@ -796,7 +774,7 @@ def _draw_script_label(self, max_y, max_x):
 
 
 def _draw_script_status(self, max_y, max_x):
-    """Draw the status bar at the bottom."""
+    """Draw the status bar on the last row."""
     paused_str = " PAUSED" if self.script_paused else ""
     finished_str = " FINISHED" if not self.script_running and self.script_mode else ""
 
@@ -805,7 +783,6 @@ def _draw_script_status(self, max_y, max_x):
     total = len(self.script_commands)
     cmd_info = ""
     if pc > 0 and pc <= total:
-        prev_cmd = self.script_commands[pc - 1]
         cmd_info = f"cmd {pc}/{total}"
 
     # Remaining wait time
@@ -821,7 +798,7 @@ def _draw_script_status(self, max_y, max_x):
     if wait_remaining > 0:
         status += f" │ wait {wait_remaining:.1f}s"
     status += f"{paused_str}{finished_str}"
-    status += " │ Space Pause │ n Skip │ r Restart │ Esc Exit "
+    status += " │ Space Pause │ n Skip │ r Restart │ s Source │ Esc Exit "
 
     if max_y > 0:
         try:
@@ -837,7 +814,7 @@ def _draw_script_status(self, max_y, max_x):
 # ════════════════════════════════════════════════════════════════════
 
 def _draw_script_source(self, max_y, max_x):
-    """Draw a source code overlay of the current script."""
+    """Draw the script source with the current line marked."""
     lines = self.script_source.splitlines()
     box_w = min(max_x - 4, 60)
     box_h = min(max_y - 4, len(lines) + 4)
@@ -889,7 +866,7 @@ def _draw_script_source(self, max_y, max_x):
 # ════════════════════════════════════════════════════════════════════
 
 def _handle_script_menu_key(self, key):
-    """Handle keys in the script selection menu."""
+    """Handle keys in the script menu."""
     if key == -1:
         return True
 
@@ -929,16 +906,14 @@ def _handle_script_menu_key(self, key):
 
 
 def _handle_script_key(self, key):
-    """Handle keys during script playback."""
+    """Handle keys during playback."""
     if key == -1:
         return True
 
-    # Escape / q = exit
     if key == 27 or key == ord("q"):
         _exit_scripting_mode(self)
         return True
 
-    # Space = pause/resume
     if key == ord(" "):
         if not self.script_paused:
             self.script_paused = True
@@ -954,20 +929,17 @@ def _handle_script_key(self, key):
                 sweep["start_time"] += shift
         return True
 
-    # n = skip current wait / advance
     if key == ord("n"):
         self.script_wait_until = 0.0
         self.script_active_sweeps.clear()
         _script_execute_immediate(self)
         return True
 
-    # r = restart script
     if key == ord("r"):
         if self.script_source:
             _script_init(self, self.script_source, self.script_name)
         return True
 
-    # s = toggle source view
     if key == ord("s"):
         self.script_show_source = not self.script_show_source
         return True
@@ -980,7 +952,7 @@ def _handle_script_key(self, key):
 # ════════════════════════════════════════════════════════════════════
 
 def register(App):
-    """Register scripting mode methods on the App class."""
+    """Register Scripting & Choreography methods on the App class."""
     App._enter_scripting_mode = _enter_scripting_mode
     App._exit_scripting_mode = _exit_scripting_mode
     App._script_init = _script_init
