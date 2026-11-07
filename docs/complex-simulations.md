@@ -1503,9 +1503,9 @@ Hypha lifecycle:
 
 ## Glacier Dynamics & Ice Age Cycles
 
-**Background.** Earth's climate oscillates between glacial and interglacial states on timescales of tens to hundreds of thousands of years, driven by the interplay of orbital mechanics, atmospheric composition, and ice-sheet feedback. Milutin Milankovitch identified three orbital parameters — eccentricity (~100 kyr), obliquity (~41 kyr), and precession (~23 kyr) — whose combined effect modulates high-latitude insolation sufficiently to trigger ice ages. But orbital forcing alone is too weak; amplifying feedbacks (ice-albedo, CO₂ greenhouse, thermohaline circulation changes) transform small insolation anomalies into hemisphere-spanning glaciations. This simulation couples all these mechanisms into a 60-band latitudinal cross-section from pole to equator, reproducing glacial/interglacial cycles, abrupt climate events (Heinrich iceberg surges, Dansgaard-Oeschger rapid warmings), and extreme states like Snowball Earth and the PETM hothouse.
+**Background.** Earth's climate oscillates between glacial and interglacial states on timescales of tens to hundreds of thousands of years, driven by the interplay of orbital mechanics, atmospheric composition, and ice-sheet feedback. Milutin Milankovitch identified three orbital parameters — eccentricity (~100 kyr), obliquity (~41 kyr), and precession (~23 kyr) — whose combined effect modulates high-latitude insolation sufficiently to trigger ice ages. But orbital forcing alone is too weak; amplifying feedbacks (ice-albedo, CO₂ greenhouse, thermohaline circulation changes) transform small insolation anomalies into hemisphere-spanning glaciations. This mode couples these mechanisms in a 60-band latitudinal cross-section from pole to equator. It covers glacial and interglacial states, abrupt events (Heinrich iceberg surges, Dansgaard-Oeschger warmings), and extreme states such as Snowball Earth and the PETM hothouse. One tick stands for an arbitrary span of time.
 
-**Formulation.** The model evolves 60 latitude bands (index 0 = pole, 59 = equator) each tick:
+**Formulation.** The model evolves 60 latitude bands (index 0 = pole, 59 = equator) each tick. Temperature is a normalized value (0 to 1.2), not degrees:
 
 ```
 Orbital forcing (Milankovitch):
@@ -1514,33 +1514,38 @@ Orbital forcing (Milankovitch):
   p(t) = 0.02 × sin(2π t/92  + φ_p)       precession (~23 kyr)
   ΔS(t) = e(t) + o(t) + p(t)              combined anomaly
 
-Insolation at latitude i:
-  S_base(i) = 1.0 × (0.2 + 0.8 × i/59)   cosine distribution
-  α(i) = 0.75 if ice > 0, else 0.25 (land) or 0.06 (ocean)
-  S_absorbed(i) = S_base(i) × (1 + ΔS × polar_weight) × (1 − α(i))
+Insolation at latitude i (polar_weight = 1 at the pole, 0 at the equator):
+  S_base(i) = 1.0 × (0.2 + 0.8 × i/59)
+  S(i)      = S_base(i) + (1.5·o + e + p) × polar_weight + 0.3·p
+  α(i)      = 0.75 where ice cover is full (ice ≥ 0.5), blended with land (0.25)
+              below that; ice-free bands mix land (0.25) and ocean (0.06),
+              with more ocean toward the equator
+  S_absorbed(i) = S(i) × (1 − α(i))
 
 CO₂ budget:
-  volcanic outgassing:  +V × volcanic_activity (default V = 0.08 ppm/tick)
+  volcanic outgassing:  +0.08 × volcanic multiplier ppm/tick
   silicate weathering:  −0.0003 × T_global × CO₂        (temperature-dependent sink)
-  ocean absorption:     −0.0001 × (CO₂ − 280)            (proportional to excess)
+  ocean absorption:     −0.0001 × (CO₂ − 280) × (1 + T_global)   (only above 280 ppm)
   anthropogenic:        +injection_rate                    (user-controllable)
   bounds: [150, 4000] ppm
 
-Temperature response:
-  T_target(i) = T_base(i) + 0.006 × (CO₂ − 280) − 0.6 × α_feedback(i) + D-O anomaly
-  T(i) → T(i) + 0.05 × (T_target − T)    (relaxation toward forcing)
-  meridional diffusion: D = 0.03
+Temperature response (dt = 0.25):
+  T_target(i) = 0.7 × S_absorbed(i) + 0.006 × (CO₂ − 280) + D-O warmth × (1 − 0.5 × i/59)
+  T(i) += dt × (0.05 × (T_target − T) + 0.03 × (T(i-1) + T(i+1) − 2T(i)))
+  (the second term is meridional heat diffusion)
 
-Ice dynamics:
-  growth:  if T(i) < freeze_threshold: ice(i) += 0.012 × (threshold − T) × dt
-  melt:    if T(i) > freeze_threshold: ice(i) −= 0.015 × (T − threshold) × dt
-  flow:    equatorward spreading at 0.02 × ice(i) per tick
-  calving: at margins with ice > 2.0, lose 15% stochastically
-  Heinrich surge: P = 0.003/tick for ice > 2.0, discharges 40% + freshwater cooling
-  bounds: [0, 3.0] km equivalent
+Ice dynamics, per band (freeze threshold = 0.25 + 0.1 × i/59):
+  growth:  if T < threshold: ice += 0.012 × (threshold − T) × (1 + 0.5 × (1 − i/59))
+  melt:    if T > threshold: ice −= 0.015 × (T − threshold) × (1 + 2 × CO₂ forcing)
+  flow:    each band passes 0.002 × ice to its equatorward neighbor
+  calving: above ice 2.0, lose 15% of the excess every tick
+  Heinrich surge: chance 0.003 × (max ice / 3) per tick while some band exceeds 2.0,
+           with a 30-tick cooldown. It discharges 40% of the ice in the polar quarter
+           of the bands and cools those bands by 0.03
+  bounds: [0, 3.0]
 
 Sea level:
-  ΔSL = −40 × Σ ice(i)    meters relative to baseline
+  ΔSL = −40 × mean(ice)    meters relative to baseline
 
 Isostatic adjustment:
   bedrock(i) → bedrock(i) + 0.003 × (−0.3 × ice(i) − bedrock(i))    depression/rebound
@@ -1552,32 +1557,32 @@ Dansgaard-Oeschger events:
 
 **Ice-albedo feedback.** This is the critical amplifying mechanism: ice (α = 0.75) reflects far more sunlight than ocean (0.06) or bare land (0.25). As ice advances equatorward, regional albedo rises, reducing absorbed insolation, lowering temperature, and promoting further ice growth — a positive feedback loop. In the Snowball Earth preset, this runaway is visible as ice rapidly engulfs mid-latitudes. Conversely, warming melts ice, darkening the surface, absorbing more heat, accelerating melt — the mechanism driving rapid deglaciation.
 
-**CO₂ coupling.** The carbon cycle acts as Earth's thermostat over geological time. Volcanic outgassing (controllable with `V`/`B`) adds CO₂; silicate weathering (Walker feedback: warmer → faster weathering → more CO₂ drawn down) and ocean absorption remove it. The greenhouse effect adds 0.006°C per ppm above the 280 ppm preindustrial baseline. In the PETM preset (1800 ppm), the extreme greenhouse forcing produces an ice-free hothouse. The Anthropogenic preset injects +3 ppm/tick to simulate fossil fuel emissions overwhelming natural sinks.
+**CO₂ coupling.** The carbon cycle acts as Earth's thermostat over geological time. Volcanic outgassing (controllable with `V`/`B`) adds CO₂; silicate weathering (Walker feedback: warmer → faster weathering → more CO₂ drawn down) and ocean absorption remove it. The greenhouse term adds 0.006 to the target temperature per ppm above the 280 ppm preindustrial baseline. In the PETM preset (1800 ppm), the extreme greenhouse forcing produces an ice-free hothouse. The Anthropogenic preset injects +3 ppm/tick to simulate fossil fuel emissions overwhelming natural sinks.
 
 **Abrupt climate events.** Two types of rapid oscillation are modeled atop the slow orbital cycles:
 
-- **Heinrich events** — when ice thickness exceeds 2.0 at a latitude band, there is a 0.3% chance per tick of a massive iceberg discharge (40% of ice volume), representing the collapse of the Laurentide ice sheet's Hudson Strait ice stream. The freshwater pulse cools regional temperatures, mimicking thermohaline disruption.
-- **Dansgaard-Oeschger (D-O) oscillations** — abrupt warming events (+0.08 anomaly) occurring at random intervals of 50–120 ticks, followed by gradual cooling (−0.002/tick). These reproduce the ~1,500-year quasi-periodic warmings recorded in Greenland ice cores. Can be manually triggered with `d`.
+- **Heinrich events** — when ice thickness exceeds 2.0 at a latitude band, there is a small chance per tick of an iceberg discharge (40% of the polar ice), like the collapse of the Laurentide ice sheet's Hudson Strait ice stream. The freshwater pulse cools the polar bands.
+- **Dansgaard-Oeschger (D-O) oscillations** — abrupt warming events (+0.08 warmth) at random intervals of 50-120 ticks, followed by gradual cooling (−0.002/tick). They stand in for the quasi-periodic warmings recorded in Greenland ice cores. Trigger one with `d`.
 
 **Presets (6):**
 
 | Preset | CO₂ (ppm) | Configuration |
 |--------|-----------|---------------|
-| Last Glacial Maximum | 190 | Peak ice extent, low CO₂, sea level −120m, Milankovitch at glacial phase — massive ice sheets from pole to mid-latitudes |
-| Holocene Optimum | 280 | Warm interglacial, minimal ice, high obliquity phase — modern-like conditions with retreated ice margin |
-| Snowball Earth Onset | 200 | Low CO₂ + low volcanic outgassing + high ice-albedo feedback — watch runaway glaciation engulf the equator |
-| PETM Hothouse | 1800 | Massive CO₂ release, zero ice, extreme warmth — represents the Paleocene-Eocene Thermal Maximum ~56 Ma |
-| Anthropogenic Rapid CO₂ Injection | 420 + 3/tick | Modern starting conditions with accelerating fossil fuel emissions — ice retreat accelerates as CO₂ accumulates |
-| Dansgaard-Oeschger Oscillations | 210 | Glacial baseline with enhanced D-O oscillation amplitude — abrupt warming/cooling cycles with Heinrich event coupling |
+| Last Glacial Maximum | 190 | Peak ice extent, low CO₂; thick ice over the polar 35% of the bands, with glacial-phase Milankovitch offsets |
+| Holocene Optimum | 280 | Warm interglacial, thin ice over the polar 8% of the bands, high obliquity phase |
+| Snowball Earth Onset | 200 | Low CO₂, volcanic outgassing at 0.3×, ice over the polar 45% of the bands, cooled start |
+| PETM Hothouse | 1800 | No ice, warm start, volcanic outgassing at 2.5×; models the Paleocene-Eocene Thermal Maximum (~56 Ma) |
+| Anthropogenic Rapid CO₂ Injection | 420 + 3/tick | Thin ice over the polar 10% of the bands, with a constant +3 ppm/tick injection |
+| Dansgaard-Oeschger Oscillations | 220 | Glacial baseline with ice over the polar 30% of the bands; the first D-O event comes after 20 ticks |
 
 **View modes (3, cycle with `v`):**
 1. **Polar-to-equator cross-section** — vertical profile showing ice sheet height (white `█▓▒░`), bedrock depression (brown), sea level line (blue `~`), temperature-colored background (blue=cold → red=warm), insolation indicators, and info panel with current CO₂/sea level/ice volume/climate state
 2. **Time-series sparkline dashboard** — 10 metrics tracked over 400-tick window using Unicode block elements (`▁▂▃▄▅▆▇█`): global temperature, CO₂ concentration, total ice volume, sea level, 65°N insolation, global albedo, ice extent (latitude bands with ice), weathering rate, D-O index, Heinrich event count
 3. **Orbital parameter & feedback diagram** — Milankovitch component phases (eccentricity, obliquity, precession) with bar charts showing current amplitude, feedback strength table (ice-albedo, CO₂ greenhouse, weathering thermostat, D-O warming), and climate state classification (glacial/interglacial/hothouse/snowball)
 
-**Controls:** `Space`=play/pause, `n`=step, `v`=cycle views, `+/-`=CO₂ injection rate, `V/B`=increase/decrease volcanic activity, `h`=trigger Heinrich event, `d`=trigger D-O warming, `r`=reset (return to preset menu), `q`=exit mode.
+**Controls:** `Space`=play/pause, `n`=step, `v`=cycle views, `+/-`=CO₂ injection rate (0-20 ppm/tick, steps of 0.5), `V/B`=raise/lower the volcanic multiplier (0-5, steps of 0.5), `h`=trigger Heinrich event, `d`=trigger D-O warming, `r`=reset, `R` or `m`=menu, `q`=exit.
 
-**What to look for.** In the Last Glacial Maximum preset, ice sheets dominate the polar half of the cross-section; switch to the time-series view to see CO₂ and temperature correlated in lockstep. Start the Snowball Earth preset and watch the ice-albedo runaway: ice advances equatorward, albedo rises, temperature drops, and the positive feedback drives ice to cover nearly all latitude bands — then increase volcanic activity with `V` to inject enough CO₂ to break out of the snowball state (this is thought to have actually happened ~700 Ma). In the PETM Hothouse, note the complete absence of ice and extremely high temperatures even at the poles. The Anthropogenic preset starts from modern conditions; watch CO₂ climb as the +3 ppm/tick injection overwhelms weathering and ocean sinks, driving rapid ice loss and sea level rise. The D-O Oscillations preset shows the sawtooth pattern of abrupt warming followed by gradual cooling, with occasional Heinrich events (visible as sudden ice volume drops) interrupting the pattern — these events are recorded in real ice cores as layers of ice-rafted debris across the North Atlantic.
+**What to look for.** In the Last Glacial Maximum preset, ice sheets dominate the polar half of the cross-section; switch to the time-series view to see CO₂ and temperature correlated in lockstep. Start the Snowball Earth preset and watch the ice-albedo runaway: ice advances equatorward, albedo rises, temperature drops, and the positive feedback drives ice to cover nearly all latitude bands — then raise volcanic activity with `V` to push CO₂ up (a snowball Earth is thought to have ended this way ~700 Ma). In the PETM Hothouse, there is no ice and temperatures are high even at the poles. The Anthropogenic preset starts from modern conditions; watch CO₂ climb as the +3 ppm/tick injection overwhelms weathering and ocean sinks, driving rapid ice loss and sea level rise. The D-O Oscillations preset shows the sawtooth pattern of abrupt warming followed by gradual cooling, with occasional Heinrich events (visible as sudden ice volume drops) interrupting the pattern — these events are recorded in real ice cores as layers of ice-rafted debris across the North Atlantic.
 
 **References.**
 - Milankovitch, M. "Canon of Insolation and the Ice-Age Problem." Royal Serbian Academy, 1941.
