@@ -1,8 +1,6 @@
-"""Mode: sortvis — simulation mode for the life package."""
+"""Sorting Algorithm Visualizer — classic sorts replayed step by step as animated bar charts."""
 import curses
-import math
 import random
-import time
 
 SORTVIS_PRESETS = [
     ("Bubble Sort", "Simple O(n^2) comparison sort — watch elements bubble up", "bubble"),
@@ -15,7 +13,7 @@ SORTVIS_PRESETS = [
 
 
 def _sortvis_generate_steps_bubble(arr: list[int]) -> list[tuple]:
-    """Generate all steps for bubble sort."""
+    """Return every step of a bubble sort."""
     a = arr[:]
     steps = []
     n = len(a)
@@ -32,7 +30,7 @@ def _sortvis_generate_steps_bubble(arr: list[int]) -> list[tuple]:
 
 
 def _sortvis_generate_steps_quick(arr: list[int]) -> list[tuple]:
-    """Generate all steps for quicksort (Lomuto partition)."""
+    """Return every step of a quicksort with Lomuto partitioning."""
     a = arr[:]
     steps = []
 
@@ -66,7 +64,7 @@ def _sortvis_generate_steps_quick(arr: list[int]) -> list[tuple]:
 
 
 def _sortvis_generate_steps_merge(arr: list[int]) -> list[tuple]:
-    """Generate all steps for merge sort."""
+    """Return every step of a merge sort."""
     a = arr[:]
     steps = []
 
@@ -76,7 +74,6 @@ def _sortvis_generate_steps_merge(arr: list[int]) -> list[tuple]:
         mid = (lo + hi) // 2
         merge_sort(lo, mid)
         merge_sort(mid + 1, hi)
-        # Merge
         left = a[lo:mid + 1]
         right = a[mid + 1:hi + 1]
         i = j = 0
@@ -104,7 +101,6 @@ def _sortvis_generate_steps_merge(arr: list[int]) -> list[tuple]:
             k += 1
 
     merge_sort(0, len(a) - 1)
-    # Mark all sorted at end
     for idx in range(len(a)):
         steps.append(("sorted", idx, a[:]))
     return steps
@@ -113,7 +109,7 @@ def _sortvis_generate_steps_merge(arr: list[int]) -> list[tuple]:
 
 
 def _sortvis_generate_steps_heap(arr: list[int]) -> list[tuple]:
-    """Generate all steps for heap sort."""
+    """Return every step of a heap sort."""
     a = arr[:]
     steps = []
     n = len(a)
@@ -135,10 +131,8 @@ def _sortvis_generate_steps_heap(arr: list[int]) -> list[tuple]:
             steps.append(("swap", root, largest, a[:]))
             heapify(size, largest)
 
-    # Build max heap
     for i in range(n // 2 - 1, -1, -1):
         heapify(n, i)
-    # Extract elements
     for i in range(n - 1, 0, -1):
         a[0], a[i] = a[i], a[0]
         steps.append(("swap", 0, i, a[:]))
@@ -151,7 +145,7 @@ def _sortvis_generate_steps_heap(arr: list[int]) -> list[tuple]:
 
 
 def _sortvis_generate_steps_radix(arr: list[int]) -> list[tuple]:
-    """Generate all steps for LSD radix sort."""
+    """Return every step of an LSD radix sort."""
     a = arr[:]
     steps = []
     if not a:
@@ -159,7 +153,6 @@ def _sortvis_generate_steps_radix(arr: list[int]) -> list[tuple]:
     max_val = max(a)
     exp = 1
     while max_val // exp > 0:
-        # Counting sort by current digit
         output = [0] * len(a)
         count = [0] * 10
         for i in range(len(a)):
@@ -185,7 +178,7 @@ def _sortvis_generate_steps_radix(arr: list[int]) -> list[tuple]:
 
 
 def _sortvis_generate_steps_shell(arr: list[int]) -> list[tuple]:
-    """Generate all steps for shell sort."""
+    """Return every step of a shell sort."""
     a = arr[:]
     steps = []
     n = len(a)
@@ -214,7 +207,7 @@ def _sortvis_generate_steps_shell(arr: list[int]) -> list[tuple]:
 
 
 def _enter_sortvis_mode(self):
-    """Enter Sorting Algorithm Visualizer — show preset menu."""
+    """Enter Sorting Algorithm Visualizer and show the preset menu."""
     self.sortvis_menu = True
     self.sortvis_menu_sel = 0
 
@@ -234,8 +227,7 @@ def _exit_sortvis_mode(self):
 
 
 def _sortvis_init(self, preset: str):
-    """Initialize sorting visualization from preset."""
-    import random as _rnd
+    """Start a new run of the chosen algorithm on a shuffled array."""
     rows, cols = self.stdscr.getmaxyx()
     self.sortvis_rows = rows
     self.sortvis_cols = cols
@@ -249,16 +241,15 @@ def _sortvis_init(self, preset: str):
     self.sortvis_done = False
     self.sortvis_algorithm = preset
 
-    # Size array to fit terminal width (each bar gets ~1-2 cols)
+    # One column per bar, so every bar fits on screen.
     self.sortvis_array_size = min(max(20, cols - 4), 200)
     max_val = max(10, rows - 6)
     self.sortvis_array = list(range(1, self.sortvis_array_size + 1))
-    # Scale values to fit display height
     for i in range(len(self.sortvis_array)):
         self.sortvis_array[i] = max(1, int(self.sortvis_array[i] * max_val / self.sortvis_array_size))
-    _rnd.shuffle(self.sortvis_array)
+    random.shuffle(self.sortvis_array)
 
-    # Pre-compute all sorting steps
+    # The whole sort is precomputed; the animation only replays it.
     generators = {
         "bubble": _sortvis_generate_steps_bubble,
         "quick": _sortvis_generate_steps_quick,
@@ -274,13 +265,12 @@ def _sortvis_init(self, preset: str):
 
 
 def _sortvis_step(self):
-    """Advance sorting visualization by one step."""
+    """Replay the next recorded step."""
     if self.sortvis_step_idx >= len(self.sortvis_steps):
         self.sortvis_done = True
         self.sortvis_running = False
         self.sortvis_highlight_cmp = ()
         self.sortvis_highlight_swap = ()
-        # Mark all sorted
         self.sortvis_sorted_indices = set(range(len(self.sortvis_array)))
         return
 
@@ -308,11 +298,8 @@ def _sortvis_step(self):
         self.sortvis_highlight_cmp = ()
         self.sortvis_swaps += 1
     elif kind == "sorted":
-        if len(step) == 3:
-            _, idx, arr = step
-            self.sortvis_array = arr
-        else:
-            _, idx, arr = step[0], step[1], step[2] if len(step) > 2 else self.sortvis_array
+        _, idx, arr = step
+        self.sortvis_array = arr
         self.sortvis_sorted_indices.add(idx)
         self.sortvis_highlight_cmp = ()
         self.sortvis_highlight_swap = ()
@@ -331,7 +318,7 @@ def _sortvis_step(self):
 
 
 def _handle_sortvis_menu_key(self, key: int) -> bool:
-    """Handle keys in the sorting visualizer preset menu."""
+    """Handle keys in the preset menu."""
     n = len(SORTVIS_PRESETS)
     if key in (curses.KEY_DOWN, ord('j')):
         self.sortvis_menu_sel = (self.sortvis_menu_sel + 1) % n
@@ -356,7 +343,7 @@ def _handle_sortvis_menu_key(self, key: int) -> bool:
 
 
 def _handle_sortvis_key(self, key: int) -> bool:
-    """Handle keys during sorting visualization."""
+    """Handle keys while a sort is replaying."""
     if key in (27, ord('q')):
         self._exit_sortvis_mode()
         return True
@@ -383,7 +370,7 @@ def _handle_sortvis_key(self, key: int) -> bool:
 
 
 def _draw_sortvis_menu(self, max_y: int, max_x: int):
-    """Draw the sorting visualizer preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Sorting Algorithm Visualizer ──"
     if max_x > len(title) + 2:
@@ -393,7 +380,6 @@ def _draw_sortvis_menu(self, max_y: int, max_x: int):
     if max_y > 3 and max_x > len(subtitle) + 2:
         self.stdscr.addstr(2, (max_x - len(subtitle)) // 2, subtitle, curses.A_DIM)
 
-    # ASCII art bars
     art = [
         "  ██                           ",
         "  ██ ██                        ",
@@ -447,7 +433,7 @@ def _draw_sortvis_menu(self, max_y: int, max_x: int):
 
 
 def _draw_sortvis(self, max_y: int, max_x: int):
-    """Draw the Sorting Algorithm Visualizer."""
+    """Draw the bars, status line and hint bar."""
     self.stdscr.erase()
     rows = min(max_y, self.sortvis_rows)
     cols = min(max_x, self.sortvis_cols)
@@ -462,7 +448,7 @@ def _draw_sortvis(self, max_y: int, max_x: int):
     if n == 0:
         return
 
-    # Reserve space: 1 line title, 1 line gap, bars area, 1 line baseline, 2 lines status
+    # Rows: title, gap, bars, baseline, status, hint.
     bar_area_top = 2
     bar_area_bottom = rows - 3
     bar_height_max = bar_area_bottom - bar_area_top
@@ -473,15 +459,13 @@ def _draw_sortvis(self, max_y: int, max_x: int):
 
     max_val = max(self.sortvis_array) if self.sortvis_array else 1
 
-    # Compute bar width and spacing
-    available_w = cols - 2  # margins
+    available_w = cols - 2
     bar_w = max(1, available_w // n)
     if bar_w > 3:
         bar_w = 3
     total_w = bar_w * n
     x_offset = max(1, (cols - total_w) // 2)
 
-    # Title
     algo_names = {"bubble": "Bubble Sort", "quick": "Quicksort", "merge": "Merge Sort",
                   "heap": "Heap Sort", "radix": "Radix Sort (LSD)", "shell": "Shell Sort"}
     title = algo_names.get(self.sortvis_algorithm, "Sorting")
@@ -492,13 +476,11 @@ def _draw_sortvis(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    # Determine color pairs available
     try:
         has_color = curses.has_colors()
     except curses.error:
         has_color = False
 
-    # Draw bars
     for i in range(n):
         val = self.sortvis_array[i]
         bar_h = max(1, int(val * bar_height_max / max_val))
@@ -507,28 +489,23 @@ def _draw_sortvis(self, max_y: int, max_x: int):
         if bx + bar_w > cols - 1:
             break
 
-        # Determine bar color/attribute
         attr = 0
         if i in self.sortvis_sorted_indices:
-            # Sorted — green/bold
             if has_color:
                 attr = curses.color_pair(3)  # green
             else:
                 attr = curses.A_DIM
         elif i in self.sortvis_highlight_swap:
-            # Swapping — red/reverse
             if has_color:
                 attr = curses.color_pair(2)  # red
             else:
                 attr = curses.A_REVERSE
         elif i in self.sortvis_highlight_cmp:
-            # Comparing — yellow/bold
             if has_color:
                 attr = curses.color_pair(4)  # yellow
             else:
                 attr = curses.A_BOLD
 
-        # Draw the bar (bottom-up)
         char = "█" if bar_w == 1 else "██" if bar_w == 2 else "███"
         for row_off in range(bar_h):
             y = bar_area_bottom - row_off
@@ -538,7 +515,6 @@ def _draw_sortvis(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    # Info panel
     if self.sortvis_show_info:
         progress = (self.sortvis_step_idx * 100 // max(1, len(self.sortvis_steps)))
         info_lines = [
@@ -561,7 +537,6 @@ def _draw_sortvis(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    # Status bar
     status_y = rows - 2
     state = "✓ DONE" if self.sortvis_done else ("▶ RUNNING" if self.sortvis_running else "⏸ PAUSED")
     progress = self.sortvis_step_idx * 100 // max(1, len(self.sortvis_steps))
@@ -574,7 +549,7 @@ def _draw_sortvis(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    hint = " Space=play n=step +/-=speed i=info r=reset R=menu q=exit"
+    hint = " Space=play  n=step  +/-=speed  i=info  r=reset  R=menu  q=exit"
     if status_y + 1 < max_y:
         try:
             self.stdscr.addstr(status_y + 1, 0, hint[:cols - 1], curses.A_DIM)
@@ -585,7 +560,7 @@ def _draw_sortvis(self, max_y: int, max_x: int):
 
 
 def register(App):
-    """Register sortvis mode methods on the App class."""
+    """Register Sorting Algorithm Visualizer mode on the App class."""
     App._sortvis_generate_steps_bubble = _sortvis_generate_steps_bubble
     App._sortvis_generate_steps_quick = _sortvis_generate_steps_quick
     App._sortvis_generate_steps_merge = _sortvis_generate_steps_merge
