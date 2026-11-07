@@ -1,9 +1,6 @@
-"""Mode: fourier — simulation mode for the life package."""
+"""Fourier Epicycle Drawing — a chain of rotating circles that redraws a path from its DFT."""
 import curses
 import math
-import math as _math
-import random
-import time
 
 FOURIER_PRESETS = [
     ("Circle", "Perfect circle — single epicycle", "circle"),
@@ -20,7 +17,7 @@ FOURIER_MAX_POINTS = 512
 
 
 def _draw_line_ascii(self, x0, y0, x1, y1, max_y, max_x):
-    """Draw a simple line between two points using Bresenham's algorithm."""
+    """Draw a dotted line between two screen cells (Bresenham)."""
     dx = abs(x1 - x0)
     dy = abs(y1 - y0)
     sx = 1 if x1 > x0 else -1
@@ -48,10 +45,7 @@ def _draw_line_ascii(self, x0, y0, x1, y1, max_y, max_x):
 
 
 def _fourier_dft(points):
-    """Compute Discrete Fourier Transform on a list of (x, y) complex points.
-
-    Returns list of (freq, amplitude, phase) sorted by amplitude descending.
-    """
+    """Return the DFT of (x, y) points as (freq, amp, phase, re, im), largest amplitude first."""
     N = len(points)
     if N == 0:
         return []
@@ -59,15 +53,15 @@ def _fourier_dft(points):
     for k in range(N):
         re, im = 0.0, 0.0
         for n in range(N):
-            angle = 2.0 * _math.pi * k * n / N
-            re += points[n][0] * _math.cos(angle) + points[n][1] * _math.sin(angle)
-            im += points[n][1] * _math.cos(angle) - points[n][0] * _math.sin(angle)
+            angle = 2.0 * math.pi * k * n / N
+            re += points[n][0] * math.cos(angle) + points[n][1] * math.sin(angle)
+            im += points[n][1] * math.cos(angle) - points[n][0] * math.sin(angle)
         re /= N
         im /= N
-        amp = _math.sqrt(re * re + im * im)
-        phase = _math.atan2(im, re)
+        amp = math.sqrt(re * re + im * im)
+        phase = math.atan2(im, re)
         coeffs.append((k, amp, phase, re, im))
-    # Sort by amplitude descending so largest circles come first
+    # Largest circles first, so dropping circles keeps the coarse shape.
     coeffs.sort(key=lambda c: -c[1])
     return coeffs
 
@@ -75,13 +69,13 @@ def _fourier_dft(points):
 
 
 def _fourier_generate_preset_path(preset, cx, cy, scale):
-    """Generate a list of (x,y) points for a given preset shape."""
+    """Return 128 (x, y) points tracing the named preset shape."""
     points = []
     steps = 128
     if preset == "circle":
         for i in range(steps):
-            t = 2.0 * _math.pi * i / steps
-            points.append((cx + scale * _math.cos(t), cy + scale * _math.sin(t)))
+            t = 2.0 * math.pi * i / steps
+            points.append((cx + scale * math.cos(t), cy + scale * math.sin(t)))
     elif preset == "square":
         side = steps // 4
         for i in range(side):
@@ -98,29 +92,29 @@ def _fourier_generate_preset_path(preset, cx, cy, scale):
             points.append((cx - scale + 2 * scale * f, cy - scale))
     elif preset == "star":
         for i in range(steps):
-            t = 2.0 * _math.pi * i / steps
+            t = 2.0 * math.pi * i / steps
             r = scale * (0.5 + 0.5 * (1.0 if (i * 10 // steps) % 2 == 0 else 0.4))
-            points.append((cx + r * _math.cos(t - _math.pi / 2), cy + r * _math.sin(t - _math.pi / 2)))
+            points.append((cx + r * math.cos(t - math.pi / 2), cy + r * math.sin(t - math.pi / 2)))
     elif preset == "figure8":
         for i in range(steps):
-            t = 2.0 * _math.pi * i / steps
-            points.append((cx + scale * _math.sin(t), cy + scale * _math.sin(t) * _math.cos(t)))
+            t = 2.0 * math.pi * i / steps
+            points.append((cx + scale * math.sin(t), cy + scale * math.sin(t) * math.cos(t)))
     elif preset == "heart":
         for i in range(steps):
-            t = 2.0 * _math.pi * i / steps
-            hx = 16 * _math.sin(t) ** 3
-            hy = -(13 * _math.cos(t) - 5 * _math.cos(2*t) - 2 * _math.cos(3*t) - _math.cos(4*t))
+            t = 2.0 * math.pi * i / steps
+            hx = 16 * math.sin(t) ** 3
+            hy = -(13 * math.cos(t) - 5 * math.cos(2*t) - 2 * math.cos(3*t) - math.cos(4*t))
             points.append((cx + hx * scale / 18, cy + hy * scale / 18))
     elif preset == "spiralsquare":
         for i in range(steps):
-            t = 2.0 * _math.pi * i / steps
-            r = scale * (0.3 + 0.7 * abs(_math.cos(2 * t)))
-            points.append((cx + r * _math.cos(t), cy + r * _math.sin(t)))
+            t = 2.0 * math.pi * i / steps
+            r = scale * (0.3 + 0.7 * abs(math.cos(2 * t)))
+            points.append((cx + r * math.cos(t), cy + r * math.sin(t)))
     else:
         # Default: circle
         for i in range(steps):
-            t = 2.0 * _math.pi * i / steps
-            points.append((cx + scale * _math.cos(t), cy + scale * _math.sin(t)))
+            t = 2.0 * math.pi * i / steps
+            points.append((cx + scale * math.cos(t), cy + scale * math.sin(t)))
     return points
 
 
@@ -148,7 +142,7 @@ def _exit_fourier_mode(self):
 
 
 def _fourier_init(self, preset: str):
-    """Initialize Fourier epicycle simulation from preset."""
+    """Start the named preset, or the drawing phase for "freedraw"."""
     rows, cols = self.grid.rows, self.grid.cols
     cx = cols / 2.0
     cy = rows / 2.0
@@ -180,7 +174,7 @@ def _fourier_init(self, preset: str):
     self.fourier_num_circles = len(self.fourier_coeffs)
     self.fourier_max_circles = self.fourier_num_circles
     N = len(self.fourier_path)
-    self.fourier_dt = 2.0 * _math.pi / N if N > 0 else 0.01
+    self.fourier_dt = 2.0 * math.pi / N if N > 0 else 0.01
     self.fourier_time = 0.0
     self.fourier_trace = []
     self.fourier_phase = "playing"
@@ -192,7 +186,7 @@ def _fourier_init(self, preset: str):
 
 
 def _fourier_start_playback(self):
-    """Compute DFT from drawn path and start playback."""
+    """Compute the DFT of the drawn path and start playback."""
     if len(self.fourier_path) < 3:
         return
     # The DFT is O(N^2), so thin out long drawings to keep playback start instant.
@@ -204,7 +198,7 @@ def _fourier_start_playback(self):
     self.fourier_num_circles = len(self.fourier_coeffs)
     self.fourier_max_circles = self.fourier_num_circles
     N = len(self.fourier_path)
-    self.fourier_dt = 2.0 * _math.pi / N if N > 0 else 0.01
+    self.fourier_dt = 2.0 * math.pi / N if N > 0 else 0.01
     self.fourier_time = 0.0
     self.fourier_trace = []
     self.fourier_phase = "playing"
@@ -214,7 +208,7 @@ def _fourier_start_playback(self):
 
 
 def _fourier_step(self):
-    """Advance the epicycle animation by one time step."""
+    """Advance the epicycle chain by one time step and extend the trace."""
     if not self.fourier_coeffs:
         return
     N = len(self.fourier_path)
@@ -227,8 +221,8 @@ def _fourier_step(self):
     for i in range(limit):
         freq, amp, phase, _re, _im = self.fourier_coeffs[i]
         angle = freq * self.fourier_time + phase
-        x += amp * _math.cos(angle)
-        y += amp * _math.sin(angle)
+        x += amp * math.cos(angle)
+        y += amp * math.sin(angle)
 
     self.fourier_trace.append((x, y))
     # Keep trace from getting too long (2 full cycles)
@@ -242,7 +236,7 @@ def _fourier_step(self):
 
 
 def _handle_fourier_menu_key(self, key: int) -> bool:
-    """Handle keys in the Fourier Epicycle preset menu."""
+    """Handle a key press in the preset menu."""
     n = len(FOURIER_PRESETS)
     if key in (curses.KEY_DOWN, ord('j')):
         self.fourier_menu_sel = (self.fourier_menu_sel + 1) % n
@@ -261,7 +255,7 @@ def _handle_fourier_menu_key(self, key: int) -> bool:
 
 
 def _handle_fourier_key(self, key: int) -> bool:
-    """Handle keys during Fourier epicycle simulation."""
+    """Handle a key press during playback or drawing."""
     if self.fourier_phase == "drawing":
         return _handle_fourier_drawing_key(self, key)
 
@@ -310,7 +304,7 @@ def _handle_fourier_key(self, key: int) -> bool:
 
 
 def _handle_fourier_drawing_key(self, key: int) -> bool:
-    """Handle keys during the free-draw phase."""
+    """Handle a key press in the free-draw phase."""
     if key in (27, ord('q')):
         self._exit_fourier_mode()
         return True
@@ -355,7 +349,7 @@ def _handle_fourier_drawing_key(self, key: int) -> bool:
 
 
 def _draw_fourier_menu(self, max_y: int, max_x: int):
-    """Draw the Fourier Epicycle preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "═══ Fourier Epicycle Drawing ═══"
     if max_x > len(title) + 2:
@@ -397,7 +391,7 @@ def _draw_fourier_menu(self, max_y: int, max_x: int):
 
 
 def _draw_fourier(self, max_y: int, max_x: int):
-    """Draw the Fourier epicycle simulation."""
+    """Draw the epicycles, the original path and the trace."""
     self.stdscr.erase()
 
     if self.fourier_phase == "drawing":
@@ -418,8 +412,8 @@ def _draw_fourier(self, max_y: int, max_x: int):
     for i in range(limit):
         freq, amp, phase, _re, _im = self.fourier_coeffs[i]
         angle = freq * self.fourier_time + phase
-        x += amp * _math.cos(angle)
-        y += amp * _math.sin(angle)
+        x += amp * math.cos(angle)
+        y += amp * math.sin(angle)
         chain.append((x, y))
 
     # Find bounding box of path + chain for auto-scaling
@@ -500,7 +494,7 @@ def _draw_fourier(self, max_y: int, max_x: int):
     # Info panel
     if self.fourier_show_info:
         info_y = 0
-        cycle_pct = (self.fourier_time / (2.0 * _math.pi)) * 100.0 if N > 0 else 0
+        cycle_pct = (self.fourier_time / (2.0 * math.pi)) * 100.0 if N > 0 else 0
         info_lines = [
             f"Fourier Epicycles: {self.fourier_num_circles}/{self.fourier_max_circles} circles",
             f"Points: {N}  Trace: {len(self.fourier_trace)}  Cycle: {cycle_pct:.0f}%",
@@ -571,7 +565,7 @@ def _draw_fourier_drawing(self, max_y: int, max_x: int):
 
 
 def register(App):
-    """Register fourier mode methods on the App class."""
+    """Register Fourier Epicycle Drawing methods on the App class."""
     App._draw_line_ascii = _draw_line_ascii
     App._fourier_dft = _fourier_dft
     App._fourier_generate_preset_path = _fourier_generate_preset_path
