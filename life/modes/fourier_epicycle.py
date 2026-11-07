@@ -373,7 +373,7 @@ def _draw_fourier_menu(self, max_y: int, max_x: int):
 
     start_y = 4
     for idx, (name, desc, _key) in enumerate(FOURIER_PRESETS):
-        if start_y + idx >= max_y - 3:
+        if start_y + idx * 2 + 1 >= max_y - 2:
             break
         marker = "▸ " if idx == self.fourier_menu_sel else "  "
         attr = curses.A_REVERSE if idx == self.fourier_menu_sel else 0
