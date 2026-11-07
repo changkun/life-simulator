@@ -35,7 +35,7 @@ Seeding places circular patches of V (with U about 0.5) into a uniform U=1, V=0 
 
 ## BZ Reaction
 
-**Background** — The Belousov-Zhabotinsky (BZ) reaction is the most famous example of a chemical oscillator. Discovered by Boris Belousov in 1951 and characterised by Anatol Zhabotinsky in the 1960s, it produces stunning spiral and target wave patterns in a dish of cerium/malonic-acid solution. The simulation uses an Oregonator-inspired three-variable model (activator, inhibitor, recovery) that captures the essential excitable-medium dynamics responsible for these self-organising waves.
+**Background** — The Belousov-Zhabotinsky (BZ) reaction is the most famous example of a chemical oscillator. Discovered by Boris Belousov in 1951 and characterised by Anatol Zhabotinsky in the 1960s, it produces stunning spiral and target wave patterns in a dish of cerium/malonic-acid solution. The simulation uses an Oregonator-inspired three-variable model (activator, inhibitor, recovery) that borrows the excitable-medium idea behind these self-organising waves.
 
 **Formulation** — Three coupled fields evolve on a 2D grid with wrapping boundaries:
 
@@ -56,9 +56,11 @@ Where:
   laplacian = 5-point stencil, wrapping boundaries
 ```
 
-Eight presets: Classic Spirals, Dense Spirals, Slow Waves, Turbulent, Target Waves, Multi-Spiral, Gentle Ripples and Fast Chaos. Each picks a start state: a spiral seed (broken wavefront that curls), a center blob (expanding rings), several spiral seeds, random seed patches, or random noise.
+Values are clamped to [0, 1] after each step. Eight presets: Classic Spirals, Dense Spirals, Slow Waves, Turbulent, Target Waves, Multi-Spiral, Gentle Ripples and Fast Chaos. Each picks a start state: a spiral seed (broken wavefront), a center blob, several spiral seeds, random seed patches, or random noise.
 
-**What to look for** — Spiral waves rotate around their free ends, annihilating when they collide — a hallmark of excitable media. Target waves expand as concentric rings from point sources. Increasing alpha sharpens wavefronts; decreasing gamma creates slower, broader waves. The "Turbulent" preset (alpha=1.4, D=0.1) shows spiral breakup into spatiotemporal chaos. Phase-based coloring maps activation states to a BZ-like color wheel: bright yellow wavefronts, cyan transitions, magenta refractory zones, and dark quiescent regions.
+This model has a uniform steady state, a = b = c = alpha / (1 + beta), and the diffusion term smooths the field toward it. The seeded fronts therefore fade within a few hundred steps and the whole grid settles to that one level; the model does not sustain rotating spirals or repeating target rings. `p` or a mouse click adds a new excitation patch, which spreads and fades the same way.
+
+**What to look for** — Watch the seeded wavefront spread and relax toward the uniform level while it lasts. The color follows the activator and the recovery variable: bright yellow for a > 0.7, cyan or red for medium activation, magenta or green for the transitional range, blue for deep refractory cells, and dark for quiescent cells. `a`/`A` lower or raise alpha, `g`/`G` gamma and `d`/`D` the diffusion; `+`/`-` set the steps per frame. Use `p` to re-excite the field and compare how the presets relax. Real BZ dishes sustain spirals and target rings; this three-variable model does not.
 
 **References**
 - Zhabotinsky, A. M. "A history of chemical oscillations and waves." *Chaos* 1 (1991): 379-386. https://doi.org/10.1063/1.857857
