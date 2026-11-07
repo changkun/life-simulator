@@ -801,9 +801,9 @@ Observables:
   Susceptibility: chi = N * (<m^2> - <m>^2) / T   [from fluctuations]
 ```
 
-Spin directions are rendered as 8-directional arrows, color-coded by local energy density. Domain walls (sites with large angular difference from neighbors) are highlighted in bright white.
+Spin directions are rendered as 8-directional arrows, color-coded by local energy density. Domain walls (sites with an angle difference above 0.6 pi to any neighbor) are highlighted in bright white.
 
-**What to look for** — "Ferromagnetic" shows uniform domains growing at low T. "Spin Glass (plus-minus J)" at low temperature shows a mosaic of frozen, frustrated domains that never fully order. "Quench to Glass" starts hot and drops to T=0.05, freezing a disordered state; watch the slow aging dynamics as the system explores its rugged energy landscape. "Vortex Patterns" reveals topological defects where the spin angle winds by 2-pi around a point. The statistics view shows magnetization, energy, and susceptibility time series.
+**What to look for** — "Ferromagnetic" shows uniform domains growing at low T. "Spin Glass (±J)" at low temperature shows a mosaic of frozen, frustrated domains that never fully order. "Quench to Glass" starts hot and drops to T=0.05, freezing a disordered state; watch the slow aging dynamics as the system explores its rugged energy landscape. "Vortex Patterns" reveals topological defects where the spin angle winds by 2-pi around a point. The statistics view shows magnetization, energy, and susceptibility time series. Press Q to quench to T=0.01 and a to raise T by 0.5.
 
 **References**
 - Edwards, S.F. and Anderson, P.W. "Theory of spin glasses," *Journal of Physics F*, 1975. https://doi.org/10.1088/0305-4608/5/5/017
