@@ -1,9 +1,6 @@
-"""Mode: ant — simulation mode for the life package."""
+"""Langton's Ant — ants turn by cell color and recolor cells, tracing highways on a torus."""
 import curses
-import math
-import random
 import time
-
 
 from life.constants import SPEEDS, SPEED_LABELS
 
@@ -18,7 +15,7 @@ ANT_PRESETS = [
     ("LRRL", "4-color — complex highway variant"),
 ]
 
-# Colors for ants and multi-state cells
+# Color pairs for ants and cell states.
 ANT_COLORS = [1, 2, 3, 4, 5, 6, 7, 8]
 
 
@@ -29,25 +26,21 @@ def _ant_step(self):
         color_state = self.ant_grid.get((r, c), 0)
         rule_len = len(self.ant_rule)
         turn = self.ant_rule[color_state % rule_len]
-        # Turn: R = clockwise, L = counterclockwise
-        # Directions: 0=up, 1=right, 2=down, 3=left
+        # Directions: 0=up, 1=right, 2=down, 3=left.
         if turn == "R":
             ant["dir"] = (ant["dir"] + 1) % 4
         else:  # L
             ant["dir"] = (ant["dir"] - 1) % 4
-        # Flip color to next state
         new_state = (color_state + 1) % rule_len
         if new_state == 0:
             self.ant_grid.pop((r, c), None)
         else:
             self.ant_grid[(r, c)] = new_state
-        # Move forward
         dr = [-1, 0, 1, 0]
         dc = [0, 1, 0, -1]
         ant["r"] = (r + dr[ant["dir"]]) % self.ant_rows
         ant["c"] = (c + dc[ant["dir"]]) % self.ant_cols
     self.ant_step_count += 1
-
 
 
 def _ant_init(self):
@@ -85,7 +78,7 @@ def _ant_init(self):
 
 
 def _enter_ant_mode(self):
-    """Enter Langton's Ant mode — show menu first."""
+    """Enter Langton's Ant mode and show the rule menu."""
     self.ant_menu = True
     self.ant_menu_sel = 0
     self._flash("Langton's Ant — select a rule")
@@ -104,7 +97,7 @@ def _exit_ant_mode(self):
 
 
 def _handle_ant_menu_key(self, key: int) -> bool:
-    """Handle keys in the ant rule selection menu."""
+    """Handle keys in the rule menu."""
     if key == -1:
         return True
     n_presets = len(self.ANT_PRESETS)
@@ -146,15 +139,12 @@ def _handle_ant_menu_key(self, key: int) -> bool:
             idx = choices.index(self.ant_steps_per_frame) if self.ant_steps_per_frame in choices else 0
             self.ant_steps_per_frame = choices[(idx + 1) % len(choices)]
             return True
-        elif self.ant_menu_sel == n_presets + 3:
-            # Start
-            pass
-        # Start the mode
+        # Remaining case: the Start item.
         self.ant_menu = False
         self.ant_mode = True
         self.ant_running = False
         self._ant_init()
-        self._flash(f"Langton's Ant [{self.ant_rule}] — Space=play, n=step, q=exit")
+        self._flash(f"Langton's Ant [{self.ant_rule}] — Space=play  n=step  q=exit")
         return True
     return True
 
@@ -215,7 +205,7 @@ def _handle_ant_key(self, key: int) -> bool:
 
 
 def _draw_ant_menu(self, max_y: int, max_x: int):
-    """Draw the Langton's Ant rule selection menu."""
+    """Draw the rule menu."""
     title = "── Langton's Ant ──"
     try:
         self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
@@ -282,7 +272,7 @@ def _draw_ant_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate [Enter]=select [q/Esc]=cancel"
+        hint = " j/k=move  Enter=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
@@ -292,7 +282,6 @@ def _draw_ant_menu(self, max_y: int, max_x: int):
 
 def _draw_ant(self, max_y: int, max_x: int):
     """Draw the Langton's Ant simulation."""
-    # Title bar
     n_ants = len(self.ant_ants)
     title = f" Langton's Ant [{self.ant_rule}]  Ants: {n_ants}  Step: {self.ant_step_count}  Steps/frame: {self.ant_steps_per_frame}"
     state = " PLAY" if self.ant_running else " PAUSE"
@@ -303,7 +292,6 @@ def _draw_ant(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    # Draw grid
     draw_start = 1
     draw_rows = max_y - 3
     draw_cols = (max_x - 1) // 2
@@ -328,7 +316,6 @@ def _draw_ant(self, max_y: int, max_x: int):
         screen_y = draw_start + y
         if screen_y >= max_y - 2:
             break
-        # Build the line character by character
         for x in range(draw_cols):
             col_idx = x
             if col_idx >= self.ant_cols:
@@ -358,7 +345,6 @@ def _draw_ant(self, max_y: int, max_x: int):
                     pass
             # state 0 = empty, just leave blank
 
-    # Status bar
     status_y = max_y - 2
     if status_y > 0:
         colored_cells = len(self.ant_grid)
@@ -369,14 +355,13 @@ def _draw_ant(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    # Hint bar
     hint_y = max_y - 1
     if hint_y > 0:
         now = time.monotonic()
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [+/-]=steps/frame [r]=reset [R]=menu [</>]=speed [q]=exit"
+            hint = " Space=play  n=step  +/-=steps/frame  </>=speed  r=reset  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
