@@ -677,6 +677,13 @@ def _draw_portal_horizontal(self, da, db, rows, cols, max_y, max_x):
 #  Simulation key handling
 # ════════════════════════════════════════════════════════════════════
 
+def _portal_restart(self, orientation):
+    """Re-initialize the current pair, keeping the coupling and bleed settings."""
+    coupling, bleed = self.portal_coupling, self.portal_bleed
+    self._portal_init(self.portal_sim_a_id, self.portal_sim_b_id, orientation)
+    self.portal_coupling, self.portal_bleed = coupling, bleed
+
+
 def _handle_portal_key(self, key):
     """Handle input during active portal simulation."""
     if key == -1:
@@ -709,9 +716,8 @@ def _handle_portal_key(self, key):
         self._flash(f"Bleed depth: {self.portal_bleed} cells")
         return True
     if key == ord("o"):
-        # Toggle orientation
         new_orient = "horizontal" if self.portal_orientation == "vertical" else "vertical"
-        self._portal_init(self.portal_sim_a_id, self.portal_sim_b_id, new_orient)
+        _portal_restart(self, new_orient)
         self._flash(f"Orientation: {new_orient}")
         return True
     if key == ord("0"):
@@ -723,8 +729,7 @@ def _handle_portal_key(self, key):
         self._flash("Coupling: 0.50 (default)")
         return True
     if key == ord("r"):
-        self._portal_init(self.portal_sim_a_id, self.portal_sim_b_id,
-                          self.portal_orientation)
+        _portal_restart(self, self.portal_orientation)
         self._flash("Reset!")
         return True
     if key == ord("R"):

@@ -91,3 +91,17 @@ def test_all_presets_init():
         assert app.portal_mode is True
         assert app.portal_sim_a is not None
         assert app.portal_sim_b is not None
+
+
+def test_reset_and_orient_keep_coupling_and_bleed():
+    """r and o restart the simulations but keep the tuned coupling and bleed."""
+    app = _make_app()
+    app._portal_init("gol", "wave", "vertical")
+    app.portal_coupling = 0.8
+    app.portal_bleed = 7
+    app._handle_portal_key(ord("r"))
+    assert (app.portal_coupling, app.portal_bleed) == (0.8, 7)
+    assert app.portal_generation == 0
+    app._handle_portal_key(ord("o"))
+    assert app.portal_orientation == "horizontal"
+    assert (app.portal_coupling, app.portal_bleed) == (0.8, 7)
