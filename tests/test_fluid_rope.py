@@ -430,6 +430,19 @@ def test_draw_simulation_no_crash():
     app._draw_fluidrope(40, 120)
 
 
+def test_draw_bar_shows_hints_then_info():
+    app = _make_app()
+    app._fluidrope_init("honey")
+    drawn = []
+    app.stdscr.addstr = lambda y, x, text, *a: drawn.append((y, text))
+    app._draw_fluidrope(40, 120)
+    assert any(y == 39 and "i=info" in t for y, t in drawn)
+    drawn.clear()
+    app._handle_fluidrope_key(ord('i'))
+    app._draw_fluidrope(40, 120)
+    assert any(y == 39 and "viscosity=" in t for y, t in drawn)
+
+
 def test_draw_simulation_small_terminal():
     app = _make_app()
     app._fluidrope_init("honey")

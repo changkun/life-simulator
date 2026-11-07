@@ -424,6 +424,22 @@ def _draw_fluidrope(self, max_y, max_x):
                     except curses.error:
                         pass
 
+    # ── Info / hint bar ──
+    if self.fluidrope_show_info:
+        bar = (f" {self.fluidrope_preset_name}  step {self.fluidrope_generation}"
+               f"  viscosity={self.fluidrope_viscosity:.1f}"
+               f"  flow={self.fluidrope_flow_rate:.1f}"
+               f"  height={self.fluidrope_pour_height:.2f}"
+               f"  surface speed={self.fluidrope_surface_move:+.1f}"
+               f"  steps/frame={self.fluidrope_speed}")
+    else:
+        bar = (" Space=play  n=step  +/-=speed  h/H=height  f/F=flow  v/V=viscosity"
+               "  s/S=slide  0=stop slide  i=info  r=reset  R=menu  q=exit")
+    try:
+        self.stdscr.addstr(rows - 1, 0, bar[:cols - 1], curses.A_DIM)
+    except curses.error:
+        pass
+
 
 def register(App):
     """Register fluidrope mode methods on the App class."""
