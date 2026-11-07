@@ -453,7 +453,8 @@ def _draw_terrarium_summary(self, max_y: int, max_x: int):
 
     lines = self.terrarium_catchup_summary
     visible = max_y - 5
-    scroll = self.terrarium_summary_scroll
+    scroll = min(self.terrarium_summary_scroll, max(0, len(lines) - visible))
+    self.terrarium_summary_scroll = scroll
 
     for i, line in enumerate(lines[scroll:scroll + visible]):
         y = 3 + i
@@ -507,9 +508,10 @@ def _draw_terrarium_chronicle_view(self, max_y: int, max_x: int):
             pass
     else:
         visible = max_y - 5
-        scroll = self.terrarium_summary_scroll
         # Show newest first
         entries = list(reversed(chronicle))
+        scroll = min(self.terrarium_summary_scroll, max(0, len(entries) - visible))
+        self.terrarium_summary_scroll = scroll
         for i, entry in enumerate(entries[scroll:scroll + visible]):
             y = 3 + i
             if y >= max_y - 2:

@@ -98,3 +98,31 @@ def test_enter_resets_chronicle_view(paths):
     app._exit_terrarium_mode()
     assert app.terrarium_mode is False
     assert app.terrarium_show_summary is False
+
+
+class _Screen:
+    def getmaxyx(self):
+        return 24, 80
+
+    def __getattr__(self, name):
+        return lambda *a, **k: None
+
+
+def test_summary_scroll_stops_at_last_line(paths, monkeypatch):
+    monkeypatch.setattr("curses.color_pair", lambda n: 0)
+    app = _make_app()
+    app.stdscr = _Screen()
+    app.tc_buf = []
+    app._tc_refresh = lambda: None
+    app.terrarium_mode = True
+    app.terrarium_show_summary = True
+    app.terrarium_catchup_summary = [f"line {i}" for i in range(30)]
+    for _ in range(100):
+        app._handle_terrarium_summary_key(258)  # KEY_DOWN
+    app._draw_terrarium_summary(24, 80)
+    assert app.terrarium_summary_scroll == 30 - (24 - 5)
+    app.terrarium_chronicle = [{"iso_time": "t", "generation": i, "detail": "d", "kind": "x"}
+                               for i in range(40)]
+    app.terrarium_summary_scroll = 500
+    app._draw_terrarium_chronicle_view(24, 80)
+    assert app.terrarium_summary_scroll == 40 - (24 - 5)
