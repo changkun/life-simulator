@@ -1,6 +1,6 @@
 # Scientific Guide
 
-Background, formulations, and references for each simulation mode.
+Background, formulations, and references for each simulation mode, grouped by the categories in the mode browser.
 
 ## Categories
 
@@ -19,11 +19,15 @@ Background, formulations, and references for each simulation mode.
 
 ## Structure
 
-Each mode entry has:
+Most mode entries have four parts:
 
-- **Background** — What it models, who developed it, why it matters
-- **Formulation** — Key equations and rules with all symbols defined
-- **What to look for** — Observable phenomena and parameter effects
-- **References** — Original literature
+- **Background** — what the mode models, who developed it, why it matters
+- **Formulation** — key equations and rules, with symbols defined
+- **What to look for** — observable phenomena and parameter effects
+- **References** — original literature
 
-Meta modes use a lighter format without formulations.
+Some entries add **Presets**.
+
+Meta modes use a lighter format: **Source** (the module), **Background**, **How it works**, **What to explore** and, for some, **Controls**. They have no formulations.
+
+Modes whose registry category is "Audio & Visual" are in Complex Simulations & Audio-Visual. Particle Collider (registry category "Physics & Math") is in Physics & Waves.
