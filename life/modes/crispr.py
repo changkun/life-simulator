@@ -214,8 +214,8 @@ def _random_seq(length):
 
 
 def _complement_seq(seq):
-    """Return the complementary strand."""
-    return [_COMPLEMENT[b] for b in seq]
+    """Return the complementary strand; deleted bases ('-') pair with 'N'."""
+    return [_COMPLEMENT.get(b, "N") for b in seq]
 
 
 def _find_pam_sites(seq):
@@ -710,8 +710,7 @@ def _crispr_step(self):
                         edit = _Edit(del_start, 'nhej_indel',
                                      old_bases, "-" * abs(indel_size), gen)
                         self.crispr_edits.append(edit)
-                    self.crispr_dna_comp = _complement_seq(
-                        [b if b != "-" else "N" for b in dna])
+                    self.crispr_dna_comp = _complement_seq(dna)
                     _add_event(self, gen,
                                f"NHEJ repair at {dsb.pos} — "
                                f"indel {indel_size:+d}bp"
