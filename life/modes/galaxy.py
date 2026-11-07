@@ -1,12 +1,8 @@
-"""Mode: galaxy — simulation mode for the life package."""
+"""Galaxy Formation — stars and gas orbiting in a dark matter halo, with spiral arms and mergers."""
 import curses
 import math
 import random
 import time
-
-
-from life.constants import DENSITY_CHARS
-from life.grid import Grid
 
 GALAXY_PRESETS = [
     ("Milky Way", "Classic barred spiral galaxy with 2 arms", "milky_way"),
@@ -21,7 +17,7 @@ GALAXY_PRESETS = [
 
 
 def _galaxy_build_particles(self, preset: str):
-    """Generate initial particle distribution for a galaxy preset."""
+    """Generate the initial particle distribution for a galaxy preset."""
     rows, cols = self.galaxy_rows, self.galaxy_cols
     cx, cy = cols / 2.0, rows / 2.0
     # Length scale for fixed-size structures (cores, bar, companion radius,
@@ -272,7 +268,7 @@ def _galaxy_build_particles(self, preset: str):
 
 
 def _galaxy_init(self, preset: str):
-    """Initialize galaxy simulation for a given preset."""
+    """Initialize the simulation for a preset."""
     max_y, max_x = self.stdscr.getmaxyx()
     self.galaxy_rows = max_y - 3
     self.galaxy_cols = (max_x - 1) // 2
@@ -294,7 +290,7 @@ def _galaxy_init(self, preset: str):
 
 
 def _galaxy_step(self):
-    """Advance galaxy simulation by one timestep using leapfrog integration."""
+    """Advance the simulation by one step using leapfrog integration."""
     particles = self.galaxy_particles
     if not particles:
         return
@@ -413,14 +409,14 @@ def _galaxy_step(self):
 
 
 def _enter_galaxy_mode(self):
-    """Enter galaxy formation mode."""
+    """Enter Galaxy Formation and show the preset menu."""
     self.galaxy_menu = True
     self.galaxy_menu_sel = 0
 
 
 
 def _exit_galaxy_mode(self):
-    """Exit galaxy formation mode and clean up."""
+    """Exit Galaxy Formation and free its state."""
     self.galaxy_mode = False
     self.galaxy_menu = False
     self.galaxy_running = False
@@ -431,7 +427,7 @@ def _exit_galaxy_mode(self):
 
 
 def _handle_galaxy_menu_key(self, key: int) -> bool:
-    """Handle input in galaxy preset menu."""
+    """Handle a key press in the preset menu."""
     n = len(self.GALAXY_PRESETS)
     if key == curses.KEY_UP or key == ord("k"):
         self.galaxy_menu_sel = (self.galaxy_menu_sel - 1) % n
@@ -452,7 +448,7 @@ def _handle_galaxy_menu_key(self, key: int) -> bool:
 
 
 def _handle_galaxy_key(self, key: int) -> bool:
-    """Handle input during galaxy simulation."""
+    """Handle a key press during the simulation."""
     if key == ord("q") or key == 27:
         self._exit_galaxy_mode()
         return True
@@ -462,7 +458,6 @@ def _handle_galaxy_key(self, key: int) -> bool:
     elif key == ord("n") or key == ord("."):
         self._galaxy_step()
     elif key == ord("r"):
-        # Reset with same preset
         for _n, _d, pid in self.GALAXY_PRESETS:
             if _n == self.galaxy_preset_name:
                 self._galaxy_init(pid)
@@ -515,7 +510,7 @@ def _handle_galaxy_key(self, key: int) -> bool:
 
 
 def _draw_galaxy_menu(self, max_y: int, max_x: int):
-    """Draw the galaxy formation preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Galaxy Formation ──"
     try:
@@ -574,12 +569,11 @@ def _draw_galaxy_menu(self, max_y: int, max_x: int):
 
 
 def _draw_galaxy(self, max_y: int, max_x: int):
-    """Draw the galaxy simulation."""
+    """Draw the simulation."""
     self.stdscr.erase()
     particles = self.galaxy_particles
     rows, cols = self.galaxy_rows, self.galaxy_cols
 
-    # Density characters (increasing density)
     DENSITY_CHARS = [" ", "·", "∘", "○", "◎", "●", "◉", "█"]
     ARROW_CHARS = ["→", "↗", "↑", "↖", "←", "↙", "↓", "↘"]
 
@@ -717,7 +711,8 @@ def _draw_galaxy(self, max_y: int, max_x: int):
     if self.message and time.monotonic() - self.message_time < 2.0:
         hint = f" {self.message}"
     else:
-        hint = " [Space]=play [n]=step [v]=view [g/G]=grav [d/D]=dt [w/W]=rot [f/F]=gas [h]=halo [R]=menu [q]=exit"
+        hint = (" Space=play  n=step  r=reset  R=menu  q=exit  v=view  g/G=gravity"
+                "  d/D=dt  w/W=rotation  f/F=gas  h=halo  +/-=steps/frame")
     hint_y = max_y - 2
     try:
         self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
@@ -726,7 +721,7 @@ def _draw_galaxy(self, max_y: int, max_x: int):
 
 
 def register(App):
-    """Register galaxy mode methods on the App class."""
+    """Register Galaxy Formation methods on the App class."""
     App.GALAXY_PRESETS = GALAXY_PRESETS
     App._galaxy_build_particles = _galaxy_build_particles
     App._galaxy_init = _galaxy_init
