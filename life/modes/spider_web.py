@@ -770,7 +770,7 @@ def _sweb_update_spider(self):
             if prey.alive and prey.trapped:
                 prey.wrapped = min(1.0, prey.wrapped + 0.05)
                 prey.struggle *= 0.9
-                spider.silk_reserve -= 0.3
+                spider.silk_reserve = max(0.0, spider.silk_reserve - 0.3)
                 spider.energy -= 0.002
                 if prey.wrapped >= 1.0:
                     spider.captures += 1
@@ -805,7 +805,7 @@ def _sweb_update_spider(self):
                     t.state = THREAD_OK
                     t.strength = max(0.3, t.strength * 0.7)  # patched, weaker
                     t.tension = 0.0
-                    spider.silk_reserve -= 3.0
+                    spider.silk_reserve = max(0.0, spider.silk_reserve - 3.0)
                     spider.repair_list.pop(0)
                     _sweb_build_adjacency(self)
                 else:

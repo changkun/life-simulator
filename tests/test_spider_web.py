@@ -42,3 +42,14 @@ class TestSwebLifecycle:
             for _ in range(200):
                 self.app._sweb_step()
             assert self.app.sweb_generation == 200
+
+
+class TestSwebSilk:
+    def test_silk_reserve_never_negative(self):
+        random.seed(5)
+        app = _make_app()
+        bonanza = next(i for i, p in enumerate(SWEB_PRESETS) if p[2] == "bonanza")
+        app._sweb_init(bonanza)
+        for _ in range(3000):
+            app._sweb_step()
+            assert app.sweb_spider.silk_reserve >= 0.0
