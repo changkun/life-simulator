@@ -51,6 +51,7 @@ class App:
         self.cursor_r = grid_rows // 2
         self.cursor_c = grid_cols // 2
         self.show_help = False
+        self.help_scroll = 0
         self.message = ""
         self.message_time = 0.0
         # Truecolor rendering
@@ -4444,7 +4445,16 @@ class App:
                 if self._handle_menu_key(key):
                     continue
             elif self.show_help:
-                if key != -1:
+                page = max(1, self.stdscr.getmaxyx()[0] - 2)
+                if key in (curses.KEY_UP, ord("k")):
+                    self.help_scroll -= 1
+                elif key in (curses.KEY_DOWN, ord("j")):
+                    self.help_scroll += 1
+                elif key == curses.KEY_PPAGE:
+                    self.help_scroll -= page
+                elif key == curses.KEY_NPAGE:
+                    self.help_scroll += page
+                elif key != -1:
                     self.show_help = False
                 continue
             else:
@@ -4497,6 +4507,7 @@ class App:
             sys.exit(0)
         if key == ord("?") or key == ord("h"):
             self.show_help = True
+            self.help_scroll = 0
             return True
         if key == ord("m"):
             self._dashboard_init()
@@ -6682,17 +6693,30 @@ class App:
             "║  q         Quit                                ║",
             "║  ? / h     Show this help                      ║",
             "║                                                ║",
-            "║  Press any key to close help                   ║",
+            "║  j/k or PgUp/PgDn scroll; other keys close     ║",
             "╚════════════════════════════════════════════════╝",
         ]
-        start_y = max(0, (max_y - len(help_lines)) // 2)
-        for i, line in enumerate(help_lines):
-            y = start_y + i
-            if y >= max_y:
-                break
+        if len(help_lines) <= max_y:
+            self.help_scroll = 0
+            start_y = (max_y - len(help_lines)) // 2
+            shown = help_lines
+        else:
+            # Too tall for the terminal: show a scrollable window and a footer.
+            rows = max(1, max_y - 1)
+            self.help_scroll = max(0, min(self.help_scroll, len(help_lines) - rows))
+            start_y = 0
+            shown = help_lines[self.help_scroll:self.help_scroll + rows]
+            footer = (f" lines {self.help_scroll + 1}-{self.help_scroll + len(shown)}"
+                      f" of {len(help_lines)}  j/k PgUp/PgDn=scroll  other keys close ")
+            try:
+                self.stdscr.addstr(max_y - 1, max(0, (max_x - len(footer)) // 2),
+                                   footer[:max_x - 1], curses.color_pair(7) | curses.A_REVERSE)
+            except curses.error:
+                pass
+        for i, line in enumerate(shown):
             x = max(0, (max_x - len(line)) // 2)
             try:
-                self.stdscr.addstr(y, x, line, curses.color_pair(7))
+                self.stdscr.addstr(start_y + i, x, line, curses.color_pair(7))
             except curses.error:
                 pass
 
