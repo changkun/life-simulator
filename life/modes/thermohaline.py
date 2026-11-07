@@ -1,25 +1,4 @@
-"""Mode: thermohaline — Ocean Thermohaline Circulation & Global Current System.
-
-Simulates a 2D global ocean with:
-- Thermohaline circulation driven by temperature and salinity density gradients
-  (cold salty water sinking at poles, warm surface return flow)
-- Wind-driven surface currents with Ekman transport and western boundary
-  intensification (Gulf Stream / Kuroshio analog) and subtropical gyres
-- Deep water formation zones: NADW (North Atlantic) and AABW (Antarctic)
-- Coastal & equatorial upwelling bringing nutrients to surface
-- ENSO oscillation: El Nino / La Nina Pacific thermocline seesaw
-- Freshwater hosing / AMOC shutdown from ice sheet meltwater
-
-Three views:
-  1) Global current map with temperature/salinity overlay + current arrows
-  2) Ocean cross-section depth profile showing conveyor belt circulation
-  3) Time-series sparkline graphs — 10 metrics
-
-Six presets:
-  Stable Modern Circulation, Gulf Stream Intensification, ENSO El Nino Event,
-  Glacial Meltwater Hosing / AMOC Shutdown, Anoxic Ocean Stratification,
-  Snowball Earth Frozen Ocean
-"""
+"""Ocean Thermohaline Circulation & Global Current System — density- and wind-driven ocean currents."""
 import curses
 import math
 import random
@@ -58,7 +37,6 @@ _TEMP_DIFF = 0.04            # thermal diffusion coefficient
 _SAL_DIFF = 0.02             # salinity diffusion (slower than heat)
 _WIND_STRESS = 0.06          # wind stress coupling to surface currents
 _CORIOLIS_SCALE = 0.12       # Coriolis parameter scaling
-_EKMAN_DEPTH = 3             # depth layers affected by Ekman transport
 _DENSITY_TEMP_COEFF = -0.15  # temperature effect on density (warmer = lighter)
 _DENSITY_SAL_COEFF = 0.20    # salinity effect on density (saltier = heavier)
 _GRAVITY_ACCEL = 0.10        # gravitational acceleration (scaled)
@@ -120,14 +98,14 @@ def _insolation(lat_frac):
 # ======================================================================
 
 def _enter_thermohaline_mode(self):
-    """Enter thermohaline circulation mode — show preset menu."""
+    """Enter Ocean Thermohaline Circulation mode and show the preset menu."""
     self.thermohaline_mode = True
     self.thermohaline_menu = True
     self.thermohaline_menu_sel = 0
 
 
 def _exit_thermohaline_mode(self):
-    """Exit thermohaline circulation mode."""
+    """Exit Ocean Thermohaline Circulation mode and drop its state."""
     self.thermohaline_mode = False
     self.thermohaline_menu = False
     self.thermohaline_running = False
@@ -144,7 +122,7 @@ def _exit_thermohaline_mode(self):
 # ======================================================================
 
 def _thermohaline_init(self, preset_idx: int):
-    """Initialize ocean thermohaline simulation for chosen preset."""
+    """Set up the ocean simulation for the chosen preset."""
     name, _desc, pid = THERMOHALINE_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(20, max_y - 4)
@@ -378,7 +356,7 @@ def _apply_preset(self, pid, rows, cols, depth):
 # ======================================================================
 
 def _thermohaline_step(self):
-    """Advance ocean simulation by one tick."""
+    """Advance the simulation by one tick."""
     rows = self.thermohaline_rows
     cols = self.thermohaline_cols
     depth = self.thermohaline_depth
@@ -446,13 +424,11 @@ def _thermohaline_step(self):
 
             # --- Temperature diffusion ---
             t_lap = 0.0
-            n_adj = 0
             for dr, dc in _NEIGHBORS_4:
                 rr = r + dr
                 cc = _wrap_col(c + dc, cols)
                 if 0 <= rr < rows and not land[rr][cc]:
                     t_lap += temp[rr][cc] - temp[r][c]
-                    n_adj += 1
 
             # --- Temperature advection ---
             t_adv = 0.0
@@ -636,7 +612,6 @@ def _thermohaline_step(self):
 
     # --- Update deep ocean ---
     for d in range(depth):
-        frac = (d + 1) / depth
         for r in range(rows):
             for c in range(cols):
                 if land[r][c]:
@@ -727,7 +702,7 @@ def _append_metric(hist, key, val):
 # ======================================================================
 
 def _handle_thermohaline_menu_key(self, key: int) -> bool:
-    """Handle keys in preset menu."""
+    """Handle keys in the preset menu."""
     if key == curses.KEY_UP or key == ord('k'):
         self.thermohaline_menu_sel = (self.thermohaline_menu_sel - 1) % len(THERMOHALINE_PRESETS)
         return True
@@ -745,7 +720,7 @@ def _handle_thermohaline_menu_key(self, key: int) -> bool:
 
 
 def _handle_thermohaline_key(self, key: int) -> bool:
-    """Handle keys during simulation."""
+    """Handle keys while the simulation is running."""
     if key == ord(' '):
         self.thermohaline_running = not self.thermohaline_running
         return True
@@ -792,7 +767,7 @@ def _handle_thermohaline_key(self, key: int) -> bool:
 # ======================================================================
 
 def _draw_thermohaline_menu(self, max_y: int, max_x: int):
-    """Draw the preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "Ocean Thermohaline Circulation & Global Current System"
     try:
@@ -822,7 +797,7 @@ def _draw_thermohaline_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hint = "[up/dn] select  [Enter] start  [q] back"
+    hint = "j/k=select  Enter=start  q=back"
     try:
         self.stdscr.addstr(max_y - 2, max(0, (max_x - len(hint)) // 2), hint,
                            curses.color_pair(7))
@@ -835,7 +810,7 @@ def _draw_thermohaline_menu(self, max_y: int, max_x: int):
 # ======================================================================
 
 def _draw_thermohaline(self, max_y: int, max_x: int):
-    """Dispatch to appropriate view drawer."""
+    """Draw the current view."""
     if self.thermohaline_view == "currents":
         _draw_currents_view(self, max_y, max_x)
     elif self.thermohaline_view == "crosssection":
@@ -860,18 +835,16 @@ _TEMP_GLYPHS = ' .,:;+=*#@'
 
 
 def _draw_currents_view(self, max_y: int, max_x: int):
-    """Render global current map with temperature/salinity overlay."""
+    """Draw the global current map."""
     self.stdscr.erase()
     rows = self.thermohaline_rows
     cols = self.thermohaline_cols
     temp = self.thermohaline_temp
-    sal = self.thermohaline_salinity
     u = self.thermohaline_u
     v = self.thermohaline_v
     w = self.thermohaline_w
     ice = self.thermohaline_ice
     land = self.thermohaline_land
-    nutrients = self.thermohaline_nutrients
 
     draw_rows = min(rows, max_y - 3)
     draw_cols = min(cols, max_x - 1)
@@ -946,11 +919,16 @@ def _draw_currents_view(self, max_y: int, max_x: int):
     state = "RUNNING" if self.thermohaline_running else "PAUSED"
     hosing = self.thermohaline_hosing_rate
     status = (f" {self.thermohaline_preset_name} | tick {gen} | {state} | "
-              f"AMOC:{amoc:.2f} | ENSO:{enso:+.2f} | hosing:{hosing:.3f} | "
-              f"[v]iew [+/-]hosing [space] [r]eset [q]uit")
+              f"AMOC:{amoc:.2f} | ENSO:{enso:+.2f} | hosing:{hosing:.3f}")
     try:
         self.stdscr.addstr(max_y - 2, 0, status[:max_x - 1],
                            curses.color_pair(7) | curses.A_BOLD)
+    except curses.error:
+        pass
+
+    keys = " q=exit  R=menu  Space=play  n=step  v=view  +/-=hosing  r=reset"
+    try:
+        self.stdscr.addstr(max_y - 3, 0, keys[:max_x - 1], curses.color_pair(7))
     except curses.error:
         pass
 
@@ -966,7 +944,7 @@ def _draw_currents_view(self, max_y: int, max_x: int):
 # ======================================================================
 
 def _draw_crosssection_view(self, max_y: int, max_x: int):
-    """Render ocean cross-section at selected latitude showing conveyor belt."""
+    """Draw the depth cross-section at the selected latitude."""
     self.stdscr.erase()
     rows = self.thermohaline_rows
     cols = self.thermohaline_cols
@@ -983,7 +961,7 @@ def _draw_crosssection_view(self, max_y: int, max_x: int):
     lat = _lat_fraction(xsec_r, rows)
     lat_deg = (0.5 - lat) * 180
 
-    title = f"Ocean Cross-Section at {lat_deg:+.0f} lat (row {xsec_r}) | [up/dn] move slice"
+    title = f"Ocean Cross-Section at {lat_deg:+.0f} lat (row {xsec_r}) | Up/Down=move slice"
     try:
         self.stdscr.addstr(0, 2, title, curses.A_BOLD | curses.color_pair(4))
     except curses.error:
@@ -1075,8 +1053,13 @@ def _draw_crosssection_view(self, max_y: int, max_x: int):
     gen = self.thermohaline_generation
     amoc = self.thermohaline_amoc_strength
     state = "RUNNING" if self.thermohaline_running else "PAUSED"
-    status = (f" Cross-Section | tick {gen} | {state} | AMOC:{amoc:.2f} | "
-              f"[up/dn]latitude [v]iew [+/-]hosing [space] [r]eset [q]uit")
+    status = f" Cross-Section | tick {gen} | {state} | AMOC:{amoc:.2f}"
+    keys = (" q=exit  R=menu  Space=play  n=step  Up/Down=latitude  v=view"
+            "  +/-=hosing  r=reset")
+    try:
+        self.stdscr.addstr(max_y - 3, 0, keys[:max_x - 1], curses.color_pair(7))
+    except curses.error:
+        pass
     try:
         self.stdscr.addstr(max_y - 2, 0, status[:max_x - 1],
                            curses.color_pair(7) | curses.A_BOLD)
@@ -1095,7 +1078,7 @@ def _draw_crosssection_view(self, max_y: int, max_x: int):
 # ======================================================================
 
 def _draw_graphs_view(self, max_y: int, max_x: int):
-    """Time-series sparkline graphs for ocean metrics."""
+    """Draw sparkline graphs of the ocean metrics."""
     self.stdscr.erase()
     hist = self.thermohaline_history
     graph_w = min(200, max_x - 30)
@@ -1157,7 +1140,7 @@ def _draw_graphs_view(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    status = "[v]iew [+/-]hosing [space]pause [r]estart [q]uit"
+    status = "q=exit  R=menu  Space=play  n=step  v=view  +/-=hosing  r=reset"
     try:
         self.stdscr.addstr(max_y - 1, 2, status[:max_x - 3], curses.color_pair(7))
     except curses.error:
@@ -1169,7 +1152,7 @@ def _draw_graphs_view(self, max_y: int, max_x: int):
 # ======================================================================
 
 def register(App):
-    """Register thermohaline circulation mode methods on the App class."""
+    """Register Ocean Thermohaline Circulation methods on the App class."""
     App.THERMOHALINE_PRESETS = THERMOHALINE_PRESETS
     App._enter_thermohaline_mode = _enter_thermohaline_mode
     App._exit_thermohaline_mode = _exit_thermohaline_mode
