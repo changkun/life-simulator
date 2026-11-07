@@ -234,13 +234,17 @@ Boris push (for each particle with charge q, mass m):
 
 Field configurations:
   Uniform:     Bz = const
-  Dipole:      Bz ~ 1/r^3
-  Bottle:      Bz = B0 * (1 + mirror_ratio * (2y/rows - 1)^2)
-  Quadrupole:  Bz ~ r (linearly increasing)
-  Shear:       Bz varies linearly with x
+  Dipole:      Bz ~ 1/r^3 (r clamped near the center), plus a weak
+               inward radial E field
+  Bottle:      Bz = B0 * (1 + mirror_ratio * (2y/rows - 1)^2), mirror_ratio = 3,
+               plus a small mirror force along y
+  Quadrupole:  Bz ~ r (linearly increasing), plus a weak inward E field
+  Shear:       Bz = B0 * (0.5 + 1.5 * x/cols)
+
+Particles reflect off the grid edges.
 ```
 
-**What to look for** — In "Cyclotron Motion," particles trace circular orbits whose radius depends on velocity. The "ExB Drift" preset shows how crossed electric and magnetic fields cause particles to drift perpendicular to both. In the "Magnetic Bottle," particles bounce between regions of strong B-field, demonstrating magnetic mirror trapping. The "Mixed Charges" preset shows opposite-charge particles gyrating in opposite directions.
+**What to look for** — In "Cyclotron Motion," particles trace circular orbits whose radius depends on velocity. The "ExB Drift" preset shows how crossed electric and magnetic fields cause particles to drift perpendicular to both. In the "Magnetic Bottle," the field is strongest at the top and bottom, so particles are turned back before they reach those ends (magnetic mirror trapping). The "Hall Effect" preset adds a sideways E field to B. The "Mixed Charges" preset shows opposite-charge particles gyrating in opposite directions.
 
 **References**
 - Boris, J.P. "Relativistic plasma simulation — optimization of a hybrid code," *Proc. Fourth Conference on Numerical Simulation of Plasmas*, 1970. https://apps.dtic.mil/sti/citations/ADA023511
