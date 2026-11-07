@@ -33,7 +33,7 @@ BEE_PRESETS = [
      "Cold season — bees cluster for warmth, limited foraging",
      "overwinter"),
     ("Swarm Departure",
-     "Colony splits — scouts search for new hive site",
+     "Mid-size colony on 8 scattered patches (swarming is not modelled)",
      "swarm"),
     ("Bear Attack Defense",
      "Predator intrusion — guards mobilize, foragers return to defend",
