@@ -487,7 +487,7 @@ def _handle_spacetime_menu_key(self, key: int) -> bool:
         self.spacetime_menu_sel = (self.spacetime_menu_sel + 1) % n
     elif key in (ord('k'), curses.KEY_UP):
         self.spacetime_menu_sel = (self.spacetime_menu_sel - 1) % n
-    elif key in (ord('\n'), ord('\r')):
+    elif key in (ord('\n'), ord('\r'), curses.KEY_ENTER):
         _spacetime_init(self, self.spacetime_menu_sel)
     elif key in (ord('q'), 27):
         self.spacetime_menu = False
@@ -518,7 +518,7 @@ def _handle_spacetime_key(self, key: int) -> bool:
         self.spacetime_cursor_c = (self.spacetime_cursor_c - 1) % cols
     elif key == curses.KEY_RIGHT or key == ord('d'):
         self.spacetime_cursor_c = (self.spacetime_cursor_c + 1) % cols
-    elif key in (ord('\n'), ord('\r'), ord('e')):
+    elif key in (ord('\n'), ord('\r'), curses.KEY_ENTER, ord('e')):
         cr, cc = self.spacetime_cursor_r, self.spacetime_cursor_c
         self.spacetime_cells[cr][cc] = 1 - self.spacetime_cells[cr][cc]
         if self.spacetime_cells[cr][cc]:
