@@ -1,8 +1,7 @@
-"""Mode: flythrough — simulation mode for the life package."""
+"""3D Terrain Flythrough — first-person flight over procedural terrain."""
 import curses
 import math
 import random
-import time
 
 FLYTHROUGH_PRESETS = [
     ("Rolling Hills", "Gentle grassy hills — easy flying", "hills"),
@@ -33,7 +32,7 @@ def _exit_flythrough_mode(self):
 
 
 def _flythrough_generate(self, size: int, terrain_type: str):
-    """Generate a heightmap for flythrough using layered noise."""
+    """Return a size x size heightmap in [0, 1] built from layered noise."""
     hmap = [[0.0] * size for _ in range(size)]
 
     def _noise_layer(freq: float, amp: float):
@@ -139,7 +138,7 @@ def _flythrough_generate(self, size: int, terrain_type: str):
 
 
 def _flythrough_get_height(self, x: float, z: float) -> float:
-    """Get interpolated terrain height at world position (x, z)."""
+    """Return the bilinearly interpolated terrain height at world position (x, z)."""
     hmap = self.flythrough_heightmap
     size = self.flythrough_map_size
     if not hmap:
@@ -167,7 +166,7 @@ def _flythrough_get_height(self, x: float, z: float) -> float:
 
 
 def _flythrough_init(self, preset_idx: int):
-    """Initialize 3D flythrough with chosen preset."""
+    """Start a flythrough over the chosen landscape."""
     name, _desc, ttype = self.FLYTHROUGH_PRESETS[preset_idx]
     self.flythrough_preset_name = name
     self.flythrough_generation = 0
@@ -198,7 +197,7 @@ def _flythrough_init(self, preset_idx: int):
 
 
 def _flythrough_step(self):
-    """Advance one frame: move camera forward along view direction."""
+    """Advance one frame: fly forward, and move the clock if auto-time is on."""
     spd = self.flythrough_cam_speed
     yaw = self.flythrough_cam_yaw
     pitch = self.flythrough_cam_pitch
@@ -225,7 +224,7 @@ def _flythrough_step(self):
 
 
 def _flythrough_get_sky_color(self) -> int:
-    """Get color pair for sky based on time of day."""
+    """Return the sky color attribute for the time of day."""
     t = self.flythrough_time
     # 0.0=midnight, 0.25=dawn, 0.5=noon, 0.75=dusk
     if 0.2 < t < 0.3:  # dawn
@@ -240,7 +239,7 @@ def _flythrough_get_sky_color(self) -> int:
 
 
 def _flythrough_terrain_char_and_color(self, h: float, dist: float) -> tuple:
-    """Get character and color for a terrain point based on height and distance."""
+    """Return the character and color for a terrain point by height and distance."""
     t = self.flythrough_time
     is_night = t < 0.2 or t > 0.8
 
@@ -292,7 +291,7 @@ def _flythrough_terrain_char_and_color(self, h: float, dist: float) -> tuple:
 
 
 def _flythrough_time_label(self) -> str:
-    """Return label for current time of day."""
+    """Return the clock time and phase of day as text."""
     t = self.flythrough_time
     hour = int(t * 24) % 24
     minute = int((t * 24 - hour) * 60) % 60
@@ -399,8 +398,6 @@ def _handle_flythrough_key(self, key: int) -> bool:
         self.flythrough_menu_sel = 0
     elif key in (ord("q"), 27):
         self._exit_flythrough_mode()
-    else:
-        return True
     return True
 
 
@@ -444,7 +441,7 @@ def _draw_flythrough_menu(self, max_y: int, max_x: int):
 
 
 def _draw_flythrough(self, max_y: int, max_x: int):
-    """Render 3D first-person terrain flythrough using perspective projection."""
+    """Draw the first-person terrain view."""
     self.stdscr.erase()
 
     view_h = max_y - 3  # rows for 3D viewport
@@ -464,7 +461,7 @@ def _draw_flythrough(self, max_y: int, max_x: int):
     sky_attr = self._flythrough_get_sky_color()
 
     # Determine horizon position based on pitch
-    # pitch=0 means horizon at center, negative pitch (looking down) raises horizon
+    # Negative pitch looks up and lowers the horizon on screen.
     horizon_row = int(view_h * 0.4 - pitch * view_h * 0.5)
     horizon_row = max(0, min(view_h - 1, horizon_row))
 
@@ -505,12 +502,6 @@ def _draw_flythrough(self, max_y: int, max_x: int):
             except curses.error:
                 pass
 
-    # Raycasting: for each column, cast a ray and for each row below horizon,
-    # determine what terrain point it hits
-    # We use a simple perspective projection approach
-    cos_yaw = math.cos(yaw)
-    sin_yaw = math.sin(yaw)
-
     # Precompute column angles
     col_angles = []
     for col in range(view_w):
@@ -540,19 +531,11 @@ def _draw_flythrough(self, max_y: int, max_x: int):
         pitch_factor = max(0.3, 1.0 + pitch * 0.5)
         dist *= pitch_factor
 
-        # Height at this distance: camera_y - terrain_height determines visibility
-        # The projected Y on screen depends on height difference and distance
-
-        for col in range(0, view_w, 1):
-            ray_cos, ray_sin = col_angles[min(col, len(col_angles) - 1)]
+        for col in range(view_w):
+            ray_cos, ray_sin = col_angles[col]
             world_x = cam_x + ray_cos * dist
             world_z = cam_z + ray_sin * dist
             terrain_h = self._flythrough_get_height(world_x, world_z)
-
-            # Perspective height check: would this terrain be visible at this screen row?
-            height_diff = cam_y - terrain_h
-            if height_diff < 0:
-                height_diff = 0
 
             ch, attr = self._flythrough_terrain_char_and_color(terrain_h, dist)
 
@@ -590,8 +573,8 @@ def _draw_flythrough(self, max_y: int, max_x: int):
         pass
 
     # Bottom help bar
-    help_text = (" WASD=move  ←→↑↓=look  e/c=alt  +/-=speed"
-                 "  t=auto-time  T=advance  f/F=FOV  r=reset  q=quit")
+    help_text = (" q=quit  Space=pause  WASD=move  arrows=look  e/c=alt  +/-=speed"
+                 "  t=auto-time  T=advance  f/F=FOV  r=reset")
     try:
         self.stdscr.addstr(max_y - 1, 0, help_text[:max_x - 1],
                            curses.color_pair(6) | curses.A_DIM)
