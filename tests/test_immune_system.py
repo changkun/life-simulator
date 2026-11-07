@@ -129,3 +129,34 @@ def test_vaccination_preset_has_memory():
                     for c in range(app.immune_cols)
                     if app.immune_grid[r][c] == ENT_MEMORY)
     assert mem_count > 0, "Vaccination preset should have memory cells"
+
+
+def test_immune_cell_moves_through_tissue():
+    """A neutrophil boxed in by tissue follows the cytokine gradient."""
+    from life.modes.immune_system import ENT_NEUTROPHIL
+    app = _make_app()
+    app._immune_init(0)
+    rows, cols = app.immune_rows, app.immune_cols
+    app.immune_grid = [[ENT_TISSUE] * cols for _ in range(rows)]
+    for field in (app.immune_cytokine, app.immune_il6, app.immune_antibody):
+        for row in field:
+            row[:] = [0.0] * cols
+    r, c = rows // 2, cols // 2
+    app.immune_grid[r][c] = ENT_NEUTROPHIL
+    app.immune_cytokine[r][c + 1] = 1.0
+    app._immune_step()
+    pos = [(i, j) for i in range(rows) for j in range(cols)
+           if app.immune_grid[i][j] == ENT_NEUTROPHIL]
+    assert pos and pos[0] != (r, c)
+
+
+def test_infection_is_cleared_in_normal_preset():
+    """The immune response kills pathogens and makes antibodies."""
+    import random
+    random.seed(1)
+    app = _make_app()
+    app._immune_init(0)
+    for _ in range(300):
+        app._immune_step()
+    assert app.immune_stats["pathogens_killed"] > 0
+    assert app.immune_stats["antibodies_made"] > 0

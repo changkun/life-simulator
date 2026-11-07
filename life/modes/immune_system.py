@@ -149,6 +149,11 @@ _NBRS8 = [(-1, -1), (-1, 0), (-1, 1), (0, -1),
            (0, 1), (1, -1), (1, 0), (1, 1)]
 
 
+# Cells a motile immune cell can move into. It swaps places with tissue,
+# since tissue fills most of the grid and empty space is not connected.
+_PASSABLE = (ENT_EMPTY, ENT_DEBRIS, ENT_TISSUE)
+
+
 def _empty_adj(grid, r, c, rows, cols, include_tissue=False):
     """Return list of adjacent empty (or tissue if allowed) positions."""
     out = []
@@ -170,7 +175,7 @@ def _move_toward_gradient(grid, field, r, c, rows, cols):
         nr, nc = r + dr, c + dc
         if 0 <= nr < rows and 0 <= nc < cols:
             v = field[nr][nc]
-            if v > best_val and grid[nr][nc] in (ENT_EMPTY, ENT_DEBRIS):
+            if v > best_val and grid[nr][nc] in _PASSABLE:
                 best_val = v
                 candidates.append((nr, nc, v))
     if candidates:
@@ -518,24 +523,18 @@ def _immune_step(self):
                 # Replicate (slowed if opsonized)
                 rep_rate = replicate_rate * (0.4 if opsonized else 1.0)
                 if random.random() < rep_rate:
-                    targets = _empty_adj(grid, r, c, rows, cols,
-                                         include_tissue=True)
+                    targets = _empty_adj(grid, r, c, rows, cols)
                     if targets:
                         nr, nc = random.choice(targets)
                         new_ag = ag_map[r][c]
                         if random.random() < mutate_rate:
                             new_ag ^= (1 << random.randint(0,
                                                            ANTIGEN_BITS - 1))
-                        if grid[nr][nc] == ENT_TISSUE:
-                            stats["tissue_lost"] += 1
                         spawns.append((nr, nc, ENT_BACTERIA, new_ag, 0))
                 elif random.random() < 0.3:
-                    adj = _empty_adj(grid, r, c, rows, cols,
-                                     include_tissue=True)
+                    adj = _empty_adj(grid, r, c, rows, cols)
                     if adj:
                         nr, nc = random.choice(adj)
-                        if grid[nr][nc] == ENT_TISSUE:
-                            stats["tissue_lost"] += 1
                         moves.append((r, c, nr, nc))
 
             elif et == ENT_VIRUS:
@@ -628,7 +627,7 @@ def _immune_step(self):
                 if not killed_any and target:
                     moves.append((r, c, target[0], target[1]))
                 elif not killed_any and random.random() < 0.4:
-                    adj = _empty_adj(grid, r, c, rows, cols)
+                    adj = _empty_adj(grid, r, c, rows, cols, include_tissue=True)
                     if adj:
                         nr, nc = random.choice(adj)
                         moves.append((r, c, nr, nc))
@@ -664,7 +663,7 @@ def _immune_step(self):
                 if not ate and target:
                     moves.append((r, c, target[0], target[1]))
                 elif not ate and random.random() < 0.2:
-                    adj = _empty_adj(grid, r, c, rows, cols)
+                    adj = _empty_adj(grid, r, c, rows, cols, include_tissue=True)
                     if adj:
                         nr, nc = random.choice(adj)
                         moves.append((r, c, nr, nc))
@@ -697,7 +696,7 @@ def _immune_step(self):
                         if target:
                             moves.append((r, c, target[0], target[1]))
                         else:
-                            adj = _empty_adj(grid, r, c, rows, cols)
+                            adj = _empty_adj(grid, r, c, rows, cols, include_tissue=True)
                             if adj:
                                 nr, nc = random.choice(adj)
                                 moves.append((r, c, nr, nc))
@@ -709,7 +708,7 @@ def _immune_step(self):
                     for dr, dc in _NBRS4:
                         nr, nc = r + dr, c + dc
                         if (0 <= nr < rows and 0 <= nc < cols
-                                and grid[nr][nc] in (ENT_EMPTY, ENT_DEBRIS)):
+                                and grid[nr][nc] in _PASSABLE):
                             if nc > best_c_val:
                                 best = (nr, nc)
                                 best_c_val = nc
@@ -798,7 +797,7 @@ def _immune_step(self):
 
                 if grid[r][c] == ENT_NAIVE_T:
                     if random.random() < 0.15:
-                        adj = _empty_adj(grid, r, c, rows, cols)
+                        adj = _empty_adj(grid, r, c, rows, cols, include_tissue=True)
                         if adj:
                             nr, nc = random.choice(adj)
                             moves.append((r, c, nr, nc))
@@ -857,7 +856,7 @@ def _immune_step(self):
                 if target:
                     moves.append((r, c, target[0], target[1]))
                 elif random.random() < 0.15:
-                    adj = _empty_adj(grid, r, c, rows, cols)
+                    adj = _empty_adj(grid, r, c, rows, cols, include_tissue=True)
                     if adj:
                         nr, nc = random.choice(adj)
                         moves.append((r, c, nr, nc))
@@ -908,7 +907,7 @@ def _immune_step(self):
                     if target:
                         moves.append((r, c, target[0], target[1]))
                     elif random.random() < 0.2:
-                        adj = _empty_adj(grid, r, c, rows, cols)
+                        adj = _empty_adj(grid, r, c, rows, cols, include_tissue=True)
                         if adj:
                             nr, nc = random.choice(adj)
                             moves.append((r, c, nr, nc))
@@ -961,7 +960,7 @@ def _immune_step(self):
                 if not is_activated and target:
                     moves.append((r, c, target[0], target[1]))
                 elif not is_activated and random.random() < 0.12:
-                    adj = _empty_adj(grid, r, c, rows, cols)
+                    adj = _empty_adj(grid, r, c, rows, cols, include_tissue=True)
                     if adj:
                         nr, nc = random.choice(adj)
                         moves.append((r, c, nr, nc))
@@ -1005,7 +1004,7 @@ def _immune_step(self):
 
                 # Slow patrol
                 if random.random() < 0.04:
-                    adj = _empty_adj(grid, r, c, rows, cols)
+                    adj = _empty_adj(grid, r, c, rows, cols, include_tissue=True)
                     if adj:
                         nr, nc = random.choice(adj)
                         moves.append((r, c, nr, nc))
@@ -1034,14 +1033,17 @@ def _immune_step(self):
         if ((r, c) in killed_set or (r, c) in moved_from
                 or (nr, nc) in moved_to or (nr, nc) in killed_set):
             continue
-        if grid[nr][nc] not in (ENT_EMPTY, ENT_DEBRIS):
+        dest = grid[nr][nc]
+        if dest not in _PASSABLE:
             continue
-        grid[nr][nc] = grid[r][c]
+        mover = grid[r][c]
+        grid[nr][nc] = mover
         ag_map[nr][nc] = ag_map[r][c]
         rec_map[nr][nc] = rec_map[r][c]
         age[nr][nc] = age[r][c]
         activated[nr][nc] = activated[r][c]
-        grid[r][c] = ENT_EMPTY
+        # A cell that moves into tissue swaps places with it.
+        grid[r][c] = ENT_TISSUE if dest == ENT_TISSUE else ENT_EMPTY
         ag_map[r][c] = 0
         rec_map[r][c] = 0
         age[r][c] = 0
