@@ -426,3 +426,13 @@ def test_menu_select_keypad_enter():
     app._enter_raymarch_mode()
     app._handle_raymarch_menu_key(curses.KEY_ENTER)
     assert app.raymarch_mode is True
+
+
+def test_key_light_elevation_wraps():
+    app = _make_app()
+    app._raymarch_init(0)
+    app.raymarch_light_phi = 1.45
+    app._handle_raymarch_key(ord("L"))
+    assert app.raymarch_light_phi == 0.0
+    app._handle_raymarch_key(ord("L"))
+    assert app.raymarch_light_phi > 0.0

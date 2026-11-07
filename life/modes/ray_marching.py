@@ -208,7 +208,10 @@ def _handle_raymarch_key(self, key: int) -> bool:
         self.raymarch_light_theta += 0.2
         self._flash("Light rotated")
     elif key == ord("L"):
-        self.raymarch_light_phi = min(1.5, self.raymarch_light_phi + 0.15)
+        # Raise the light; wrap to the horizon so the key never gets stuck.
+        phi = self.raymarch_light_phi + 0.15
+        self.raymarch_light_phi = phi if phi <= 1.5 else 0.0
+        self._flash("Light raised")
     elif key == ord("p"):
         if self.raymarch_scene == "mandelbulb":
             self.raymarch_mandelbulb_power = max(2.0, self.raymarch_mandelbulb_power - 0.5)
