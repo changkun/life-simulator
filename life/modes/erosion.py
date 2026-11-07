@@ -1,22 +1,22 @@
-"""Mode: erosion — simulation mode for the life package."""
+"""Erosion Patterns — rain, flow and sediment carve a heightmap into river networks."""
 import curses
 import math
 import random
 import time
 
-
 from life.constants import SPEEDS
 
+
 def _enter_erosion_mode(self):
-    """Enter Hydraulic Erosion mode — show preset menu."""
+    """Enter Erosion Patterns — show the preset menu."""
     self.erosion_menu = True
     self.erosion_menu_sel = 0
-    self._flash("Hydraulic Erosion — select a scenario")
+    self._flash("Erosion Patterns — select a scenario")
 
 
 
 def _exit_erosion_mode(self):
-    """Exit Hydraulic Erosion mode."""
+    """Exit Erosion Patterns."""
     self.erosion_mode = False
     self.erosion_menu = False
     self.erosion_running = False
@@ -31,9 +31,8 @@ def _erosion_generate_terrain(self, rows: int, cols: int, terrain_type: str) -> 
     """Generate a heightmap using layered noise (diamond-square inspired)."""
     terrain = [[0.0] * cols for _ in range(rows)]
 
-    # Use multiple octaves of random smooth noise
     def _smooth_noise(freq: float, amp: float):
-        # Generate sparse random grid then interpolate
+        # Sparse random grid, bilinearly interpolated up to the full size.
         sr = max(2, int(rows / freq))
         sc = max(2, int(cols / freq))
         sparse_r = max(2, rows // sr + 2)
@@ -49,7 +48,6 @@ def _erosion_generate_terrain(self, rows: int, cols: int, terrain_type: str) -> 
                 c1 = (c0 + 1) % sparse_c
                 fr = gr - int(gr)
                 fc = gc - int(gc)
-                # Bilinear interpolation
                 top = sparse[r0][c0] * (1 - fc) + sparse[r0][c1] * fc
                 bot = sparse[r1][c0] * (1 - fc) + sparse[r1][c1] * fc
                 val = top * (1 - fr) + bot * fr
@@ -124,7 +122,7 @@ def _erosion_generate_terrain(self, rows: int, cols: int, terrain_type: str) -> 
 
 
 def _erosion_init(self, preset_idx: int):
-    """Initialize hydraulic erosion simulation with the given preset."""
+    """Start the erosion simulation with the given preset."""
     (name, _desc, rain, evap, sol, dep, ttype) = self.EROSION_PRESETS[preset_idx]
     self.erosion_preset_name = name
     self.erosion_generation = 0
@@ -152,7 +150,7 @@ def _erosion_init(self, preset_idx: int):
 
 
 def _erosion_step(self):
-    """Advance hydraulic erosion by one step.
+    """Advance the erosion simulation by one step.
 
     Simplified shallow-water erosion model:
     1. Rain — add water uniformly (with slight randomness)
@@ -325,8 +323,6 @@ def _handle_erosion_key(self, key: int) -> bool:
         self.speed_idx = min(len(SPEEDS) - 1, self.speed_idx + 1)
     elif key in (ord("q"), 27):
         self._exit_erosion_mode()
-    else:
-        return True
     return True
 
 
@@ -334,7 +330,7 @@ def _handle_erosion_key(self, key: int) -> bool:
 def _draw_erosion_menu(self, max_y: int, max_x: int):
     """Draw the erosion preset selection menu."""
     self.stdscr.erase()
-    title = "── Hydraulic Erosion ── Select Scenario ──"
+    title = "── Erosion Patterns ── Select Scenario ──"
     try:
         self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
                            curses.color_pair(7) | curses.A_BOLD)
@@ -354,7 +350,7 @@ def _draw_erosion_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hint = " [j/k]=navigate  [Enter]=select  [q]=cancel"
+    hint = " j/k=navigate  Enter=select  q=cancel"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:
@@ -363,7 +359,7 @@ def _draw_erosion_menu(self, max_y: int, max_x: int):
 
 
 def _draw_erosion(self, max_y: int, max_x: int):
-    """Draw the active Hydraulic Erosion simulation."""
+    """Draw the active erosion simulation."""
     self.stdscr.erase()
     terrain = self.erosion_terrain
     water = self.erosion_water
@@ -371,7 +367,6 @@ def _draw_erosion(self, max_y: int, max_x: int):
     gen = self.erosion_generation
     state = "▶ RUNNING" if self.erosion_running else "⏸ PAUSED"
 
-    # Title bar
     title = (f" Erosion: {self.erosion_preset_name}  |  step {gen}"
              f"  |  eroded: {self.erosion_total_eroded:.2f}"
              f"  |  rain={self.erosion_rain_rate:.3f}"
@@ -384,8 +379,7 @@ def _draw_erosion(self, max_y: int, max_x: int):
     view_rows = max_y - 3
     view_cols = (max_x - 1) // 2
 
-    # Terrain height-based color gradient + water overlay
-    # Color pairs: 90=deep, 91-96=terrain gradient, 97=peak, 98=shallow water, 99=deep water
+    # Color pairs: 90-97 terrain by height (low to peak), 98 shallow water, 99 deep water.
     for r in range(min(rows, view_rows)):
         for c in range(min(cols, view_cols)):
             sx = c * 2
@@ -435,14 +429,13 @@ def _draw_erosion(self, max_y: int, max_x: int):
             except curses.error:
                 pass
 
-    # Hint bar
     hint_y = max_y - 1
     if hint_y > 0:
         now = time.monotonic()
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [w/W]=rain+/- [e/E]=erosion+/- [+/-]=steps/f [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  w/W=rain  e/E=solubility  +/-=steps/frame  r=reset  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)

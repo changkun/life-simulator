@@ -1,4 +1,4 @@
-"""Tests for Hydraulic Erosion mode."""
+"""Tests for Erosion Patterns mode."""
 import random
 import pytest
 from tests.conftest import make_mock_app
