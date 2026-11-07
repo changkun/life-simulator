@@ -1,4 +1,4 @@
-"""Mode: rbc — simulation mode for the life package."""
+"""Rayleigh-Benard Convection — buoyancy-driven convection cells in a fluid heated from below."""
 import curses
 import math
 import random
@@ -38,8 +38,6 @@ def _exit_rbc_mode(self):
 
 def _rbc_init(self, preset_idx: int):
     """Initialize Rayleigh-Bénard convection with the given preset."""
-    import math
-    import random
     name, _desc, preset_id = self.RBC_PRESETS[preset_idx]
     self.rbc_preset_name = name
     self.rbc_generation = 0
@@ -253,7 +251,6 @@ def _rbc_step(self):
                 rp = min(r + 1, rows - 1)
                 rm = max(r - 1, 0)
                 div = 0.25 * (vx_new[r][cp] - vx_new[r][cm] + vy_new[rp][c] - vy_new[rm][c])
-                vx_new[r][c] += 0.0
                 # Correct velocities to reduce divergence
                 vx_new[r][c] += div * 0.25
                 vy_new[r][c] += div * 0.25
@@ -424,7 +421,6 @@ def _draw_rbc_menu(self, max_y: int, max_x: int):
 
 def _draw_rbc(self, max_y: int, max_x: int):
     """Draw the Rayleigh-Bénard Convection simulation."""
-    import math
     self.stdscr.erase()
     rows = self.rbc_rows
     cols = self.rbc_cols
