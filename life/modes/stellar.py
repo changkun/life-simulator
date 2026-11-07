@@ -1,20 +1,13 @@
-"""Mode: stellar — Stellar Lifecycle & Supernova Simulation.
+"""Stellar Lifecycle & Supernova — stars form, age, explode and leave remnants.
 
-Simulates stars from birth to death — gravitational collapse of gas clouds into
-protostars, hydrogen fusion ignition, main sequence evolution, red giant expansion,
-and (for massive stars) core-collapse supernova with shockwave propagation, heavy
-element nucleosynthesis, and neutron star or black hole remnant formation.  Lighter
-stars shed planetary nebulae and fade as white dwarfs.
-
-Three visualization views:
-  1. Star field — spatial view of a stellar nursery
-  2. Hertzsprung-Russell diagram — live luminosity vs temperature plot
-  3. Core cross-section — onion-layer fusion shells of a selected star
+Gas clouds collapse into protostars that fuse hydrogen, swell into giants and
+die. Massive stars go supernova and leave neutron stars or black holes; light
+stars shed a planetary nebula and become white dwarfs. Three views: star
+field, Hertzsprung-Russell diagram and core cross-section.
 """
 import curses
 import math
 import random
-import time
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -75,12 +68,6 @@ STAGE_NAMES = {
     STAGE_BLACK_HOLE: "Black Hole",
     STAGE_REMNANT_FADE: "Remnant",
 }
-
-# Spectral classes (O B A F G K M) — hottest to coolest
-SPECTRAL_CLASSES = ["O", "B", "A", "F", "G", "K", "M"]
-
-# Fusion shell elements (innermost to outermost for massive stars)
-FUSION_SHELLS = ["Fe", "Si", "O", "C", "He", "H"]
 
 # View modes
 VIEW_STAR_FIELD = "star_field"
@@ -160,6 +147,7 @@ def _exit_stellar_mode(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _stellar_init(self, preset_idx: int):
+    """Set up the grid, gas clouds and stars for the chosen preset."""
     name, desc, preset_id = STELLAR_PRESETS[preset_idx]
     self.stellar_preset_name = name
     self.stellar_preset_id = preset_id
@@ -313,7 +301,7 @@ def _stellar_make_stars(self, count, mass_range, start_stage, binary_frac,
 
 
 def _update_star_properties(s):
-    """Update a star's radius, luminosity, temperature, spectral class based on stage/mass."""
+    """Set a star's radius, luminosity, temperature, class and shells from its stage."""
     m = s.mass
 
     if s.stage == STAGE_GAS_CLOUD:
@@ -400,6 +388,7 @@ def _update_star_properties(s):
 # ══════════════════════════════════════════════════════════════════════
 
 def _stellar_step(self):
+    """Advance every star, shockwave and the gas field by one step."""
     self.stellar_generation += 1
     stars = self.stellar_stars
     rows, cols = self.stellar_rows, self.stellar_cols
@@ -593,12 +582,10 @@ def _stellar_step(self):
         for r in range(rows):
             for c in range(cols):
                 total = gas[r][c] * 0.92
-                cnt = 0.92
                 for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                     nr, nc = r + dr, c + dc
                     if 0 <= nr < rows and 0 <= nc < cols:
                         total += gas[nr][nc] * 0.02
-                        cnt += 0.02
                 new_gas[r][c] = min(1.0, total)
         self.stellar_gas = new_gas
 
@@ -639,7 +626,6 @@ def _handle_stellar_key(self, key):
     elif key == ord('q'):
         self._exit_stellar_mode()
     elif key == ord('s'):
-        # Cycle selected star
         if self.stellar_stars:
             self.stellar_selected_idx = (
                 (self.stellar_selected_idx + 1) % len(self.stellar_stars))
@@ -686,7 +672,7 @@ def _draw_stellar_menu(self, max_y: int, max_x: int):
                 pass
 
     help_y = max_y - 1
-    help_text = " Up/Down Select   ENTER Start   Q Quit"
+    help_text = " Up/Down=select  Enter=start  q=quit"
     try:
         self.stdscr.addstr(help_y, 0, help_text[:max_x - 1],
                            curses.color_pair(7) | curses.A_DIM)
@@ -734,7 +720,7 @@ def _draw_stellar(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    help_line = " SPACE Pause  V View  S Select  +/- Speed  R Reset  Q Quit"
+    help_line = " Space=pause  v=view  s=select  +/-=speed  r=menu  q=quit"
     if max_y - 2 > 1:
         try:
             self.stdscr.addstr(max_y - 2, 0, help_line[:max_x - 1],
@@ -1074,19 +1060,8 @@ def _draw_stellar_hr_diagram(self, max_y: int, max_x: int):
 #  View 3: Core Cross-Section — onion-layer fusion shells
 # ══════════════════════════════════════════════════════════════════════
 
-_SHELL_COLORS = [
-    curses.A_BOLD,        # H  — white
-    3,                    # He — yellow
-    2,                    # C  — red
-    6,                    # O  — cyan
-    5,                    # Si — magenta
-    1,                    # Fe — blue? use color pair
-]
-
 _SHELL_LABELS = ["H  (hydrogen)", "He (helium)", "C  (carbon)",
                  "O  (oxygen)", "Si (silicon)", "Fe (iron core)"]
-
-_SHELL_CHARS = ['H', 'e', 'C', 'O', 'i', 'F']
 
 
 def _draw_stellar_core_section(self, max_y: int, max_x: int):
@@ -1139,13 +1114,11 @@ def _draw_stellar_core_section(self, max_y: int, max_x: int):
     if max_r < 3:
         return
 
-    # Shell layers (outermost to innermost): H, He, C, O, Si, Fe
-    layers = s.shell_layers  # [H, He, C, O, Si, Fe]
+    layers = s.shell_layers  # outermost to innermost: H, He, C, O, Si, Fe
     total = sum(layers)
     if total < 0.001:
         total = 1.0
 
-    # Draw from outermost shell inward
     shell_colors_pairs = [
         curses.color_pair(8),                     # H — white
         curses.color_pair(3),                     # He — yellow
@@ -1247,7 +1220,7 @@ def _draw_stellar_core_section(self, max_y: int, max_x: int):
 # ══════════════════════════════════════════════════════════════════════
 
 def register(App):
-    """Register stellar lifecycle mode methods on the App class."""
+    """Register Stellar Lifecycle & Supernova methods on the App class."""
     App.STELLAR_PRESETS = STELLAR_PRESETS
     App._enter_stellar_mode = _enter_stellar_mode
     App._exit_stellar_mode = _exit_stellar_mode
