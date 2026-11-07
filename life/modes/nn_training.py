@@ -157,6 +157,9 @@ class _MiniNet:
         act_fn, act_d = _ACT.get(act_name, _ACT["sigmoid"])
         self.act = act_fn
         self.act_d = act_d
+        # A single output unit is squashed to (0, 1) like the targets. A ReLU
+        # there can die at 0 and then never receives a gradient again.
+        self.out_act, self.out_act_d = _ACT["sigmoid"]
         self.lr = lr
         self.multi_class = layer_sizes[-1] > 1
         # Xavier init
@@ -192,6 +195,8 @@ class _MiniNet:
                     z += self.weights[l][j][i] * a[i]
                 if is_last and self.multi_class:
                     new_a.append(z)  # raw logits for softmax
+                elif is_last:
+                    new_a.append(self.out_act(z))
                 else:
                     new_a.append(self.act(z))
             if is_last and self.multi_class:
@@ -213,7 +218,7 @@ class _MiniNet:
             for j in range(len(out)):
                 loss -= target[j] * math.log(max(out[j], 1e-15))
         else:
-            deltas[-1] = [(out[j] - target[j]) * self.act_d(out[j])
+            deltas[-1] = [(out[j] - target[j]) * self.out_act_d(out[j])
                           for j in range(len(out))]
             loss = sum((out[j] - target[j]) ** 2 for j in range(len(out))) * 0.5
         # Hidden deltas

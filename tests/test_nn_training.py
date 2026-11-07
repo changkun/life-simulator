@@ -78,3 +78,17 @@ def test_pause_prevents_training():
     epoch_before = app.nntrain_epoch
     app._nntrain_step()
     assert app.nntrain_epoch == epoch_before
+
+
+def test_single_output_net_stays_in_unit_range_with_relu_hidden():
+    """A ReLU hidden net must not kill its lone output unit (Two Moons stuck at 50%)."""
+    for seed in range(5):
+        random.seed(seed)
+        app = _make_app()
+        app._nntrain_init(3)  # Two Moons, relu
+        for _ in range(150):
+            app._nntrain_step()
+        net = app.nntrain_net
+        assert 0.0 < net.activations[-1][0] < 1.0
+        assert net.acc_history[-1] > 0.55
+        assert net.loss_history[-1] < net.loss_history[0] or net.loss_history[-1] < 0.2
