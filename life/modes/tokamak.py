@@ -293,6 +293,7 @@ def _tokamak_init(self, preset_idx: int):
     self.tokamak_total_loss = 0.0
     self.tokamak_fusion_power = 0.0
     self.tokamak_q_factor = 0.0  # Q = P_fusion / P_input
+    self.tokamak_beta = 0.0
 
     # Lawson triple product: n * T * tau_E (normalized so 1.0 = ignition)
     self.tokamak_lawson = 0.0
