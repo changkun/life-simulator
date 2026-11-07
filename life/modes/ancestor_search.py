@@ -520,8 +520,8 @@ def _handle_anc_search_key(self, key):
         self._anc_step()
         return True
     if key == ord("r"):
-        # Restart search
         if self.anc_target_flat:
+            self.anc_view_sel = 0
             self._anc_start_search()
         return True
     if key == curses.KEY_LEFT or key == ord("h"):

@@ -84,3 +84,13 @@ def test_search_engine_finds_block_ancestor():
 
     # The block is its own ancestor, so the engine should find at least one solution
     assert len(engine.solutions) > 0
+
+
+def test_restart_resets_solution_selection():
+    """Restarting the search clears the solution cursor."""
+    app = _make_app()
+    app._enter_ancestor_search()
+    app._anc_load_preset(0)
+    app.anc_view_sel = 3
+    app._handle_ancestor_search_key(ord("r"))
+    assert app.anc_view_sel == 0
