@@ -459,7 +459,7 @@ Cell types: stem(@), ectoderm(#), mesoderm(%), endoderm(&), neural(*), signal(<>
 - "Radial Embryo" produces tissue layers around a central egg.
 - "Bilateral Body Plan" uses a dorsal organiser and biases early division toward the midline.
 - "Gastrulation" uses faster morphogen diffusion and decay; the code does not model folding.
-- "Neural Tube Formation" turns ectoderm with high A and low B into neural cells.
+- "Neural Tube Formation" turns stem cells with high A and low B that touch at least two ectoderm cells into neural cells.
 - "Limb Bud Outgrowth" places a signaling cell on the flank at generation 60.
 - "Regeneration" removes the right half of the embryo at generation 100 and lets it regrow.
 - "Somitogenesis" adds an oscillating clock that turns stem cells into mesoderm.
