@@ -1,28 +1,4 @@
-"""Mode: topological_solitons — Topological Solitons.
-
-Simulates a 2D order-parameter field (XY model / O(2) field) where topological
-defects — vortices, antivortices, skyrmions, and domain walls — emerge,
-interact, annihilate in pairs, and scatter off each other.
-
-Physics modelled:
-  1. XY spin field: continuous angle θ(r,c) ∈ [−π, π) at each cell
-  2. Gradient energy: E = (K/2) Σ |∇θ|² — penalises rapid angle changes
-  3. Overdamped relaxation: ∂θ/∂t = −δE/δθ + thermal noise
-  4. Topological charge: q = (1/2π) ∮ dθ around a plaquette
-     q = +1 → vortex, q = −1 → antivortex
-  5. Vortex dynamics: defects interact via Coulomb-like log potential,
-     opposite charges attract and annihilate
-  6. Skyrmion extension: full n-vector field (θ,φ) with DMI producing
-     stable particle-like topological solitons
-  7. BKT transition: below T_BKT, vortex–antivortex pairs are bound;
-     above T_BKT they unbind and proliferate
-
-Visualization:
-  - Field view: angle θ mapped to hue via directional arrows/colours
-  - Charge view: topological charge density (red +1 vortices, blue −1 antivortices)
-  - Energy view: local gradient energy density
-  - Defect tracking: trails showing defect motion history
-"""
+"""Topological Solitons — vortices, antivortices, skyrmions and domain walls in a 2D order-parameter field."""
 import curses
 import math
 import random
@@ -59,7 +35,6 @@ _ANGLE_ARROWS = ["→→", "↗↗", "↑↑", "↖↖", "←←", "↙↙", "�
 # Charge glyphs
 _VORTEX_GLYPH = "⊕⊕"     # positive charge (vortex)
 _ANTIVORTEX_GLYPH = "⊖⊖"  # negative charge (antivortex)
-_SKYRMION_GLYPH = "◉◉"    # skyrmion
 
 # Energy density glyphs
 _ENERGY_CHARS = ["  ", "· ", "░░", "▒▒", "▓▓", "██"]
@@ -129,7 +104,7 @@ def _angle_diff(a: float, b: float) -> float:
 # ── Enter / Exit ────────────────────────────────────────────────────────────
 
 def _enter_topo_soliton_mode(self):
-    """Enter Topological Solitons mode — show preset menu."""
+    """Enter Topological Solitons mode and show the preset menu."""
     self.topo_soliton_menu = True
     self.topo_soliton_menu_sel = 0
     self._flash("Topological Solitons — select a configuration")
@@ -597,7 +572,7 @@ def _draw_topo_soliton_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate [Enter]=select [q]=cancel"
+        hint = " j/k=navigate  Enter=select  q=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -609,7 +584,6 @@ def _draw_topo_soliton(self, max_y: int, max_x: int):
     """Draw the active Topological Solitons simulation."""
     self.stdscr.erase()
     rows, cols = self.topo_soliton_rows, self.topo_soliton_cols
-    theta = self.topo_soliton_theta
     charge = self.topo_soliton_charge
 
     # Count defects
@@ -629,7 +603,7 @@ def _draw_topo_soliton(self, max_y: int, max_x: int):
     # Title bar
     state = "▶ RUNNING" if self.topo_soliton_running else "⏸ PAUSED"
     title = (f" Solitons: {self.topo_soliton_preset_name}  │  "
-             f"T={self.topo_soliton_generation}  │  {state}  │  "
+             f"t={self.topo_soliton_generation}  │  {state}  │  "
              f"⊕{n_vortex} ⊖{n_anti}  │  "
              f"Q={total_charge:+.0f}")
     title = title[:max_x - 1]
@@ -670,8 +644,8 @@ def _draw_topo_soliton(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = (" [Space]=play [n]=step [v]=view [t/T]=temp [k/K]=stiffness "
-                     "[d/D]=DMI [h/H]=field [click]=vortex [c]=trails [r]=reset [R]=menu [q]=exit")
+            hint = (" Space=play  n=step  v=view  t/T=temp  k/K=stiffness  d/D=DMI  h/H=field  "
+                    "click=vortex/antivortex  c=trails  +/-=speed  r=reset  R=menu  q=exit")
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
