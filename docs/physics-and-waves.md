@@ -23,9 +23,9 @@ Parameters:
              or "wrap" (periodic)
 ```
 
-Initial conditions include Gaussian center drops (`exp(-(dx^2+dy^2)*2)`), corner pulses, random drops, expanding rings, cross patterns, and a double-slit setup with a continuous plane-wave source at `0.5*sin(t)`.
+Initial conditions are a Gaussian center drop (`exp(-(dx^2+dy^2)*2)`), a corner pulse, random drops, a ring, a cross, and a double slit. The double slit has a wall with two openings and a source on the left edge that drives `0.5*sin(0.15*step)`.
 
-**What to look for** — Watch circular wavefronts expand from a Gaussian drop, observe interference fringes behind the double slit, and notice how reflecting boundaries create standing waves while absorbing boundaries dissipate energy at the edges. Reducing damping below 1.0 causes the membrane to gradually lose energy, mimicking real material losses.
+**What to look for** — Watch circular wavefronts expand from a Gaussian drop, observe interference fringes behind the double slit, and notice how reflecting boundaries create standing waves. The "absorb" boundary pins the edge to u=0, so waves reflect with inverted sign instead of leaving the grid. Damping below 1.0 makes the membrane lose energy gradually.
 
 **References**
 - Strikwerda, J.C. *Finite Difference Schemes and Partial Differential Equations*, 2nd ed., SIAM, 2004. https://doi.org/10.1137/1.9780898717938
