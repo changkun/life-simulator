@@ -1,16 +1,11 @@
-"""Mode: programmable_matter — self-assembling programmable cells.
+"""Programmable Matter — grid cells that each run a small local program.
 
-Each cell is a tiny state machine executing a local program.  Cells have
-internal registers, read neighbors' states, and follow simple instruction
-sets (move, bond, signal, replicate).  Distributed computation happens
-spatially: swarms self-assemble into target shapes, self-repair when
-damaged, and perform parallel computation — all from purely local rules.
+Cells hold registers, read their neighbors and follow a short instruction list
+(move, bond, signal, replicate). Shapes form, grow or count from local rules.
 """
 
 import curses
-import math
 import random
-import time
 
 # ══════════════════════════════════════════════════════════════════════════
 #  Programmable Matter — self-assembling state-machine cells
@@ -23,24 +18,21 @@ ST_MOVING = 2
 ST_BONDED = 3
 ST_SIGNALING = 4
 
-STATE_NAMES = {ST_EMPTY: "empty", ST_IDLE: "idle", ST_MOVING: "moving",
-               ST_BONDED: "bonded", ST_SIGNALING: "signal"}
-
 # Instruction opcodes
 OP_NOP = 0
-OP_MOVE = 1        # move in direction stored in reg A (0-3: N/E/S/W)
-OP_BOND = 2        # bond to adjacent cell with matching signal
-OP_UNBOND = 3      # release all bonds
-OP_SIGNAL = 4      # emit signal value from reg B
-OP_READ = 5        # read neighbor count + avg signal into reg C
-OP_IF_NBRS = 6     # skip next instr if neighbor count != operand
+OP_MOVE = 1        # move in direction reg A (0-3: N/E/S/W), or toward the target if there is one
+OP_BOND = 2        # bond to an adjacent cell
+OP_UNBOND = 3      # release this cell's bond
+OP_SIGNAL = 4      # emit reg B (or reg C if B is 0) as a signal
+OP_READ = 5        # neighbor count -> reg C, average neighbor signal -> reg B
+OP_IF_NBRS = 6     # skip next instr if neighbor count >= operand
 OP_IF_REG = 7      # skip next instr if reg A != operand
-OP_SET_REG = 8     # set reg[operand & 3] = (operand >> 2)
+OP_SET_REG = 8     # set reg[operand & 3] = operand >> 2 (random 0-3 if that is 0)
 OP_REPLICATE = 9   # spawn copy into empty neighbor
 OP_TURN = 10       # reg A = (reg A + operand) % 4
-OP_IF_BONDED = 11  # skip next if not bonded
+OP_IF_BONDED = 11  # skip next instr if not bonded
 OP_GOTO = 12       # set PC to operand
-OP_IF_DIST = 13    # skip next if distance to centroid > operand
+OP_IF_DIST = 13    # skip next instr if distance to the target > operand
 OP_INC_REG = 14    # reg[operand & 3] += 1
 
 OP_NAMES = {
@@ -180,7 +172,7 @@ def _prog_distributed_counter():
         (OP_READ, 0),       # 0: read neighbors
         (OP_INC_REG, 2),    # 1: increment reg C (counter)
         (OP_SIGNAL, 0),     # 2: broadcast counter value
-        (OP_IF_NBRS, 2),    # 3: skip bond if <2 neighbors
+        (OP_IF_NBRS, 2),    # 3: skip bond if 2+ neighbors
         (OP_BOND, 0),       # 4: bond to stabilize
         (OP_NOP, 0),        # 5: no-op
         (OP_GOTO, 0),       # 6: loop
@@ -637,7 +629,7 @@ def _handle_progmatter_key(self, key: int) -> bool:
         self.progmatter_show_info = not self.progmatter_show_info
         return True
     if key == ord("d"):
-        # damage: remove cells in 3x3 area around cursor
+        # damage: remove cells in the 5x5 area around the cursor
         for dr in range(-2, 3):
             for dc in range(-2, 3):
                 nr = self.progmatter_cursor_r + dr
@@ -715,7 +707,7 @@ def _draw_progmatter_menu(self, max_y: int, max_x: int):
 
         y += 1
         if y < max_y:
-            help_text = "UP/DOWN select  |  ENTER start  |  Q quit"
+            help_text = "Up/Down=select  Enter=start  q=quit"
             hx = max(0, (max_x - len(help_text)) // 2)
             self.stdscr.addstr(y, hx, help_text, curses.A_DIM)
     except curses.error:
@@ -891,7 +883,7 @@ def _draw_pm_info(self, max_y, max_x, has_color):
     lines.append(("-- Program --", curses.A_BOLD))
     for i, (op, operand) in enumerate(self.progmatter_program):
         name = OP_NAMES.get(op, "???")
-        marker = ">" if i == 0 else " "  # just show program
+        marker = ">" if i == 0 else " "
         lines.append((f" {marker}{i:02d} {name} {operand}", curses.A_DIM))
 
     for i, (text, attr) in enumerate(lines):
