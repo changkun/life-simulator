@@ -1,19 +1,4 @@
-"""Mode: tpool — Tide Pool & Intertidal Ecosystem.
-
-Sinusoidal tidal cycles drive a vertical rocky-shore ecosystem where species
-are stratified by exposure tolerance.  Barnacles cement high, sea stars hunt
-mid-zone, anemones anchor in pools, urchins graze algae, kelp holds the low
-zone, and hermit crabs roam for empty shells.
-
-Emergent phenomena:
-  - Tidal rise/fall with splash-zone spray and wave surge
-  - Vertical zonation bands (spray → high → mid → low → subtidal)
-  - Desiccation & heat stress at low tide, predation at high tide
-  - Mussel bed competition for rock space
-  - Sea star "wave of death" predation fronts
-  - Algae bloom / grazing cycles
-  - Hermit crab vacancy-chain shell swaps
-"""
+"""Tide Pool & Intertidal Ecosystem — tides drive zonation, predation and desiccation on a rocky shore."""
 import curses
 import math
 import random
@@ -29,7 +14,7 @@ TPOOL_PRESETS = [
      "Classic temperate intertidal with full zonation, ochre sea stars & mussels",
      "pacific"),
     ("Tropical Coral Flat",
-     "Warm shallow reef flat exposed at spring tides — corals, urchins & parrotfish",
+     "Warm shallow flat with gentle tides — many pools, anemones & urchins",
      "tropical"),
     ("Mussel Bed Dominance",
      "Dense mussel beds competing for rock space — watch dominance hierarchy emerge",
@@ -57,13 +42,6 @@ TILE_SAND = 2
 TILE_POOL = 3          # permanent tide pool depression
 TILE_ALGAE_ROCK = 4    # rock covered in algae
 
-# Zone bands (row ranges computed dynamically)
-ZONE_SUBTIDAL = 0
-ZONE_LOW = 1
-ZONE_MID = 2
-ZONE_HIGH = 3
-ZONE_SPRAY = 4
-
 # Species
 SP_BARNACLE = 0
 SP_MUSSEL = 1
@@ -77,7 +55,6 @@ SP_LIMPET = 7
 _SP_NAMES = ["Barnacle", "Mussel", "Anemone", "Sea Star",
              "Urchin", "Kelp", "Hermit Crab", "Limpet"]
 
-_NEIGHBORS_4 = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 _NEIGHBORS_8 = [(-1, -1), (-1, 0), (-1, 1), (0, -1),
                 (0, 1), (1, -1), (1, 0), (1, 1)]
 
@@ -121,7 +98,7 @@ class _Mobile:
 # ══════════════════════════════════════════════════════════════════════
 
 def _enter_tpool_mode(self):
-    """Enter tide pool mode — show preset menu."""
+    """Enter tide pool mode and show the preset menu."""
     self.tpool_mode = True
     self.tpool_menu = True
     self.tpool_menu_sel = 0
@@ -145,7 +122,7 @@ def _exit_tpool_mode(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _tpool_init(self, preset_idx: int):
-    """Initialize tide pool simulation for the chosen preset."""
+    """Start the chosen preset."""
     name, _desc, pid = TPOOL_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(10, max_y - 4)
@@ -216,14 +193,9 @@ def _tpool_init(self, preset_idx: int):
 
 
 def _tpool_make_terrain(self, pid):
-    """Generate rocky shore terrain with pools and sand patches."""
+    """Add tide pools and sand patches to the rocky shore."""
     rows = self.tpool_rows
     cols = self.tpool_cols
-
-    for r in range(rows):
-        for c in range(cols):
-            # Base is rock
-            self.tpool_grid[r][c] = TILE_ROCK
 
     # Create tide pools (depressions that retain water)
     n_pools = random.randint(4, 8) if pid != "tropical" else random.randint(6, 12)
@@ -264,7 +236,7 @@ def _tpool_make_terrain(self, pid):
 
 
 def _tpool_populate(self, pid):
-    """Seed organisms according to preset."""
+    """Seed organisms for the preset."""
     rows = self.tpool_rows
     cols = self.tpool_cols
     zones = self.tpool_zones
@@ -350,7 +322,7 @@ def _tpool_populate(self, pid):
 # ══════════════════════════════════════════════════════════════════════
 
 def _tpool_step(self):
-    """Advance tide pool simulation by one tick."""
+    """Advance the simulation by one tick."""
     gen = self.tpool_generation
     rows = self.tpool_rows
     cols = self.tpool_cols
@@ -459,7 +431,6 @@ def _tpool_step(self):
         # Death
         if s.energy <= 0 or s.stress >= 1.0 or s.age > 2000:
             dead_sessile.add(i)
-            # Mussel death frees rock space
             continue
 
         # Reproduction (budding/settlement)
@@ -630,7 +601,7 @@ def _tpool_step(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _handle_tpool_menu_key(self, key: int) -> bool:
-    """Handle key input in the preset selection menu."""
+    """Handle keys in the preset menu."""
     n = len(TPOOL_PRESETS)
     if key == ord("q") or key == 27:
         self.tpool_mode = False
@@ -649,7 +620,7 @@ def _handle_tpool_menu_key(self, key: int) -> bool:
 
 
 def _handle_tpool_key(self, key: int) -> bool:
-    """Handle key input during simulation."""
+    """Handle keys while the simulation is shown."""
     if key == ord("q") or key == 27:
         self._exit_tpool_mode()
         return True
@@ -700,7 +671,7 @@ def _handle_tpool_key(self, key: int) -> bool:
 # ══════════════════════════════════════════════════════════════════════
 
 def _draw_tpool_menu(self, max_y: int, max_x: int):
-    """Draw the preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
 
     title = "── Tide Pool & Intertidal Ecosystem ── Select Scenario ──"
@@ -729,7 +700,7 @@ def _draw_tpool_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hints = " [↑/↓] Navigate   [Enter] Select   [q/Esc] Back"
+    hints = " ↑/↓/j/k=navigate  Enter=select  q/Esc=back"
     hy = max_y - 2
     if 0 < hy < max_y:
         try:
@@ -744,7 +715,7 @@ def _draw_tpool_menu(self, max_y: int, max_x: int):
 # ══════════════════════════════════════════════════════════════════════
 
 def _draw_tpool(self, max_y: int, max_x: int):
-    """Draw the active tide pool simulation."""
+    """Draw the title, the current view and the hint bar."""
     self.stdscr.erase()
 
     # Title bar
@@ -774,7 +745,7 @@ def _draw_tpool(self, max_y: int, max_x: int):
     if hasattr(self, 'message') and self.message and now - self.message_time < 3.0:
         hint = f" {self.message}"
     else:
-        hint = " [Space]=play [n]=step [v]=view [+/-]=speed [r]=reset [R]=menu [q]=exit"
+        hint = " Space=play  n=step  v=view  +/-=speed  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                            curses.color_pair(6) | curses.A_DIM)
