@@ -656,7 +656,12 @@ def _evoeco_step(self):
         growth_rate = fertility * food_avail * fit * 0.3
 
         if pop["size"] < capacity:
-            new_size = pop["size"] + max(0, int(growth_rate))
+            # Round stochastically: most rates are below 1 and would
+            # otherwise truncate to no growth at all.
+            growth = int(growth_rate)
+            if random.random() < growth_rate - growth:
+                growth += 1
+            new_size = pop["size"] + growth
         else:
             # Over capacity — decline
             new_size = pop["size"] - max(1, int(pop["size"] * 0.1))
