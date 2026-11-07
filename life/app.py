@@ -6655,7 +6655,7 @@ class App:
             "║  !         Wave Equation (2D wave physics)     ║",
             "║  (         Kuramoto Oscillators (phase sync)   ║",
             "║  )         Spiking Neural Network (neurons)    ║",
-            "║  `         BZ Reaction (chemical spirals)      ║",
+            "║  `         BZ Reaction (chemical waves)        ║",
             "║  {         Chemotaxis (bacterial colonies)     ║",
             "║  }         MHD Plasma (magnetohydrodynamics)   ║",
             "║  |         Strange Attractors (chaotic ODEs)   ║",

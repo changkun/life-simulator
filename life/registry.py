@@ -96,7 +96,7 @@ MODE_REGISTRY = [
     {"name": "Reaction-Diffusion Textures", "key": "6", "category": "Chemical & Biological",
      "desc": "Gray-Scott texture generator: coral, mitosis, fingerprints, worms & more", "attr": "rd_mode", "enter": "_enter_rd_mode", "exit": "_exit_rd_mode"},
     {"name": "BZ Reaction", "key": "`", "category": "Chemical & Biological",
-     "desc": "Belousov-Zhabotinsky chemical spirals", "attr": "bz_mode", "enter": "_enter_bz_mode", "exit": "_exit_bz_mode"},
+     "desc": "Belousov-Zhabotinsky chemical waves", "attr": "bz_mode", "enter": "_enter_bz_mode", "exit": "_exit_bz_mode"},
     {"name": "Chemotaxis", "key": "{", "category": "Chemical & Biological",
      "desc": "Bacterial colony formation with chemotaxis", "attr": "chemo_mode", "enter": "_enter_chemo_mode", "exit": "_exit_chemo_mode"},
     {"name": "Forest Fire", "key": "O", "category": "Chemical & Biological",
