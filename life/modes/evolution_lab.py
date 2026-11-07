@@ -1,15 +1,4 @@
-"""Mode: evolution_lab — Interactive Rule Evolution Lab.
-
-A genetic algorithm that breeds cellular automata rules to discover novel
-emergent behaviors.  A population of CA rulesets runs in parallel in a tiled
-view, with fitness scored automatically by analytics metrics (entropy,
-periodicity, symmetry, population stability).  Each generation the top
-performers reproduce with crossover and mutation; users can manually
-"favorite" organisms to protect them from culling.
-
-Connects three existing systems: analytics metrics, rule parsing/genomes,
-and tiled multi-sim views.
-"""
+"""Evolution Lab — a genetic algorithm that breeds CA rules scored by entropy, symmetry and stability."""
 import curses
 import json
 import math
@@ -17,16 +6,10 @@ import os
 import random
 import time
 
-from life.analytics import (
-    PeriodicityDetector,
-    classify_stability,
-    rate_of_change,
-    shannon_entropy,
-    symmetry_score,
-)
-from life.constants import SAVE_DIR, SPEEDS, SPEED_LABELS
+from life.analytics import shannon_entropy, symmetry_score
+from life.constants import SAVE_DIR, SPEEDS
 from life.grid import Grid
-from life.rules import rule_string, parse_rule_string
+from life.rules import rule_string
 
 # ── Constants ────────────────────────────────────────────────────────
 
@@ -45,9 +28,6 @@ _FITNESS_PRESETS = {
 
 _NEIGHBORHOODS = ["moore", "von_neumann"]
 _NH_LABELS = {"moore": "M8", "von_neumann": "VN4"}
-
-_HEX_EVEN = [(-1, 0), (-1, 1), (0, -1), (0, 1), (1, 0), (1, 1)]
-_HEX_ODD = [(-1, -1), (-1, 0), (0, -1), (0, 1), (1, -1), (1, 0)]
 
 # ── Genome ───────────────────────────────────────────────────────────
 
@@ -194,27 +174,21 @@ def _compute_fitness(grid, pop_history, weights):
         return {"total": 0, "entropy": 0, "symmetry": 0, "stability": 0,
                 "longevity": 0, "diversity": 0}
 
-    # Entropy (0-1 range, higher = more interesting structure)
+    # Entropy: capped at 1.0 because multi-state grids can exceed binary entropy.
     ent = shannon_entropy(grid)
-    # Normalize: binary entropy max is 1.0, but multi-state can be higher
     ent_score = min(ent, 1.0) * 100
 
-    # Symmetry (average of horiz/vert/rot)
+    # Symmetry: mean of horizontal, vertical and 180-degree scores.
     sym = symmetry_score(grid)
     sym_score = (sym["horiz"] + sym["vert"] + sym["rot180"]) / 3.0 * 100
 
-    # Stability classification score
-    period_det = PeriodicityDetector(max_history=200)
-    # Feed last states — approximate by checking pop pattern
-    cycle_period = None
-    # Use population variance as stability proxy
+    # Stability: the population's coefficient of variation over the last 30 steps.
     recent = pop_history[-30:]
     avg_pop = sum(recent) / len(recent) if recent else 0
     if avg_pop > 0 and len(recent) > 5:
         variance = sum((p - avg_pop) ** 2 for p in recent) / len(recent)
         cv = math.sqrt(variance) / max(avg_pop, 1)
-        # Sweet spot: not too stable (boring) not too chaotic (noise)
-        # Peak at cv ~ 0.1-0.3
+        # Sweet spot: neither static (boring) nor chaotic (noise).
         if cv < 0.01:
             stab_score = 30  # static — somewhat boring
         elif cv < 0.3:
@@ -226,11 +200,11 @@ def _compute_fitness(grid, pop_history, weights):
     else:
         stab_score = 0
 
-    # Longevity: fraction of time alive
+    # Longevity: fraction of steps with a non-zero population.
     alive_gens = sum(1 for p in pop_history if p > 0)
     longevity_score = (alive_gens / len(pop_history)) * 100
 
-    # Diversity: unique population values (pattern richness)
+    # Diversity: distinct population values over the last 100 steps.
     unique_pops = len(set(pop_history[-100:]))
     diversity_score = min(unique_pops * 3, 100)
 
@@ -245,7 +219,6 @@ def _compute_fitness(grid, pop_history, weights):
         ent_score *= 0.3
         diversity_score *= 0.3
 
-    # Weighted total
     total = (
         ent_score * weights.get("entropy", 1.0) +
         sym_score * weights.get("symmetry", 1.0) +
@@ -268,7 +241,7 @@ def _compute_fitness(grid, pop_history, weights):
 
 
 def _enter_elab_mode(self):
-    """Enter Evolution Lab mode — show settings menu."""
+    """Open the settings menu."""
     self.elab_mode = False
     self.elab_menu = True
     self.elab_menu_sel = 0
@@ -276,7 +249,7 @@ def _enter_elab_mode(self):
 
 
 def _exit_elab_mode(self):
-    """Exit Evolution Lab mode."""
+    """Leave Evolution Lab and discard the population."""
     self.elab_mode = False
     self.elab_menu = False
     self.elab_running = False
@@ -290,16 +263,15 @@ def _exit_elab_mode(self):
 
 
 def _elab_init(self, seed_genomes=None):
-    """Initialize a population of organisms."""
+    """Build a population, bred from seed genomes when given, and start it."""
     max_y, max_x = self.stdscr.getmaxyx()
 
-    # Determine tile layout to fit screen
     usable_h = max_y - 5
     usable_w = max_x - 1
 
     pop_size = self.elab_pop_size
 
-    # Find best grid arrangement
+    # Pick the widest layout whose tiles stay readable.
     best_r, best_c = 2, 4
     for gc in range(2, 8):
         gr = math.ceil(pop_size / gc)
@@ -322,13 +294,11 @@ def _elab_init(self, seed_genomes=None):
     sim_rows = max(3, self.elab_tile_h - 2)
     sim_cols = max(3, self.elab_tile_w)
 
-    # Generate genomes
     if seed_genomes and len(seed_genomes) >= 2:
         genomes = []
-        # Keep favorites/parents unchanged
+        # Keep the parents, then fill the rest with mutated crossovers.
         for sg in seed_genomes:
             genomes.append(dict(sg, birth=set(sg["birth"]), survival=set(sg["survival"])))
-        # Fill rest via crossover + mutation
         while len(genomes) < actual_pop:
             p1 = random.choice(seed_genomes)
             p2 = random.choice(seed_genomes)
@@ -339,7 +309,6 @@ def _elab_init(self, seed_genomes=None):
     else:
         genomes = [_random_genome() for _ in range(actual_pop)]
 
-    # Create simulations
     self.elab_sims = []
     self.elab_genomes = genomes
     self.elab_pop_histories = []
@@ -375,7 +344,6 @@ def _elab_step(self):
         self.elab_pop_histories[i].append(grid.population)
     self.elab_sim_step += 1
 
-    # Auto-score when enough steps have run
     if self.elab_sim_step >= self.elab_eval_gens:
         self._elab_score_all()
 
@@ -390,7 +358,7 @@ def _elab_score_all(self):
             grid, self.elab_pop_histories[i], weights
         )
 
-    # Sort by fitness (best first), but keep favorites at top
+    # Favorites sort first, then by fitness.
     indices = list(range(len(self.elab_sims)))
     indices.sort(key=lambda i: (
         0 if i in self.elab_favorites else 1,
@@ -413,13 +381,11 @@ def _elab_score_all(self):
     best = self.elab_fitness[0]
     best_label = _genome_label(self.elab_genomes[0])
 
-    # Track best ever
     if self.elab_best_ever is None or best.get("total", 0) > self.elab_best_ever.get("total", 0):
         self.elab_best_ever = dict(best)
         self.elab_best_ever["rule"] = best_label
         self.elab_best_ever["gen"] = self.elab_generation
 
-    # Record history
     avg_score = sum(f.get("total", 0) for f in self.elab_fitness) / max(1, len(self.elab_fitness))
     self.elab_history.append({
         "generation": self.elab_generation,
@@ -440,7 +406,7 @@ def _elab_breed_next(self):
     if n < 2:
         return
 
-    # Parents = top elite + all favorites
+    # Parents are the elite plus every favorite.
     elite_count = max(2, min(self.elab_elite_count, n // 2))
     parent_indices = set(range(elite_count))
     parent_indices |= self.elab_favorites
@@ -529,7 +495,7 @@ def _elab_load_saved(self):
 
 
 def _handle_elab_menu_key(self, key):
-    """Handle keys in the Evolution Lab settings menu."""
+    """Handle keys in the settings menu."""
     if key == -1:
         return True
     menu_items = ["pop_size", "eval_gens", "mutation_rate", "elite_count",
@@ -615,7 +581,7 @@ def _handle_elab_menu_key(self, key):
 
 
 def _handle_elab_key(self, key):
-    """Handle keys during active Evolution Lab."""
+    """Handle keys while the lab is running."""
     if key == -1:
         return True
     if key == 27 or key == ord("q"):
@@ -625,7 +591,6 @@ def _handle_elab_key(self, key):
     pop_size = len(self.elab_sims)
     gc = self.elab_grid_cols
 
-    # Play/pause
     if key == ord(" "):
         if self.elab_phase == "scored":
             self._elab_breed_next()
@@ -634,13 +599,11 @@ def _handle_elab_key(self, key):
             self._flash("Running" if self.elab_running else "Paused")
         return True
 
-    # Single step
     if key == ord("."):
         self.elab_running = False
         self._elab_step()
         return True
 
-    # Navigate cursor
     if key == curses.KEY_UP:
         self.elab_cursor = max(0, self.elab_cursor - gc)
         return True
@@ -654,19 +617,17 @@ def _handle_elab_key(self, key):
         self.elab_cursor = min(pop_size - 1, self.elab_cursor + 1)
         return True
 
-    # Toggle favorite (protect from culling)
     if key in (10, 13, curses.KEY_ENTER):
         if 0 <= self.elab_cursor < pop_size:
             self._elab_toggle_favorite(self.elab_cursor)
         return True
 
-    # Favorite with 'f' key too
     if key == ord("f"):
         if 0 <= self.elab_cursor < pop_size:
             self._elab_toggle_favorite(self.elab_cursor)
         return True
 
-    # Force breed now (skip remaining eval steps)
+    # Score now if still simulating, otherwise breed.
     if key == ord("b"):
         if self.elab_phase == "simulating":
             self._elab_score_all()
@@ -674,10 +635,8 @@ def _handle_elab_key(self, key):
             self._elab_breed_next()
         return True
 
-    # Skip to scoring
     if key == ord("S"):
         if self.elab_phase == "simulating":
-            # Fast-forward remaining steps
             remaining = self.elab_eval_gens - self.elab_sim_step
             for _ in range(remaining):
                 for i, grid in enumerate(self.elab_sims):
@@ -687,14 +646,12 @@ def _handle_elab_key(self, key):
             self._elab_score_all()
         return True
 
-    # Toggle auto-advance
     if key == ord("A"):
         self.elab_auto_advance = not self.elab_auto_advance
         self.elab_auto_breed = self.elab_auto_advance
         self._flash(f"Auto-advance: {'ON' if self.elab_auto_advance else 'OFF'}")
         return True
 
-    # Cycle fitness preset
     if key == ord("p"):
         presets = list(_FITNESS_PRESETS.keys())
         idx = presets.index(self.elab_fitness_preset) if self.elab_fitness_preset in presets else 0
@@ -702,19 +659,16 @@ def _handle_elab_key(self, key):
         self._flash(f"Fitness: {self.elab_fitness_preset}")
         return True
 
-    # Save organism
     if key == ord("s"):
         if 0 <= self.elab_cursor < pop_size:
             self._elab_save_organism(self.elab_cursor)
         return True
 
-    # Adopt rule
     if key == ord("a"):
         if 0 <= self.elab_cursor < pop_size:
             self._elab_adopt_rule(self.elab_cursor)
         return True
 
-    # Randomize (new random population)
     if key == ord("r"):
         self.elab_generation = 0
         self.elab_history = []
@@ -723,7 +677,6 @@ def _handle_elab_key(self, key):
         self._flash("New random population")
         return True
 
-    # Speed controls
     if key == ord(">"):
         if self.speed_idx < len(SPEEDS) - 1:
             self.speed_idx += 1
@@ -733,7 +686,6 @@ def _handle_elab_key(self, key):
             self.speed_idx -= 1
         return True
 
-    # Return to menu
     if key == ord("R"):
         self.elab_mode = False
         self.elab_running = False
@@ -753,7 +705,7 @@ _COLOR_TIERS = [
 
 
 def _draw_elab_menu(self, max_y, max_x):
-    """Draw the Evolution Lab settings menu."""
+    """Draw the settings menu."""
     self.stdscr.erase()
 
     title = "── Evolution Lab: Automated Rule Discovery ──"
@@ -824,7 +776,7 @@ def _draw_elab_menu(self, max_y, max_x):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter/Space]=select  [q/Esc]=cancel"
+        hint = " j/k=navigate  Enter/Space=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -833,14 +785,13 @@ def _draw_elab_menu(self, max_y, max_x):
 
 
 def _draw_elab(self, max_y, max_x):
-    """Draw the Evolution Lab tiled view."""
+    """Draw the tiled organisms with the fitness detail, trend and hint bars."""
     self.stdscr.erase()
 
     gr = self.elab_grid_rows
     gc = self.elab_grid_cols
     pop_size = len(self.elab_sims)
 
-    # Title bar
     state_ch = "▶" if self.elab_running else "‖"
     n_fav = len(self.elab_favorites)
     progress = f"{self.elab_sim_step}/{self.elab_eval_gens}"
@@ -860,7 +811,6 @@ def _draw_elab(self, max_y, max_x):
     except curses.error:
         pass
 
-    # Recalculate tile dimensions
     usable_h = max_y - 5
     usable_w = max_x - 1
     th = max(4, usable_h // gr - 1)
@@ -886,7 +836,6 @@ def _draw_elab(self, max_y, max_x):
         is_cursor = (idx == self.elab_cursor)
         is_fav = (idx in self.elab_favorites)
 
-        # Border color
         if is_fav:
             border_attr = curses.color_pair(3) | curses.A_BOLD
         elif is_cursor:
@@ -910,13 +859,11 @@ def _draw_elab(self, max_y, max_x):
         except curses.error:
             pass
 
-        # Border line
         try:
             self.stdscr.addstr(tile_y + 1, tile_x, "─" * (tw * 2), border_attr)
         except curses.error:
             pass
 
-        # Simulation content
         sim_rows = min(th - 2, grid.rows)
         sim_cols = min(tw, grid.cols)
         for sr in range(sim_rows):
@@ -942,7 +889,6 @@ def _draw_elab(self, max_y, max_x):
                     except curses.error:
                         pass
 
-        # Bottom border
         by = tile_y + th
         if by < max_y - 2:
             try:
@@ -1015,9 +961,9 @@ def _draw_elab(self, max_y, max_x):
             hint = f" {self.message}"
         else:
             if self.elab_phase == "scored" and not self.elab_auto_breed:
-                hint = " [Space]=breed next [f/Enter]=favorite [s]=save [b]=breed [p]=fitness [A]=auto [R]=menu [q]=exit"
+                hint = " Space=breed next  f/Enter=favorite  s=save  a=adopt  p=fitness  A=auto  R=menu  q=exit"
             else:
-                hint = " [Space]=pause [↑↓←→]=navigate [f/Enter]=favorite [b]=score now [S]=skip [s]=save [p]=fitness [A]=auto [q]=exit"
+                hint = " Space=pause  Arrows=navigate  f/Enter=favorite  b=score now  S=skip  s=save  a=adopt  p=fitness  A=auto  </>=speed  R=menu  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
