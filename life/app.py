@@ -27,7 +27,7 @@ from life.colors import (
     tc_addstr, colormap_rgb, COLORMAP_NAMES, COLORMAPS,
 )
 from life.utils import (
-    _load_blueprints, _save_blueprints, scan_patterns, parse_rle,
+    _load_blueprints, scan_patterns, parse_rle,
     write_gif, sparkline,
 )
 from life.grid import Grid
