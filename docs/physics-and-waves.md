@@ -622,13 +622,16 @@ For pendulum i (i = 0, 1, ..., N-1):
 At t = 0:     all pendulums at theta = A (synchronized)
 At t = T_realign: all return to synchronization
 
-Preset configurations:
-  Classic:  15 pendulums, realign_time = 60s
-  Dense:    24 pendulums, realign_time = 60s
-  Grand:    32 pendulums, realign_time = 60s
+Presets (pendulums, realign_time):
+  Classic Wave:     15, 60 s
+  Dense Array:      24, 60 s
+  Wide Spread:      12, 40 s
+  Quick Cycle:      15, 20 s
+  Slow Meditation:  18, 120 s
+  Grand Ensemble:   32, 60 s
 ```
 
-**What to look for** — When released, the pendulums quickly dephase into what appears to be random motion. But beautiful order emerges: traveling waves (all pendulums form a sinusoidal shape), apparent standing waves, and chaotic-looking scatter. The cycle percentage in the status bar tracks progress toward the next full realignment. The wave indicator at the bottom shows instantaneous phase relationships. The "Grand Ensemble" preset with 32 pendulums produces the richest patterns.
+**What to look for** — Once released, the pendulums dephase into apparently random motion. Order then emerges: traveling waves (all pendulums form a sinusoidal shape), apparent standing waves, and chaotic-looking scatter. The cycle percentage in the status bar tracks progress toward the next full realignment. The wave indicator at the bottom shows instantaneous phase relationships. The "Grand Ensemble" preset with 32 pendulums produces the richest patterns.
 
 **References**
 - Flaten, J.A. and Parendo, K.A. "Pendulum waves: a lesson in aliasing," *American Journal of Physics*, 2001. https://doi.org/10.1119/1.1349543
