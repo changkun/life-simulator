@@ -124,3 +124,10 @@ def test_reenter_after_exit():
     app._handle_mitosis_menu_key(10)
     assert _count_cells(app) > 0
     app._mitosis_step()
+
+
+def test_escape_leaves_the_run():
+    app = _make_app()
+    app._mitosis_init(0)
+    assert app._handle_mitosis_key(27) is True
+    assert app.mitosis_mode is False

@@ -726,7 +726,7 @@ def _handle_mitosis_key(self, key: int) -> bool:
     if key == curses.KEY_RIGHT:
         self.mitosis_sel_c = min(self.mitosis_cols - 1, self.mitosis_sel_c + 1)
         return True
-    if key == ord('q'):
+    if key in (ord('q'), 27):
         self._exit_mitosis_mode()
         return True
     return False

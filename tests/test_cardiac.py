@@ -39,3 +39,10 @@ def test_voltage_does_not_saturate_the_clamps():
             if app.cardiac_V[r][c] <= -2.5 or app.cardiac_V[r][c] >= 3.0:
                 stuck += 1
     assert stuck == 0
+
+
+def test_escape_leaves_the_run():
+    app = _make_app()
+    app._cardiac_init(0)
+    assert app._handle_cardiac_key(27) is True
+    assert app.cardiac_mode is False

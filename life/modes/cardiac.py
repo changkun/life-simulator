@@ -716,7 +716,7 @@ def _handle_cardiac_key(self, key: int) -> bool:
         self.cardiac_menu = True
         self.cardiac_menu_sel = 0
         return True
-    if key == ord('q'):
+    if key in (ord('q'), 27):
         self._exit_cardiac_mode()
         return True
     return False
