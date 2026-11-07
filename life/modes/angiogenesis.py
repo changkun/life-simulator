@@ -1,22 +1,4 @@
-"""Mode: angio — Blood Vessel Network & Angiogenesis.
-
-A pulsing vascular network that grows through angiogenesis — vessel tip cells
-sprout toward VEGF gradients secreted by oxygen-starved tissue, branching and
-anastomosing into a self-organizing capillary network.  Pulsatile blood flow
-driven by a heartbeat pressure wave delivers oxygen to surrounding tissue;
-vessels remodel by Murray's law (high-flow widen, unused regress).  A
-toggleable tumor mode lets a growing tumor hijack the vasculature.
-
-Three views:
-  1) Living vessel network — flowing red blood cells, pulsing arteries,
-     sprouting tip cells, optional tumor mass
-  2) Oxygen / VEGF heatmap — tissue perfusion and hypoxic zones
-  3) Time-series sparkline graphs — perfusion, density, flow, O2, VEGF, tumor
-
-Six presets:
-  Healthy Tissue Growth, Wound Healing, Tumor Angiogenesis,
-  Anti-Angiogenic Drug Therapy, Retinal Vasculature, Exercise Capillarization
-"""
+"""Blood Vessel Network & Angiogenesis — VEGF-guided vessel sprouting, pulsatile flow and Murray's-law remodeling."""
 import curses
 import math
 import random
@@ -98,7 +80,7 @@ _MAX_RADIUS = 3.0
 class _VesselNode:
     """A junction in the vascular network."""
     __slots__ = ('r', 'c', 'pressure', 'oxygen', 'is_source', 'is_tip',
-                 'neighbors', 'flow_out')
+                 'neighbors')
 
     def __init__(self, r, c, is_source=False):
         self.r = r
@@ -108,7 +90,6 @@ class _VesselNode:
         self.is_source = is_source
         self.is_tip = False
         self.neighbors = []   # indices into vessel_edges
-        self.flow_out = 0.0
 
 
 class _VesselEdge:
@@ -129,8 +110,7 @@ class _VesselEdge:
 
 class _TipCell:
     """An active sprouting front guided by VEGF gradient."""
-    __slots__ = ('r', 'c', 'node_idx', 'heading', 'speed', 'age',
-                 'parent_edge')
+    __slots__ = ('r', 'c', 'node_idx', 'heading', 'speed', 'age')
 
     def __init__(self, r, c, node_idx, heading):
         self.r = r
@@ -139,7 +119,6 @@ class _TipCell:
         self.heading = heading
         self.speed = 0.5
         self.age = 0
-        self.parent_edge = -1
 
 
 class _Tumor:
@@ -171,7 +150,7 @@ class _RBCParticle:
 # ══════════════════════════════════════════════════════════════════════
 
 def _enter_angio_mode(self):
-    """Enter angiogenesis mode — show preset menu."""
+    """Show the angiogenesis preset menu."""
     self.angio_mode = True
     self.angio_menu = True
     self.angio_menu_sel = 0
@@ -195,7 +174,7 @@ def _exit_angio_mode(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _angio_init(self, preset_idx: int):
-    """Initialize simulation for the chosen preset."""
+    """Start a new simulation from the preset at preset_idx."""
     name, _desc, pid = ANGIO_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(10, max_y - 4)
@@ -350,17 +329,14 @@ def _angio_create_tree(self, root_r, root_c, rows, cols, branches=4, depth=3):
             ni = _angio_add_node(self, nr, nc)
             _angio_add_edge(self, prev, ni, radius=rad)
             prev = ni
-        # Get final position
         fr = self.angio_nodes[prev].r
         fc = self.angio_nodes[prev].c
-        # Branch
         n_sub = random.randint(1, min(3, branches))
         for _ in range(n_sub):
             new_angle = angle + random.uniform(-50, 50)
             child_rad = rad * (0.7 + random.random() * 0.15)
             _branch(prev, fr, fc, new_angle, child_rad, d - 1)
 
-    # Initial branches
     for i in range(branches):
         angle = (360.0 / branches) * i + random.uniform(-20, 20)
         _branch(src_idx, root_r, root_c, angle, 1.2 + random.random() * 0.3, depth)
@@ -385,7 +361,6 @@ def _angio_add_edge(self, n1, n2, radius=0.8):
     """Add a vessel edge between two nodes."""
     if n1 == n2:
         return -1
-    # Check for duplicate
     for ei in self.angio_nodes[n1].neighbors:
         e = self.angio_edges[ei]
         if (e.n1 == n1 and e.n2 == n2) or (e.n1 == n2 and e.n2 == n1):
@@ -903,7 +878,7 @@ def _draw_angio_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hints = " [↑/↓] Navigate   [Enter] Select   [q/Esc] Back"
+    hints = " ↑/↓=navigate  Enter=select  q/Esc=back"
     hy = max_y - 2
     if 0 < hy < max_y:
         try:
@@ -960,7 +935,7 @@ def _draw_angio(self, max_y: int, max_x: int):
         _draw_angio_graphs(self, max_y, max_x)
 
     # Bottom hints
-    hints = " [Space]Run [v]View [n]Step [+/-]Speed [t]Tumor [d]Drug [r]Reset [m]Menu [q]Exit"
+    hints = " Space=run  v=view  n=step  +/-=speed  t=tumor  d=drug  r=reset  m=menu  q=exit"
     hy = max_y - 1
     if 0 < hy < max_y:
         try:
