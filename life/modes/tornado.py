@@ -1,4 +1,4 @@
-"""Mode: tornado — simulation mode for the life package."""
+"""Tornado & Supercell Storm — a rotating supercell with a tornado vortex, debris, rain and lightning."""
 import curses
 import math
 import random
@@ -25,8 +25,6 @@ def _enter_tornado_mode(self):
     self.tornado_menu_sel = 0
 
 
-
-
 def _exit_tornado_mode(self):
     """Exit Tornado & Supercell Storm mode."""
     self.tornado_mode = False
@@ -36,8 +34,6 @@ def _exit_tornado_mode(self):
     self.tornado_debris = []
     self.tornado_lightning_segments = []
     self.tornado_destruction = []
-
-
 
 
 def _tornado_init(self, preset: str):
@@ -159,8 +155,6 @@ def _tornado_init(self, preset: str):
     self.tornado_running = True
 
 
-
-
 def _tornado_step(self):
     """Advance tornado simulation by one timestep."""
     self.tornado_generation += 1
@@ -192,7 +186,6 @@ def _tornado_step(self):
 
     # ── Update rain particles ──
     vx_center = self.tornado_vortex_x
-    vy_center = self.tornado_vortex_y
     for p in self.tornado_rain_particles:
         dx = p[0] - vx_center
         dy = p[1] - (rows * 0.3)
@@ -282,8 +275,6 @@ def _tornado_step(self):
         self.tornado_lightning_active = False
 
 
-
-
 def _tornado_generate_lightning(self):
     """Generate a branching lightning bolt from cloud to ground."""
     rows = self.tornado_rows
@@ -311,8 +302,6 @@ def _tornado_generate_lightning(self):
     self.tornado_lightning_segments = segments
 
 
-
-
 def _handle_tornado_menu_key(self, key: int) -> bool:
     """Handle keys in the tornado preset menu."""
     n = len(TORNADO_PRESETS)
@@ -321,8 +310,6 @@ def _handle_tornado_menu_key(self, key: int) -> bool:
     elif key in (curses.KEY_UP, ord('k')):
         self.tornado_menu_sel = (self.tornado_menu_sel - 1) % n
     elif key in (27, ord('q')):
-        self.tornado_menu = False
-        self.tornado_mode = False
         self._exit_tornado_mode()
     elif key in (10, 13, curses.KEY_ENTER):
         preset = TORNADO_PRESETS[self.tornado_menu_sel]
@@ -334,8 +321,6 @@ def _handle_tornado_menu_key(self, key: int) -> bool:
     else:
         return True
     return True
-
-
 
 
 def _handle_tornado_key(self, key: int) -> bool:
@@ -352,7 +337,7 @@ def _handle_tornado_key(self, key: int) -> bool:
     elif key in (ord('R'), ord('m')):
         self.tornado_menu = True
         self.tornado_running = False
-    elif key == ord('+'):
+    elif key in (ord('+'), ord('=')):
         self.tornado_speed = min(10, self.tornado_speed + 1)
     elif key == ord('-'):
         self.tornado_speed = max(1, self.tornado_speed - 1)
@@ -366,8 +351,6 @@ def _handle_tornado_key(self, key: int) -> bool:
     else:
         return True
     return True
-
-
 
 
 def _draw_tornado_menu(self, max_y: int, max_x: int):
@@ -432,8 +415,6 @@ def _draw_tornado_menu(self, max_y: int, max_x: int):
         self.stdscr.addstr(max_y - 1, 0, footer[:max_x - 1], curses.A_DIM | curses.A_REVERSE)
     except curses.error:
         pass
-
-
 
 
 def _draw_tornado(self, max_y: int, max_x: int):
@@ -660,7 +641,7 @@ def _draw_tornado(self, max_y: int, max_x: int):
         pass
 
     # ── Hint bar ──
-    hint = " Space=play n=step +/-=speed i=info l=lightning r=reset R=menu q=exit"
+    hint = " Space=play  n=step  +/-=speed  i=info  l=lightning  r=reset  R=menu  q=exit"
     if status_y + 1 < max_y:
         try:
             self.stdscr.addstr(status_y + 1, 0, hint[:cols - 1], curses.A_DIM)

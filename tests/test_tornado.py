@@ -507,3 +507,11 @@ def test_cloud_chars_nonempty():
 
 def test_funnel_chars_nonempty():
     assert len(_TORNADO_FUNNEL_CHARS) > 0
+
+
+def test_sim_key_equals_speeds_up():
+    """'=' is the unshifted '+' and raises the speed too."""
+    app = _make_app()
+    app.tornado_speed = 2
+    app._handle_tornado_key(ord('='))
+    assert app.tornado_speed == 3
