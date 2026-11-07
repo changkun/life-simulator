@@ -179,6 +179,7 @@ def _ferrofluid_init(self, preset_idx: int):
         _init_flat_with_noise(h, rows, cols, base=0.3, noise=0.03)
 
     self.ferrofluid_h = h
+    self.ferrofluid_h_target = sum(map(sum, h)) / (rows * cols)
     self.ferrofluid_v = v
     self.ferrofluid_M = M
     self.ferrofluid_mode = True
@@ -315,10 +316,15 @@ def _ferrofluid_step(self):
 
     new_v = [[0.0] * cols for _ in range(rows)]
     new_h = [[0.0] * cols for _ in range(rows)]
+    # Fluid is conserved, so the instability and gravity act on the deviation
+    # from the mean level. Acting on the absolute height fills the grid.
+    h_mean = sum(map(sum, h)) / (rows * cols)
+    h_target = getattr(self, "ferrofluid_h_target", h_mean)
 
     for r in range(rows):
         for c in range(cols):
             hi = h[r][c]
+            dev = hi - h_mean
 
             # Compute local magnetic field and gradient
             B_local, dBdr, dBdc = _compute_field(self, r, c)
@@ -330,10 +336,10 @@ def _ferrofluid_step(self):
             # Kelvin force: F ~ M * grad(B)
             # For Rosensweig: instability when B > B_crit, taller regions
             # experience stronger field → positive feedback
-            mag_force = mu * hi * (B_local - B_crit)
+            mag_force = mu * dev * (B_local - B_crit)
             if B_local > B_crit:
                 # Above critical field: height perturbations amplified
-                mag_force += 0.5 * mu * (B_local - B_crit) ** 2 * hi
+                mag_force += 0.5 * mu * (B_local - B_crit) ** 2 * dev
 
             # Gradient force (for non-uniform fields)
             # Drives fluid toward field maxima
@@ -350,7 +356,7 @@ def _ferrofluid_step(self):
             surface_force = gamma * laplacian
 
             # -- Gravity --
-            grav_force = -grav * hi
+            grav_force = -grav * dev
 
             # -- Dipolar chaining force --
             # Neighbouring cells with similar high magnetisation attract
@@ -366,8 +372,18 @@ def _ferrofluid_step(self):
             new_v[r][c] = new_vi
 
             # -- Update height --
-            new_hi = hi + new_vi
-            new_h[r][c] = max(0.0, min(1.0, new_hi))
+            new_h[r][c] = max(0.0, min(1.0, hi + new_vi))
+
+    # Clamping to [0, 1] and the gradient force change the fluid volume, so
+    # shift the level back to the target a few times.
+    for _ in range(4):
+        shift = h_target - sum(map(sum, new_h)) / (rows * cols)
+        if abs(shift) < 1e-4:
+            break
+        for r in range(rows):
+            row = new_h[r]
+            for c in range(cols):
+                row[c] = max(0.0, min(1.0, row[c] + shift))
 
     # -- Labyrinthine: add long-range dipolar repulsion for stripe formation --
     if kind == "labyrinthine":
@@ -423,7 +439,9 @@ def _ferrofluid_perturb(self, r, c):
                 rr = (r + dr) % rows
                 rc = (c + dc) % cols
                 add = 0.4 * (1.0 - d2 / (rad * rad + 1))
-                self.ferrofluid_h[rr][rc] = min(1.0, self.ferrofluid_h[rr][rc] + add)
+                old = self.ferrofluid_h[rr][rc]
+                self.ferrofluid_h[rr][rc] = min(1.0, old + add)
+                self.ferrofluid_h_target += (self.ferrofluid_h[rr][rc] - old) / (rows * cols)
     self._flash(f"Added fluid at ({r},{c})")
 
 
