@@ -42,7 +42,9 @@ def _exit_tornado_mode(self):
 
 def _tornado_init(self, preset: str):
     """Initialize tornado simulation from preset."""
-    rows, cols = self.grid.rows, self.grid.cols
+    # Size the storm to the terminal: the draw code clips to it, so a larger
+    # world would put the ground, debris and lightning off screen.
+    rows, cols = self.stdscr.getmaxyx()
     self.tornado_rows = rows
     self.tornado_cols = cols
     self.tornado_time = 0.0

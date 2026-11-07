@@ -102,12 +102,20 @@ def test_init_resets_state():
 
 
 def test_vortex_centered():
-    """Vortex should start at center of grid."""
+    """Vortex should start at the center of the screen."""
     app = _make_app()
     app._tornado_init("ef3")
-    rows, cols = app.grid.rows, app.grid.cols
+    rows, cols = app.stdscr.getmaxyx()
     assert app.tornado_vortex_x == float(cols // 2)
     assert app.tornado_vortex_y == float(rows // 2)
+
+
+def test_world_matches_terminal_not_grid():
+    """The storm is sized to the terminal so ground and lightning stay visible."""
+    app = _make_app()
+    app._tornado_init("ef3")
+    assert (app.tornado_rows, app.tornado_cols) == app.stdscr.getmaxyx()
+    assert (app.tornado_rows, app.tornado_cols) != (app.grid.rows, app.grid.cols)
 
 
 def test_rain_particles_initial_positions():
