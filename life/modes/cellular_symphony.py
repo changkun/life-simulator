@@ -183,20 +183,30 @@ def _enter_symphony_mode(self):
     self.symphony_last_voices = []
     self.symphony_gen_count = 0
 
-    # Apply first rule preset
+    # Remember the grid rule and sound state so exit can restore them.
+    self.symphony_saved_rule = (set(self.grid.birth), set(self.grid.survival))
+    self.symphony_enabled_sound = False
+
     preset = RULE_PRESETS[self.symphony_rule_idx]
     self.grid.birth = set(preset["b"])
     self.grid.survival = set(preset["s"])
 
-    # Enable sound engine
     if hasattr(self, 'sound') and self.sound and not self.sound.enabled:
         self.sound.toggle()
+        self.symphony_enabled_sound = True
 
 
 def _exit_symphony_mode(self):
     """Clean up Cellular Symphony mode."""
     self.symphony_mode = False
     self.symphony_running = False
+    saved = getattr(self, "symphony_saved_rule", None)
+    if saved is not None:
+        self.grid.birth, self.grid.survival = set(saved[0]), set(saved[1])
+        self.symphony_saved_rule = None
+    if getattr(self, "symphony_enabled_sound", False):
+        self.sound.toggle()
+        self.symphony_enabled_sound = False
 
 
 def _is_symphony_auto_stepping(self):
@@ -231,7 +241,7 @@ def _handle_symphony_key(self, key):
         return True
 
     if key == ord('o'):
-        self.symphony_octave_range = (self.symphony_octave_range % 4) + 2  # cycles 2-5
+        self.symphony_octave_range = (self.symphony_octave_range - 1) % 4 + 2  # 2 -> 3 -> 4 -> 5 -> 2
         return True
 
     if key in (ord('+'), ord('=')):
