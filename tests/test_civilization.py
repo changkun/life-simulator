@@ -74,3 +74,29 @@ def test_population_grows_with_food():
     final_pop = sum(t["pop"] for t in app.civ_tribes if t["alive"])
     # Population should have grown overall (food from territory)
     assert final_pop > 0
+
+
+def test_fallen_tribe_removed_from_partner_sets():
+    app = _make_app()
+    app.civ_mode = True
+    app._civ_init(0)
+    a, b = app.civ_tribes[0], app.civ_tribes[1]
+    a["trade_partners"].add(b["id"])
+    b["trade_partners"].add(a["id"])
+    a["at_war_with"].add(b["id"])
+    b["alive"] = False
+    b["pop"] = 0
+    app._civ_step()
+    assert b["id"] not in a["trade_partners"]
+    assert b["id"] not in a["at_war_with"]
+
+
+def test_log_toggle_reset_on_init_and_exit():
+    app = _make_app()
+    app._civ_init(0)
+    app.civ_show_log = True
+    app._civ_init(0)
+    assert app.civ_show_log is False
+    app.civ_show_log = True
+    app._exit_civ_mode()
+    assert app.civ_show_log is False
