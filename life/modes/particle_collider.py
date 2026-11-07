@@ -534,11 +534,11 @@ def _draw_collider(self, max_y: int, max_x: int):
 
     # ── Energy readout / beam status (top-left) ──
     status_lines = [
-        f"╔═══ BEAM STATUS ═══╗",
-        f"║ Energy: {self.collider_energy:.1f} TeV   ║",
-        f"║ Events: {self.collider_total_collisions:<10d}║",
-        f"║ Gen: {self.collider_generation:<13d}║",
-        f"╚═══════════════════╝",
+        "╔═══ BEAM STATUS ═══╗",
+        f"║ {f'Energy: {self.collider_energy:.1f} TeV':<17s} ║",
+        f"║ {f'Events: {self.collider_total_collisions}':<17s} ║",
+        f"║ {f'Gen: {self.collider_generation}':<17s} ║",
+        "╚═══════════════════╝",
     ]
     for i, line in enumerate(status_lines):
         if i < rows - 1 and len(line) < cols - 1:
@@ -590,24 +590,25 @@ def _draw_collider(self, max_y: int, max_x: int):
 
     # ── Optional info overlay ──
     if self.collider_show_info:
-        info_lines = [
-            "╔═══════════════════════════════════════════════╗",
-            "║   Particle Collider Simulation                ║",
-            "║                                               ║",
-            f"║   Preset: {self.collider_preset_name:<20s}            ║",
-            f"║   Beam Energy: {self.collider_energy:.1f} TeV                    ║",
-            f"║   Total Collisions: {self.collider_total_collisions:<10d}             ║",
-            f"║   Active Showers: {len(self.collider_showers):<10d}               ║",
-            f"║   Particles Detected: {len(self.collider_detections):<10d}           ║",
-            f"║   Ring Size: {self.collider_ring_rx:.0f}×{self.collider_ring_ry:.0f}                       ║",
-            "║                                               ║",
-            "║   Controls:                                   ║",
-            "║   Space — Pause/Resume    c — Force collision  ║",
-            "║   +/- — Speed             r — Reset            ║",
-            "║   R — Preset menu         i — Toggle info      ║",
-            "║   q — Quit                                     ║",
-            "╚═══════════════════════════════════════════════╝",
+        body = [
+            "  Particle Collider Simulation",
+            "",
+            f"  Preset: {self.collider_preset_name}",
+            f"  Beam Energy: {self.collider_energy:.1f} TeV",
+            f"  Total Collisions: {self.collider_total_collisions}",
+            f"  Active Showers: {len(self.collider_showers)}",
+            f"  Particles Detected: {len(self.collider_detections)}",
+            f"  Ring Size: {self.collider_ring_rx:.0f}×{self.collider_ring_ry:.0f}",
+            "",
+            "  Controls:",
+            "  Space — Pause/Resume    c — Force collision",
+            "  +/- — Speed             r — Reset",
+            "  R — Preset menu         i — Toggle info",
+            "  q — Quit",
         ]
+        info_lines = ["╔" + "═" * 47 + "╗"]
+        info_lines += [f"║{line:<47s}║" for line in body]
+        info_lines.append("╚" + "═" * 47 + "╝")
         info_y = max(0, (rows - len(info_lines)) // 2)
         for i, line in enumerate(info_lines):
             iy = info_y + i
