@@ -1,9 +1,8 @@
-"""Mode: nbody — simulation mode for the life package."""
+"""N-Body Gravity — bodies attract each other under Newtonian gravity and merge on contact."""
 import curses
 import math
 import random
 import time
-
 
 from life.constants import SPEEDS
 
@@ -21,7 +20,7 @@ NBODY_PRESETS = [
 ]
 
 def _enter_nbody_mode(self):
-    """Enter N-Body Gravity mode — show preset menu."""
+    """Show the N-Body Gravity preset menu."""
     self.nbody_menu = True
     self.nbody_menu_sel = 0
     self._flash("N-Body Gravity — select a configuration")
@@ -29,7 +28,7 @@ def _enter_nbody_mode(self):
 
 
 def _exit_nbody_mode(self):
-    """Exit N-Body Gravity mode."""
+    """Leave N-Body Gravity mode and clear its state."""
     self.nbody_mode = False
     self.nbody_menu = False
     self.nbody_running = False
@@ -40,7 +39,7 @@ def _exit_nbody_mode(self):
 
 
 def _nbody_init(self, preset_idx: int):
-    """Initialize N-Body simulation with the given preset."""
+    """Start N-Body Gravity with the given preset."""
     name, _desc, setup_key = self.NBODY_PRESETS[preset_idx]
     self.nbody_preset_name = name
     self.nbody_generation = 0
@@ -62,9 +61,6 @@ def _nbody_init(self, preset_idx: int):
     if setup_key == "solar":
         # Central star
         self.nbody_bodies.append([cr, cc, 0.0, 0.0, 500.0])
-        self.nbody_grav_const = 1.0
-        self.nbody_dt = 0.02
-        self.nbody_softening = 0.5
         # Planets at increasing radii
         radii = [6.0, 10.0, 15.0, 21.0, 28.0, 36.0]
         masses = [0.1, 0.3, 0.5, 1.0, 2.0, 0.2]
@@ -85,9 +81,6 @@ def _nbody_init(self, preset_idx: int):
         v = math.sqrt(self.nbody_grav_const * star_mass / (2.0 * sep))
         self.nbody_bodies.append([cr - sep / 2, cc, 0.0, v, star_mass])
         self.nbody_bodies.append([cr + sep / 2, cc, 0.0, -v, star_mass])
-        self.nbody_grav_const = 1.0
-        self.nbody_dt = 0.02
-        self.nbody_softening = 0.5
         # Add some small orbiting debris
         for _ in range(20):
             angle = random.random() * 2 * math.pi
@@ -155,9 +148,6 @@ def _nbody_init(self, preset_idx: int):
     elif setup_key == "lagrange":
         # Large central mass with trojans at L4/L5
         central_mass = 400.0
-        self.nbody_grav_const = 1.0
-        self.nbody_dt = 0.02
-        self.nbody_softening = 0.5
         self.nbody_bodies.append([cr, cc, 0.0, 0.0, central_mass])
         # Planet
         planet_r = 20.0
@@ -184,7 +174,6 @@ def _nbody_init(self, preset_idx: int):
             self.nbody_bodies.append([pr, pc, vr, vc, 0.01 + random.random() * 0.1])
 
     self.nbody_num_bodies = len(self.nbody_bodies)
-    # Initialize trails
     for i in range(self.nbody_num_bodies):
         self.nbody_trails[i] = []
 
@@ -195,7 +184,7 @@ def _nbody_init(self, preset_idx: int):
 
 
 def _nbody_step(self):
-    """Advance N-Body simulation by one step using velocity Verlet integration."""
+    """Advance the bodies by one step (velocity Verlet), then merge close pairs."""
     bodies = self.nbody_bodies
     n = len(bodies)
     if n == 0:
@@ -295,11 +284,7 @@ def _nbody_step(self):
         trail.append((int(ri), int(ci)))
         if len(trail) > self.nbody_trail_len:
             trail = trail[-self.nbody_trail_len:]
-        if new_i not in new_trails:
-            new_trails[new_i] = trail
-        else:
-            # Merge trails from merged bodies
-            new_trails[new_i] = (new_trails[new_i] + trail)[-self.nbody_trail_len:]
+        new_trails[new_i] = trail
 
     self.nbody_bodies = final_bodies
     self.nbody_num_bodies = len(final_bodies)
@@ -309,7 +294,7 @@ def _nbody_step(self):
 
 
 def _handle_nbody_menu_key(self, key: int) -> bool:
-    """Handle input in N-Body preset menu."""
+    """Handle keys in the preset menu."""
     n = len(self.NBODY_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.nbody_menu_sel = (self.nbody_menu_sel + 1) % n
@@ -325,7 +310,7 @@ def _handle_nbody_menu_key(self, key: int) -> bool:
 
 
 def _handle_nbody_key(self, key: int) -> bool:
-    """Handle input in active N-Body simulation."""
+    """Handle keys while the simulation is active."""
     if key == ord(" "):
         self.nbody_running = not self.nbody_running
     elif key in (ord("n"), ord(".")):
@@ -367,7 +352,7 @@ def _handle_nbody_key(self, key: int) -> bool:
         self._flash(f"Steps/frame: {self.nbody_steps_per_frame}")
     elif key == ord("<") or key == ord(","):
         self.speed_idx = max(0, self.speed_idx - 1)
-    elif key == ord(">") or key == ord("."):
+    elif key == ord(">"):
         self.speed_idx = min(len(SPEEDS) - 1, self.speed_idx + 1)
     elif key in (ord("q"), 27):
         self._exit_nbody_mode()
@@ -378,7 +363,7 @@ def _handle_nbody_key(self, key: int) -> bool:
 
 
 def _draw_nbody_menu(self, max_y: int, max_x: int):
-    """Draw the N-Body preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── N-Body Gravity Simulation ── Select Configuration ──"
     try:
@@ -409,12 +394,11 @@ def _draw_nbody_menu(self, max_y: int, max_x: int):
 
 
 def _draw_nbody(self, max_y: int, max_x: int):
-    """Draw the active N-Body simulation."""
+    """Draw the bodies, trails, status line and hint bar."""
     self.stdscr.erase()
     bodies = self.nbody_bodies
     n = len(bodies)
     rows, cols = self.nbody_rows, self.nbody_cols
-    chars = self.NBODY_CHARS
     colors = self.NBODY_COLORS
     state = "▶ RUNNING" if self.nbody_running else "⏸ PAUSED"
 
