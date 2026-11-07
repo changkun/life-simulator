@@ -1,4 +1,4 @@
-"""Mode: voronoi — simulation mode for the life package."""
+"""Voronoi Diagram — seeded crystal grains grow outward until they meet at grain boundaries."""
 import curses
 import math
 import random
@@ -6,15 +6,15 @@ import time
 
 
 def _enter_voronoi_mode(self):
-    """Enter Voronoi Crystal Growth mode — show preset menu."""
+    """Enter Voronoi Diagram mode and show the preset menu."""
     self.voronoi_menu = True
     self.voronoi_menu_sel = 0
-    self._flash("Voronoi Crystal Growth — select a scenario")
+    self._flash("Voronoi Diagram — select a scenario")
 
 
 
 def _exit_voronoi_mode(self):
-    """Exit Voronoi Crystal Growth mode."""
+    """Exit Voronoi Diagram mode."""
     self.voronoi_mode = False
     self.voronoi_menu = False
     self.voronoi_running = False
@@ -22,12 +22,12 @@ def _exit_voronoi_mode(self):
     self.voronoi_seeds = []
     self.voronoi_angles = []
     self.voronoi_frontier = []
-    self._flash("Voronoi Crystal Growth OFF")
+    self._flash("Voronoi Diagram OFF")
 
 
 
 def _voronoi_init(self, preset_idx: int):
-    """Initialize voronoi simulation with selected preset."""
+    """Start the simulation with the selected preset."""
     name, _desc, num_seeds, aniso, seed_mode = self.VORONOI_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max_y - 2
@@ -57,22 +57,18 @@ def _voronoi_init(self, preset_idx: int):
         taken.add(pos)
         return pos
 
-    # Place seeds based on mode
     if seed_mode == "edge":
-        # Seeds along left edge
         for i in range(num_seeds):
             r = int((i + 0.5) * rows / num_seeds)
             c = 0
             self.voronoi_seeds.append((r, c))
             self.voronoi_angles.append(random.random() * math.pi * 2)
     elif seed_mode == "bicrystal":
-        # Two seeds on opposite sides
         self.voronoi_seeds.append((rows // 2, cols // 4))
         self.voronoi_angles.append(0.0)
         self.voronoi_seeds.append((rows // 2, 3 * cols // 4))
         self.voronoi_angles.append(math.pi / 3)
     elif seed_mode == "center":
-        # Seeds clustered near center
         cr, cc = rows // 2, cols // 2
         def near_centre():
             angle = random.random() * math.pi * 2
@@ -85,7 +81,6 @@ def _voronoi_init(self, preset_idx: int):
             self.voronoi_seeds.append(free_cell(near_centre))
             self.voronoi_angles.append(random.random() * math.pi * 2)
     else:
-        # Random placement
         for _i in range(num_seeds):
             self.voronoi_seeds.append(free_cell(
                 lambda: (random.randint(0, rows - 1), random.randint(0, cols - 1))))
@@ -98,10 +93,8 @@ def _voronoi_init(self, preset_idx: int):
     self.voronoi_seeds = list(unique)
     self.voronoi_angles = list(unique.values())
 
-    # Initialize seeds on grid and frontier
     for gid, (r, c) in enumerate(self.voronoi_seeds):
         self.voronoi_grid[r][c] = gid
-        # Add neighbors to frontier
         for dr in (-1, 0, 1):
             for dc in (-1, 0, 1):
                 if dr == 0 and dc == 0:
@@ -119,7 +112,7 @@ def _voronoi_init(self, preset_idx: int):
 
 
 def _voronoi_step(self):
-    """Advance voronoi crystal growth by one step."""
+    """Advance crystal growth by one step."""
     if not self.voronoi_frontier:
         return
 
@@ -128,7 +121,7 @@ def _voronoi_step(self):
     grid = self.voronoi_grid
     aniso = self.voronoi_aniso
 
-    # Process frontier in random order for natural growth
+    # Random order keeps the growth front from favouring one direction.
     random.shuffle(self.voronoi_frontier)
 
     new_frontier: list[tuple[int, int, int]] = []
@@ -138,8 +131,7 @@ def _voronoi_step(self):
         if grid[r][c] != -1:
             continue  # already claimed
 
-        # Anisotropic growth probability
-        # Direction from seed to this cell
+        # Growth is likelier along the grain's preferred direction.
         sr, sc = self.voronoi_seeds[gid]
         dr = r - sr
         dc = c - sc
@@ -148,11 +140,9 @@ def _voronoi_step(self):
         else:
             angle_to_cell = math.atan2(dr, dc)
             preferred = self.voronoi_angles[gid]
-            # Angular difference — growth is faster along preferred direction
             diff = abs(angle_to_cell - preferred)
             if diff > math.pi:
                 diff = 2 * math.pi - diff
-            # Probability: 1.0 along preferred axis, reduced perpendicular
             prob = 1.0 - aniso * (diff / math.pi)
             prob = max(0.1, prob)
 
@@ -169,7 +159,6 @@ def _voronoi_step(self):
                         if (nr, nc) not in claimed_this_step:
                             new_frontier.append((nr, nc, gid))
         else:
-            # Keep in frontier for next step
             new_frontier.append((r, c, gid))
 
     self.voronoi_frontier = new_frontier
@@ -178,7 +167,7 @@ def _voronoi_step(self):
 
 
 def _voronoi_is_boundary(self, r: int, c: int) -> bool:
-    """Check if cell (r, c) is on a grain boundary."""
+    """Return True if cell (r, c) touches a different grain."""
     grid = self.voronoi_grid
     gid = grid[r][c]
     if gid == -1:
@@ -199,7 +188,7 @@ def _voronoi_is_boundary(self, r: int, c: int) -> bool:
 
 
 def _handle_voronoi_menu_key(self, key: int) -> bool:
-    """Handle keys in voronoi preset menu."""
+    """Handle keys in the preset menu."""
     if key == curses.KEY_UP:
         self.voronoi_menu_sel = (self.voronoi_menu_sel - 1) % len(self.VORONOI_PRESETS)
     elif key == curses.KEY_DOWN:
@@ -208,7 +197,7 @@ def _handle_voronoi_menu_key(self, key: int) -> bool:
         self._voronoi_init(self.voronoi_menu_sel)
     elif key == 27 or key == ord("q") or key == ord("%"):
         self.voronoi_menu = False
-        self._flash("Voronoi Crystal Growth cancelled")
+        self._flash("Voronoi Diagram cancelled")
     else:
         return True
     return True
@@ -216,7 +205,7 @@ def _handle_voronoi_menu_key(self, key: int) -> bool:
 
 
 def _handle_voronoi_key(self, key: int) -> bool:
-    """Handle keys during voronoi simulation."""
+    """Handle keys while the simulation runs."""
     if key == ord(" "):
         self.voronoi_running = not self.voronoi_running
     elif key == ord("n"):
@@ -228,9 +217,7 @@ def _handle_voronoi_key(self, key: int) -> bool:
         self.voronoi_steps_per_frame = max(1, self.voronoi_steps_per_frame - 2)
         self._flash(f"Steps/frame: {self.voronoi_steps_per_frame}")
     elif key == ord("r"):
-        # Reset with same preset
-        idx = self.voronoi_menu_sel
-        self._voronoi_init(idx)
+        self._voronoi_init(self.voronoi_menu_sel)
     elif key == ord("R"):
         self.voronoi_mode = False
         self.voronoi_menu = True
@@ -238,11 +225,9 @@ def _handle_voronoi_key(self, key: int) -> bool:
     elif key == ord("q") or key == ord("%"):
         self._exit_voronoi_mode()
     elif key == ord("a"):
-        # Increase anisotropy
         self.voronoi_aniso = min(0.9, self.voronoi_aniso + 0.05)
         self._flash(f"Anisotropy: {self.voronoi_aniso:.2f}")
     elif key == ord("A"):
-        # Decrease anisotropy
         self.voronoi_aniso = max(0.0, self.voronoi_aniso - 0.05)
         self._flash(f"Anisotropy: {self.voronoi_aniso:.2f}")
     else:
@@ -252,9 +237,9 @@ def _handle_voronoi_key(self, key: int) -> bool:
 
 
 def _draw_voronoi_menu(self, max_y: int, max_x: int):
-    """Draw the voronoi preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
-    title = "── Voronoi Crystal Growth ── Select Scenario ──"
+    title = "── Voronoi Diagram ── Select Scenario ──"
     try:
         self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
                            curses.color_pair(7) | curses.A_BOLD)
@@ -278,10 +263,9 @@ def _draw_voronoi_menu(self, max_y: int, max_x: int):
             except curses.error:
                 pass
 
-    # Footer
     foot_y = max_y - 1
     if foot_y > 0:
-        foot = " [↑/↓]=select  [Enter]=start  [q]=cancel"
+        foot = " ↑/↓=select  Enter=start  q=cancel"
         try:
             self.stdscr.addstr(foot_y, 0, foot[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
@@ -290,7 +274,7 @@ def _draw_voronoi_menu(self, max_y: int, max_x: int):
 
 
 def _draw_voronoi(self, max_y: int, max_x: int):
-    """Draw the active voronoi crystal growth simulation."""
+    """Draw the grain grid."""
     self.stdscr.erase()
     rows = self.voronoi_rows
     cols = self.voronoi_cols
@@ -298,7 +282,6 @@ def _draw_voronoi(self, max_y: int, max_x: int):
     gen = self.voronoi_generation
     frontier_count = len(self.voronoi_frontier)
 
-    # Title bar
     status = "GROWING" if self.voronoi_running and frontier_count > 0 else ("COMPLETE" if frontier_count == 0 else "PAUSED")
     title = (f" Voronoi: {self.voronoi_preset_name}  |  step {gen}"
              f"  |  grains: {self.voronoi_grain_count}"
@@ -319,15 +302,12 @@ def _draw_voronoi(self, max_y: int, max_x: int):
             sx = c * 2
             gid = grid[r][c]
             if gid == -1:
-                # Unclaimed — empty space
                 ch = "  "
                 attr = 0
             elif self._voronoi_is_boundary(r, c):
-                # Grain boundary
                 ch = "▒▒"
                 attr = curses.color_pair(115) | curses.A_DIM
             else:
-                # Interior of grain — color based on grain ID
                 color_idx = 100 + (gid % num_grain_colors)
                 ch = "██"
                 attr = curses.color_pair(color_idx)
@@ -336,14 +316,13 @@ def _draw_voronoi(self, max_y: int, max_x: int):
             except curses.error:
                 pass
 
-    # Hint bar
     hint_y = max_y - 1
     if hint_y > 0:
         now = time.monotonic()
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [a/A]=aniso+/- [+/-]=steps/f [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  a/A=aniso  +/-=steps/frame  r=reset  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -381,7 +360,7 @@ VORONOI_PRESETS = [
 
 
 def register(App):
-    """Register voronoi mode methods on the App class."""
+    """Register Voronoi Diagram mode on the App class."""
     App.VORONOI_PRESETS = VORONOI_PRESETS
     App._enter_voronoi_mode = _enter_voronoi_mode
     App._exit_voronoi_mode = _exit_voronoi_mode
