@@ -436,3 +436,21 @@ class TestSandpileGrainConservation:
             self.app._sandpile_step()
         actual = _sum_grid(self.app.sandpile_grid)
         assert self.app.sandpile_total_grains == actual
+
+
+class TestSeedPresetsEvolve:
+    """Stable seed presets must keep changing once stepped."""
+
+    def setup_method(self):
+        random.seed(1)
+        self.app = _setup_app()
+
+    @pytest.mark.parametrize("drop_mode", ["diamond", "checkerboard"])
+    def test_seed_preset_drops_grains(self, drop_mode):
+        idx = next(i for i, p in enumerate(SANDPILE_PRESETS) if p[2] == drop_mode)
+        self.app._sandpile_init(idx)
+        before = [row[:] for row in self.app.sandpile_grid]
+        for _ in range(20):
+            self.app._sandpile_step()
+        assert self.app.sandpile_grid != before
+        assert self.app.sandpile_total_grains == _sum_grid(self.app.sandpile_grid)

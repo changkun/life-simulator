@@ -18,7 +18,7 @@ SANDPILE_PRESETS = [
     ("Random Rain", "Grains drop at random locations continuously", "random", 1, 0, 1),
     ("Four Corners", "Simultaneous piles in four corners", "corners", 1, 0, 1),
     ("Diamond Seed", "Start with grains arranged in a diamond", "diamond", 1, 0, 1),
-    ("Checkerboard", "Start with alternating 3-grain cells", "checkerboard", 0, 0, 5),
+    ("Checkerboard", "Start with alternating 3-grain cells", "checkerboard", 1, 0, 5),
     ("Max Stable", "Fill grid with 3 grains everywhere, then perturb center", "max_stable", 0, 0, 5),
     ("Identity Element", "The sandpile identity — unique fractal from 2·max minus topple(2·max)", "identity", 0, 0, 10),
     ("Random Fill", "Random grain counts (0-3) everywhere, then perturb center", "random_fill", 0, 0, 5),
@@ -166,7 +166,8 @@ def _sandpile_drop(self):
     grid = self.sandpile_grid
     cr, cc = rows // 2, cols // 2
 
-    if self.sandpile_drop_mode == "center":
+    # Diamond and checkerboard seeds are stable, so drops at the center set them off.
+    if self.sandpile_drop_mode in ("center", "diamond", "checkerboard"):
         grid[cr][cc] += self.sandpile_drop_amount
         self.sandpile_total_grains += self.sandpile_drop_amount
     elif self.sandpile_drop_mode == "random":
