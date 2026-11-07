@@ -233,25 +233,32 @@ def _cast_rec_capture(self):
 
 
 def _cast_rec_export(self, fmt):
-    """Export captured frames in the given format ('cast' or 'txt')."""
-    os.makedirs(SAVE_DIR, exist_ok=True)
-    n = len(self.cast_frames)
-    timestamp = int(time.time())
-    if fmt == "cast":
-        filename = f"recording_{timestamp}.cast"
-        filepath = os.path.join(SAVE_DIR, filename)
-        _export_cast(self.cast_frames, self.cast_timestamps,
-                     self.cast_width, self.cast_height, filepath)
-        self._flash(f"Saved: {filename} ({n} frames)")
-    elif fmt == "txt":
-        filename = f"recording_{timestamp}.txt"
-        filepath = os.path.join(SAVE_DIR, filename)
-        _export_txt(self.cast_frames_plain, self.cast_timestamps, filepath)
-        self._flash(f"Saved: {filename} ({n} frames)")
-    else:
+    """Export captured frames in the given format ('cast' or 'txt').
+
+    On a write error the frames are kept so the user can retry or pick another format.
+    """
+    if fmt not in ("cast", "txt"):
         self._flash(f"Unknown format: {fmt}")
         return
-    # Clean up
+    n = len(self.cast_frames)
+    filename = f"recording_{int(time.time())}.{fmt}"
+    try:
+        os.makedirs(SAVE_DIR, exist_ok=True)
+        filepath = os.path.join(SAVE_DIR, filename)
+        if fmt == "cast":
+            _export_cast(self.cast_frames, self.cast_timestamps,
+                         self.cast_width, self.cast_height, filepath)
+        else:
+            _export_txt(self.cast_frames_plain, self.cast_timestamps, filepath)
+    except OSError as e:
+        self._flash(f"Export failed: {e.strerror or e}")
+        return
+    self._flash(f"Saved: {filename} ({n} frames)")
+    _cast_rec_clear(self)
+
+
+def _cast_rec_clear(self):
+    """Drop captured frames and close the export menu."""
     self.cast_frames = []
     self.cast_frames_plain = []
     self.cast_timestamps = []
@@ -260,10 +267,7 @@ def _cast_rec_export(self, fmt):
 
 def _cast_rec_discard(self):
     """Discard captured frames without exporting."""
-    self.cast_frames = []
-    self.cast_frames_plain = []
-    self.cast_timestamps = []
-    self.cast_export_menu = False
+    _cast_rec_clear(self)
     self._flash("Recording discarded")
 
 
@@ -307,23 +311,20 @@ def _handle_cast_export_key(self, key):
 
 def _cast_rec_export_both(self):
     """Export as both .cast and .txt."""
-    os.makedirs(SAVE_DIR, exist_ok=True)
     n = len(self.cast_frames)
-    timestamp = int(time.time())
-    # .cast
-    cast_file = f"recording_{timestamp}.cast"
-    _export_cast(self.cast_frames, self.cast_timestamps,
-                 self.cast_width, self.cast_height,
-                 os.path.join(SAVE_DIR, cast_file))
-    # .txt
-    txt_file = f"recording_{timestamp}.txt"
-    _export_txt(self.cast_frames_plain, self.cast_timestamps,
-                os.path.join(SAVE_DIR, txt_file))
-    self._flash(f"Saved: {cast_file} + {txt_file} ({n} frames)")
-    self.cast_frames = []
-    self.cast_frames_plain = []
-    self.cast_timestamps = []
-    self.cast_export_menu = False
+    stem = f"recording_{int(time.time())}"
+    try:
+        os.makedirs(SAVE_DIR, exist_ok=True)
+        _export_cast(self.cast_frames, self.cast_timestamps,
+                     self.cast_width, self.cast_height,
+                     os.path.join(SAVE_DIR, stem + ".cast"))
+        _export_txt(self.cast_frames_plain, self.cast_timestamps,
+                    os.path.join(SAVE_DIR, stem + ".txt"))
+    except OSError as e:
+        self._flash(f"Export failed: {e.strerror or e}")
+        return
+    self._flash(f"Saved: {stem}.cast + {stem}.txt ({n} frames)")
+    _cast_rec_clear(self)
 
 
 def _draw_cast_export_menu(self, max_y, max_x):

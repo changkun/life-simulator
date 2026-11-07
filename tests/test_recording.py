@@ -143,3 +143,33 @@ def test_export_menu_accepts_keypad_enter():
     app._cast_rec_export = unittest.mock.MagicMock()
     assert app._handle_cast_export_key(curses.KEY_ENTER) is True
     app._cast_rec_export.assert_called_once_with("cast")
+
+
+def test_export_failure_keeps_frames(tmp_path):
+    """A write error is reported and the recording is kept for a retry."""
+    app = _make_app()
+    app.cast_frames = ["x"]
+    app.cast_frames_plain = ["x"]
+    app.cast_timestamps = [0.0]
+    app.cast_export_menu = True
+    blocker = tmp_path / "file"
+    blocker.write_text("")
+    with unittest.mock.patch("life.modes.recording.SAVE_DIR", str(blocker / "sub")):
+        app._cast_rec_export("cast")
+        assert "Export failed" in app.message
+        app._cast_rec_export_both()
+        assert "Export failed" in app.message
+    assert app.cast_frames == ["x"]
+    assert app.cast_export_menu is True
+
+
+def test_export_both_writes_files(tmp_path):
+    app = _make_app()
+    app.cast_frames = ["x"]
+    app.cast_frames_plain = ["x"]
+    app.cast_timestamps = [0.0]
+    app.cast_export_menu = True
+    with unittest.mock.patch("life.modes.recording.SAVE_DIR", str(tmp_path)):
+        app._cast_rec_export_both()
+    assert sorted(p.suffix for p in tmp_path.iterdir()) == [".cast", ".txt"]
+    assert app.cast_frames == [] and app.cast_export_menu is False
