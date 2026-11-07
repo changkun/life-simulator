@@ -13,14 +13,13 @@ Keys (when in branch view):
   +/-                 — change speed
   Ctrl+F              — exit branch view and return to normal
 """
-import copy
 import curses
 import time
 
 from life.colors import color_for_age
-from life.constants import CELL_CHAR, SPEED_LABELS
+from life.constants import CELL_CHAR, SPEED_LABELS, SPEEDS
 from life.grid import Grid
-from life.rules import RULE_PRESETS, parse_rule_string, rule_string
+from life.rules import parse_rule_string, rule_string
 from life.utils import sparkline
 
 
@@ -195,7 +194,6 @@ def _tbranch_handle_split_key(self, key: int) -> bool:
             self._flash(f"Speed: {SPEED_LABELS[self.speed_idx]}")
         return True
     if key == ord(">"):
-        from life.constants import SPEEDS
         if self.speed_idx < len(SPEEDS) - 1:
             self.speed_idx += 1
             self._flash(f"Speed: {SPEED_LABELS[self.speed_idx]}")
