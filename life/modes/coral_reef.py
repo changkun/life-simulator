@@ -1,17 +1,4 @@
-"""Mode: coral_reef — multi-species marine ecosystem simulation.
-
-A 2D spatial simulation of a coral reef ecosystem.  Coral polyps grow
-branching and massive structures, symbiotic zooxanthellae provide energy
-via photosynthesis, herbivorous fish graze algae, predators patrol, and
-environmental stressors (ocean warming, acidification) trigger bleaching
-cascades and recovery dynamics.
-
-Features multi-trophic interactions, habitat engineering by coral,
-depth-based light zonation, and dramatic bleaching/recovery cycles.
-
-Presets: Healthy Reef, Bleaching Event, Algal Takeover, Recovery,
-Crown-of-Thorns Outbreak, Acidification Crisis.
-"""
+"""Coral Reef Ecosystem — corals, algae, fish and stressors on a depth-lit reef."""
 import curses
 import math
 import random
@@ -152,7 +139,7 @@ def _light_at_row(row, rows, base_light):
 
 
 def _bleach_threshold(temperature):
-    """Temperature above which coral begins to bleach (DHW concept simplified)."""
+    """Return the bleaching probability scale for a temperature (simplified DHW)."""
     return max(0.0, (temperature - 28.0) / 3.0)
 
 
@@ -204,7 +191,6 @@ def _reef_init(self, preset_idx: int):
     self.reef_stats = {
         "coral_cover": 0, "algae_cover": 0, "bleached": 0,
         "dead_coral": 0, "fish_pop": 0, "peak_coral": 0,
-        "bleach_events": 0,
     }
 
     # ── Build grid ──
@@ -344,8 +330,6 @@ def _reef_step(self):
     gen = self.reef_generation
     stats = self.reef_stats
 
-    temperature = self.reef_temperature
-    acidity = self.reef_acidity
     base_light = self.reef_light
     nutrients = self.reef_nutrients
 
@@ -406,7 +390,6 @@ def _reef_step(self):
 
             elif ct == CELL_BLEACHED:
                 # Bleached coral can recover or die
-                light = _light_at_row(r, rows, base_light)
                 if temperature < 28.0 and random.random() < 0.02:
                     # Recovery
                     zoox[r][c] = 0.3
@@ -505,14 +488,12 @@ def _reef_step(self):
 
         if etype == ENT_HERB_FISH:
             # Graze algae
-            grazed = False
             for dr, dc in _NBRS8:
                 nr, nc = er + dr, ec + dc
                 if 0 <= nr < rows and 0 <= nc < cols:
                     if grid[nr][nc] in (CELL_ALGAE_TURF, CELL_ALGAE_MACRO):
                         grid[nr][nc] = CELL_WATER
                         ent["energy"] += 20
-                        grazed = True
                         break
 
             # Move
@@ -529,7 +510,6 @@ def _reef_step(self):
 
         elif etype == ENT_PREDATOR:
             # Hunt herbivorous fish
-            hunted = False
             for other in entities:
                 if other["type"] in (ENT_HERB_FISH, ENT_CLEANER):
                     dr = abs(other["r"] - er)
@@ -537,7 +517,6 @@ def _reef_step(self):
                     if dr <= 2 and dc <= 2 and random.random() < 0.1:
                         other["energy"] = 0  # kill prey
                         ent["energy"] += 30
-                        hunted = True
                         break
 
             _move_entity(ent, grid, rows, cols)
@@ -572,7 +551,6 @@ def _reef_step(self):
 
         elif etype == ENT_COTS:
             # Crown-of-thorns eat coral
-            ate = False
             for dr, dc in _NBRS8:
                 nr, nc = er + dr, ec + dc
                 if 0 <= nr < rows and 0 <= nc < cols:
@@ -581,7 +559,6 @@ def _reef_step(self):
                         health[nr][nc] = 0.0
                         zoox[nr][nc] = 0.0
                         ent["energy"] += 25
-                        ate = True
                         stats["dead_coral"] += 1
                         break
 
@@ -640,9 +617,8 @@ def _reef_step(self):
 
             # Plankton feeds coral polyps
             for dr, dc in _NBRS4:
-                nr, nc = ent["r"], (ent["c"] + dc) % cols
-                nr = ent["r"] + dr
-                if 0 <= nr < rows and 0 <= nc < cols:
+                nr, nc = ent["r"] + dr, (ent["c"] + dc) % cols
+                if 0 <= nr < rows:
                     if grid[nr][nc] in coral_types:
                         health[nr][nc] = min(1.0, health[nr][nc] + 0.005)
 
@@ -858,7 +834,7 @@ def _draw_reef_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+        hint = " j/k=navigate  Enter=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -1007,7 +983,7 @@ def _draw_reef(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [v]=view [h]=heat [c]=cool [f]=fish [N]=nutrients [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  v=view  h=heat  c=cool  f=fish  N=nutrients  +/-=speed  r=reset  R=menu  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
