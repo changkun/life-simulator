@@ -246,7 +246,10 @@ def _terrarium_load_state(self) -> bool:
     self.terrarium_peak_pop = tmeta.get("peak_pop", 0)
     self.terrarium_peak_pop_gen = tmeta.get("peak_pop_gen", 0)
     self.terrarium_total_sessions = tmeta.get("total_sessions", 0) + 1
-    self.terrarium_total_generations = tmeta.get("total_generations", 0)
+    # The saved total already counts the grid's current generation, and the grid
+    # keeps counting from it, so keep only the generations from earlier worlds.
+    self.terrarium_total_generations = max(
+        0, tmeta.get("total_generations", 0) - self.grid.generation)
     self.terrarium_first_started = tmeta.get("first_started", time.time())
 
     # Load chronicle
