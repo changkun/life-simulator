@@ -1,9 +1,7 @@
-"""Mode: kaleido — simulation mode for the life package."""
+"""Kaleidoscope / Symmetry Patterns — animated or hand-painted shapes mirrored across N-fold symmetry axes."""
 import curses
 import math
-import math as _math
 import random
-import time
 
 KALEIDO_PRESETS = [
     ("Snowflake", "6-fold crystal symmetry with ice-blue palette", "snowflake"),
@@ -28,17 +26,15 @@ KALEIDO_PALETTES = [
 KALEIDO_CHARS = " ·.:;+=*#%@"
 
 def _enter_kaleido_mode(self):
-    """Enter Kaleidoscope mode — show preset menu."""
+    """Enter Kaleidoscope mode and show the preset menu."""
     self.kaleido_mode = True
     self.kaleido_menu = True
     self.kaleido_menu_sel = 0
     self.kaleido_running = False
 
 
-
-
 def _exit_kaleido_mode(self):
-    """Exit Kaleidoscope mode and clean up."""
+    """Exit Kaleidoscope mode and clear its state."""
     self.kaleido_mode = False
     self.kaleido_menu = False
     self.kaleido_running = False
@@ -46,10 +42,8 @@ def _exit_kaleido_mode(self):
     self.kaleido_seeds = []
 
 
-
-
 def _kaleido_init(self, preset_key):
-    """Initialize Kaleidoscope mode from selected preset."""
+    """Initialize the kaleidoscope from the selected preset."""
     rows, cols = self.stdscr.getmaxyx()
     self.kaleido_rows = rows
     self.kaleido_cols = cols
@@ -107,50 +101,36 @@ def _kaleido_init(self, preset_key):
         self.kaleido_fade = False
 
 
-
-
 def _kaleido_spawn_seeds(self, count, style):
-    """Spawn procedural seed elements for auto-animation."""
-    import random as _rng
+    """Spawn the procedural seeds that drive the animation."""
     self.kaleido_seeds = []
     for i in range(count):
         seed = {
             "style": style,
-            "phase": _rng.uniform(0, 2 * _math.pi),
-            "speed": _rng.uniform(0.02, 0.08),
-            "radius": _rng.uniform(0.15, 0.45),
-            "amplitude": _rng.uniform(0.3, 1.0),
-            "freq": _rng.uniform(0.5, 3.0),
+            "phase": random.uniform(0, 2 * math.pi),
+            "speed": random.uniform(0.02, 0.08),
+            "radius": random.uniform(0.15, 0.45),
+            "amplitude": random.uniform(0.3, 1.0),
+            "freq": random.uniform(0.5, 3.0),
             "color_offset": i,
         }
         self.kaleido_seeds.append(seed)
 
 
-
-
 def _kaleido_step(self):
-    """Advance kaleidoscope animation by one step."""
+    """Advance the animation by one step."""
     self.kaleido_generation += 1
     self.kaleido_time += 0.05
     self.kaleido_color_shift += 0.01
 
     if self.kaleido_fade:
-        # Fade existing canvas values
         to_remove = []
-        for key, val in self.kaleido_canvas.items():
-            if isinstance(val, tuple):
-                intensity, col_idx = val
-                new_intensity = intensity - 0.04
-                if new_intensity <= 0:
-                    to_remove.append(key)
-                else:
-                    self.kaleido_canvas[key] = (new_intensity, col_idx)
+        for key, (intensity, col_idx) in self.kaleido_canvas.items():
+            new_intensity = intensity - 0.04
+            if new_intensity <= 0:
+                to_remove.append(key)
             else:
-                new_val = val - 0.04
-                if new_val <= 0:
-                    to_remove.append(key)
-                else:
-                    self.kaleido_canvas[key] = new_val
+                self.kaleido_canvas[key] = (new_intensity, col_idx)
         for key in to_remove:
             del self.kaleido_canvas[key]
 
@@ -174,52 +154,52 @@ def _kaleido_step(self):
         if style == "crystal":
             # Radial line segments
             base_angle = t * 0.3 + phase
-            length = r * min(cy, cx / aspect) * (0.5 + 0.5 * _math.sin(t * freq))
+            length = r * min(cy, cx / aspect) * (0.5 + 0.5 * math.sin(t * freq))
             for step in range(int(length)):
                 frac = step / max(1, length)
-                angle = base_angle + frac * 0.3 * _math.sin(t * 0.5)
+                angle = base_angle + frac * 0.3 * math.sin(t * 0.5)
                 pr = step
-                py_off = pr * _math.sin(angle)
-                px_off = pr * _math.cos(angle) * aspect
+                py_off = pr * math.sin(angle)
+                px_off = pr * math.cos(angle) * aspect
                 intensity = amp * (1.0 - frac * 0.5)
                 self._kaleido_plot_symmetric(cy + py_off, cx + px_off, intensity, seed["color_offset"])
         elif style == "wave":
             # Sinusoidal radial waves
             for angle_step in range(0, 60, 2):
-                a = angle_step / 60.0 * _math.pi * 2 / self.kaleido_symmetry
+                a = angle_step / 60.0 * math.pi * 2 / self.kaleido_symmetry
                 for rd in range(1, int(min(cy, cx / aspect) * r)):
-                    wave = amp * _math.sin(rd * 0.2 * freq - t * 2 + phase)
+                    wave = amp * math.sin(rd * 0.2 * freq - t * 2 + phase)
                     if wave > 0.2:
-                        py_off = rd * _math.sin(a)
-                        px_off = rd * _math.cos(a) * aspect
+                        py_off = rd * math.sin(a)
+                        px_off = rd * math.cos(a) * aspect
                         self._kaleido_plot_symmetric(cy + py_off, cx + px_off, wave, seed["color_offset"])
         elif style == "line":
             # Rotating line
             angle = t * 0.5 + phase
             length = min(cy, cx / aspect) * r
             for step in range(int(length)):
-                py_off = step * _math.sin(angle)
-                px_off = step * _math.cos(angle) * aspect
-                intensity = amp * (0.6 + 0.4 * _math.sin(step * 0.3 + t))
+                py_off = step * math.sin(angle)
+                px_off = step * math.cos(angle) * aspect
+                intensity = amp * (0.6 + 0.4 * math.sin(step * 0.3 + t))
                 self._kaleido_plot_symmetric(cy + py_off, cx + px_off, intensity, seed["color_offset"])
         elif style == "burst":
             # Expanding/contracting bursts
-            pulse = (1 + _math.sin(t * freq + phase)) * 0.5
+            pulse = (1 + math.sin(t * freq + phase)) * 0.5
             max_r = min(cy, cx / aspect) * r * pulse
             for rd in range(1, max(2, int(max_r))):
                 a = phase + rd * 0.15
-                py_off = rd * _math.sin(a)
-                px_off = rd * _math.cos(a) * aspect
+                py_off = rd * math.sin(a)
+                px_off = rd * math.cos(a) * aspect
                 intensity = amp * (1.0 - rd / max(1, max_r))
                 self._kaleido_plot_symmetric(cy + py_off, cx + px_off, intensity, seed["color_offset"])
         elif style == "petal":
             # Rose-curve inspired petals
             for angle_step in range(0, 120, 1):
-                a = angle_step / 120.0 * _math.pi * 2 / self.kaleido_symmetry
-                petal_r = min(cy, cx / aspect) * r * abs(_math.sin(freq * a + t * 0.5 + phase))
+                a = angle_step / 120.0 * math.pi * 2 / self.kaleido_symmetry
+                petal_r = min(cy, cx / aspect) * r * abs(math.sin(freq * a + t * 0.5 + phase))
                 if petal_r > 1:
-                    py_off = petal_r * _math.sin(a)
-                    px_off = petal_r * _math.cos(a) * aspect
+                    py_off = petal_r * math.sin(a)
+                    px_off = petal_r * math.cos(a) * aspect
                     intensity = amp * petal_r / (min(cy, cx / aspect) * r + 0.01)
                     self._kaleido_plot_symmetric(cy + py_off, cx + px_off, intensity, seed["color_offset"])
         elif style == "spiral":
@@ -230,24 +210,22 @@ def _kaleido_step(self):
                 if spiral_r > min(cy, cx / aspect):
                     break
                 a = tt * freq + t * 1.5 + phase
-                py_off = spiral_r * _math.sin(a)
-                px_off = spiral_r * _math.cos(a) * aspect
+                py_off = spiral_r * math.sin(a)
+                px_off = spiral_r * math.cos(a) * aspect
                 intensity = amp * (1.0 - spiral_r / min(cy, cx / aspect))
                 self._kaleido_plot_symmetric(cy + py_off, cx + px_off, intensity, seed["color_offset"])
         elif style == "ring":
             # Concentric pulsing rings
             for ring_idx in range(1, 8):
                 ring_r = ring_idx * min(cy, cx / aspect) * r / 8
-                pulse = _math.sin(t * freq + ring_idx * 0.5 + phase)
+                pulse = math.sin(t * freq + ring_idx * 0.5 + phase)
                 if pulse > -0.3:
                     intensity = amp * (0.3 + pulse * 0.7)
                     for angle_step in range(0, 80, 1):
-                        a = angle_step / 80.0 * _math.pi * 2 / self.kaleido_symmetry
-                        py_off = ring_r * _math.sin(a)
-                        px_off = ring_r * _math.cos(a) * aspect
+                        a = angle_step / 80.0 * math.pi * 2 / self.kaleido_symmetry
+                        py_off = ring_r * math.sin(a)
+                        px_off = ring_r * math.cos(a) * aspect
                         self._kaleido_plot_symmetric(cy + py_off, cx + px_off, intensity, seed["color_offset"])
-
-
 
 
 def _kaleido_plot_symmetric(self, y, x, intensity, color_offset):
@@ -262,29 +240,23 @@ def _kaleido_plot_symmetric(self, y, x, intensity, color_offset):
     # Convert to polar relative to center
     dy = y - cy
     dx = (x - cx) / aspect
-    r = _math.sqrt(dy * dy + dx * dx)
+    r = math.sqrt(dy * dy + dx * dx)
     if r < 0.01:
         r = 0.01
-    theta = _math.atan2(dy, dx)
+    theta = math.atan2(dy, dx)
 
     for k in range(n):
-        angle = theta + k * (2 * _math.pi / n)
+        angle = theta + k * (2 * math.pi / n)
         # Also add reflection for each sector
-        for reflected in (angle, -angle + 2 * k * (2 * _math.pi / n) / n):
-            py = int(cy + r * _math.sin(reflected))
-            px = int(cx + r * _math.cos(reflected) * aspect)
+        for reflected in (angle, -angle + 2 * k * (2 * math.pi / n) / n):
+            py = int(cy + r * math.sin(reflected))
+            px = int(cx + r * math.cos(reflected) * aspect)
             if 0 <= py < rows and 0 <= px < cols:
                 key = (py, px)
-                old = self.kaleido_canvas.get(key, 0)
+                old = self.kaleido_canvas.get(key)
                 col_idx = int((color_offset + self.kaleido_color_shift * 10) % 6)
-                # Store (intensity, color_index)
-                if isinstance(old, tuple):
-                    if intensity > old[0]:
-                        self.kaleido_canvas[key] = (intensity, col_idx)
-                else:
+                if old is None or intensity > old[0]:
                     self.kaleido_canvas[key] = (intensity, col_idx)
-
-
 
 
 def _kaleido_paint_at(self, r, c):
@@ -295,15 +267,13 @@ def _kaleido_paint_at(self, r, c):
             pr = r + dr
             pc = c + dc
             if 0 <= pr < self.kaleido_rows and 0 <= pc < self.kaleido_cols:
-                intensity = 1.0 - 0.3 * _math.sqrt(dr * dr + dc * dc) / max(1, brush)
+                intensity = 1.0 - 0.3 * math.sqrt(dr * dr + dc * dc) / max(1, brush)
                 col_idx = int(self.kaleido_palette_idx)
                 self._kaleido_plot_symmetric(pr, pc, max(0.3, intensity), col_idx)
 
 
-
-
 def _handle_kaleido_menu_key(self, key: int) -> bool:
-    """Handle keys in the kaleidoscope preset menu."""
+    """Handle keys in the preset menu."""
     if key == 27:  # ESC
         self.kaleido_mode = False
         self.kaleido_menu = False
@@ -321,10 +291,8 @@ def _handle_kaleido_menu_key(self, key: int) -> bool:
     return False
 
 
-
-
 def _handle_kaleido_key(self, key: int) -> bool:
-    """Handle keys during kaleidoscope simulation."""
+    """Handle keys while the kaleidoscope runs."""
     if key == 27:  # ESC — back to menu
         self.kaleido_running = False
         self.kaleido_canvas = {}
@@ -390,17 +358,14 @@ def _handle_kaleido_key(self, key: int) -> bool:
     return True
 
 
-
-
 def _draw_kaleido_menu(self, max_y: int, max_x: int):
-    """Draw the kaleidoscope preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "✦ KALEIDOSCOPE / SYMMETRY PATTERNS ✦"
     subtitle = "Select a pattern preset"
 
     row = max(0, max_y // 2 - len(KALEIDO_PRESETS) // 2 - 5)
 
-    # ASCII art header
     art_lines = [
         r"    *  .  *  .  *  .  *",
         r"  .  ╲ ╱ ╲ ╱ ╲ ╱  .",
@@ -455,7 +420,7 @@ def _draw_kaleido_menu(self, max_y: int, max_x: int):
         row += 2
 
     row += 1
-    hint = "↑↓ Navigate  Enter Select  ESC Back"
+    hint = "↑/↓=select  Enter=start  Esc=back"
     if row < max_y:
         x = max(0, (max_x - len(hint)) // 2)
         try:
@@ -464,27 +429,20 @@ def _draw_kaleido_menu(self, max_y: int, max_x: int):
             pass
 
 
-
-
 def _draw_kaleido(self, max_y: int, max_x: int):
-    """Draw the live kaleidoscope simulation."""
+    """Draw the canvas, paint cursor, status bar and info overlay."""
     self.stdscr.erase()
 
-    # Update screen dimensions
+    # Track the live terminal size so resizes reach the animation.
     self.kaleido_rows = max_y
     self.kaleido_cols = max_x
 
     palette = KALEIDO_PALETTES[self.kaleido_palette_idx][1]
 
-    # Render canvas
     for (r, c), val in self.kaleido_canvas.items():
         if r < 0 or r >= max_y or c < 0 or c >= max_x - 1:
             continue
-        if isinstance(val, tuple):
-            intensity, col_idx = val
-        else:
-            intensity = val
-            col_idx = 0
+        intensity, col_idx = val
 
         # Map intensity to character
         char_idx = min(len(KALEIDO_CHARS) - 1, max(0, int(intensity * (len(KALEIDO_CHARS) - 1))))
@@ -503,7 +461,6 @@ def _draw_kaleido(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    # Draw paint cursor if painting
     if self.kaleido_painting:
         cr, cc = self.kaleido_cursor_r, self.kaleido_cursor_c
         if 0 <= cr < max_y and 0 <= cc < max_x - 1:
@@ -535,9 +492,10 @@ def _draw_kaleido(self, max_y: int, max_x: int):
             f"Fade: {'ON' if self.kaleido_fade else 'OFF'}",
             f"Brush: {self.kaleido_brush_size}",
             "",
-            "SPACE pause  s symmetry  c color",
-            "f fade  r reset  i info  p paint",
-            "+/- speed  b brush  ESC menu",
+            "Space=pause  s=symmetry  c=color",
+            "f=fade  r=reset  i=info  b=brush",
+            "+/-=speed  p=paint  Esc=menu",
+            "Paint: arrows move and paint, Enter paints",
         ]
         for i, line in enumerate(info_lines):
             if i + 1 < max_y - 1 and len(line) < max_x:
