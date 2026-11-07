@@ -295,6 +295,11 @@ def _cpm_step(self):
     J = self.cpm_J
     T = self.cpm_temperature
 
+    # The chemical field is far slower than the cells, so update it only
+    # every 2000 attempts.
+    if self.cpm_chemotaxis and self.cpm_generation % 2000 == 0:
+        self._cpm_diffuse_chem()
+
     # Pick a random pixel
     r = _rnd.randint(0, rows - 1)
     c = _rnd.randint(0, cols - 1)
@@ -449,8 +454,6 @@ def _handle_cpm_key(self, key: int) -> bool:
     if key == ord("n") or key == ord("."):
         for _ in range(self.cpm_steps_per_frame):
             self._cpm_step()
-        if self.cpm_chemotaxis:
-            self._cpm_diffuse_chem()
         return True
     if key == ord("v"):
         self.cpm_viz_mode = (self.cpm_viz_mode + 1) % 3
@@ -665,10 +668,6 @@ def _draw_cpm(self, max_y: int, max_x: int):
                         self.stdscr.addstr(r + 1, c, "·", color)
                     except curses.error:
                         pass
-
-    # Diffuse chemical field periodically when running
-    if self.cpm_running and self.cpm_chemotaxis and self.cpm_generation % 2000 == 0:
-        self._cpm_diffuse_chem()
 
     # Count cells and types for status
     type_counts = {}

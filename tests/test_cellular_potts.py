@@ -503,3 +503,15 @@ def test_menu_lists_every_preset_on_a_24_row_screen():
     text = "\n".join(drawn)
     for name, _desc, _pid in CPM_PRESETS:
         assert name in text
+
+
+def test_chem_field_diffuses_every_2000_steps_at_any_speed():
+    app = _make_app()
+    app._cpm_init(5)
+    calls = []
+    real = app._cpm_diffuse_chem
+    app._cpm_diffuse_chem = lambda: (calls.append(app.cpm_generation), real())
+    for _ in range(4001):
+        app._cpm_step()
+    assert calls == [0, 2000, 4000]
+
