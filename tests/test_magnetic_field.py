@@ -408,3 +408,15 @@ def test_step_via_n_key():
     gen_before = app.magfield_generation
     app._handle_magfield_key(ord("n"))
     assert app.magfield_generation == gen_before + app.magfield_steps_per_frame
+
+
+# --- Regressions ---
+
+def test_menu_lists_every_preset_on_24_rows():
+    app = _make_app()
+    app.magfield_menu_sel = 0
+    drawn = []
+    app.stdscr.addstr = lambda y, x, s, *a: drawn.append(s)
+    app._draw_magfield_menu(24, 80)
+    for name, _desc, _pid in app.MAGFIELD_PRESETS:
+        assert any(name in s for s in drawn), name
