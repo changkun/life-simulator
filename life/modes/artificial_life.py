@@ -1,9 +1,7 @@
-"""Mode: alife — simulation mode for the life package."""
+"""Artificial Life Ecosystem — neural-net creatures forage, hunt, reproduce and evolve."""
 import curses
 import math
 import random
-import time
-
 
 from life.utils import sparkline
 
@@ -22,11 +20,10 @@ ALIFE_OMNI_CHARS = [",", "s", "S", "$", "#"]   # tiny to large omnivores
 
 
 def _enter_alife_mode(self):
-    """Enter Artificial Life Ecosystem — show preset menu."""
+    """Show the Artificial Life Ecosystem preset menu."""
     self.alife_menu = True
     self.alife_menu_sel = 0
     self._flash("Artificial Life Ecosystem — select an environment")
-
 
 
 def _exit_alife_mode(self):
@@ -42,12 +39,11 @@ def _exit_alife_mode(self):
     self._flash("Artificial Life Ecosystem OFF")
 
 
-
 def _alife_make_creature(self, r: float, c: float, diet: int = 0,
                           speed: float = 1.0, size: float = 1.0,
                           sense: float = 5.0, generation: int = 0,
                           brain: list | None = None) -> dict:
-    """Create a creature dict. diet: 0=herb, 1=pred, 2=omni."""
+    """Create a creature dict. diet: 0=herbivore, 1=predator, 2=omnivore."""
     if brain is None:
         # Simple neural net: 6 inputs -> 4 hidden -> 2 outputs (dx, dy)
         # Inputs: nearest_food_dx, nearest_food_dy, nearest_pred_dx, nearest_pred_dy, energy, bias
@@ -70,7 +66,6 @@ def _alife_make_creature(self, r: float, c: float, diet: int = 0,
     }
 
 
-
 def _alife_brain_forward(self, brain: list, inputs: list) -> tuple:
     """Run a simple 6->4->2 neural network forward pass."""
     # Layer 1: 6 inputs -> 4 hidden (weights 0..23, biases implicitly in weights)
@@ -90,7 +85,6 @@ def _alife_brain_forward(self, brain: list, inputs: list) -> tuple:
     return out[0], out[1]
 
 
-
 def _alife_mutate_brain(self, brain: list) -> list:
     """Return a mutated copy of a brain."""
     new_brain = []
@@ -102,10 +96,8 @@ def _alife_mutate_brain(self, brain: list) -> list:
     return new_brain
 
 
-
 def _alife_init(self, preset_idx: int):
-    """Initialize ecosystem with chosen preset."""
-    import random as _r
+    """Start a new ecosystem from the preset at preset_idx."""
     name, _desc, ptype = self.ALIFE_PRESETS[preset_idx]
     self.alife_preset_name = name
     max_y, max_x = self.stdscr.getmaxyx()
@@ -113,7 +105,6 @@ def _alife_init(self, preset_idx: int):
     self.alife_cols = max_x - 1
     rows, cols = self.alife_rows, self.alife_cols
 
-    # Initialize food grid
     self.alife_food = [[0.0] * cols for _ in range(rows)]
 
     # Preset-specific parameters
@@ -150,33 +141,31 @@ def _alife_init(self, preset_idx: int):
         self.alife_food_regrow = 0.015
         self.alife_mutation_rate = 0.2
 
-    # Scatter initial food
     for r in range(rows):
         for c in range(cols):
-            if _r.random() < food_density:
-                self.alife_food[r][c] = _r.uniform(0.3, 1.0)
+            if random.random() < food_density:
+                self.alife_food[r][c] = random.uniform(0.3, 1.0)
 
-    # Spawn creatures
     self.alife_creatures = []
     self.alife_next_id = 0
     for _ in range(n_herb):
-        cr = _r.uniform(1, rows - 2)
-        cc = _r.uniform(1, cols - 2)
+        cr = random.uniform(1, rows - 2)
+        cc = random.uniform(1, cols - 2)
         self.alife_creatures.append(self._alife_make_creature(
-            cr, cc, diet=0, speed=_r.uniform(0.6, 1.4),
-            size=_r.uniform(0.7, 1.5), sense=_r.uniform(3, 8)))
+            cr, cc, diet=0, speed=random.uniform(0.6, 1.4),
+            size=random.uniform(0.7, 1.5), sense=random.uniform(3, 8)))
     for _ in range(n_pred):
-        cr = _r.uniform(1, rows - 2)
-        cc = _r.uniform(1, cols - 2)
+        cr = random.uniform(1, rows - 2)
+        cc = random.uniform(1, cols - 2)
         self.alife_creatures.append(self._alife_make_creature(
-            cr, cc, diet=1, speed=_r.uniform(1.0, 2.0),
-            size=_r.uniform(1.0, 2.0), sense=_r.uniform(5, 12)))
+            cr, cc, diet=1, speed=random.uniform(1.0, 2.0),
+            size=random.uniform(1.0, 2.0), sense=random.uniform(5, 12)))
     for _ in range(n_omni):
-        cr = _r.uniform(1, rows - 2)
-        cc = _r.uniform(1, cols - 2)
+        cr = random.uniform(1, rows - 2)
+        cc = random.uniform(1, cols - 2)
         self.alife_creatures.append(self._alife_make_creature(
-            cr, cc, diet=2, speed=_r.uniform(0.8, 1.6),
-            size=_r.uniform(0.8, 1.8), sense=_r.uniform(4, 10)))
+            cr, cc, diet=2, speed=random.uniform(0.8, 1.6),
+            size=random.uniform(0.8, 1.8), sense=random.uniform(4, 10)))
 
     self.alife_tick = 0
     self.alife_generation = 0
@@ -193,25 +182,21 @@ def _alife_init(self, preset_idx: int):
     self._flash(f"Ecosystem: {name} — space=pause  s=stats  r=reset  +/-=food")
 
 
-
 def _alife_step(self):
-    """Advance ecosystem by one tick."""
-    import random as _r
-    import math
+    """Advance the ecosystem by one tick."""
     rows, cols = self.alife_rows, self.alife_cols
     if rows <= 0 or cols <= 0:
         return
     self.alife_tick += 1
 
-    # Regrow food
     for r in range(rows):
         row = self.alife_food[r]
         for c in range(cols):
             if row[c] < 1.0:
-                row[c] = min(1.0, row[c] + self.alife_food_regrow * _r.uniform(0.5, 1.5))
+                row[c] = min(1.0, row[c] + self.alife_food_regrow * random.uniform(0.5, 1.5))
                 # Chance to sprout new food near existing food
-                if row[c] > 0.5 and _r.random() < 0.002:
-                    nr, nc = r + _r.randint(-1, 1), c + _r.randint(-1, 1)
+                if row[c] > 0.5 and random.random() < 0.002:
+                    nr, nc = r + random.randint(-1, 1), c + random.randint(-1, 1)
                     if 0 <= nr < rows and 0 <= nc < cols and self.alife_food[nr][nc] < 0.1:
                         self.alife_food[nr][nc] = 0.3
 
@@ -351,30 +336,29 @@ def _alife_step(self):
 
         # Reproduction check
         if (cr["energy"] > cr["max_energy"] * 0.75 and cr["age"] > 60
-                and _r.random() < 0.02 * (1.0 / cr["size"])):
+                and random.random() < 0.02 * (1.0 / cr["size"])):
             cr["energy"] *= 0.45
             cr["children"] += 1
             self.alife_total_births += 1
             child_gen = cr["generation"] + 1
             self.alife_gen_max = max(self.alife_gen_max, child_gen)
             # Mutate traits
-            child_speed = cr["speed"] + _r.gauss(0, 0.1) * self.alife_mutation_rate * 3
-            child_size = cr["size"] + _r.gauss(0, 0.1) * self.alife_mutation_rate * 3
-            child_sense = cr["sense"] + _r.gauss(0, 0.3) * self.alife_mutation_rate * 3
+            child_speed = cr["speed"] + random.gauss(0, 0.1) * self.alife_mutation_rate * 3
+            child_size = cr["size"] + random.gauss(0, 0.1) * self.alife_mutation_rate * 3
+            child_sense = cr["sense"] + random.gauss(0, 0.3) * self.alife_mutation_rate * 3
             child_diet = cr["diet"]
             # Rare diet mutation
-            if _r.random() < self.alife_mutation_rate * 0.1:
-                child_diet = _r.randint(0, 2)
+            if random.random() < self.alife_mutation_rate * 0.1:
+                child_diet = random.randint(0, 2)
             child_brain = self._alife_mutate_brain(cr["brain"])
             child = self._alife_make_creature(
-                cr["r"] + _r.uniform(-2, 2),
-                cr["c"] + _r.uniform(-2, 2),
+                cr["r"] + random.uniform(-2, 2),
+                cr["c"] + random.uniform(-2, 2),
                 diet=child_diet, speed=child_speed, size=child_size,
                 sense=child_sense, generation=child_gen, brain=child_brain)
             child["energy"] = cr["max_energy"] * 0.4
             new_creatures.append(child)
 
-    # Remove dead, add newborn
     self.alife_creatures = [cr for cr in creatures if cr["id"] not in dead_ids]
     self.alife_creatures.extend(new_creatures)
 
@@ -387,7 +371,6 @@ def _alife_step(self):
         self.alife_total_deaths += len(excess)
         self.alife_creatures = self.alife_creatures[:max_pop]
 
-    # Track population
     n_total = len(self.alife_creatures)
     n_herb = sum(1 for cr in self.alife_creatures if cr["diet"] == 0)
     n_pred = sum(1 for cr in self.alife_creatures if cr["diet"] == 1)
@@ -404,13 +387,12 @@ def _alife_step(self):
     # If population dies out, respawn a few creatures
     if len(self.alife_creatures) == 0:
         for _ in range(5):
-            cr = _r.uniform(1, rows - 2)
-            cc = _r.uniform(1, cols - 2)
+            cr = random.uniform(1, rows - 2)
+            cc = random.uniform(1, cols - 2)
             self.alife_creatures.append(self._alife_make_creature(
-                cr, cc, diet=0, speed=_r.uniform(0.6, 1.4),
-                size=_r.uniform(0.7, 1.5), sense=_r.uniform(3, 8),
+                cr, cc, diet=0, speed=random.uniform(0.6, 1.4),
+                size=random.uniform(0.7, 1.5), sense=random.uniform(3, 8),
                 generation=self.alife_gen_max + 1))
-
 
 
 def _handle_alife_menu_key(self, key: int) -> bool:
@@ -428,7 +410,6 @@ def _handle_alife_menu_key(self, key: int) -> bool:
     else:
         return True
     return True
-
 
 
 def _handle_alife_key(self, key: int) -> bool:
@@ -455,11 +436,9 @@ def _handle_alife_key(self, key: int) -> bool:
         self.alife_food_regrow = max(0.001, self.alife_food_regrow * 0.7)
         self._flash(f"Food regrowth: {self.alife_food_regrow:.3f}")
     elif key == ord("f"):
-        # Scatter extra food
-        import random as _r
         for _ in range(self.alife_rows * self.alife_cols // 5):
-            fr = _r.randint(0, self.alife_rows - 1)
-            fc = _r.randint(0, self.alife_cols - 1)
+            fr = random.randint(0, self.alife_rows - 1)
+            fc = random.randint(0, self.alife_cols - 1)
             self.alife_food[fr][fc] = min(1.0, self.alife_food[fr][fc] + 0.5)
         self._flash("Scattered extra food!")
     elif key == ord("<"):
@@ -473,7 +452,6 @@ def _handle_alife_key(self, key: int) -> bool:
     else:
         return True
     return True
-
 
 
 def _draw_alife_menu(self, max_y: int, max_x: int):
@@ -504,7 +482,6 @@ def _draw_alife_menu(self, max_y: int, max_x: int):
         self.stdscr.addstr(max_y - 1, 0, hints[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:
         pass
-
 
 
 def _draw_alife(self, max_y: int, max_x: int):
@@ -590,7 +567,7 @@ def _draw_alife(self, max_y: int, max_x: int):
         avg_energy = sum(cr["energy"] for cr in self.alife_creatures) / n_total
 
         stats_lines = [
-            f"=== Population Stats ===",
+            "=== Population Stats ===",
             f"Births: {self.alife_total_births}  Deaths: {self.alife_total_deaths}",
             f"Avg speed:  {avg_speed:.2f}",
             f"Avg size:   {avg_size:.2f}",
