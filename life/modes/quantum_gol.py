@@ -1,16 +1,4 @@
-"""Mode: qgol — Quantum Game of Life.
-
-Each cell holds a complex amplitude (|1⟩/|0⟩ superposition).  The classical
-Game-of-Life birth/survival rules are lifted to a unitary operator that
-creates superpositions.  Neighbouring cells become entangled through the
-rule application.  Clicking a cell measures it, collapsing it probabilistically
-and propagating decoherence to entangled neighbours.
-
-Visualization:
-  - Brightness / density char ↔ probability of being alive (|1⟩ amplitude²)
-  - Hue ↔ phase of the alive-amplitude
-  - Entanglement links shown as dim lines between strongly correlated cells
-"""
+"""Quantum Game of Life — cells in superposition of alive and dead, evolved by a smooth lift of B3/S23 with entanglement, decoherence and click measurement."""
 import curses
 import math
 import random
@@ -157,15 +145,9 @@ def _place_blinker_superposition(re, im, rows, cols):
     # Horizontal phase
     for dc in (-1, 0, 1):
         re[cr][(cc + dc) % cols] += amp
-    # Vertical phase (with pi/2 phase shift)
+    # Vertical phase (pi/2 phase shift); the centre cell is shared by both.
     for dr in (-1, 0, 1):
-        r = (cr + dr) % rows
-        # Center cell already has amplitude, add vertical parts
-        if dr != 0:
-            im[r][cc] += amp
-        else:
-            # Center is already set; add imaginary component
-            im[r][cc] += amp
+        im[(cr + dr) % rows][cc] += amp
 
 
 def _place_gosper_superposition(re, im, rows, cols):
@@ -457,8 +439,6 @@ def _handle_qgol_key(self, key: int) -> bool:
             pass
     elif key in (27, ord("q")):
         self._exit_qgol_mode()
-    else:
-        return True
     return True
 
 
