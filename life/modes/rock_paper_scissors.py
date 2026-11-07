@@ -1,6 +1,5 @@
-"""Mode: rps — simulation mode for the life package."""
+"""Rock-Paper-Scissors — species beat each other in a cycle on a grid, forming spiral waves."""
 import curses
-import math
 import random
 import time
 
@@ -140,8 +139,6 @@ def _handle_rps_menu_key(self, key: int) -> bool:
     elif key == 27 or key == ord("q") or key == ord("&"):
         self.rps_menu = False
         self._flash("Rock-Paper-Scissors cancelled")
-    else:
-        return True
     return True
 
 
@@ -167,15 +164,11 @@ def _handle_rps_key(self, key: int) -> bool:
     elif key == ord("q") or key == ord("&"):
         self._exit_rps_mode()
     elif key == ord("s"):
-        # Adjust swap rate up
         self.rps_swap_rate = min(1.0, self.rps_swap_rate + 0.05)
         self._flash(f"Swap rate: {self.rps_swap_rate:.2f}")
     elif key == ord("S"):
-        # Adjust swap rate down
         self.rps_swap_rate = max(0.05, self.rps_swap_rate - 0.05)
         self._flash(f"Swap rate: {self.rps_swap_rate:.2f}")
-    else:
-        return True
     return True
 
 
@@ -210,7 +203,7 @@ def _draw_rps_menu(self, max_y: int, max_x: int):
     # Footer
     foot_y = max_y - 1
     if foot_y > 0:
-        foot = " [↑/↓]=select  [Enter]=start  [q]=cancel"
+        foot = " ↑/↓=select  Enter=start  q=cancel"
         try:
             self.stdscr.addstr(foot_y, 0, foot[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
@@ -230,13 +223,7 @@ def _draw_rps(self, max_y: int, max_x: int):
     counts = self._rps_counts()
     total = sum(counts)
 
-    # Species names and symbols
-    if ns == 5:
-        species_names = ["Rock", "Paper", "Scissors", "Lizard", "Spock"]
-        species_sym = ["✊", "✋", "✌", "🦎", "🖖"]
-    else:
-        species_names = ["Rock", "Paper", "Scissors"]
-        species_sym = ["✊", "✋", "✌"]
+    species_names = ["Rock", "Paper", "Scissors", "Lizard", "Spock"][:ns]
 
     # Title bar
     status = "RUNNING" if self.rps_running else "PAUSED"
@@ -277,7 +264,7 @@ def _draw_rps(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [s/S]=rate+/- [+/-]=steps/f [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  s/S=swap rate+/-  +/-=steps/frame  r=reset  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)

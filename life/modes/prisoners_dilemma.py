@@ -1,6 +1,5 @@
-"""Mode: spd — simulation mode for the life package."""
+"""Spatial Prisoner's Dilemma — cooperators and defectors on a grid copy the best-scoring neighbour."""
 import curses
-import math
 import random
 import time
 
@@ -56,7 +55,7 @@ def _exit_spd_mode(self):
 
 
 def _spd_init(self, preset_idx: int):
-    """Initialize SPD simulation with the given preset."""
+    """Initialize the simulation with the given preset."""
     (name, _desc, T, R, P, S,
      init_coop) = self.SPD_PRESETS[preset_idx]
     self.spd_preset_name = name
@@ -220,8 +219,6 @@ def _handle_spd_key(self, key: int) -> bool:
         self.speed_idx = min(len(SPEEDS) - 1, self.speed_idx + 1)
     elif key in (ord("q"), 27):
         self._exit_spd_mode()
-    else:
-        return True
     return True
 
 
@@ -249,7 +246,7 @@ def _draw_spd_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hint = " [j/k]=navigate  [Enter]=select  [q]=cancel"
+    hint = " j/k=navigate  Enter=select  q=cancel"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:
@@ -364,7 +361,7 @@ def _draw_spd(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [t/T]=temptation+/- [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  t/T=temptation+/-  +/-=steps/frame  </>=speed  r=reset  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)

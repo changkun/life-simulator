@@ -1,6 +1,5 @@
-"""Mode: schelling — simulation mode for the life package."""
+"""Schelling Segregation — agents of several groups move when too few neighbours match them."""
 import curses
-import math
 import random
 import time
 
@@ -198,8 +197,6 @@ def _handle_schelling_key(self, key: int) -> bool:
         self.speed_idx = min(len(SPEEDS) - 1, self.speed_idx + 1)
     elif key in (ord("q"), 27):
         self._exit_schelling_mode()
-    else:
-        return True
     return True
 
 
@@ -227,7 +224,7 @@ def _draw_schelling_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hint = " [j/k]=navigate  [Enter]=select  [q]=cancel"
+    hint = " j/k=navigate  Enter=select  q=cancel"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:
@@ -320,7 +317,7 @@ def _draw_schelling(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [t/T]=tolerance+/- [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  t/T=tolerance+/-  +/-=steps/frame  </>=speed  r=reset  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
