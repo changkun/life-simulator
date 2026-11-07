@@ -553,6 +553,7 @@ Fourier epicycles demonstrate that any closed curve can be approximated by a sum
 
 ```
 Input: N sample points P[n] = (x_n, y_n) along a closed curve
+  (presets use N = 128; a free-drawn path uses the points you drew)
 
 Discrete Fourier Transform:
   For each frequency k in [0, N):
@@ -574,13 +575,14 @@ Reconstruction (epicycle chain):
 
   Time step: dt = 2*pi / N (one full cycle reproduces the original path)
 
-Preset shapes: circle, square, star, figure-8, heart, spiral-square
-Free-draw mode: user draws path with cursor, DFT computed on completion
+Presets: Circle, Square Wave, Star, Figure 8, Heart, Spiral Square, Free Draw
+Free Draw: move the cursor, press d to lower or raise the pen, x to clear,
+  Enter to compute the DFT and start playback
 ```
 
 **What to look for**
 
-Start with all circles enabled, then use [ and ] to reduce the count. With few circles, only the coarse shape is visible; adding circles progressively refines the approximation. The square preset is particularly instructive: it requires many high-frequency harmonics for sharp corners, so reducing circles rounds the corners (the Gibbs phenomenon). The heart preset demonstrates how a non-trivial parametric curve decomposes into a manageable number of epicycles. The free-draw mode lets you sketch any shape and see its Fourier decomposition.
+Start with all circles enabled, then use `[` and `]` to change the count. With few circles, only the coarse shape is visible; adding circles progressively refines the approximation. The Square Wave preset is instructive: sharp corners need many high-frequency harmonics, so reducing circles rounds them off. The heart preset demonstrates how a non-trivial parametric curve decomposes into a manageable number of epicycles. Free Draw lets you sketch any shape and see its Fourier decomposition. `c` toggles the circles, `i` the info panel, and `+`/`-` set the speed.
 
 **References**
 
