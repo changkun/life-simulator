@@ -1,22 +1,13 @@
-"""Mode: evo_playground — Evolutionary Playground.
-
-Interactive natural selection of cellular automata rules.  A grid of
-live-running simulations with randomly generated rules competes
-side-by-side.  The user selects the most visually interesting ones as
-"parents", breeds them (crossover + mutation of birth/survival rules,
-neighborhood shapes, and state counts), and repeats — iteratively
-discovering emergent behaviors no one designed by hand.
-"""
+"""Evolutionary Playground — breed Life-like rules by picking parents from live simulations."""
 import curses
 import json
-import math
 import os
 import random
 import time
 
 from life.constants import SAVE_DIR, SPEEDS, SPEED_LABELS
 from life.grid import Grid
-from life.rules import rule_string, parse_rule_string
+from life.rules import rule_string
 
 # ── Constants ────────────────────────────────────────────────────────
 
@@ -76,7 +67,7 @@ def _crossover(g1, g2):
 
 
 def _mutate(genome, rate=0.15):
-    """Mutate a genome in place and return it."""
+    """Return a mutated copy of a genome."""
     g = {
         "birth": set(genome["birth"]),
         "survival": set(genome["survival"]),
@@ -118,8 +109,7 @@ def _create_mini_sim(genome, rows, cols):
     g = Grid(rows, cols)
     g.birth = set(genome["birth"])
     g.survival = set(genome["survival"])
-    # Don't set hex_mode on Grid (its hex path has import issues);
-    # we handle all neighborhoods in our custom step function.
+    # The custom step function handles every neighborhood, so Grid.hex_mode stays off.
     g._ep_neighborhood = genome["neighborhood"]
     g._ep_num_states = genome["num_states"]
     # Random 20% fill
@@ -201,11 +191,10 @@ def _exit_evo_playground(self):
 
 
 def _ep_init(self, seed_genomes=None):
-    """Initialize the playground grid with a population of simulations."""
+    """Build a population, bred from seed genomes when given, and show it."""
     max_y, max_x = self.stdscr.getmaxyx()
 
-    # Determine grid layout
-    usable_h = max_y - 5  # title + status + hint
+    usable_h = max_y - 5  # title, status, parents and hint rows
     usable_w = max_x - 1
 
     tile_inner_h = max(3, min(8, (usable_h - 2) // 4 - 1))
@@ -221,26 +210,21 @@ def _ep_init(self, seed_genomes=None):
     sim_rows = self.ep_tile_h
     sim_cols = self.ep_tile_w
 
-    # Generate genomes
     if seed_genomes and len(seed_genomes) >= 2:
-        # Breed from selected parents
+        # Keep the parents, then fill the rest with mutated crossovers.
         genomes = []
-        # Keep parents
         for sg in seed_genomes:
             genomes.append(dict(sg, birth=set(sg["birth"]), survival=set(sg["survival"])))
-        # Fill rest with crossover + mutation
         while len(genomes) < pop_size:
             p1 = random.choice(seed_genomes)
             p2 = random.choice(seed_genomes)
             child = _crossover(p1, p2)
             child = _mutate(child, self.ep_mutation_rate)
             genomes.append(child)
-        # Truncate if too many parents
         genomes = genomes[:pop_size]
     else:
         genomes = [_random_genome() for _ in range(pop_size)]
 
-    # Create simulations
     self.ep_sims = []
     self.ep_genomes = genomes
     self.ep_pop_histories = []
@@ -297,7 +281,6 @@ def _ep_save_rule(self, idx):
         "generation": self.ep_generation,
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
-    # Load existing
     saved = []
     if os.path.isfile(_SAVED_RULES_FILE):
         try:
@@ -350,7 +333,7 @@ def _ep_load_saved(self):
 # ── Key handlers ─────────────────────────────────────────────────────
 
 def _handle_ep_menu_key(self, key):
-    """Handle keys in the playground settings menu."""
+    """Handle keys in the settings menu."""
     if key == -1:
         return True
     menu_items = ["mutation_rate", "load_saved", "start_random", "start_saved"]
@@ -399,7 +382,7 @@ def _handle_ep_menu_key(self, key):
 
 
 def _handle_ep_key(self, key):
-    """Handle keys during active playground mode."""
+    """Handle keys while the playground is running."""
     if key == -1:
         return True
     if key == 27 or key == ord("q"):
@@ -409,19 +392,16 @@ def _handle_ep_key(self, key):
     pop_size = len(self.ep_sims)
     gc = self.ep_grid_cols
 
-    # Play/pause
     if key == ord(" "):
         self.ep_running = not self.ep_running
         self._flash("Running" if self.ep_running else "Paused")
         return True
 
-    # Single step
     if key == ord("."):
         self.ep_running = False
         self._ep_step()
         return True
 
-    # Navigate cursor
     if key == curses.KEY_UP:
         self.ep_cursor = max(0, self.ep_cursor - gc)
         return True
@@ -435,7 +415,6 @@ def _handle_ep_key(self, key):
         self.ep_cursor = min(pop_size - 1, self.ep_cursor + 1)
         return True
 
-    # Toggle selection (mark as parent)
     if key in (10, 13, curses.KEY_ENTER):
         if self.ep_cursor in self.ep_selected:
             self.ep_selected.discard(self.ep_cursor)
@@ -445,12 +424,10 @@ def _handle_ep_key(self, key):
             self._flash(f"Selected #{self.ep_cursor + 1} as parent — {len(self.ep_selected)} parents chosen")
         return True
 
-    # Breed next generation
     if key == ord("b"):
         self._ep_breed()
         return True
 
-    # Select all / deselect all
     if key == ord("A"):
         if len(self.ep_selected) == pop_size:
             self.ep_selected.clear()
@@ -460,24 +437,20 @@ def _handle_ep_key(self, key):
             self._flash(f"Selected all {pop_size}")
         return True
 
-    # Save selected rule
     if key == ord("S"):
         self._ep_save_rule(self.ep_cursor)
         return True
 
-    # Adopt rule into main grid
     if key == ord("a"):
         self._ep_adopt_rule(self.ep_cursor)
         return True
 
-    # Randomize (new random generation)
     if key == ord("r"):
         self.ep_generation = 0
         self._ep_init()
         self._flash("New random population")
         return True
 
-    # Speed controls
     if key == ord(">"):
         if self.speed_idx < len(SPEEDS) - 1:
             self.speed_idx += 1
@@ -489,7 +462,6 @@ def _handle_ep_key(self, key):
         self._flash(f"Speed: {SPEED_LABELS[self.speed_idx]}")
         return True
 
-    # Mouse click
     if key == curses.KEY_MOUSE:
         try:
             _, mx, my, _, bstate = curses.getmouse()
@@ -497,7 +469,6 @@ def _handle_ep_key(self, key):
             if tile_idx is not None and 0 <= tile_idx < pop_size:
                 self.ep_cursor = tile_idx
                 if bstate & curses.BUTTON1_DOUBLE_CLICKED:
-                    # Toggle selection on double click
                     if tile_idx in self.ep_selected:
                         self.ep_selected.discard(tile_idx)
                     else:
@@ -536,7 +507,7 @@ def _screen_to_tile_idx(self, mx, my):
 # ── Drawing ──────────────────────────────────────────────────────────
 
 def _draw_ep_menu(self, max_y, max_x):
-    """Draw the playground settings/launch menu."""
+    """Draw the settings menu."""
     self.stdscr.erase()
 
     title = "── Evolutionary Playground ──"
@@ -609,7 +580,7 @@ def _draw_ep_menu(self, max_y, max_x):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+        hint = " j/k=navigate  Enter/Space=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -618,7 +589,7 @@ def _draw_ep_menu(self, max_y, max_x):
 
 
 def _draw_ep(self, max_y, max_x):
-    """Draw the playground grid of live simulations."""
+    """Draw the tiled simulations with the cursor, parents and status bars."""
     self.stdscr.erase()
 
     gr = self.ep_grid_rows
@@ -644,7 +615,6 @@ def _draw_ep(self, max_y, max_x):
     draw_y_start = 2
     draw_x_start = 1
 
-    # Draw tiles
     for idx in range(pop_size):
         row = idx // gc
         col = idx % gc
@@ -700,7 +670,6 @@ def _draw_ep(self, max_y, max_x):
                     break
                 age = grid.cells[sr][sc]
                 if age > 0:
-                    # Map age to density/color
                     v = min(1.0, age / 20.0)
                     di = max(1, min(4, int(v * 4.0) + 1))
                     ch = _DENSITY[di]
@@ -784,7 +753,7 @@ def _draw_ep(self, max_y, max_x):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [↑↓←→]=navigate [Enter]=select parent [b]=breed [S]=save [a]=adopt [r]=randomize [q]=exit"
+            hint = " Space=play  .=step  Arrows=navigate  Enter=select parent  A=all  b=breed  S=save  a=adopt  r=random  </>=speed  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
