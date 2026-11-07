@@ -1,4 +1,8 @@
 """Tests for tierra mode."""
+import random
+
+import pytest
+
 from tests.conftest import make_mock_app
 from life.modes.tierra import (
     register, TIERRA_PRESETS, _init_soup, _soup_step,
@@ -84,6 +88,33 @@ def test_soup_population_can_grow():
     soup = _init_soup(settings)
     for _ in range(100):
         _soup_step(soup)
-    # The ancestor should attempt to replicate
-    assert soup["births"] >= 0  # may or may not succeed in 100 steps
     assert soup["generation"] == 100
+
+
+@pytest.mark.parametrize("preset_idx", [0, 3])
+def test_ancestors_replicate_faithfully(preset_idx):
+    """With no mutation, every descendant is an exact copy of the ancestor."""
+    random.seed(0)
+    settings = dict(TIERRA_PRESETS[preset_idx][2],
+                    mutation_rate=0.0, cosmic_ray_rate=0.0)
+    soup = _init_soup(settings)
+    ancestor = list(soup["organisms"][0].genome)
+    for _ in range(150):
+        _soup_step(soup)
+    assert soup["births"] > 10
+    assert all(o.genome == ancestor for o in soup["organisms"])
+
+
+def test_full_soup_reaps_to_keep_replicating():
+    """When memory fills, the reaper frees room so births continue."""
+    random.seed(1)
+    settings = dict(TIERRA_PRESETS[0][2], mutation_rate=0.0,
+                    cosmic_ray_rate=0.0, mem_size=512)
+    soup = _init_soup(settings)
+    for _ in range(300):
+        _soup_step(soup)
+    assert soup["deaths"] > 0
+    births = soup["births"]
+    for _ in range(100):
+        _soup_step(soup)
+    assert soup["births"] > births

@@ -46,48 +46,41 @@ OP_NAMES = [
     "jmpz", "alloc", "split", "push", "pop", "swap", "call", "ret",
 ]
 
-# ── Ancestor genome (self-replicator, ~40 instructions) ──────────────────
-# A minimal self-copier: find own start, find own end, allocate space,
-# copy loop, then split.
+# ── Ancestor genomes ─────────────────────────────────────────────────────
+# Both are minimal self-copiers.  A jump goes to the first complement of the
+# template that follows it, so each label below appears once and the jump
+# templates are its bitwise complements.
+#   start label -> ALLOC (reserve a daughter block, ends the slice)
+#   copy loop   -> COPY / DEC until the counter hits zero (JMPZ), else JMP back
+#   exit label  -> SPLIT (release the daughter, ends the slice), JMP to start
+# A RET after each JMP separates its template from the label that follows.
 ANCESTOR_GENOME = [
-    OP_NOP1, OP_NOP1, OP_NOP1, OP_NOP1,   # start template 1111
-    OP_ALLOC,                                # allocate daughter
-    OP_PUSH,                                 # save alloc address
-    OP_FIND,                                 # find end template
-    OP_NOP0, OP_NOP0, OP_NOP0, OP_NOP1,     # complement of end (0001)
-    OP_MOV_H,                                # set read limit
-    OP_POP,                                  # restore daughter addr
-    # ── copy loop ──
-    OP_NOP0, OP_NOP0, OP_NOP1, OP_NOP0,     # loop template 0010
-    OP_COPY,                                 # copy one instruction
-    OP_INC,                                  # advance read head
-    OP_INC,                                  # advance write head
-    OP_DEC,                                  # decrement counter
-    OP_JMPZ,                                 # if done → skip to split
-    OP_NOP0, OP_NOP1, OP_NOP0, OP_NOP0,     # complement of loop
-    OP_JMP,                                  # else jump back to loop
-    OP_NOP0, OP_NOP0, OP_NOP1, OP_NOP0,     # complement = loop label
-    # ── divide ──
-    OP_SPLIT,                                # create new organism
-    OP_JMP,                                  # jump back to start
-    OP_NOP1, OP_NOP1, OP_NOP1, OP_NOP1,     # complement of start
-    # ── end template ──
-    OP_NOP1, OP_NOP1, OP_NOP0, OP_NOP0,     # end template 1100
-    OP_RET,                                  # (sentinel)
+    OP_NOP1, OP_NOP1, OP_NOP1, OP_NOP1,     # start label 1111
+    OP_ALLOC,
+    OP_NOP0, OP_NOP0, OP_NOP1, OP_NOP0,     # loop label 0010
+    OP_COPY,
+    OP_DEC,
+    OP_JMPZ, OP_NOP1, OP_NOP0, OP_NOP0, OP_NOP1,   # exit if done (label 0110)
+    OP_JMP, OP_NOP1, OP_NOP1, OP_NOP0, OP_NOP1,    # else back to loop label
+    OP_RET,
+    OP_NOP0, OP_NOP1, OP_NOP1, OP_NOP0,     # exit label 0110
+    OP_SPLIT,
+    OP_JMP, OP_NOP0, OP_NOP0, OP_NOP0, OP_NOP0,    # back to start label
+    OP_RET,
 ]
 
 SMALL_ANCESTOR = [
-    OP_NOP1, OP_NOP1, OP_NOP0,
+    OP_NOP1, OP_NOP1, OP_NOP1,              # start label 111
     OP_ALLOC,
-    OP_FIND, OP_NOP0, OP_NOP1,
-    OP_MOV_H,
-    OP_NOP0, OP_NOP0, OP_NOP1,  # copy loop label
-    OP_COPY, OP_INC, OP_DEC,
-    OP_JMPZ, OP_NOP1, OP_NOP0,
-    OP_JMP, OP_NOP0, OP_NOP0, OP_NOP1,
+    OP_NOP0, OP_NOP0, OP_NOP1,              # loop label 001
+    OP_COPY,
+    OP_DEC,
+    OP_JMPZ, OP_NOP1, OP_NOP0, OP_NOP1,     # exit if done (label 010)
+    OP_JMP, OP_NOP1, OP_NOP1, OP_NOP0,      # else back to loop label
+    OP_RET,
+    OP_NOP0, OP_NOP1, OP_NOP0,              # exit label 010
     OP_SPLIT,
-    OP_JMP, OP_NOP1, OP_NOP1, OP_NOP0,
-    OP_NOP0, OP_NOP1, OP_NOP1,
+    OP_JMP, OP_NOP0, OP_NOP0, OP_NOP0,      # back to start label
     OP_RET,
 ]
 
@@ -158,10 +151,14 @@ def _genome_hash(genome):
 
 # ── Virtual machine: execute one instruction slice ────────────────────────
 def _execute_slice(org, memory, mem_size, mutation_rate, slice_size):
-    """Execute up to `slice_size` instructions for one organism."""
+    """Execute up to `slice_size` instructions for one organism.
+
+    ALLOC and SPLIT end the slice so the soup can act on them.
+    Return True if the slice ended with a SPLIT.
+    """
     for _ in range(slice_size):
         if not org.alive:
-            return
+            return False
         if org.ip < 0 or org.ip >= org.mem_len:
             org.errors += 1
             org.ip = 0
@@ -281,14 +278,15 @@ def _execute_slice(org, memory, mem_size, mutation_rate, slice_size):
                             break
 
         elif op == OP_ALLOC:
-            # Request allocation — sets daughter start/len
-            desired = org.mem_len
-            org.regs[0] = desired  # set counter for copy loop
-            # Actual allocation deferred to the soup manager
-            org.daughter_len = desired
+            # The soup finds the block before the organism's next slice.
+            if org.daughter_start < 0:
+                org.daughter_len = org.mem_len
+                org.regs[0] = org.mem_len  # copy-loop counter
+                org.rh = 0
+            return False
 
         elif op == OP_SPLIT:
-            pass  # Handled by soup manager after slice
+            return True
 
         elif op == OP_PUSH:
             if len(org.stack) < 8:
@@ -313,6 +311,7 @@ def _execute_slice(org, memory, mem_size, mutation_rate, slice_size):
                 org.ip = org.stack.pop() % org.mem_len
             else:
                 org.ip = 0
+    return False
 
 
 # ── Soup manager functions ────────────────────────────────────────────────
@@ -473,6 +472,7 @@ def _soup_step(soup):
 
     # Execute each organism
     new_organisms = []
+    memory_full = False
     for oi in range(len(organisms)):
         org = organisms[oi]
         if not org.alive:
@@ -486,13 +486,15 @@ def _soup_step(soup):
                 org.wh = 0
                 for i in range(org.daughter_len):
                     owner[(block + i) % mem_size] = oi
+            else:
+                # Wait for room instead of running a copy loop with no target.
+                memory_full = True
+                continue
 
-        _execute_slice(org, memory, mem_size,
-                       soup["mutation_rate"], soup["slice_size"])
+        split = _execute_slice(org, memory, mem_size,
+                               soup["mutation_rate"], soup["slice_size"])
 
-        # Check for split
-        last_op = memory[(org.mem_start + max(0, org.ip - 1)) % mem_size]
-        if last_op == OP_SPLIT and org.daughter_start >= 0:
+        if split and org.daughter_start >= 0:
             # Harvest daughter genome from memory
             daughter_genome = []
             for i in range(org.daughter_len):
@@ -504,6 +506,10 @@ def _soup_step(soup):
             org.daughter_start = -1
             org.daughter_len = 0
             soup["births"] += 1
+
+    # A full soup reaps one organism per generation to make room.
+    if memory_full and organisms:
+        _reap(soup)
 
     # Add children
     for child in new_organisms:
