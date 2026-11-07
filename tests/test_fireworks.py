@@ -546,3 +546,22 @@ class TestFireworksSimKeys:
         app.fireworks_launch_rate = 0.49
         app._handle_fireworks_key(ord("l"))
         assert app.fireworks_launch_rate <= 0.5
+
+
+class TestFireworksPresetPattern:
+    @pytest.mark.parametrize("name,pid", [(n, p) for n, _d, p in FIREWORKS_PRESETS])
+    def test_preset_id_lookup(self, name, pid):
+        app = _make_fireworks_app()
+        app.fireworks_preset_name = name
+        assert app._fireworks_preset_id() == pid
+
+    def test_auto_launch_uses_preset_pattern(self):
+        random.seed(1)
+        app = _make_fireworks_app()
+        app.fireworks_preset_name = "Ring Parade"
+        app._fireworks_init("ring")
+        app.fireworks_launch_rate = 1.0
+        for _ in range(10):
+            app._fireworks_step()
+        assert app.fireworks_rockets
+        assert {r[6] for r in app.fireworks_rockets} == {"ring"}

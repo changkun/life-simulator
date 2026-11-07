@@ -26,6 +26,14 @@ FIREWORKS_CHARS = {
 FIREWORKS_COLORS = [1, 2, 3, 4, 5, 6, 7]  # green, cyan, yellow, magenta, red, white-ish, cyan-bold
 
 
+def _fireworks_preset_id(self) -> str:
+    """Return the id of the running preset, or "random" if unknown."""
+    for name, _desc, pid in self.FIREWORKS_PRESETS:
+        if name == self.fireworks_preset_name:
+            return pid
+    return "random"
+
+
 def _fireworks_init(self, preset: str):
     """Initialize fireworks simulation."""
     max_y, max_x = self.stdscr.getmaxyx()
@@ -177,8 +185,7 @@ def _fireworks_step(self):
 
     # Auto-launch new rockets
     if self.fireworks_auto_launch and random.random() < self.fireworks_launch_rate:
-        self._fireworks_launch(self.fireworks_preset_name.lower().replace(" ", "")
-                               if self.fireworks_preset_name else None)
+        self._fireworks_launch(self._fireworks_preset_id())
 
     # Update rockets
     new_rockets = []
@@ -316,19 +323,12 @@ def _handle_fireworks_key(self, key: int) -> bool:
         self._flash("Fireworks — select a show")
         return True
     if key == ord("r"):
-        preset_id = ""
-        for name, _desc, pid in self.FIREWORKS_PRESETS:
-            if name == self.fireworks_preset_name:
-                preset_id = pid
-                break
-        self._fireworks_init(preset_id or "random")
+        self._fireworks_init(self._fireworks_preset_id())
         self._flash("Reset!")
         return True
     # Manual launch
     if key == ord("f") or key in (10, 13, curses.KEY_ENTER):
-        preset_map = {name: pid for name, _desc, pid in self.FIREWORKS_PRESETS}
-        pid = preset_map.get(self.fireworks_preset_name, "random")
-        self._fireworks_launch(pid)
+        self._fireworks_launch(self._fireworks_preset_id())
         return True
     # Toggle auto-launch
     if key == ord("a"):
@@ -557,6 +557,7 @@ def register(App):
     App.FIREWORKS_COLORS = FIREWORKS_COLORS
     App.FIREWORKS_PATTERNS = FIREWORKS_PATTERNS
     App.FIREWORKS_PRESETS = FIREWORKS_PRESETS
+    App._fireworks_preset_id = _fireworks_preset_id
     App._fireworks_init = _fireworks_init
     App._fireworks_launch = _fireworks_launch
     App._fireworks_explode = _fireworks_explode
