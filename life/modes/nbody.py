@@ -140,17 +140,17 @@ def _nbody_init(self, preset_idx: int):
         self.nbody_dt = 0.01
         self.nbody_softening = 0.1
         scale = 8.0
-        # Positions and velocities from the known solution (scaled)
-        p1r, p1c = cr - 0.97000436 * scale, cc + 0.24308753 * scale
-        p2r, p2c = cr + 0.97000436 * scale, cc - 0.24308753 * scale
-        p3r, p3c = cr, cc
-        vx3, vy3 = -0.93240737 * 0.5, -0.86473146 * 0.5
-        vx1, vy1 = -vx3 / 2.0, -vy3 / 2.0
-        vx2, vy2 = -vx3 / 2.0, -vy3 / 2.0
         m = 10.0
-        self.nbody_bodies.append([p1r, p1c, vx1 * scale * 0.1, vy1 * scale * 0.1, m])
-        self.nbody_bodies.append([p2r, p2c, vx2 * scale * 0.1, vy2 * scale * 0.1, m])
-        self.nbody_bodies.append([p3r, p3c, vx3 * scale * 0.1, vy3 * scale * 0.1, m])
+        # The unit solution assumes G = m = L = 1; velocities scale as sqrt(G*m/L).
+        k = math.sqrt(self.nbody_grav_const * m / scale)
+        p1r, p1c = cr + 0.97000436 * scale, cc - 0.24308753 * scale
+        p2r, p2c = cr - 0.97000436 * scale, cc + 0.24308753 * scale
+        p3r, p3c = cr, cc
+        v3r, v3c = -0.93240737 * k, -0.86473146 * k
+        v12r, v12c = -v3r / 2.0, -v3c / 2.0
+        self.nbody_bodies.append([p1r, p1c, v12r, v12c, m])
+        self.nbody_bodies.append([p2r, p2c, v12r, v12c, m])
+        self.nbody_bodies.append([p3r, p3c, v3r, v3c, m])
 
     elif setup_key == "lagrange":
         # Large central mass with trojans at L4/L5

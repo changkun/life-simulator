@@ -714,3 +714,11 @@ class TestNBodyOrbitalPhysics:
         for _ in range(200):
             app._nbody_step()
         assert len(app.nbody_bodies) >= 2, "Figure-8 bodies merged too quickly"
+
+    def test_figure8_stays_periodic(self):
+        """Velocities are scaled for G, mass and size, so all 3 bodies survive a full orbit."""
+        app = _make_nbody_app()
+        app._nbody_init(4)
+        for _ in range(5000):
+            app._nbody_step()
+        assert len(app.nbody_bodies) == 3
