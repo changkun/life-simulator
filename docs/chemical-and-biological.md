@@ -652,7 +652,7 @@ Environmental parameters:
 
 ## Ecosystem Evolution & Speciation
 
-**Background** — This mode simulates macro-evolution on a landscape scale. Populations spread across varied biomes (grassland, forest, desert, tundra, mountain, ocean), adapt to local conditions through trait evolution, and speciate through geographic isolation (allopatric speciation) or niche divergence (sympatric speciation). The model incorporates heritable multi-dimensional traits (size, speed, camouflage, thermal tolerance, aquatic affinity, aggression, fertility), multiple trophic levels (producer, herbivore, predator, apex), and emergent food webs. Environmental events — continental drift, climate shifts, volcanic eruptions, and mass extinctions — reshape the evolutionary landscape.
+**Background** — This mode simulates macro-evolution on a landscape scale. Populations spread across varied biomes (grassland, forest, desert, tundra, mountain, ocean), adapt to local conditions through trait evolution, and speciate through geographic isolation (allopatric speciation) or niche divergence (sympatric speciation). The model incorporates heritable multi-dimensional traits (size, speed, camouflage, thermal tolerance, aquatic affinity, aggression, fertility), multiple trophic levels (producer, herbivore, predator, apex), and emergent food webs. Continental drift and mass extinctions reshape the evolutionary landscape.
 
 **Formulation** — Species populations occupy grid cells across a generated biome landscape:
 
@@ -662,7 +662,8 @@ Biome generation:
   Water threshold = 1 - land_pct; mountain threshold by mountain_pct
   Latitude-dependent biome assignment:
     Low latitude: desert; mid: forest; high: tundra
-    Rivers flow downhill from mountains; swamps in low-lying areas
+    Rivers flow downhill from mountains; a few grassland cells become swamp;
+    shallow water next to land is reef; a few mountain cells become volcanic
   Carrying capacity per biome: grassland=1.0, forest=0.8, desert=0.15, ocean=0.3, etc.
   Movement cost: grassland=1, forest=2, mountain=8, volcanic=10
 
@@ -670,27 +671,48 @@ Species traits (8 continuous values, heritable with Gaussian mutation):
   size (0.1-5.0), speed (0.1-3.0), camouflage (0-1), cold_tolerance (0-1),
   heat_tolerance (0-1), aquatic (0-1), aggression (0-1), fertility (0.2-3.0)
 
-Fitness = biome_match(traits) * competition_factor * predation_survival
-  Biome match depends on trait-biome alignment (e.g., aquatic for ocean)
+Fitness (per species and biome, at least 0.01) is a product of:
+  aquatic term:   ocean/reef 0.2 + 0.8*aquatic; river 0.6 + 0.4*aquatic;
+                  swamp 0.5 + 0.5*aquatic; other biomes 1 - 0.3*aquatic
+  temperature:    tundra 0.3 + 0.7*cold_tolerance; desert 0.3 + 0.7*heat_tolerance;
+                  volcanic 0.1 + 0.3*heat_tolerance
+  mountain:       max(0.1, 1 - 0.15*size)
+  producers:      x1.3 in grassland, forest and swamp; x0.8 in ocean and reef
+  Camouflage and the temperature map are not part of fitness.
+
+Population dynamics (each generation, per local population):
+  capacity = max(1, int(biome_capacity * 30 * fitness))
+  below capacity: grows by fertility * food * fitness * 0.3, rounded stochastically
+  above capacity: shrinks by 10%
+  food: producers use biome_capacity * fitness; consumers use prey populations in
+        the 8 neighbors (0.1 each) and in the same cell (0.15), via the food web
+  Random extinction pressure halves a population with probability extinction_rate
+  Two species of the same trophic level in one cell: the one with the smaller
+  size * fitness loses 30% of its population
+  Producers disperse as seeds and spores; other species disperse with their speed trait
 
 Speciation:
-  Allopatric: populations separated by barriers accumulate genetic distance
-  Sympatric: trait divergence within a population exceeds threshold
-  New species get unique ID, inheriting parent traits with variation
+  Allopatric: chance mutation_rate * 0.5 per generation for a species with 4 or more
+    populations; if two of them are more than max(8, min(rows, cols) / 5) cells
+    apart, the populations nearer the far one become a new species
+  Sympatric: chance mutation_rate * 0.2 per generation for a species with 3 or more
+    populations across 3 or more biomes; some populations in one biome become a new species
+  New species get a unique ID and mutated parent traits
 
 Trophic levels: Producer(0), Herbivore(1), Predator(2), Apex(3)
-  Predation: higher-trophic species consume lower-trophic
-  Rare trophic level shifts through extreme trait mutation
+  Food web (rebuilt every 10 generations): a consumer eats lower trophic levels when
+    size > 0.5 * prey size and speed > 0.4 * prey speed; prey populations are not reduced
+  With probability 0.15, a sympatric daughter species moves up one trophic level
 
 Events:
   Continental drift: at generation 80, an ocean strip splits the map down the middle
   Mass extinction: at the preset's generation (150), each population dies with probability 0.70,
     and the mutation rate is multiplied by 2.5 (capped at 0.15)
-  Climate shift: every 50 generations, each cell's temperature changes by a random amount
-    (only in Random Landscape)
+  Climate shift: every 50 generations, each cell's temperature map changes by a random
+    amount (only in Random Landscape); fitness does not read this map
 ```
 
-**What to look for** — "Island Archipelago" starts four founder species on scattered islands, so lineages can diversify in isolation, as Darwin's finches did. "Continental Drift" splits a population and shows divergent evolution on separated landmasses. "Mass Extinction & Recovery" kills most populations at generation 150, then survivors radiate into empty niches. "Adaptive Radiation" starts from a single founder. The six presets are Continental Drift, Island Archipelago, Adaptive Radiation, Mass Extinction & Recovery, Pangaea Supercontinent and Random Landscape. Press `t` to toggle the phylogenetic tree, `l` the event log and `v` to cycle the species, biome, fitness and food web views. The tree shows branching patterns: long branches indicate evolutionary stasis, rapid branching signals adaptive radiation. Species counts and extinction events reveal punctuated equilibrium dynamics.
+**What to look for** — "Island Archipelago" starts four founder species on scattered islands, so lineages can diversify in isolation, as Darwin's finches did. "Continental Drift" splits a population and shows divergent evolution on separated landmasses. "Mass Extinction & Recovery" kills most populations at generation 150, then survivors radiate into empty niches. "Adaptive Radiation" starts from a single founder. The six presets are Continental Drift, Island Archipelago, Adaptive Radiation, Mass Extinction & Recovery, Pangaea Supercontinent and Random Landscape. Press `t` to toggle the phylogenetic tree, `l` the event log and `v` to cycle the species, biome, fitness and food web views. `+`/`-` set the steps per frame and `[`/`]` the speed. The tree shows branching patterns: long branches indicate evolutionary stasis, rapid branching signals adaptive radiation. Species counts and extinction events reveal punctuated equilibrium dynamics.
 
 **References**
 - Mayr, E. *Systematics and the Origin of Species.* Columbia University Press, 1942. https://doi.org/10.4159/harvard.9780674431430
