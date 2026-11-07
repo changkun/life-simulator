@@ -652,7 +652,7 @@ Environmental parameters:
 
 ## Ecosystem Evolution & Speciation
 
-**Background** — This mode simulates macro-evolution on a landscape scale. Populations spread across varied biomes (grassland, forest, desert, tundra, mountain, ocean), adapt to local conditions through trait evolution, and speciate through geographic isolation (allopatric speciation) or niche divergence (sympatric speciation). The model incorporates heritable multi-dimensional traits (size, speed, camouflage, thermal tolerance, aquatic affinity, aggression, fertility), multiple trophic levels (producer, herbivore, predator, apex), and emergent food webs. Continental drift and mass extinctions reshape the evolutionary landscape.
+**Background** — This mode simulates macro-evolution on a landscape scale. Populations spread across varied biomes (grassland, forest, desert, tundra, mountain, ocean), adapt to local conditions through trait evolution, and speciate through geographic isolation (allopatric speciation) or niche divergence (sympatric speciation). The model incorporates heritable multi-dimensional traits (size, speed, thermal tolerance, aquatic affinity, aggression, fertility), multiple trophic levels (producer, herbivore, predator, apex), and emergent food webs. Continental drift and mass extinctions reshape the evolutionary landscape.
 
 **Formulation** — Species populations occupy grid cells across a generated biome landscape:
 
@@ -667,8 +667,8 @@ Biome generation:
   Carrying capacity per biome: grassland=1.0, forest=0.8, desert=0.15, ocean=0.3, etc.
   Movement cost: grassland=1, forest=2, mountain=8, volcanic=10
 
-Species traits (8 continuous values, heritable with Gaussian mutation):
-  size (0.1-5.0), speed (0.1-3.0), camouflage (0-1), cold_tolerance (0-1),
+Species traits (7 continuous values, heritable with Gaussian mutation):
+  size (0.1-5.0), speed (0.1-3.0), cold_tolerance (0-1),
   heat_tolerance (0-1), aquatic (0-1), aggression (0-1), fertility (0.2-3.0)
 
 Fitness (per species and biome, at least 0.01) is a product of:
@@ -678,7 +678,7 @@ Fitness (per species and biome, at least 0.01) is a product of:
                   volcanic 0.1 + 0.3*heat_tolerance
   mountain:       max(0.1, 1 - 0.15*size)
   producers:      x1.3 in grassland, forest and swamp; x0.8 in ocean and reef
-  Camouflage and the temperature map are not part of fitness.
+  Temperature acts only through the biome: there is no temperature map.
 
 Population dynamics (each generation, per local population):
   capacity = max(1, int(biome_capacity * 30 * fitness))
@@ -708,8 +708,6 @@ Events:
   Continental drift: at generation 80, an ocean strip splits the map down the middle
   Mass extinction: at the preset's generation (150), each population dies with probability 0.70,
     and the mutation rate is multiplied by 2.5 (capped at 0.15)
-  Climate shift: every 50 generations, each cell's temperature map changes by a random
-    amount (only in Random Landscape); fitness does not read this map
 ```
 
 **What to look for** — "Island Archipelago" starts four founder species on scattered islands, so lineages can diversify in isolation, as Darwin's finches did. "Continental Drift" splits a population and shows divergent evolution on separated landmasses. "Mass Extinction & Recovery" kills most populations at generation 150, then survivors radiate into empty niches. "Adaptive Radiation" starts from a single founder. The six presets are Continental Drift, Island Archipelago, Adaptive Radiation, Mass Extinction & Recovery, Pangaea Supercontinent and Random Landscape. Press `t` to toggle the phylogenetic tree, `l` the event log and `v` to cycle the species, biome, fitness and food web views. `+`/`-` set the steps per frame and `[`/`]` the speed. The tree shows branching patterns: long branches indicate evolutionary stasis, rapid branching signals adaptive radiation. Species counts and extinction events reveal punctuated equilibrium dynamics.

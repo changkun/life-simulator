@@ -55,7 +55,6 @@ PRODUCER_DISPERSAL_SPEED = 1.0
 TRAIT_DEFS = [
     ("size", 0.1, 5.0),
     ("speed", 0.1, 3.0),
-    ("camouflage", 0.0, 1.0),
     ("cold_tolerance", 0.0, 1.0),
     ("heat_tolerance", 0.0, 1.0),
     ("aquatic", 0.0, 1.0),
@@ -84,28 +83,28 @@ EVOECO_PRESETS = [
      {"land_pct": 0.55, "mountain_pct": 0.08, "forest_pct": 0.20,
       "desert_pct": 0.10, "river_count": 5, "swamp_pct": 0.05,
       "num_founders": 6, "mutation_rate": 0.04, "drift_event": True,
-      "extinction_rate": 0.001, "climate_shift": 0.0}),
+      "extinction_rate": 0.001}),
 
     ("Island Archipelago",
      "Scattered islands each become evolutionary labs — Darwin's finches writ large",
      {"land_pct": 0.25, "mountain_pct": 0.04, "forest_pct": 0.12,
       "desert_pct": 0.03, "river_count": 2, "swamp_pct": 0.02,
       "num_founders": 4, "mutation_rate": 0.06, "drift_event": False,
-      "extinction_rate": 0.002, "climate_shift": 0.0}),
+      "extinction_rate": 0.002}),
 
     ("Adaptive Radiation",
      "Single ancestral species colonizes an empty world — explosive diversification",
      {"land_pct": 0.50, "mountain_pct": 0.10, "forest_pct": 0.18,
       "desert_pct": 0.08, "river_count": 6, "swamp_pct": 0.04,
       "num_founders": 1, "mutation_rate": 0.08, "drift_event": False,
-      "extinction_rate": 0.0005, "climate_shift": 0.0}),
+      "extinction_rate": 0.0005}),
 
     ("Mass Extinction & Recovery",
      "Rich ecosystem hit by cataclysm — survivors radiate into empty niches",
      {"land_pct": 0.50, "mountain_pct": 0.07, "forest_pct": 0.22,
       "desert_pct": 0.06, "river_count": 5, "swamp_pct": 0.04,
       "num_founders": 10, "mutation_rate": 0.05, "drift_event": False,
-      "extinction_rate": 0.001, "climate_shift": 0.0,
+      "extinction_rate": 0.001,
       "mass_extinction_gen": 150}),
 
     ("Pangaea Supercontinent",
@@ -113,14 +112,14 @@ EVOECO_PRESETS = [
      {"land_pct": 0.70, "mountain_pct": 0.06, "forest_pct": 0.25,
       "desert_pct": 0.12, "river_count": 8, "swamp_pct": 0.06,
       "num_founders": 8, "mutation_rate": 0.03, "drift_event": False,
-      "extinction_rate": 0.001, "climate_shift": 0.0}),
+      "extinction_rate": 0.001}),
 
     ("Random Landscape",
      "Fully randomized terrain, species, and evolutionary parameters",
      {"land_pct": None, "mountain_pct": None, "forest_pct": None,
       "desert_pct": None, "river_count": None, "swamp_pct": None,
       "num_founders": None, "mutation_rate": None, "drift_event": None,
-      "extinction_rate": None, "climate_shift": None}),
+      "extinction_rate": None}),
 ]
 
 
@@ -409,7 +408,6 @@ def _evoeco_init(self, preset_idx):
         settings["mutation_rate"] = random.uniform(0.02, 0.08)
         settings["drift_event"] = random.choice([True, False])
         settings["extinction_rate"] = random.uniform(0.0005, 0.003)
-        settings["climate_shift"] = random.uniform(0.0, 0.01)
 
     max_y, max_x = self.stdscr.getmaxyx()
     # Reserve right panel for phylogenetic tree
@@ -432,15 +430,6 @@ def _evoeco_init(self, preset_idx):
     biome, hmap = _evo_gen_terrain(rows, cols, settings)
     self.evoeco_biome = biome
     self.evoeco_hmap = hmap
-
-    # Climate temperature map (varies by latitude and altitude)
-    self.evoeco_temp = [[0.0] * cols for _ in range(rows)]
-    for r in range(rows):
-        lat = abs(r / max(1, rows - 1) - 0.5) * 2  # 0=equator, 1=pole
-        for c in range(cols):
-            base_temp = 1.0 - lat * 0.8  # warm at equator
-            alt_penalty = hmap[r][c] * 0.3
-            self.evoeco_temp[r][c] = max(0.0, min(1.0, base_temp - alt_penalty))
 
     # Species list
     self.evoeco_species = []
@@ -588,15 +577,6 @@ def _evoeco_step(self):
             if mid_c + 1 < cols and biome[r][mid_c + 1] not in (B_OCEAN,):
                 biome[r][mid_c + 1] = B_OCEAN
         self.evoeco_log.append(f"Gen {gen}: Continental drift — ocean barrier forms!")
-
-    # ── Climate shift ──
-    if settings["climate_shift"] > 0 and gen % 50 == 0 and gen > 0:
-        shift = settings["climate_shift"]
-        for r in range(rows):
-            for c in range(cols):
-                self.evoeco_temp[r][c] = max(0, min(1,
-                    self.evoeco_temp[r][c] + random.uniform(-shift, shift)))
-        self.evoeco_log.append(f"Gen {gen}: Climate shift event")
 
     # ── Population dynamics ──
     new_pops = []
@@ -1229,7 +1209,7 @@ def _draw_evoeco(self, max_y, max_x):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " Space=play  n=step  v=view  t=tree  l=log  +/-=speed  r=reset  R=menu  q=exit"
+            hint = " q=exit  R=menu  Space=play  n=step  v=view  t=tree  l=log  r=reset  +/-=speed"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)

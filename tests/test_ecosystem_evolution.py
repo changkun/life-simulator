@@ -85,3 +85,32 @@ def test_panel_toggles_reset_on_init():
     app._evoeco_init(0)
     assert app.evoeco_show_log is False
     assert app.evoeco_show_tree is True
+
+
+def test_no_unused_climate_or_camouflage_state():
+    from life.modes.ecosystem_evolution import TRAIT_DEFS
+    assert "camouflage" not in [t[0] for t in TRAIT_DEFS]
+    for _, _, settings in EVOECO_PRESETS:
+        assert "climate_shift" not in settings
+    app = _make_app()
+    app.evoeco_mode = True
+    app._evoeco_init(len(EVOECO_PRESETS) - 1)
+    assert "climate_shift" not in app.evoeco_settings
+    for _ in range(60):
+        app._evoeco_step()
+    assert not any("Climate" in e for e in app.evoeco_log)
+    for sp in app.evoeco_species:
+        assert "camouflage" not in sp["traits"]
+
+
+def test_hint_bar_keeps_exit_and_menu_within_80_columns():
+    app = _make_app()
+    app.evoeco_mode = True
+    app._evoeco_init(0)
+    app.message = ""
+    lines = []
+    app.stdscr.addstr = lambda y, x, s, *a: lines.append(s)
+    app._draw_evoeco(30, 80)
+    hint = [s for s in lines if "q=exit" in s][-1]
+    assert len(hint) <= 79
+    assert hint.index("q=exit") < hint.index("R=menu") < 79
