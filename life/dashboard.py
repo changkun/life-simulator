@@ -429,7 +429,7 @@ def _dashboard_launch_selected(self):
         if enter_fn:
             enter_fn()
     else:
-        self._flash("Game of Life (default mode)")
+        self._enter_game_of_life()
 
 
 def _handle_dashboard_key(self, key):
@@ -517,7 +517,7 @@ def _handle_dashboard_key(self, key):
             return True
         # Exit dashboard to default Game of Life
         self.dashboard = False
-        self._flash("Game of Life (default mode)")
+        self._enter_game_of_life()
         return True
 
     # M opens old mode browser (hidden shortcut)

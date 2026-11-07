@@ -326,6 +326,8 @@ The wheel zooms, and a right-button drag pans.
 
 Press `m` to open the mode browser (also the dashboard shown at launch). It
 lists all modes by category, with search and favorites. Select a mode to enter it.
+Opening Game of Life on an empty grid seeds a random soup, paused; press `r` to
+reseed or `c` to clear.
 
 ### Pattern Library
 

@@ -4498,6 +4498,34 @@ class App:
                             self.sound_engine.play_grid(self.grid, delay)
                     continue
 
+    def _randomize_grid(self):
+        """Fill the grid with a 20% random soup, paused, with fresh history."""
+        self.grid.clear()
+        self.running = False
+        import random
+        for r in range(self.grid.rows):
+            for c in range(self.grid.cols):
+                if random.random() < 0.2:
+                    self.grid.set_alive(r, c)
+        self.pop_history.clear()
+        self._record_pop()
+        self._reset_cycle_detection()
+        self.analytics.reset()
+        self.heatmap = [[0] * self.grid.cols for _ in range(self.grid.rows)]
+        self.heatmap_max = 0
+
+    def _enter_game_of_life(self):
+        """Show plain Game of Life, seeding a random soup if the grid is empty.
+
+        Without a --pattern the grid starts empty, so opening Game of Life
+        from the dashboard or mode browser used to show a blank, paused screen.
+        """
+        if self.grid.population == 0:
+            self._randomize_grid()
+            self._flash("Game of Life: random soup. Space=play  r=reseed  c=clear  p=patterns")
+        else:
+            self._flash("Game of Life (default mode)")
+
     # ── Key handling ──
 
 
@@ -4605,19 +4633,7 @@ class App:
             self._flash("Cleared")
             return True
         if key == ord("r"):
-            self.grid.clear()
-            self.running = False
-            import random
-            for r in range(self.grid.rows):
-                for c in range(self.grid.cols):
-                    if random.random() < 0.2:
-                        self.grid.set_alive(r, c)
-            self.pop_history.clear()
-            self._record_pop()
-            self._reset_cycle_detection()
-            self.analytics.reset()
-            self.heatmap = [[0] * self.grid.cols for _ in range(self.grid.rows)]
-            self.heatmap_max = 0
+            self._randomize_grid()
             self._flash("Randomised")
             return True
         if key == ord("R"):
@@ -5525,8 +5541,7 @@ class App:
                     if enter_fn:
                         enter_fn()
                 else:
-                    # Game of Life (default) — just flash
-                    self._flash("Game of Life (default mode)")
+                    self._enter_game_of_life()
             return True
         if key in (curses.KEY_BACKSPACE, 127, 8):
             if self.mode_browser_search:
