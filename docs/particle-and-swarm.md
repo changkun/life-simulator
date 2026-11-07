@@ -430,7 +430,7 @@ Ant Colony Optimization (ACO) was introduced by Marco Dorigo in 1992, inspired b
 
 ### Formulation
 
-Ants have position (r, c), heading angle, and a boolean food-carrying flag. A pheromone grid P[r][c] stores concentration values. Food sources have position and finite quantity.
+Ants have position (r, c), heading angle, and a food-carrying flag. A pheromone grid P[r][c] stores concentration values. The nest sits at the grid centre. Food sources have a position and a finite quantity (4 × food_radius²).
 
 ```
 Ant behavior (per tick):
@@ -440,17 +440,18 @@ IF carrying food (returning to nest):
     2. STEER toward nest:
        target_angle = atan2(nest_r - r, nest_c - c)
        heading += (target_angle - heading) * 0.3 + rand(-0.2, 0.2)
-    3. If within 2.0 of nest: drop food, increment counter, random new heading
+    3. If within 2.0 of nest in both r and c: drop food, increment counter, random new heading
 
 ELSE (searching for food):
     1. SENSE pheromone in three directions (dist=3.0, angle=0.5 rad):
        F_left  = P[ahead_left]
        F_center = P[ahead]
        F_right = P[ahead_right]
-    2. STEER: turn 0.3 rad toward stronger pheromone signal
+    2. STEER: if F_center >= both sides, jitter heading by rand(-0.1, 0.1);
+       otherwise turn 0.3 rad (+/- 0.1) toward the stronger side
        + random wander: heading += rand(-0.15, 0.15)
-    3. If within 2.5 of food source with quantity > 0:
-       pick up food, food.quantity -= 1, turn toward nest
+    3. If within 2.5 of a food source (in both r and c) with quantity > 0.5:
+       pick up food, food.quantity -= 1, head toward nest (+/- 0.3 rad)
 
 MOVE: pos += dir(heading) * 1.0  (toroidal wrap)
 
@@ -459,11 +460,28 @@ Pheromone update:
     P_new[r][c] = max(0, blended - evaporation)
 ```
 
-Parameters: evaporation rate, deposit strength, diffusion rate. Depleted food sources are removed.
+Parameters: evaporation rate, deposit strength, diffusion rate. Depleted food sources are removed. All ants start at the nest. Food is placed at random at least a quarter of the shorter grid side from the nest.
+
+Returning ants steer straight at the nest rather than following pheromone, so trails form along the lines from food to nest. The mode does not model competition between alternative routes.
+
+### Presets
+
+| Preset | Evaporation | Deposit | Diffusion | Ants / cell | Food sources | Food radius |
+|---|---|---|---|---|---|---|
+| Forager | 0.02 | 0.3 | 0.01 | 0.08 | 4 | 3 |
+| Highway | 0.005 | 0.6 | 0.005 | 0.12 | 3 | 4 |
+| Explorer | 0.05 | 0.2 | 0.02 | 0.10 | 6 | 2 |
+| Swarm | 0.015 | 0.4 | 0.01 | 0.25 | 5 | 3 |
+| Minimal | 0.01 | 0.5 | 0.008 | 0.04 | 2 | 5 |
+| Feast | 0.03 | 0.35 | 0.015 | 0.15 | 8 | 4 |
+
+### Controls
+
+`e`/`E` raise and lower the evaporation rate, `d`/`D` the deposit strength, and `s`/`S` the steps per frame. Unlike the other modes, ACO has no `m` key for the menu; use `R`.
 
 ### What to look for
 
-Watch the initial random wandering phase give way to structured trail formation. Once the first ant discovers food and returns, its pheromone trail biases nearby ants, creating a positive feedback loop. Over time, the shortest paths to food sources accumulate the strongest pheromone, while longer paths evaporate. Increasing evaporation makes the colony more exploratory; decreasing it makes trails more persistent but risks locking into suboptimal paths.
+The initial random wandering gives way to trails between the nest and the food sources. Once an ant finds food and returns, its pheromone biases nearby searching ants toward the same source, a positive feedback loop. Higher evaporation keeps trails short-lived and the colony more exploratory; lower evaporation makes trails persist, and ants keep following them after a source is depleted. The food-collected counter shows how well the colony forages.
 
 ### References
 
