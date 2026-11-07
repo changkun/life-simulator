@@ -24,9 +24,13 @@ def _galaxy_build_particles(self, preset: str):
     """Generate initial particle distribution for a galaxy preset."""
     rows, cols = self.galaxy_rows, self.galaxy_cols
     cx, cy = cols / 2.0, rows / 2.0
+    # Length scale for fixed-size structures (cores, bar, companion radius,
+    # halo scale radius).  18.5 is min(cx, cy) at the default 40x120 terminal,
+    # so the presets are unchanged there and only shrink on smaller grids.
+    s = min(1.0, min(cx, cy) / 18.5)
     self.galaxy_particles = []
     self.galaxy_halo_mass = 1000.0
-    self.galaxy_halo_radius = 30.0
+    self.galaxy_halo_radius = max(1.0, 30.0 * s)
     self.galaxy_rotation_speed = 1.0
     self.galaxy_gas_density = 0.5
     self.galaxy_arm_count = 2
@@ -34,7 +38,7 @@ def _galaxy_build_particles(self, preset: str):
     if preset == "milky_way":
         # Central bulge
         for _ in range(50):
-            r = random.gauss(0, 2.5)
+            r = random.gauss(0, 2.5 * s)
             angle = random.uniform(0, 2 * math.pi)
             x = cx + r * math.cos(angle)
             y = cy + r * math.sin(angle)
@@ -45,7 +49,7 @@ def _galaxy_build_particles(self, preset: str):
             self.galaxy_particles.append([x, y, vx, vy, 1.0, 0.0])
         # Disk stars with spiral perturbation
         for i in range(200):
-            r = random.uniform(3, min(cx, cy) * 0.8)
+            r = random.uniform(3 * s, min(cx, cy) * 0.8)
             base_angle = random.uniform(0, 2 * math.pi)
             # Logarithmic spiral perturbation
             spiral_offset = 0.3 * math.log(1 + r) * self.galaxy_arm_count
@@ -63,7 +67,7 @@ def _galaxy_build_particles(self, preset: str):
             self.galaxy_particles.append([x, y, vx, vy, 1.0, 0.0])
         # Gas disk
         for _ in range(100):
-            r = random.uniform(2, min(cx, cy) * 0.7)
+            r = random.uniform(2 * s, min(cx, cy) * 0.7)
             arm = random.randint(0, self.galaxy_arm_count - 1)
             spiral_offset = 0.3 * math.log(1 + r) * self.galaxy_arm_count
             angle = random.uniform(0, 2 * math.pi) + arm * (2 * math.pi / self.galaxy_arm_count) + spiral_offset
@@ -80,7 +84,7 @@ def _galaxy_build_particles(self, preset: str):
     elif preset == "grand_design":
         self.galaxy_arm_count = 2
         for _ in range(60):
-            r = random.gauss(0, 2.0)
+            r = random.gauss(0, 2.0 * s)
             angle = random.uniform(0, 2 * math.pi)
             x = cx + r * math.cos(angle)
             y = cy + r * math.sin(angle)
@@ -88,7 +92,7 @@ def _galaxy_build_particles(self, preset: str):
             va = angle + math.pi / 2
             self.galaxy_particles.append([x, y, speed * math.cos(va), speed * math.sin(va), 1.0, 0.0])
         for _ in range(250):
-            r = random.uniform(3, min(cx, cy) * 0.85)
+            r = random.uniform(3 * s, min(cx, cy) * 0.85)
             arm = random.randint(0, 1)
             spiral_offset = 0.4 * math.log(1 + r) * 2
             angle = random.uniform(-0.2, 0.2) + arm * math.pi + spiral_offset
@@ -100,7 +104,7 @@ def _galaxy_build_particles(self, preset: str):
             vy = v_circ * math.sin(va) + random.gauss(0, 0.15)
             self.galaxy_particles.append([x, y, vx, vy, 1.0, 0.0])
         for _ in range(180):
-            r = random.uniform(2, min(cx, cy) * 0.8)
+            r = random.uniform(2 * s, min(cx, cy) * 0.8)
             arm = random.randint(0, 1)
             spiral_offset = 0.4 * math.log(1 + r) * 2
             angle = random.uniform(-0.15, 0.15) + arm * math.pi + spiral_offset
@@ -113,7 +117,7 @@ def _galaxy_build_particles(self, preset: str):
     elif preset == "whirlpool":
         # Main galaxy
         for _ in range(40):
-            r = random.gauss(0, 2.0)
+            r = random.gauss(0, 2.0 * s)
             angle = random.uniform(0, 2 * math.pi)
             x = cx + r * math.cos(angle)
             y = cy + r * math.sin(angle)
@@ -121,7 +125,7 @@ def _galaxy_build_particles(self, preset: str):
             va = angle + math.pi / 2
             self.galaxy_particles.append([x, y, speed * math.cos(va), speed * math.sin(va), 1.0, 0.0])
         for _ in range(180):
-            r = random.uniform(3, min(cx, cy) * 0.6)
+            r = random.uniform(3 * s, min(cx, cy) * 0.6)
             arm = random.randint(0, 1)
             spiral_offset = 0.35 * math.log(1 + r) * 2
             angle = random.uniform(0, 2 * math.pi) + arm * math.pi + spiral_offset
@@ -133,10 +137,11 @@ def _galaxy_build_particles(self, preset: str):
             vy = v_circ * math.sin(va) + random.gauss(0, 0.15)
             self.galaxy_particles.append([x, y, vx, vy, 1.0, 0.0])
         # Companion galaxy offset
-        comp_cx = cx + 30
-        comp_cy = cy - 10
+        # Offsets are fractions of the grid (x spans cols, y spans rows)
+        comp_cx = cx + 0.3 * cols
+        comp_cy = cy - 0.25 * rows
         for _ in range(60):
-            r = random.uniform(0, 8)
+            r = random.uniform(0, 8 * s)
             angle = random.uniform(0, 2 * math.pi)
             x = comp_cx + r * math.cos(angle)
             y = comp_cy + r * math.sin(angle)
@@ -164,18 +169,18 @@ def _galaxy_build_particles(self, preset: str):
         for _ in range(80):
             r = abs(random.gauss(0, min(cx, cy) * 0.2))
             angle = random.uniform(0, 2 * math.pi)
-            x = cx + r * math.cos(angle) + random.gauss(0, 2)
-            y = cy + r * math.sin(angle) + random.gauss(0, 2)
+            x = cx + r * math.cos(angle) + random.gauss(0, 2 * s)
+            y = cy + r * math.sin(angle) + random.gauss(0, 2 * s)
             vx = random.gauss(0, 0.8)
             vy = random.gauss(0, 0.8)
             ptype = 0.0 if random.random() > 0.3 else 1.0
             self.galaxy_particles.append([x, y, vx, vy, 0.8, ptype])
         self.galaxy_halo_mass = 300.0
-        self.galaxy_halo_radius = 15.0
+        self.galaxy_halo_radius = max(1.0, 15.0 * s)
 
     elif preset == "merger":
         # Galaxy 1 (left)
-        g1x, g1y = cx - 15, cy
+        g1x, g1y = cx - 0.25 * cols, cy
         for _ in range(120):
             r = random.uniform(0, min(cx, cy) * 0.35)
             arm = random.randint(0, 1)
@@ -190,7 +195,7 @@ def _galaxy_build_particles(self, preset: str):
             ptype = 0.0 if random.random() > 0.3 else 1.0
             self.galaxy_particles.append([x, y, vx, vy, 1.0, ptype])
         # Galaxy 2 (right)
-        g2x, g2y = cx + 15, cy
+        g2x, g2y = cx + 0.25 * cols, cy
         for _ in range(120):
             r = random.uniform(0, min(cx, cy) * 0.35)
             arm = random.randint(0, 1)
@@ -208,7 +213,7 @@ def _galaxy_build_particles(self, preset: str):
     elif preset == "ring":
         # Central cluster
         for _ in range(40):
-            r = random.gauss(0, 2.0)
+            r = random.gauss(0, 2.0 * s)
             angle = random.uniform(0, 2 * math.pi)
             x = cx + r * math.cos(angle)
             y = cy + r * math.sin(angle)
@@ -220,7 +225,7 @@ def _galaxy_build_particles(self, preset: str):
         for _ in range(200):
             angle = random.uniform(0, 2 * math.pi)
             # Radius is a distance: on small grids ring_r is within a few sigma of 0
-            r = abs(ring_r + random.gauss(0, 2.0))
+            r = abs(ring_r + random.gauss(0, 2.0 * s))
             x = cx + r * math.cos(angle)
             y = cy + r * math.sin(angle)
             # Outward expansion + circular orbit
@@ -236,8 +241,8 @@ def _galaxy_build_particles(self, preset: str):
         self.galaxy_arm_count = 2
         # Strong central bar
         for _ in range(80):
-            bx = random.uniform(-8, 8)
-            by = random.gauss(0, 1.5)
+            bx = random.uniform(-8 * s, 8 * s)
+            by = random.gauss(0, 1.5 * s)
             angle = 0.4  # bar tilt
             rx = bx * math.cos(angle) - by * math.sin(angle)
             ry = bx * math.sin(angle) + by * math.cos(angle)
@@ -251,7 +256,7 @@ def _galaxy_build_particles(self, preset: str):
             self.galaxy_particles.append([x, y, vx, vy, 1.2, 0.0])
         # Trailing spiral arms from bar ends
         for _ in range(180):
-            r = random.uniform(8, min(cx, cy) * 0.8)
+            r = random.uniform(8 * s, min(cx, cy) * 0.8)
             arm = random.randint(0, 1)
             spiral_offset = 0.35 * math.log(1 + r) * 2
             angle = arm * math.pi + spiral_offset + random.gauss(0, 0.25) + 0.4
@@ -602,7 +607,7 @@ def _draw_galaxy(self, max_y: int, max_x: int):
     halo_grid = [[0.0] * cols for _ in range(rows)]
     if self.galaxy_show_halo:
         hcx, hcy = cols / 2.0, rows / 2.0
-        hr = self.galaxy_halo_radius
+        hr = max(1.0, self.galaxy_halo_radius)
         for r in range(rows):
             for c in range(cols):
                 dx = c - hcx
