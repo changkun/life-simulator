@@ -586,7 +586,7 @@ def _draw_spinice(self, max_y: int, max_x: int):
     # Info bar
     info_y = max_y - 2
     if info_y > 1:
-        pauling = math.log(3 / 2) / math.log(2) if self.spinice_ice_frac > 0.99 else 0.0
+        pauling = math.log(1.5)  # Pauling entropy per vertex, in units of kB
         info = (f" Sweep {self.spinice_generation}  |  T={self.spinice_temperature:.2f}"
                 f"  h={self.spinice_field:.2f}"
                 f"  |  +monopoles={self.spinice_n_positive}"
