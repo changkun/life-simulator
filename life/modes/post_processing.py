@@ -1,12 +1,10 @@
-"""Visual Post-Processing Pipeline — composable ASCII visual effects.
+"""Visual FX Pipeline — stackable screen effects layered on top of any mode.
 
-Provides stackable terminal-space effects (scanlines, bloom, motion trails,
-edge detection, color cycling, CRT distortion) that layer on top of ANY
-simulation mode.  Toggle via Ctrl+V; combine effects freely.
+Effects: scanlines, bloom, motion trails, edge detection, color cycling and
+CRT distortion.  The menu (1-6 toggle an effect) is meant to open with Ctrl+V.
 """
 
 import curses
-import math
 
 # Effects in the order they are applied and displayed in the menu.
 EFFECT_LIST = [
@@ -53,7 +51,6 @@ def _pp_apply_scanlines(self, my, mx):
 def _pp_apply_bloom(self, my, mx):
     """Make every visible cell BOLD and paint a dim glow halo in empty neighbors."""
     safe_mx = mx - 1
-    # Single pass: collect occupied cells and their color pairs
     occupied = []
     for y in range(my):
         for x in range(safe_mx):
@@ -111,7 +108,6 @@ def _pp_apply_trails(self, my, mx):
 def _pp_apply_edge_detect(self, my, mx):
     """Remove interior cells so only edges/borders remain."""
     safe_mx = mx - 1
-    # Build occupancy bitmap
     occ = []
     for y in range(my):
         row = []
@@ -274,7 +270,7 @@ def _pp_apply(self):
 # ── menu drawing ─────────────────────────────────────────────────────────
 
 def _pp_draw_menu(self):
-    """Draw the effect toggle overlay centered on screen."""
+    """Draw the effect toggle menu centered on screen."""
     my, mx = self.stdscr.getmaxyx()
     box_w = 38
     box_h = len(EFFECT_LIST) + 6
@@ -289,8 +285,7 @@ def _pp_draw_menu(self):
     attr_off = curses.color_pair(6) | curses.A_DIM
     attr_hint = curses.color_pair(6) | curses.A_DIM
 
-    # Background fill
-    blank = " " * (box_w - 2)
+    # Clear the box
     for row in range(box_h):
         try:
             self.stdscr.addstr(sy + row, sx, " " * box_w, curses.color_pair(0))
@@ -327,7 +322,7 @@ def _pp_draw_menu(self):
             pass
 
     # Hint bar
-    hint = "1-6: toggle   Ctrl+V / Esc: close"
+    hint = "1-6=toggle  Ctrl+V/Esc=close"
     hx = sx + (box_w - len(hint)) // 2
     try:
         self.stdscr.addstr(sy + box_h - 2, hx, hint, attr_hint)
@@ -367,7 +362,6 @@ def _pp_draw_indicator(self):
 
 def _pp_handle_key(self, key):
     """Handle post-processing hotkeys.  Returns True if the key was consumed."""
-    # Ctrl+V toggles the menu
     if key == 22:  # Ctrl+V
         self.pp_menu = not self.pp_menu
         if not self.pp_menu:
@@ -381,7 +375,6 @@ def _pp_handle_key(self, key):
     if not self.pp_menu:
         return False
 
-    # While menu is open, 1-6 toggle effects
     if ord("1") <= key <= ord("6"):
         idx = key - ord("1")
         eid = EFFECT_LIST[idx][0]
