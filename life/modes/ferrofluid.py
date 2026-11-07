@@ -1,25 +1,4 @@
-"""Mode: ferrofluid — Ferrofluid Dynamics.
-
-Simulates magnetic nanoparticle suspension (ferrofluid) that self-organises
-into spikes, labyrinthine stripe patterns, and hexagonal lattices under
-user-controlled magnetic fields.
-
-Physics modelled:
-  1. Magnetic body force: F_m = μ₀ M·∇H  (particles attracted to field maxima)
-  2. Surface tension: smoothing / diffusion that opposes sharp gradients
-  3. Gravity: downward pull on fluid height
-  4. Rosensweig instability: when B exceeds a critical threshold, the flat
-     surface becomes unstable and erupts into a hexagonal spike array
-  5. Chain formation: under uniform fields, particles align into columns
-  6. Labyrinthine patterns: thin-film ferrofluid in perpendicular field forms
-     meandering stripe domains via competing dipolar and surface tension forces
-
-Visualization:
-  - Top-down view: height field rendered as density glyphs with magnetic
-    colouring (dark = trough, bright = spike tip)
-  - Side view: cross-section profile of the fluid surface
-  - Colour encodes local magnetisation intensity
-"""
+"""Ferrofluid Dynamics — a magnetic fluid forming spikes, stripes and chains under an applied field."""
 import curses
 import math
 import random
@@ -299,9 +278,12 @@ def _ferrofluid_step(self):
       2. Rosensweig instability: above critical B, height perturbations grow
          because magnetic pressure at spike tips exceeds surface tension restoring force
       3. Surface tension: Laplacian diffusion smooths the height field
-      4. Gravity: pulls fluid down, opposing spike growth
+      4. Gravity: pulls the surface back toward the mean level
       5. Dipolar interaction: neighbouring high-h cells attract (chain formation)
       6. Velocity damping: viscous loss
+
+    The fluid volume is conserved: the level is shifted back to its initial
+    mean after each step.
     """
     rows, cols = self.ferrofluid_rows, self.ferrofluid_cols
     h = self.ferrofluid_h
@@ -524,8 +506,6 @@ def _handle_ferrofluid_key(self, key: int) -> bool:
             pass
     elif key in (27, ord("q")):
         self._exit_ferrofluid_mode()
-    else:
-        return True
     return True
 
 
@@ -568,7 +548,6 @@ def _draw_ferrofluid(self, max_y: int, max_x: int):
     self.stdscr.erase()
     rows, cols = self.ferrofluid_rows, self.ferrofluid_cols
     h = self.ferrofluid_h
-    M = self.ferrofluid_M
     B = self.ferrofluid_B
 
     # Compute stats
