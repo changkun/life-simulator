@@ -515,7 +515,7 @@ def _draw_cpm_menu(self, max_y: int, max_x: int):
     n = len(self.CPM_PRESETS)
     for i, (pname, desc, _pid) in enumerate(self.CPM_PRESETS):
         y = 5 + i
-        if y >= max_y - 14:
+        if y >= max_y - 3:
             break
         line = f"  {pname:<22s} {desc}"
         attr = curses.color_pair(6)

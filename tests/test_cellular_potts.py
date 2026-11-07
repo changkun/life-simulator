@@ -482,3 +482,24 @@ def test_lambda_area_clamp():
     app.cpm_lambda_area = 0.0
     app._handle_cpm_key(ord("A"))
     assert app.cpm_lambda_area == 0.0
+
+
+def test_menu_lists_every_preset_on_a_24_row_screen():
+    drawn = []
+
+    class Screen:
+        def getmaxyx(self):
+            return 24, 80
+
+        def erase(self):
+            pass
+
+        def addstr(self, y, x, s, *a):
+            drawn.append(s)
+
+    app = _make_app()
+    app.stdscr = Screen()
+    app._draw_cpm_menu(24, 80)
+    text = "\n".join(drawn)
+    for name, _desc, _pid in CPM_PRESETS:
+        assert name in text
