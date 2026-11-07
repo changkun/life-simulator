@@ -320,3 +320,34 @@ def test_presets_structure():
         assert isinstance(name, str) and len(name) > 0
         assert isinstance(desc, str)
         assert key in ("classic", "onemax", "long", "hyper", "minimal", "royal")
+
+
+# ── Info panel toggle ──
+
+class _RecordingScreen:
+    def __init__(self):
+        self.texts = []
+
+    def erase(self):
+        pass
+
+    def addstr(self, y, x, text, *attr):
+        self.texts.append(text)
+
+
+def _draw_texts(app):
+    app.stdscr = _RecordingScreen()
+    app._draw_dnahelix(40, 120)
+    return app.stdscr.texts
+
+
+def test_info_key_toggles_stats_panel():
+    app = _make_app()
+    app.dnahelix_preset_name = "classic"
+    app._dnahelix_init("classic")
+    assert app.dnahelix_show_info is True
+    assert any(t.startswith("Generation:") for t in _draw_texts(app))
+    app._handle_dnahelix_key(ord('i'))
+    assert not any(t.startswith("Generation:") for t in _draw_texts(app))
+    app._handle_dnahelix_key(ord('i'))
+    assert any(t.startswith("Generation:") for t in _draw_texts(app))

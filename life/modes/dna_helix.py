@@ -45,6 +45,7 @@ def _dnahelix_init(self, preset: str):
     self.dnahelix_generation = 0
     self.dnahelix_phase = 0.0
     self.dnahelix_solved = False
+    self.dnahelix_show_info = True
     self.dnahelix_fitness_history = []
 
     if preset == "classic":
@@ -398,7 +399,7 @@ def _draw_dnahelix(self, max_y: int, max_x: int):
         pass
 
     # ── GA stats on right side ──
-    if stats_x < cols - 10:
+    if self.dnahelix_show_info and stats_x < cols - 10:
         info_lines = [
             f"Generation: {self.dnahelix_generation}",
             f"Genome len: {gl}",
