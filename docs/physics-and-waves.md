@@ -814,7 +814,7 @@ Spin directions are rendered as 8-directional arrows, color-coded by local energ
 
 ## Particle Collider / Hadron Collider
 
-**Background** — Particle colliders accelerate beams of particles to near the speed of light and smash them together, converting kinetic energy into new particles via E=mc^2. The Large Hadron Collider (LHC) at CERN, operational since 2008, discovered the Higgs boson in 2012 at a center-of-mass energy of 13.6 TeV. This simulation models counter-rotating beam bunches in a synchrotron ring, stochastic collisions at interaction points, and the resulting particle showers and detector events.
+**Background** — Particle colliders accelerate beams of particles to near the speed of light and smash them together, converting kinetic energy into new particles via E=mc^2. The Large Hadron Collider (LHC) at CERN has operated since 2008 and discovered the Higgs boson in 2012. This simulation models counter-rotating beam bunches in a synchrotron ring, stochastic collisions at interaction points, and the resulting particle showers and detector events.
 
 **Formulation** — Beam particles orbit an elliptical ring with collisions at interaction points:
 
@@ -839,20 +839,22 @@ Particle shower generation:
 
 Detected particles (stochastic identification):
   Known particles with masses (GeV/c^2):
-    Photon (0), Electron (0.000511), Muon (0.106), Pion (0.135-0.140),
-    Kaon (0.494), Proton (0.938), W boson (80.4), Z boson (91.2),
-    Higgs boson (125.1), Top quark (173.0)
+    Photon (0), Electron (0.000511), Muon (0.1057), Pion (0.1396),
+    Kaon (0.4937), Proton (0.9383), W boson (80.379), Z boson (91.188),
+    Higgs boson (125.1), Top quark (173.1)
   Measurement: mass_observed = mass_true * uniform(0.92, 1.08)
-  Rare particles (Higgs, Top): discovery_rate varies by preset
+  Each collision picks one particle at random from the common ones plus any
+  rare ones (W, Z, Higgs, Top) that pass a per-particle chance:
+  0.15 in most presets, 0.4 in Discovery Mode
 
 Preset energies:
-  LHC:       13.6 TeV, 12 bunches
-  Heavy Ion:  5.36 TeV, 8 bunches
-  Lepton:     0.209 TeV, 16 bunches (future e+e- collider)
-  Discovery:  14.0 TeV, 20 bunches (enhanced rare particle rate)
+  LHC (Proton-Proton):  13.6 TeV, 12 bunches
+  Heavy Ion (Pb-Pb):     5.36 TeV, 8 bunches
+  Lepton Collider:       0.209 TeV, 16 bunches (electron-positron)
+  Discovery Mode:       14.0 TeV, 20 bunches (enhanced rare particle rate)
 ```
 
-**What to look for** — Counter-rotating beams (shown in blue and green) circulate around the ring. When they collide at a detector point, a bright flash appears followed by a spray of shower particles. The event log accumulates detected particles with measured masses and energies. The "Discovery Mode" preset has an enhanced rate for rare particles like the Higgs boson. Use "c" to force a collision at a random interaction point. Four detector stations (inspired by ATLAS, CMS, ALICE, and LHCb) surround the ring.
+**What to look for** — Counter-rotating beams (shown in blue and green) circulate around the ring. When they collide at a detector point, a bright flash appears followed by a spray of shower particles. The event log accumulates detected particles with measured masses and energies. The "Discovery Mode" preset has an enhanced rate for rare particles like the Higgs boson. Press c to force a collision at a random interaction point and i to toggle the info panel. Four detector stations (inspired by ATLAS, CMS, ALICE, and LHCb) surround the ring.
 
 **References**
 - The ATLAS Collaboration. "Observation of a new particle in the search for the Standard Model Higgs boson," *Physics Letters B*, 2012. https://doi.org/10.1016/j.physletb.2012.08.020
