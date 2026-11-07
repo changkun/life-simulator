@@ -646,6 +646,9 @@ def _civ_step(self):
                 if territory[r][c] == tribe["id"]:
                     territory[r][c] = -1
             tribe["territory"].clear()
+            for other in tribes:
+                other["trade_partners"].discard(tribe["id"])
+                other["at_war_with"].discard(tribe["id"])
 
     # Update stats
     self.civ_stats["total_pop"] = sum(t["pop"] for t in tribes if t["alive"])
