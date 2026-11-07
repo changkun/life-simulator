@@ -7,7 +7,7 @@ Multi-physics systems and aesthetic visualizations — where science meets art i
 
 ## Traffic Flow (Nagel-Schreckenberg Model)
 
-**Background.** The Nagel-Schreckenberg (NaSch) model, introduced in 1992, is a foundational cellular automaton for traffic simulation. It reproduces the spontaneous formation of phantom traffic jams -- stop-and-go waves that appear with no external cause. Each lane is a one-dimensional lattice with periodic boundaries, and each cell is either empty or occupied by a car carrying an integer velocity. This implementation extends the basic model with multi-lane lane-changing (STCA symmetric rule), scenario-based road features (bottlenecks, on-ramps, incidents), and a real-time fundamental diagram overlay showing the flow-density phase transition.
+**Background.** The Nagel-Schreckenberg (NaSch) model, introduced in 1992, is a foundational cellular automaton for traffic simulation. It reproduces the spontaneous formation of phantom traffic jams -- stop-and-go waves that appear with no external cause. Each lane is a one-dimensional lattice with periodic boundaries, and each cell is either empty or occupied by a car carrying an integer velocity. This implementation adds multi-lane lane-changing (symmetric two-lane rule), road scenarios (bottleneck, on-ramp, incident), and a live fundamental diagram of flow against density.
 
 **Formulation.** The NaSch update applies four rules simultaneously to all cars each timestep:
 
@@ -20,7 +20,7 @@ Multi-physics systems and aesthetic visualizations — where science meets art i
 4. Movement:       position(t+1) = (position(t) + v(t+1)) mod L
 ```
 
-**Lane-changing (STCA).** Before the NaSch update, vehicles evaluate adjacent lanes using the Symmetric Two-Cell Asymmetric rule:
+**Lane-changing.** Before the NaSch update, each car that lacks room ahead tries one randomly chosen adjacent lane:
 
 ```
 Change lane if ALL of:
@@ -34,8 +34,8 @@ Change lane if ALL of:
 
 - **open** — periodic ring road (standard NaSch boundary conditions)
 - **bottleneck** — speed limit drops to vmax=2 in the centre third of the road, causing flow breakdown and upstream queuing
-- **onramp** — a slip road injects cars into lane 0 at a configurable rate, disrupting mainline flow with merging disturbances
-- **incident** — a permanent obstacle (stalled vehicle) blocks one lane at the road midpoint, producing a rubbernecking cascade
+- **onramp** — a slip road injects cars into lane 0 with probability 0.08 per step, in the zone from one third to one half of the road
+- **incident** — a permanent obstacle (stalled vehicle) blocks lane 1 at the road midpoint, producing a rubbernecking cascade
 
 **Parameters:**
 
@@ -43,7 +43,8 @@ Change lane if ALL of:
   vmax    — maximum speed (cells/step), typically 5
   p_slow  — stochastic braking probability, range [0, 1]
   density — fraction of cells initially occupied (ρ)
-  L       — lane length (adapts to terminal width)
+  lanes   — number of lanes (capped by terminal height)
+  L       — lane length (terminal width minus 2, at least 40)
 
 Diagnostics:
   avg_speed = Σv_i / N_cars
@@ -51,15 +52,15 @@ Diagnostics:
   density (ρ_measured) = N_cars / (lanes × L)
 ```
 
-**Fundamental diagram.** The flow vs. density scatter plot (drawn in ASCII on the right side of the road view) reveals the characteristic inverted-V shape: flow rises linearly in the free-flow regime (ρ < 0.15), peaks near the critical density, then collapses as stop-and-go waves dominate. A filled circle marks the current operating point.
+**Fundamental diagram.** The flow vs. density plot (drawn in ASCII beside the road view) keeps the last 300 samples. Block glyphs show how often each plot cell was visited, and a filled circle marks the current point. In theory, flow rises linearly in the free-flow regime, peaks at the critical density, then falls as stop-and-go waves dominate.
 
-**Space-time diagram.** Toggled with `v`, this view plots position (x-axis) against time (y-axis, newest at bottom), with color/density encoding average speed. Phantom jams appear as dark bands propagating upstream (to the left) — the hallmark kinematic wave of the NaSch model.
+**Space-time diagram.** Toggled with `v`, this view plots position (x-axis) against time (y-axis, newest at bottom). Glyph and color show the average speed across lanes. Phantom jams appear as dark bands that drift upstream (to the left).
 
 **Presets (10):** Open Highway, Moderate Flow, Rush Hour, Gridlock, Bottleneck, On-Ramp Merge, Incident, Cautious Drivers, Aggressive Drivers, Wide Highway (8 lanes).
 
-**Controls:** `Space`=play/pause, `n`=step, `v`=view toggle (road/space-time), `f`=fundamental diagram on/off, `l`=lane-changing on/off, `d/D`=decrease/increase density, `p/P`=adjust braking probability, `+/-`=simulation speed, `r`=reset, `R`=menu.
+**Controls:** `Space`=play/pause, `n`=step, `v`=view toggle (road/space-time), `f`=fundamental diagram on/off, `l`=lane-changing on/off, `p/P`=decrease/increase p_slow (0.05 steps), `+/-`=steps per frame (1-50), `r`=reset, `R`=menu, `q`=exit. `d/D` change the stored density value but do not affect running cars.
 
-**What to look for.** At low density (ρ < 0.15), all cars cruise at vmax and flow increases linearly with density. Near a critical density (ρ ~ 0.35-0.45), phantom jams nucleate from the randomization step and propagate backward as kinematic waves — visible as upstream-moving dark bands in the space-time view. At high density, persistent stop-and-go waves dominate. Raising p_slow increases jam frequency; lowering it creates smoother flow that collapses more catastrophically. In the Bottleneck preset, watch for flow breakdown at the speed-limit transition. In On-Ramp Merge, observe how merging vehicles create disturbances that propagate upstream on the mainline. Toggle lane-changing off to see how single-lane dynamics differ — jams form more readily without the pressure-relief valve of lane changes.
+**What to look for.** At low density, cars cruise near vmax and flow grows with density. Above the critical density, phantom jams nucleate from the randomization step and move backward as dark bands in the space-time view. At high density, persistent stop-and-go waves dominate. Raising p_slow makes jams more frequent. In the Bottleneck preset, watch for flow breakdown at the speed-limit transition. In On-Ramp Merge, merging cars create disturbances that travel upstream. Toggle lane-changing off to compare with independent lanes.
 
 **References.**
 - Nagel, K. & Schreckenberg, M. "A cellular automaton model for freeway traffic." *Journal de Physique I*, 2(12), 2221-2229, 1992. https://doi.org/10.1051/jp1:1992277
