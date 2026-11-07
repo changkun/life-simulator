@@ -908,7 +908,7 @@ After moving, each termite leaves 0.1 trail pheromone behind and acts:
 2. **Pheromone** — build pheromone (yellow) vs dig pheromone (blue) concentration heatmap, showing the invisible chemical landscape guiding construction
 3. **Structure** — walls with two or more adjacent air, chamber, or tunnel cells drawn bold (exterior), other walls drawn lighter (interior), plus chambers, fungus, and tunnels
 
-**Controls:** `Space`=play/pause, `n`=step, `v`=cycle views, `+/-`=steps per frame (1-20), `r`=reset, `R`=menu, `q`=exit.
+**Controls:** `Space`=play/pause, `n` or `.`=step, `v`=cycle views, `+/-`=steps per frame (1-20), `r`=reset, `R` or `m`=menu, `q` or `Esc`=exit.
 
 **What to look for.** In Cathedral Mound, walls rise above the surface where builders follow the build pheromone, and vertical tunnels open inside them every 20 ticks. Magnetic Termite Mound builds a flat, narrow shape. In the pheromone view, the suppressed build zone explains why. Underground Network is best in the structure view: dug chambers spread out from the center as diggers follow the dig pheromone. In Fungus Farming Colony, fungus tenders turn dug chambers into fungus garden cells (♣). Defensive Fortress thickens a ring of wall as builders and soldiers work the perimeter. Mega-Colony grows several independent mounds side by side. Switch between the three views often. The pheromone view shows the signals that drive all the visible building.
 
@@ -1174,7 +1174,7 @@ Grazers (urchins eat up to 0.1/tick, limpets up to 0.05/tick) keep algae in chec
 
 Sessile organisms gain stress only when exposed, at (1 - moisture) × 0.02 + temperature × 0.015 per tick. All organisms lose stress when submerged.
 
-**Organism lifecycle.** All organisms have energy, age, and stress (0-1). Death occurs when energy ≤ 0, stress ≥ 1.0, or age exceeds the lifespan (2000 ticks for sessile, 3000 for mobile). Reproduction needs energy above 1.5 (sessile, 1% chance/tick) or 1.6 (mobile, 0.8% chance/tick), and places a new individual in an adjacent cell. Sessile offspring need an unoccupied rock or pool cell.
+**Organism lifecycle.** All organisms have energy, age, and stress (0-1). Death occurs when energy ≤ 0, stress ≥ 1.0, or age exceeds the lifespan (2000 ticks for sessile, 3000 for mobile). Reproduction needs energy above 1.5 (sessile, 1% chance/tick) or 1.6 (mobile, 0.8% chance/tick), and places a new individual in an adjacent cell. Sessile offspring need an unoccupied rock or pool cell. A mobile species stops reproducing once it has max(20, rows × cols / 20) animals.
 
 **Hermit crab vacancy chains.** Empty shells are tracked as (row, col, size) tuples. Each tick, a hermit crab looks for empty shells within one cell. If one is larger than its own, the crab swaps and leaves its old shell at its position. Dead crabs release their shells. A new crab takes a random empty shell, or gets a small 0.2 shell if none exist. The Hermit Crab Shell Economy preset starts with 40 crabs and 20 empty shells.
 
@@ -1198,7 +1198,7 @@ Starting counts are placement attempts. Some fail because the random cell is not
 2. **Cross-Section** — 5 horizontal zonation bands showing zone name, characteristic species list, current population count, submersion state ([submerged]/[exposed]), and density bar chart; animated water level label moves vertically with tide
 3. **Graphs** — tide level sparkline (Unicode block elements ▁▂▃▄▅▆▇█), per-species population time series with mini sparklines for top 4 species by current count, average community stress history; all graphs show last 200 ticks
 
-**Controls:** `Space`=play/pause, `n`/`.`=step, `v`=cycle views, `+/-`=simulation speed, `r`=reset, `R`/`m`=menu, `q`=exit.
+**Controls:** `Space`=play/pause, `n`/`.`=step, `v`=cycle views, `+/-`=simulation speed (1-20), `r`=reset, `R`/`m`=menu, `q` or `Esc`=exit.
 
 **What to look for.** In Pacific Rocky Shore, watch the tide rise and fall. As the water recedes, exposed organisms gain stress. Sea stars (X) feed only while submerged, so predation fronts move with the tide. The Graphs view shows stress rising and falling with the tide. In Mussel Bed Dominance, the mussels spread by budding into free rock cells. In Sea Star Wasting Event, the stars die off (X glyphs vanish) and the Graphs view shows what happens to the mussel count as predation drops. Extreme Tidal Range sweeps the water line across a large part of the screen each cycle. Hermit Crab Shell Economy is best in the Shore view: follow the @ symbols as they swap shells. Tropical Coral Flat has a gentle tide, so exposure stress is smaller.
 
@@ -1324,7 +1324,7 @@ Energy < 0.1 forces RESTING state. A completed wrap counts as a capture, grants 
 2. **Vibration Heatmap** — threads colored by vibration intensity (`·`=none, `░`=low, `▒`=medium, `▓`=high, `█`=peak), trapped prey as `◎`, spider as `◆`, legend bar
 3. **Time-Series Graphs** — four sparkline graphs (Unicode block elements `▁▂▃▄▅▆▇█`) showing cumulative captures, web integrity %, silk reserves, and trapped prey count over last 200 ticks; stats summary with total captures, silk level, energy %, and current state
 
-**Controls:** `Space`=play/pause, `n`/`.`=step, `v`=cycle views, `+/-`=simulation speed, `r`=reset, `R`/`m`=menu, `q`=exit.
+**Controls:** `Space`=play/pause, `n`/`.`=step, `v`=cycle views, `+/-`=simulation speed (1-20), `r`=reset, `R`/`m`=menu, `q` or `Esc`=exit.
 
 **What to look for.** In Garden Orb Weaver, the spider waits at the hub while the web stays still. When a prey insect (colored green) drifts into a sticky spiral thread, it snaps to the nearest node and begins struggling — vibration ripples (`○∙`) radiate outward through the thread network. The spider turns red and rushes along the radial threads toward the trapped prey, then turns yellow while wrapping it in silk. Switch to Vibration Heatmap view to see wave propagation clearly — trapped prey appear as bright `◎` spots with `▓█` intensity fading outward through connected threads. Storm Damage & Repair has strong gusts. They deform the web, threads snap, and the spider repairs them with weaker silk. In the Graphs view, web integrity drops during gusts and recovers as the spider repairs. Prey Bonanza brings many insects, and wrapping drains the spider's silk and energy. Morning Dew Web has almost no wind and slow prey. Golden Silk Orbweaver has a larger web and more silk. Cobweb Tangle Weaver adds cross-threads in all directions, so vibrations take different paths.
 
@@ -1499,7 +1499,7 @@ Hypha lifecycle:
 2. **Network Topology** — graph diagram showing trees as labeled nodes (species glyph + health bar) and hyphae as edges, colored by current activity: red=alarm signal, green=carbon flow, magenta=phosphorus flow, dim=idle
 3. **Time-Series Graphs** — 10 sparkline metrics (Unicode block elements `▁▂▃▄▅▆▇█`): total carbon flow, total phosphorus flow, alarm signals, network edges, average tree health, mother tree count, seedling count, fungal tax collected, average defense level, connected components
 
-**Controls:** `Space`=play/pause, `n` or `.`=step, `v`=cycle views, `+/-`=steps per frame (1-20), `r`=reset, `R` or `m`=menu, `q`=exit.
+**Controls:** `Space`=play/pause, `n` or `.`=step, `v`=cycle views, `+/-`=steps per frame (1-20), `r`=reset, `R` or `m`=menu, `q` or `Esc`=exit.
 
 **What to look for.** In Old-Growth Cooperation, the mother trees form bright hub nodes with thick radiating hyphae — green carbon particles flow outward from mothers toward dim seedlings. In Drought Triage, the soil dries over time and mother trees send water (blue particles) to dry neighbors. In Pest Cascade, red alarm particles spread from the east edge through the network. Trees that receive an alarm raise their defense level, which lowers their chance of infection. Clear-Cut Fragmentation leaves the right side with few or no connections, while the left side keeps a dense web. Monoculture vs. Biodiversity compares network density on the two halves. Seasonal Nutrient Cycling shows the annual rhythm: photosynthesis rises in spring, peaks in summer, falls in autumn, and nearly stops in winter, when only Pine and Fir stay active.
 
