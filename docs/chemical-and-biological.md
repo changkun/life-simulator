@@ -850,7 +850,7 @@ Where:
   ω_i    = natural frequency (species-dependent, ~0.015–0.020 + Gaussian noise)
   ε      = coupling strength (preset-dependent, 0.03–0.08)
   d_ij   = Euclidean distance between fireflies i and j
-  Coupling requires: d_ij ≤ perception_radius AND line-of-sight not blocked by trees
+  Coupling requires: d_ij ≤ perception_radius, line-of-sight not blocked by trees, and a receiver that is not cooling down
 
 Species flash patterns (on/off fractions within one cycle):
   P. carolinus:  single pulse     [(0.00, 0.12)]
@@ -858,7 +858,7 @@ Species flash patterns (on/off fractions within one cycle):
   P. consimilis: rhythmic triplet [(0.00, 0.06), (0.12, 0.18), (0.24, 0.30)]
 
 Kuramoto order parameter (global sync measure):
-  R(t) = (1/N) |Σ_i exp(i·2π·φ_i)|
+  R(t) = (1/N) |Σ_i exp(i·2π·φ_i)|     (prey only; predators are excluded)
   R = 0: fully desynchronized (uniform phase distribution)
   R = 1: perfectly synchronized (all phases identical)
 
@@ -872,7 +872,7 @@ Predator (Photuris femme fatale):
 
 Spatial efficiency is achieved via grid-based hashing (4×4 cell buckets) for O(n·k) neighbor lookup. Line-of-sight is approximated by checking the midpoint between flasher and observer for tree occlusion (for distances > 3).
 
-**What to look for** — In "Southeast Asian Mangrove," watch the Kuramoto order parameter R climb from ~0.2 (random phases) toward 0.9+ (near-perfect synchrony) over 100–200 generations. The Sync Graph view shows this as a rising curve with a phase-distribution histogram narrowing from uniform to a sharp peak. Switch to Nightscape view to see synchronization waves spreading outward from initial clusters — first local neighborhoods lock in, then adjacent groups merge, until the entire field pulses as one. In "Appalachian Meadow," three species synchronize independently at different frequencies, producing a polyphonic light show. "Femme Fatale Hunting" adds red predator glyphs stalking through the meadow — watch the kill counter rise as *Photuris* mimics successfully lure prey. "Desynchronization Shock" starts fully synced, applies a random phase perturbation at generation 80, and lets you observe recovery dynamics — how quickly does R return to 1.0?
+**What to look for** — In "Southeast Asian Mangrove," watch the Kuramoto order parameter R climb from ~0.2 (random phases) toward 0.9+ (near-perfect synchrony) over 100–200 generations. The Sync Graph view shows this as a rising curve with a phase-distribution histogram narrowing from uniform to a sharp peak. Switch to Nightscape view to see synchronization waves spreading outward from initial clusters — first local neighborhoods lock in, then adjacent groups merge, until the entire field pulses as one. In "Appalachian Meadow," three species synchronize independently at different frequencies, producing a polyphonic light show. "Femme Fatale Hunting" adds red predator glyphs stalking through the meadow — watch the kill counter rise as *Photuris* mimics successfully lure prey. "Desynchronization Shock" starts fully synced, gives a random phase to about 40% of the fireflies at generation 80, and lets you observe recovery dynamics — how quickly does R return to 1.0? The other two presets are "Sync Emergence" (single species, random phases) and "Competitive Signaling" (two species, weak coupling). Press `v` to cycle the Nightscape, Phase Map and Sync Graph views, `Space` to pause and `r` to return to the preset menu.
 
 **References**
 - Mirollo, R. E. & Strogatz, S. H. "Synchronization of pulse-coupled biological oscillators." *SIAM Journal on Applied Mathematics* 50 (1990): 1645-1662. https://doi.org/10.1137/0150098
