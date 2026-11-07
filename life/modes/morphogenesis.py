@@ -1,12 +1,8 @@
-"""Mode: morphogenesis — biological embryonic development from a single cell.
+"""Morphogenesis — an embryo grows from one cell using morphogen gradients and cell signaling.
 
-A single cell divides, differentiates, and self-organizes into a complex
-multicellular organism using morphogen gradients, gene regulatory networks,
-and local cell-cell signaling.  Each cell carries a genome controlling
-division rules, differentiation responses, and morphogen production.
-
-Watch a fertilized "egg" develop into organized tissues with distinct cell
-types, boundaries, and emergent body plans — all in ASCII.
+Each cell carries a genome that sets its division rate, differentiation
+thresholds and morphogen production. Cells divide, differentiate into tissues
+and die, so a body plan emerges from local rules.
 """
 import curses
 import math
@@ -157,7 +153,7 @@ def _neighbor_types(grid, r, c, rows, cols):
 # ════════════════════════════════════════════════════════════════════════
 
 def _enter_morpho_mode(self):
-    """Enter Morphogenesis mode — show preset menu."""
+    """Open the Morphogenesis preset menu."""
     self.morpho_menu = True
     self.morpho_menu_sel = 0
     self._flash("Morphogenesis — select an embryo scenario")
@@ -178,7 +174,7 @@ def _exit_morpho_mode(self):
 
 
 def _morpho_init(self, preset_idx: int):
-    """Initialize the Morphogenesis simulation with the given preset."""
+    """Start the Morphogenesis simulation with the given preset."""
     (name, _desc, mA_diff, mB_diff, mA_dec, mB_dec,
      nutr_rate, symmetry, extras) = self.MORPHOGENESIS_PRESETS[preset_idx]
 
@@ -203,7 +199,6 @@ def _morpho_init(self, preset_idx: int):
     self.morpho_max_cells = 0
     self.morpho_view = "cells"  # cells / morphA / morphB / nutrient
 
-    # Grids
     self.morpho_cells = [[CELL_EMPTY] * cols for _ in range(rows)]
     self.morpho_genome_map = [[None] * cols for _ in range(rows)]
     self.morpho_morph_A = [[0.0] * cols for _ in range(rows)]
@@ -214,7 +209,7 @@ def _morpho_init(self, preset_idx: int):
 
     cr, cc = rows // 2, cols // 2
 
-    # Place the zygote (single fertilized egg)
+    # The zygote: a single stem cell at the centre.
     g = _make_genome()
     g["morph_A_prod"] = 0.3
     g["morph_B_prod"] = 0.1
@@ -223,7 +218,6 @@ def _morpho_init(self, preset_idx: int):
     self.morpho_genome_map[cr][cc] = g
     self.morpho_age[cr][cc] = 0
 
-    # Place organiser if requested
     if extras.get("organiser"):
         if symmetry == "bilateral":
             # Dorsal organiser above the egg
@@ -640,7 +634,6 @@ def _draw_morpho(self, max_y: int, max_x: int):
     state = "▶ RUNNING" if self.morpho_running else "⏸ PAUSED"
     view = self.morpho_view
 
-    # Count cell types
     type_counts = {}
     for r in range(rows):
         for c in range(cols):

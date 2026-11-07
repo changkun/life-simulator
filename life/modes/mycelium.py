@@ -1,18 +1,10 @@
-"""Mode: mycelium — Mycelium Network / Wood Wide Web simulation.
+"""Mycelium Network / Wood Wide Web — fungal hyphae link tree roots and move nutrients between trees.
 
-A side-view underground simulation of fungal mycorrhizal networks.  Hyphae
-branch and spread through soil, connect to tree roots, and shuttle nutrients
-(carbon, phosphorus, nitrogen) between trees.  Older "mother trees" become
-network hubs.  Stressed or dying trees receive emergency nutrient transfers
-from neighbors.  Decomposers break down fallen organic matter.  Seasonal
-cycles drive growth and dormancy.  Fruiting bodies (mushrooms) emerge on
-the surface when conditions are right.
-
-Presets: Old-Growth Forest, Young Plantation, Drought Stress, Fallen Giant,
-Nutrient Hotspot, Four Seasons.
+A side view of soil. Hyphae spread, join roots and carry carbon, phosphorus
+and nitrogen. Mother trees send help to stressed neighbors, decomposers break
+down organic matter, seasons drive growth, and mushrooms fruit at the surface.
 """
 import curses
-import math
 import random
 import time
 

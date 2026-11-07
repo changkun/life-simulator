@@ -1,22 +1,15 @@
-"""Mode: primordial_soup — Primordial Soup & Origin of Life abiogenesis simulation.
+"""Primordial Soup & Origin of Life — chemistry near hydrothermal vents becomes RNA replicators and protocells.
 
-Model abiogenesis in a hydrothermal vent environment — simple molecules (H2, CO2,
-NH3) catalyzed on mineral surfaces form amino acids and nucleotides, which
-polymerize into self-replicating RNA strands (RNA World hypothesis), compete via
-fitness-proportional replication with mutation/error catastrophe threshold,
-encapsulate into lipid protocells that divide when they grow too large, and evolve
-primitive metabolism (autocatalytic cycles).
+Simple gases (H2, CO2, NH3) react on mineral surfaces to make amino acids and
+nucleotides. Nucleotides polymerize into RNA strands that replicate with
+mutation, subject to an error-catastrophe threshold. Lipids wrap RNA into
+protocells that grow and divide.
 
-Three visualization views:
-  1. Molecular soup — vent plumes, mineral surfaces, floating protocells & polymer chains
-  2. Phylogenetic tree — replicator lineage tree showing ancestor-descendant relationships
-  3. Time-series graphs — molecular complexity, replicator diversity, protocell population,
-     metabolic efficiency sparklines
+Views: soup (molecules and organisms), phylogenetic tree, time-series graphs.
 """
 import curses
 import math
 import random
-import time
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -60,13 +53,6 @@ MOL_AMINO   = 6   # amino acid
 MOL_NUCLEO  = 7   # nucleotide
 MOL_LIPID   = 8   # amphiphilic lipid
 MOL_MINERAL = 9   # mineral catalyst surface
-
-MOL_NAMES = {
-    MOL_WATER: "H2O", MOL_ROCK: "Rock", MOL_VENT: "Vent",
-    MOL_H2: "H2", MOL_CO2: "CO2", MOL_NH3: "NH3",
-    MOL_AMINO: "Amino", MOL_NUCLEO: "Nucleo", MOL_LIPID: "Lipid",
-    MOL_MINERAL: "Mineral",
-}
 
 MOL_CHARS = {
     MOL_WATER: "  ", MOL_ROCK: "\u2593\u2593", MOL_VENT: "/\\",
@@ -252,12 +238,14 @@ def _sparkline(values, width):
 # ══════════════════════════════════════════════════════════════════════
 
 def _enter_psoup_mode(self):
+    """Open the Primordial Soup preset menu."""
     self.psoup_mode = True
     self.psoup_menu = True
     self.psoup_menu_sel = 0
 
 
 def _exit_psoup_mode(self):
+    """Leave the mode and drop its per-run state."""
     self.psoup_mode = False
     self.psoup_menu = False
     self.psoup_running = False
@@ -274,7 +262,8 @@ def _exit_psoup_mode(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _psoup_init(self, preset_idx: int):
-    name, desc, preset_id = PSOUP_PRESETS[preset_idx]
+    """Start the simulation with the given preset."""
+    name, _desc, preset_id = PSOUP_PRESETS[preset_idx]
     self.psoup_preset_name = name
     self.psoup_preset_id = preset_id
     self.psoup_preset_idx = preset_idx
@@ -477,6 +466,7 @@ def _get_preset_params(preset_id):
 # ══════════════════════════════════════════════════════════════════════
 
 def _psoup_step(self):
+    """Advance the simulation by one step."""
     grid = self.psoup_grid
     rows, cols = self.psoup_rows, self.psoup_cols
     params = self.psoup_params
@@ -633,7 +623,6 @@ def _psoup_step(self):
 
     # ── 2. RNA replication & mutation ──
     new_rna = []
-    rna_positions = {}  # (r,c) -> rna for collision detection
 
     for rna in rna_list:
         rr, rc = rna.r, rna.c
@@ -724,7 +713,6 @@ def _psoup_step(self):
                 rna.r, rna.c = best
 
         new_rna.append(rna)
-        rna_positions[(rna.r, rna.c)] = rna
 
     self.psoup_rna = new_rna
 
@@ -885,6 +873,7 @@ def _psoup_step(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _handle_psoup_menu_key(self, key):
+    """Handle input in the preset menu."""
     presets = PSOUP_PRESETS
     if key == curses.KEY_DOWN or key == ord("j"):
         self.psoup_menu_sel = (self.psoup_menu_sel + 1) % len(presets)
@@ -899,6 +888,7 @@ def _handle_psoup_menu_key(self, key):
 
 
 def _handle_psoup_key(self, key):
+    """Handle input in the running simulation."""
     if key == ord("q") or key == 27:
         _exit_psoup_mode(self)
         return True
@@ -949,6 +939,7 @@ def _handle_psoup_key(self, key):
 # ══════════════════════════════════════════════════════════════════════
 
 def _draw_psoup_menu(self, max_y, max_x):
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "\u2550\u2550 Primordial Soup & Origin of Life \u2550\u2550 Select Scenario \u2550\u2550"
     try:
@@ -1295,6 +1286,7 @@ def _draw_psoup_graph(self, max_y, max_x):
 # ══════════════════════════════════════════════════════════════════════
 
 def _draw_psoup(self, max_y, max_x):
+    """Draw the active view."""
     self.stdscr.erase()
 
     view = self.psoup_view
