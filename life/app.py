@@ -34,6 +34,7 @@ from life.grid import Grid
 from life.sound import SoundEngine
 from life.multiplayer import MultiplayerNet, MP_DEFAULT_PORT, MP_SIM_GENS
 from life.registry import MODE_CATEGORIES, MODE_REGISTRY, MODE_DISPATCH
+from life.key_scan import handler_keys
 from life.analytics import AnalyticsState, PhaseTransition, _sparkline as _analytics_sparkline
 from life.modes.sparkline_hud import SparklineHUDState
 
@@ -3299,19 +3300,135 @@ class App:
 
     # ── Table-driven mode dispatch ─────────────────────────────────────
 
-    # Screens whose own key handlers bind Tab. While one of them is active,
-    # Tab goes to that screen instead of toggling the global minimap.
-    _TAB_SCREENS = (
-        "re_menu", "re_mode", "symphony_mode", "split_mode", "comp_mode",
-        "adversary_mode", "archaeo_mode", "optics_mode", "orrery_mode",
-        "accretion_mode",
-    )
+    def _overlay_takes_keys(self) -> bool:
+        """True while an overlay menu or picker is waiting for input."""
+        return bool(self.param_tuner_active or self.tt_pos is not None
+                    or self.pp_menu or self.tbranch_fork_menu
+                    or self.tbranch_mode or self.butterfly_mode)
 
-    def _tab_claimed(self) -> bool:
-        """True if the dashboard, an overlay or the active mode binds Tab."""
-        if self.dashboard or getattr(self, "compdet_active", False):
+    def _mode_claims_key(self, key: int) -> bool:
+        """True if the active mode (or its menu) binds key in its own handler.
+
+        App.run() offers keys to global hotkeys and overlays (minimap Tab,
+        ghost trail g, morph G, time travel u [ ], parameter tuner P, mouse
+        clicks, ...) before the mode sees them. A key the mode binds itself
+        skips them and goes to the mode, unless an overlay menu or picker is
+        open.
+        """
+        if key == -1 or self._overlay_takes_keys():
+            return False
+        for md in MODE_DISPATCH:
+            if getattr(self, md['menu_attr'], False):
+                name = md['menu_keys']
+            elif getattr(self, md['attr'], False):
+                name = md['keys']
+            else:
+                continue
+            handler = getattr(type(self), name, None)
+            return handler is not None and key in handler_keys(handler, type(self))
+        return False
+
+    def _handle_global_hotkey(self, key: int) -> bool:
+        """Offer key to the global toggles and overlays. Return True if consumed."""
+        # ── Cast recording toggle (Ctrl+X, global) ──
+        if self._cast_handle_key(key):
             return True
-        return any(getattr(self, attr, False) for attr in self._TAB_SCREENS)
+
+        # ── Minimap toggle (Tab, unless the dashboard or detector uses it) ──
+        if key == 9 and not (self.dashboard or self.compdet_active):
+            self.show_minimap = not self.show_minimap
+            self._flash("Minimap ON" if self.show_minimap else "Minimap OFF")
+            return True
+
+        # ── Snapshot save/load (Ctrl+W save, Ctrl+O load, global) ──
+        if key == 23:  # Ctrl+W
+            self._save_snapshot()
+            return True
+        if key == 15:  # Ctrl+O
+            self._load_snapshot()
+            return True
+
+        # ── Analytics overlay toggle (Ctrl+K, global across all modes) ──
+        if key == 11:  # Ctrl+K
+            self.analytics.enabled = not self.analytics.enabled
+            if self.analytics.enabled:
+                self.analytics.update(self.grid, self.pop_history)
+            self._flash("Analytics ON" if self.analytics.enabled else "Analytics OFF")
+            return True
+
+        # ── Phase transition detector toggle (Ctrl+P, global) ──
+        if key == 16:  # Ctrl+P
+            det = self.analytics.phase_detector
+            det.enabled = not det.enabled
+            if det.enabled:
+                det.reset()
+                self._flash("Phase detector ON")
+            else:
+                self._flash("Phase detector OFF")
+            return True
+
+        # ── Phase transition bookmark browser (Ctrl+T, global) ──
+        if key == 20:  # Ctrl+T
+            if self.phase_transition_log:
+                self.phase_bookmark_menu = not self.phase_bookmark_menu
+                self.phase_bookmark_sel = len(self.phase_transition_log) - 1
+            else:
+                self._flash("No phase transitions detected yet (Ctrl+P to enable)")
+            return True
+
+        # ── Sparkline HUD toggle (Ctrl+V, global across all modes) ──
+        if key == 22:  # Ctrl+V
+            self._toggle_sparkline_hud()
+            return True
+
+        # ── Butterfly Effect key handling ──
+        if self._butterfly_handle_key(key):
+            return True
+
+        # ── Timeline branching key handling ──
+        if self._tbranch_handle_key(key):
+            return True
+
+        # ── Universal time-travel key handling ──
+        if self._tt_handle_key(key):
+            return True
+
+        # ── Universal topology key handling ──
+        if self._topology_handle_key(key):
+            return True
+
+        # ── Parameter tuner key handling ──
+        if key == ord('P') and self._get_active_mode_prefix() is not None:
+            self._toggle_param_tuner()
+            return True
+        if self.param_tuner_active and self._handle_param_tuner_key(key):
+            return True
+
+        # ── Ghost trail key handling ──
+        if self._ghost_trail_handle_key(key):
+            return True
+
+        # ── Spectrum overlay key handling ──
+        if self._spectrum_handle_key(key):
+            return True
+
+        # ── Computation detector key handling ──
+        if self._compdet_handle_key(key):
+            return True
+
+        # ── Long-exposure photography key handling ──
+        if self._long_exposure_handle_key(key):
+            return True
+
+        # ── Morph transition key handling ──
+        if self._morph_handle_key(key):
+            return True
+
+        # ── Post-processing pipeline key handling ──
+        if self._pp_handle_key(key):
+            return True
+
+        return False
 
     def _dispatch_mode_key(self, key: int) -> bool:
         """Route key input to the active mode via MODE_DISPATCH table.
@@ -4250,9 +4367,10 @@ class App:
                 self._draw_cast_export_menu(_my, _mx)
 
             key = self.stdscr.getch()
+            mode_key = self._mode_claims_key(key)
 
-            # ── Mouse events (global, before any key dispatch) ──
-            if key == curses.KEY_MOUSE:
+            # ── Mouse events (global unless the active mode handles clicks) ──
+            if key == curses.KEY_MOUSE and not mode_key:
                 self._handle_mouse()
                 continue
 
@@ -4271,102 +4389,8 @@ class App:
                 if self._handle_cast_export_key(key):
                     continue
 
-            # ── Cast recording toggle (Ctrl+X, global) ──
-            if self._cast_handle_key(key):
-                continue
-
-            # ── Minimap toggle (Tab key, unless the active screen binds it) ──
-            if key == 9 and not self._tab_claimed():
-                self.show_minimap = not self.show_minimap
-                self._flash("Minimap ON" if self.show_minimap else "Minimap OFF")
-                continue
-
-            # ── Snapshot save/load (Ctrl+W save, Ctrl+O load, global) ──
-            if key == 23:  # Ctrl+W
-                self._save_snapshot()
-                continue
-            if key == 15:  # Ctrl+O
-                self._load_snapshot()
-                continue
-
-            # ── Analytics overlay toggle (Ctrl+K, global across all modes) ──
-            if key == 11:  # Ctrl+K
-                self.analytics.enabled = not self.analytics.enabled
-                if self.analytics.enabled:
-                    self.analytics.update(self.grid, self.pop_history)
-                self._flash("Analytics ON" if self.analytics.enabled else "Analytics OFF")
-                continue
-
-            # ── Phase transition detector toggle (Ctrl+P, global) ──
-            if key == 16:  # Ctrl+P
-                det = self.analytics.phase_detector
-                det.enabled = not det.enabled
-                if det.enabled:
-                    det.reset()
-                    self._flash("Phase detector ON")
-                else:
-                    self._flash("Phase detector OFF")
-                continue
-
-            # ── Phase transition bookmark browser (Ctrl+T, global) ──
-            if key == 20:  # Ctrl+T
-                if self.phase_transition_log:
-                    self.phase_bookmark_menu = not self.phase_bookmark_menu
-                    self.phase_bookmark_sel = len(self.phase_transition_log) - 1
-                else:
-                    self._flash("No phase transitions detected yet (Ctrl+P to enable)")
-                continue
-
-            # ── Sparkline HUD toggle (Ctrl+V, global across all modes) ──
-            if key == 22:  # Ctrl+V
-                self._toggle_sparkline_hud()
-                continue
-
-            # ── Butterfly Effect key handling ──
-            if self._butterfly_handle_key(key):
-                continue
-
-            # ── Timeline branching key handling ──
-            if self._tbranch_handle_key(key):
-                continue
-
-            # ── Universal time-travel key handling ──
-            if self._tt_handle_key(key):
-                continue
-
-            # ── Universal topology key handling ──
-            if self._topology_handle_key(key):
-                continue
-
-            # ── Parameter tuner key handling ──
-            if key == ord('P') and self._get_active_mode_prefix() is not None:
-                self._toggle_param_tuner()
-                continue
-            if self.param_tuner_active and self._handle_param_tuner_key(key):
-                continue
-
-            # ── Ghost trail key handling ──
-            if self._ghost_trail_handle_key(key):
-                continue
-
-            # ── Spectrum overlay key handling ──
-            if self._spectrum_handle_key(key):
-                continue
-
-            # ── Computation detector key handling ──
-            if self._compdet_handle_key(key):
-                continue
-
-            # ── Long-exposure photography key handling ──
-            if self._long_exposure_handle_key(key):
-                continue
-
-            # ── Morph transition key handling ──
-            if self._morph_handle_key(key):
-                continue
-
-            # ── Post-processing pipeline key handling ──
-            if self._pp_handle_key(key):
+            # ── Global hotkeys and overlays (skipped for keys the mode binds) ──
+            if not mode_key and self._handle_global_hotkey(key):
                 continue
 
             # ── Multiplayer network tick ──
@@ -5258,6 +5282,10 @@ class App:
                 self.cursor_r = (self.cursor_r - dy * zoom) % self.grid.rows
                 self.cursor_c = (self.cursor_c - (dx // 2) * zoom) % self.grid.cols
                 self._mouse_pan_origin = (my, mx)
+            return True
+
+        # Clicks edit the Game of Life grid, which is hidden while a mode runs.
+        if self._get_active_mode_prefix() is not None:
             return True
 
         # ── Left-button click / drag-to-draw ──
