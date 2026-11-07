@@ -1,9 +1,7 @@
-"""Persistent Terrarium Mode — a long-running simulation that lives between sessions.
+"""Terrarium — a persistent world that resumes where you left off and catches up on the time you were away.
 
-Saves state automatically on exit, resumes where it left off on next launch.
-Optionally fast-forwards through elapsed generations while "away," and maintains
-a chronicle log of notable events (phase transitions, population records,
-extinction events) with real-world timestamps.
+A chronicle log records notable events (phase transitions, population records,
+extinctions) with real-world timestamps.
 """
 
 import datetime
@@ -46,7 +44,7 @@ def _terrarium_init(self):
 
 
 def _enter_terrarium_mode(self):
-    """Activate terrarium mode — load saved state or start fresh."""
+    """Start Terrarium mode: resume the saved world or create a new one."""
     self.terrarium_mode = True
     self.terrarium_session_start = time.time()
     self.terrarium_last_save = time.time()
@@ -61,7 +59,6 @@ def _enter_terrarium_mode(self):
     if loaded:
         self._flash("Terrarium resumed — press Enter to see what happened while you were away")
     else:
-        # Fresh terrarium
         self.terrarium_chronicle = []
         self.terrarium_peak_pop = self.grid.population
         self.terrarium_peak_pop_gen = self.grid.generation
@@ -73,7 +70,7 @@ def _enter_terrarium_mode(self):
 
 
 def _exit_terrarium_mode(self):
-    """Deactivate terrarium mode — save state before leaving."""
+    """Save the world and leave Terrarium mode."""
     if self.terrarium_mode:
         _terrarium_save_state(self)
         _terrarium_chronicle_add(self, "session_end", "Session ended")
@@ -83,7 +80,7 @@ def _exit_terrarium_mode(self):
 
 
 def _terrarium_quit(self):
-    """Called when user presses 'q' while in terrarium mode — save and exit."""
+    """Save the world and log the end of the session when the app quits."""
     _terrarium_save_state(self)
     _terrarium_chronicle_add(self, "session_end",
                              f"Session ended (gen {self.grid.generation}, pop {self.grid.population})")
@@ -91,7 +88,7 @@ def _terrarium_quit(self):
 
 
 def _terrarium_chronicle_add(self, kind: str, detail: str):
-    """Add an entry to the terrarium chronicle with a real-world timestamp."""
+    """Append a timestamped entry to the chronicle."""
     entry = {
         "timestamp": time.time(),
         "iso_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -101,44 +98,39 @@ def _terrarium_chronicle_add(self, kind: str, detail: str):
         "detail": detail,
     }
     self.terrarium_chronicle.append(entry)
-    # Keep chronicle bounded
     if len(self.terrarium_chronicle) > 5000:
         self.terrarium_chronicle = self.terrarium_chronicle[-4000:]
 
 
 def _terrarium_record_event(self):
-    """Hook into the simulation step to record notable events for the chronicle."""
+    """Log population records, extinctions and phase transitions after a step."""
     if not self.terrarium_mode:
         return
 
     pop = self.grid.population
     gen = self.grid.generation
 
-    # Track population records
     if pop > self.terrarium_peak_pop:
         old_peak = self.terrarium_peak_pop
         self.terrarium_peak_pop = pop
         self.terrarium_peak_pop_gen = gen
-        # Only log significant new records (>10% increase)
+        # Log only records more than 10% above the old peak.
         if old_peak > 0 and (pop - old_peak) / old_peak > 0.1:
             _terrarium_chronicle_add(self, "population_record",
                                      f"New population record: {pop} (was {old_peak})")
 
-    # Extinction
     if pop == 0:
         _terrarium_chronicle_add(self, "extinction",
                                  f"Extinction at generation {gen} — all cells dead")
 
-    # Phase transitions (piggyback on existing detector)
+    # Phase transitions come from the shared phase detector.
     if hasattr(self, 'phase_transition_log') and self.phase_transition_log:
         last_pt = self.phase_transition_log[-1]
-        # Check if this is a new transition we haven't chronicled
         if last_pt.generation > self._terrarium_last_pt_gen:
             self._terrarium_last_pt_gen = last_pt.generation
             _terrarium_chronicle_add(self, f"phase_{last_pt.kind}",
                                      f"{last_pt.label} at gen {last_pt.generation}")
 
-    # Periodic auto-save
     now = time.time()
     if now - self.terrarium_last_save >= self.terrarium_save_interval:
         self.terrarium_last_save = now
@@ -146,12 +138,12 @@ def _terrarium_record_event(self):
 
 
 def _terrarium_save_state(self):
-    """Save the complete terrarium state to disk."""
+    """Write the world and the chronicle to disk."""
     os.makedirs(TERRARIUM_DIR, exist_ok=True)
 
     mode_attr = self._snapshot_detect_mode()
-    # If we're in terrarium but the detected mode is terrarium itself,
-    # save the underlying simulation (base Game of Life)
+    # The detected mode is terrarium itself when no other simulation is active.
+    # Save None then, which means plain Game of Life.
     underlying_mode = mode_attr if mode_attr != "terrarium_mode" else None
 
     state = {
@@ -187,7 +179,7 @@ def _terrarium_save_state(self):
     }
 
     try:
-        # Write atomically via temp file
+        # Write to a temp file first so a crash cannot leave a half-written save.
         tmp_path = TERRARIUM_STATE_FILE + ".tmp"
         with open(tmp_path, "w") as f:
             json.dump(state, f, indent=2)
@@ -199,7 +191,7 @@ def _terrarium_save_state(self):
 
 
 def _terrarium_save_chronicle(self):
-    """Persist the chronicle log to disk."""
+    """Write the chronicle to disk."""
     os.makedirs(TERRARIUM_DIR, exist_ok=True)
     try:
         tmp_path = TERRARIUM_CHRONICLE_FILE + ".tmp"
@@ -211,7 +203,7 @@ def _terrarium_save_chronicle(self):
 
 
 def _terrarium_load_state(self) -> bool:
-    """Load terrarium state from disk. Returns True if a save was found and loaded."""
+    """Load the saved world. Return True if a usable save was found."""
     if not os.path.isfile(TERRARIUM_STATE_FILE):
         return False
 
@@ -224,12 +216,10 @@ def _terrarium_load_state(self) -> bool:
     if not isinstance(grid_data, dict) or not {"rows", "cols", "generation", "cells"} <= grid_data.keys():
         return False  # damaged save: start a fresh terrarium instead of crashing
 
-    # Restore grid
     self.grid.load_dict(state["grid"])
     self.grid.hex_mode = state.get("hex_mode", False)
     self.grid.topology = state.get("topology", "torus")
 
-    # Restore viewport
     vp = state.get("viewport", {})
     self.view_r = vp.get("view_r", 0)
     self.view_c = vp.get("view_c", 0)
@@ -237,7 +227,6 @@ def _terrarium_load_state(self) -> bool:
     self.cursor_c = vp.get("cursor_c", self.grid.cols // 2)
     self.zoom_level = vp.get("zoom_level", 1)
 
-    # Restore display
     from life.colors import COLORMAP_NAMES
     self.speed_idx = _clamp_speed_idx(state.get("speed_idx", 2))
     cmap = state.get("colormap", "viridis")
@@ -246,7 +235,6 @@ def _terrarium_load_state(self) -> bool:
         self.tc_colormap_idx = COLORMAP_NAMES.index(cmap)
     self.heatmap_mode = state.get("heatmap_mode", False)
 
-    # Restore terrarium metadata
     tmeta = state.get("terrarium", {})
     self.terrarium_peak_pop = tmeta.get("peak_pop", 0)
     self.terrarium_peak_pop_gen = tmeta.get("peak_pop_gen", 0)
@@ -257,7 +245,6 @@ def _terrarium_load_state(self) -> bool:
         0, tmeta.get("total_generations", 0) - self.grid.generation)
     self.terrarium_first_started = tmeta.get("first_started", time.time())
 
-    # Load chronicle
     if os.path.isfile(TERRARIUM_CHRONICLE_FILE):
         try:
             with open(TERRARIUM_CHRONICLE_FILE) as f:
@@ -267,7 +254,6 @@ def _terrarium_load_state(self) -> bool:
     else:
         self.terrarium_chronicle = []
 
-    # Calculate time away and fast-forward
     save_time = state.get("save_time", time.time())
     elapsed_seconds = time.time() - save_time
     if elapsed_seconds > 5:
@@ -280,7 +266,7 @@ def _terrarium_load_state(self) -> bool:
                              f"Session #{self.terrarium_total_sessions} started "
                              f"(away for {_format_duration(elapsed_seconds)})")
 
-    # Reset tracking
+    # Analysis state from before the save no longer applies.
     self.pop_history.clear()
     self._record_pop()
     self._reset_cycle_detection()
@@ -288,11 +274,9 @@ def _terrarium_load_state(self) -> bool:
     self.timeline_pos = None
     self.running = False
 
-    # Enable phase detector for chronicle logging
     self.analytics.phase_detector.enabled = True
     self.analytics.phase_detector.reset()
 
-    # Show welcome-back summary
     self.terrarium_show_summary = True
     self.terrarium_summary_scroll = 0
 
@@ -308,8 +292,8 @@ def _clamp_speed_idx(idx) -> int:
 
 
 def _terrarium_catchup(self, elapsed_seconds: float, state: dict):
-    """Fast-forward the simulation through elapsed real time."""
-    # Calculate generations to simulate based on the speed setting
+    """Fast-forward the world through the time spent away and build the summary."""
+    # Run as many generations as the saved speed setting would have run live.
     from life.constants import SPEEDS
     speed_idx = _clamp_speed_idx(state.get("speed_idx", 2))
     gens_per_sec = 1.0 / max(SPEEDS[speed_idx], 0.01)
@@ -350,7 +334,6 @@ def _terrarium_catchup(self, elapsed_seconds: float, state: dict):
         pop = self.grid.population
         gen = self.grid.generation
 
-        # Track extremes
         if pop > peak_pop:
             peak_pop = pop
             peak_gen = gen
@@ -358,13 +341,12 @@ def _terrarium_catchup(self, elapsed_seconds: float, state: dict):
             min_pop = pop
             min_gen = gen
 
-        # Detect extinction during catch-up
         if pop == 0:
             extinctions += 1
             note(f"  Extinction at gen {gen}")
             _terrarium_chronicle_add(self, "extinction",
                                      f"Extinction during catch-up at gen {gen}")
-            # Re-seed with random cells to keep the terrarium alive
+            # Re-seed so the world stays alive.
             import random
             for _ in range(max(20, self.grid.rows * self.grid.cols // 50)):
                 r = random.randint(0, self.grid.rows - 1)
@@ -374,9 +356,8 @@ def _terrarium_catchup(self, elapsed_seconds: float, state: dict):
             _terrarium_chronicle_add(self, "reseed",
                                      f"Life re-seeded after extinction at gen {gen}")
 
-        # Sample analytics periodically during catch-up
+        # Run analytics only at intervals to keep catch-up fast.
         if i > 0 and i % CATCHUP_SAMPLE_INTERVAL == 0:
-            # Update analytics for phase detection
             self.pop_history.append(pop)
             if len(self.pop_history) > 200:
                 self.pop_history = self.pop_history[-200:]
@@ -392,7 +373,6 @@ def _terrarium_catchup(self, elapsed_seconds: float, state: dict):
     end_pop = self.grid.population
     end_gen = self.grid.generation
 
-    # Update peak tracking
     if peak_pop > self.terrarium_peak_pop:
         self.terrarium_peak_pop = peak_pop
         self.terrarium_peak_pop_gen = peak_gen
@@ -400,7 +380,6 @@ def _terrarium_catchup(self, elapsed_seconds: float, state: dict):
         _terrarium_chronicle_add(self, "population_record",
                                  f"New all-time record: {peak_pop} at gen {peak_gen} (during catch-up)")
 
-    # Build summary
     summary.append(f"Generations simulated: {start_gen} -> {end_gen} (+{target_gens:,})")
     summary.append(f"Population: {start_pop} -> {end_pop}")
     summary.append(f"Peak population: {peak_pop:,} (gen {peak_gen})")
@@ -430,7 +409,7 @@ def _terrarium_catchup(self, elapsed_seconds: float, state: dict):
 
 
 def _format_duration(seconds: float) -> str:
-    """Format a duration in seconds into a human-readable string."""
+    """Format seconds as a short duration such as "2h 5m"."""
     if seconds < 60:
         return f"{int(seconds)}s"
     elif seconds < 3600:
@@ -448,7 +427,7 @@ def _format_duration(seconds: float) -> str:
 
 
 def _draw_terrarium_summary(self, max_y: int, max_x: int):
-    """Draw the welcome-back summary screen."""
+    """Draw the welcome-back summary."""
     import curses
     self.stdscr.erase()
     self.tc_buf.clear()
@@ -471,7 +450,6 @@ def _draw_terrarium_summary(self, max_y: int, max_x: int):
             break
         attr = curses.color_pair(6)
         if line.startswith("  "):
-            # Event lines — highlight
             if "extinction" in line.lower() or "Extinction" in line:
                 attr = curses.color_pair(2)  # red
             elif "record" in line.lower():
@@ -485,8 +463,7 @@ def _draw_terrarium_summary(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    # Footer
-    footer = "Press Enter to continue  |  ↑/↓ scroll  |  c = view chronicle"
+    footer = "Enter=continue  ↑↓=scroll  c=chronicle"
     try:
         self.stdscr.addstr(max_y - 1, max(0, (max_x - len(footer)) // 2),
                            footer[:max_x - 2], curses.color_pair(7))
@@ -497,7 +474,7 @@ def _draw_terrarium_summary(self, max_y: int, max_x: int):
 
 
 def _draw_terrarium_chronicle_view(self, max_y: int, max_x: int):
-    """Draw the chronicle log viewer."""
+    """Draw the chronicle viewer, newest entry first."""
     import curses
     self.stdscr.erase()
     self.tc_buf.clear()
@@ -517,7 +494,6 @@ def _draw_terrarium_chronicle_view(self, max_y: int, max_x: int):
             pass
     else:
         visible = max_y - 5
-        # Show newest first
         entries = list(reversed(chronicle))
         scroll = min(self.terrarium_summary_scroll, max(0, len(entries) - visible))
         self.terrarium_summary_scroll = scroll
@@ -551,7 +527,7 @@ def _draw_terrarium_chronicle_view(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    footer = "Press Esc/q to return  |  ↑/↓ scroll"
+    footer = "Esc/q=back  ↑↓=scroll"
     try:
         self.stdscr.addstr(max_y - 1, max(0, (max_x - len(footer)) // 2),
                            footer[:max_x - 2], curses.color_pair(7))
@@ -562,7 +538,7 @@ def _draw_terrarium_chronicle_view(self, max_y: int, max_x: int):
 
 
 def _draw_terrarium_indicator(self, max_y: int, max_x: int):
-    """Draw a small terrarium status indicator in the corner."""
+    """Draw the age, generation and population in the top-right corner."""
     import curses
     age = time.time() - self.terrarium_first_started
     age_str = _format_duration(age)
@@ -577,7 +553,7 @@ def _draw_terrarium_indicator(self, max_y: int, max_x: int):
 
 
 def _handle_terrarium_summary_key(self, key: int) -> bool:
-    """Handle keys in the terrarium summary/chronicle screens. Returns True if handled."""
+    """Handle keys in the summary and chronicle screens. Return True if consumed."""
     import curses
     if not self.terrarium_mode:
         return False
@@ -619,12 +595,12 @@ def _handle_terrarium_summary_key(self, key: int) -> bool:
 
 
 def _terrarium_step(self):
-    """Called each simulation step to record terrarium events."""
+    """Record terrarium events after a simulation step."""
     _terrarium_record_event(self)
 
 
 def _terrarium_delete(self):
-    """Delete all terrarium save data (called from menu)."""
+    """Delete the saved world and reset the counters."""
     import shutil
     if os.path.isdir(TERRARIUM_DIR):
         shutil.rmtree(TERRARIUM_DIR, ignore_errors=True)
@@ -637,7 +613,7 @@ def _terrarium_delete(self):
 
 
 def register(App):
-    """Register terrarium mode methods on the App class."""
+    """Bind the Terrarium methods to App."""
     App._terrarium_init = _terrarium_init
     App._enter_terrarium_mode = _enter_terrarium_mode
     App._exit_terrarium_mode = _exit_terrarium_mode
