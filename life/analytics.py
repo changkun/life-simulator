@@ -200,16 +200,16 @@ def classify_stability(pop_history: list[int], cycle_period: int | None) -> str:
 
 # Transition type labels with icons
 PHASE_LABELS: dict[str, str] = {
-    "entropy_spike": "⚡ entropy spike",
-    "entropy_collapse": "🧊 entropy collapse",
-    "symmetry_break": "💔 symmetry break",
+    "entropy_spike": "▲ entropy spike",
+    "entropy_collapse": "▼ entropy collapse",
+    "symmetry_break": "✧ symmetry break",
     "symmetry_form": "✦ symmetry formation",
     "oscillation_onset": "∿ oscillation onset",
     "oscillation_death": "☠ oscillation death",
-    "population_boom": "🌱 population boom",
-    "population_crash": "💀 population crash",
-    "chaos_to_order": "⚡ chaos→order",
-    "order_to_chaos": "🔥 order→chaos",
+    "population_boom": "⊕ population boom",
+    "population_crash": "⊖ population crash",
+    "chaos_to_order": "≡ chaos→order",
+    "order_to_chaos": "≋ order→chaos",
     "extinction": "✕ extinction",
 }
 

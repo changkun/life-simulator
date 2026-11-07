@@ -333,7 +333,7 @@ def _handle_aquarium_key(self, key: int) -> bool:
 def _draw_aquarium_menu(self, max_y: int, max_x: int):
     """Draw the preset menu."""
     self.stdscr.erase()
-    title = "🐠  ASCII Aquarium / Fish Tank  🐠"
+    title = "><>  ASCII Aquarium / Fish Tank  <><"
     subtitle = "A relaxing zen-mode aquarium with procedural ASCII fish"
     if max_x > len(title) + 2:
         try:

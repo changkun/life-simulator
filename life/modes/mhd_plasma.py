@@ -477,7 +477,7 @@ def _draw_mhd(self, max_y: int, max_x: int):
     rows, cols = self.mhd_rows, self.mhd_cols
     state = "▶ RUNNING" if self.mhd_running else "⏸ PAUSED"
 
-    title = (f" ⚡ MHD Plasma: {self.mhd_preset_name}  |  step {self.mhd_generation}"
+    title = (f" ↯ MHD Plasma: {self.mhd_preset_name}  |  step {self.mhd_generation}"
              f"  |  η={self.mhd_resistivity:.3f} ν={self.mhd_viscosity:.3f}"
              f"  |  view={self.mhd_view}  |  {state}")
     try:

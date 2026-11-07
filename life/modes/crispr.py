@@ -1159,7 +1159,7 @@ def _draw_crispr_dna(self, max_y, max_x):
             if dsb_state == _DSB_UNREPAIRED:
                 ch, cp = "✂", 1   # red scissors
             elif dsb_state == _DSB_NHEJ_ACTIVE:
-                ch, cp = "⚡", 3   # yellow — NHEJ
+                ch, cp = "↯", 3   # yellow — NHEJ
             elif dsb_state == _DSB_HDR_ACTIVE:
                 ch, cp = "⚙", 2   # green — HDR
             elif dsb_state == _DSB_REPAIRED_NHEJ:

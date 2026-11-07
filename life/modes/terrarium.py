@@ -9,6 +9,7 @@ import json
 import os
 import time
 
+from life.analytics import PHASE_LABELS
 from life.constants import SAVE_DIR
 
 TERRARIUM_DIR = os.path.join(SAVE_DIR, "terrarium")
@@ -454,7 +455,7 @@ def _draw_terrarium_summary(self, max_y: int, max_x: int):
                 attr = curses.color_pair(2)  # red
             elif "record" in line.lower():
                 attr = curses.color_pair(3)  # green
-            elif "phase" in line.lower() or "⚡" in line or "∿" in line:
+            elif "phase" in line.lower() or any(label in line for label in PHASE_LABELS.values()):
                 attr = curses.color_pair(5)  # cyan
         elif line.startswith("Away for") or line.startswith("Fast-forward"):
             attr = curses.color_pair(7) | curses.A_BOLD

@@ -698,7 +698,7 @@ def _handle_cardiac_key(self, key: int) -> bool:
         # Deliver defibrillation shock
         self.cardiac_defib_active = _DEFIB_DURATION
         self.cardiac_defib_count += 1
-        self._flash("⚡ DEFIBRILLATION SHOCK ⚡")
+        self._flash("↯ DEFIBRILLATION SHOCK ↯")
         return True
     if key == ord('+') or key == ord('='):
         self.cardiac_speed = min(8, self.cardiac_speed + 1)
@@ -973,7 +973,7 @@ def _draw_cardiac_ecg(self, max_y: int, max_x: int):
 
     # Defibrillation indicator
     if self.cardiac_defib_active > 0:
-        shock_msg = "⚡⚡⚡ SHOCK DELIVERED ⚡⚡⚡"
+        shock_msg = "↯↯↯ SHOCK DELIVERED ↯↯↯"
         try:
             self.stdscr.addstr(max_y // 2, max(0, (max_x - len(shock_msg)) // 2),
                                shock_msg, curses.color_pair(1) | curses.A_BOLD | curses.A_BLINK)

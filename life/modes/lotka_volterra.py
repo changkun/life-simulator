@@ -388,7 +388,7 @@ def _draw_lv(self, max_y: int, max_x: int):
 
     # Title bar
     title = (f" Ecosystem: {self.lv_preset_name}  |  step {gen}"
-             f"  |  🌿{g_count} 🐇{prey_count} 🐺{pred_count}"
+             f"  |  Grass:{g_count} Prey:{prey_count} Pred:{pred_count}"
              f"  |  {state}")
     try:
         self.stdscr.addstr(0, 0, title[:max_x - 1], curses.color_pair(7) | curses.A_BOLD)

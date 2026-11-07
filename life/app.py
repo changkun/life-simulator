@@ -3054,7 +3054,7 @@ class App:
             "oscillating": "∿",
             "growing": "△",
             "dying": "▽",
-            "chaotic": "⚡",
+            "chaotic": "≋",
             "stable": "●",
         }
         stab_colors = {
@@ -6477,12 +6477,12 @@ class App:
             speed = SPEED_LABELS[self.speed_idx]
             mode = ""
             if self.heatmap_mode:
-                mode = "  │  🔥 HEATMAP"
+                mode = "  │  ▒ HEATMAP"
             if self.pattern_search_mode:
                 n = len(self.detected_patterns)
-                mode += f"  │  🔍 SEARCH({n})"
+                mode += f"  │  ◎ SEARCH({n})"
             if self.blueprint_mode:
-                mode += "  │  📐 BLUEPRINT"
+                mode += "  │  ▦ BLUEPRINT"
             if self.recording:
                 mode += f"  │  ⏺ REC({len(self.recorded_frames)})"
             if self.cast_recording:

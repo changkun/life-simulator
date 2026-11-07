@@ -131,7 +131,7 @@ def _draw_iso(self, max_y: int, max_x: int):
         rs = rule_string(self.grid.birth, self.grid.survival)
         mode = "  │  🏙 ISO-3D"
         if self.heatmap_mode:
-            mode += "  │  🔥 HEATMAP"
+            mode += "  │  ▒ HEATMAP"
         if self.sound_engine.enabled:
             mode += "  │  ♪ SOUND"
         if self.recording:

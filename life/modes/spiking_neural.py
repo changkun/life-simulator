@@ -394,7 +394,7 @@ def _draw_snn(self, max_y: int, max_x: int):
     fire_rate = self._snn_fire_rate()
 
     # Title bar
-    title = (f" ⚡ SNN: {self.snn_preset_name}  |  step {self.snn_generation}"
+    title = (f" ↯ SNN: {self.snn_preset_name}  |  step {self.snn_generation}"
              f"  |  w={self.snn_weight:.1f}  noise={self.snn_noise_amp:.1f}"
              f"  |  fire={fire_rate:.1%}  |  {state}")
     try:

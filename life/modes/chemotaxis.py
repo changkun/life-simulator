@@ -395,7 +395,7 @@ def _draw_chemo(self, max_y: int, max_x: int):
     view = getattr(self, '_chemo_view', 'bacteria')
 
     # Title bar
-    title = (f" 🦠 Chemotaxis: {self.chemo_preset_name}  |  step {self.chemo_generation}"
+    title = (f" ◉ Chemotaxis: {self.chemo_preset_name}  |  step {self.chemo_generation}"
              f"  |  g={self.chemo_growth_rate:.2f} χ={self.chemo_chemotaxis:.2f}"
              f"  m={self.chemo_motility:.3f}  |  view={view}  |  {state}")
     try:

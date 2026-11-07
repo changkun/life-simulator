@@ -449,7 +449,7 @@ def _draw_attractor(self, max_y: int, max_x: int):
     p = self.attractor_params
     pstr = " ".join(f"{k}={v:.2f}" for k, v in p.items())
 
-    title = (f" 🦋 {self.attractor_preset_name}  |  step {self.attractor_generation}"
+    title = (f" ∞ {self.attractor_preset_name}  |  step {self.attractor_generation}"
              f"  |  {pstr}  |  {state}")
     try:
         self.stdscr.addstr(0, 0, title[:max_x - 1], curses.color_pair(7) | curses.A_BOLD)

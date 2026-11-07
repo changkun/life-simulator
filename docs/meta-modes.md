@@ -810,7 +810,7 @@ The detector is a global overlay (not a mode) that works across all simulation m
 
 A cooldown of 20 generations between same-type detections prevents noisy rapid-fire alerts. When a transition is detected:
 
-1. A **timestamped bookmark** is automatically added to the bookmark timeline (e.g., `⚡ chaos→order @gen 847`).
+1. A **timestamped bookmark** is automatically added to the bookmark timeline (e.g., `≡ chaos→order @gen 847`).
 2. A **2-second flash banner** appears centered at the top of the screen with a blink effect.
 3. An **audio ping** (880 Hz, 80 ms) plays if sound is enabled.
 
