@@ -1,11 +1,7 @@
-"""Mode: fire — simulation mode for the life package."""
+"""Forest Fire — a cellular automaton of growing, burning and regrowing trees."""
 import curses
-import math
 import random
 import time
-
-
-from life.utils import sparkline
 
 # ══════════════════════════════════════════════════════════════════════
 #  Forest Fire — Mode O
@@ -22,12 +18,12 @@ FIRE_PRESETS = [
     ("Rainforest", "Very dense, very rare fire", 0.95, 0.06, 0.0001, 0.04),
     ("Firestorm", "Maximum chaos", 0.5, 0.04, 0.01, 0.05),
     ("Critical Density", "Self-organized criticality demo", 0.60, 0.02, 0.0003, 0.10),
-    ("Slow Burn", "Long-lived embers, slow spread", 0.65, 0.03, 0.0004, 0.03),
+    ("Slow Burn", "Ash lingers, slow regrowth", 0.65, 0.03, 0.0004, 0.03),
 ]
 
 
 def _enter_fire_mode(self):
-    """Enter Forest Fire mode — show preset menu."""
+    """Open the Forest Fire preset menu."""
     self.fire_menu = True
     self.fire_menu_sel = 0
     self._flash("Forest Fire — select a scenario")
@@ -35,7 +31,7 @@ def _enter_fire_mode(self):
 
 
 def _exit_fire_mode(self):
-    """Exit Forest Fire mode."""
+    """Leave Forest Fire mode and free its state."""
     self.fire_mode = False
     self.fire_menu = False
     self.fire_running = False
@@ -46,7 +42,7 @@ def _exit_fire_mode(self):
 
 
 def _fire_init(self, preset_idx: int):
-    """Initialize forest fire simulation with the given preset."""
+    """Start a new forest from the given preset."""
     (name, _desc, density, p_grow, p_light, ash_decay) = self.FIRE_PRESETS[preset_idx]
     self.fire_preset_name = name
     self.fire_generation = 0
@@ -144,14 +140,13 @@ def _fire_step(self):
     self.fire_grid = new_grid
     self.fire_generation += 1
     self.fire_counts.append((n_tree, n_fire, n_ash, n_empty))
-    # Keep last 200 data points for the density sparkline
     if len(self.fire_counts) > 200:
         self.fire_counts = self.fire_counts[-200:]
 
 
 
 def _handle_fire_menu_key(self, key: int) -> bool:
-    """Handle input in Forest Fire preset menu."""
+    """Handle a key in the preset menu."""
     n = len(self.FIRE_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.fire_menu_sel = (self.fire_menu_sel + 1) % n
@@ -167,7 +162,7 @@ def _handle_fire_menu_key(self, key: int) -> bool:
 
 
 def _handle_fire_key(self, key: int) -> bool:
-    """Handle input in active Forest Fire simulation."""
+    """Handle a key while the simulation is active."""
     if key == ord(" "):
         self.fire_running = not self.fire_running
     elif key in (ord("n"), ord(".")):
@@ -204,14 +199,12 @@ def _handle_fire_key(self, key: int) -> bool:
         self.fire_steps_per_frame = max(1, self.fire_steps_per_frame - 1)
     elif key in (ord("q"), 27):
         self._exit_fire_mode()
-    else:
-        return True
     return True
 
 
 
 def _draw_fire_menu(self, max_y: int, max_x: int):
-    """Draw the Forest Fire preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Forest Fire ── Select Scenario ──"
     try:
@@ -236,7 +229,7 @@ def _draw_fire_menu(self, max_y: int, max_x: int):
     foot_y = min(3 + len(self.FIRE_PRESETS) + 1, max_y - 1)
     if foot_y < max_y:
         try:
-            self.stdscr.addstr(foot_y, 2, "[j/k]=navigate  [Enter]=select  [q]=cancel",
+            self.stdscr.addstr(foot_y, 2, "j/k=navigate  Enter=select  q=cancel",
                                curses.color_pair(6) | curses.A_DIM)
         except curses.error:
             pass
@@ -244,13 +237,12 @@ def _draw_fire_menu(self, max_y: int, max_x: int):
 
 
 def _draw_fire(self, max_y: int, max_x: int):
-    """Draw the active Forest Fire simulation."""
+    """Draw the forest, statistics and hint bar."""
     self.stdscr.erase()
     grid = self.fire_grid
     rows, cols = self.fire_rows, self.fire_cols
     state = "▶ RUNNING" if self.fire_running else "⏸ PAUSED"
 
-    # Count cells
     n_tree = n_fire = n_ash = n_empty = 0
     for r in range(rows):
         for c in range(cols):
@@ -300,12 +292,10 @@ def _draw_fire(self, max_y: int, max_x: int):
                 # Ember — dim red
                 ch = "░░"
                 attr = curses.color_pair(3)
-            elif val == 3:
-                # Ash/char — dim gray
+            else:
+                # Ash (val == 3) — dim gray
                 ch = "░░"
                 attr = curses.color_pair(8) if curses.COLORS >= 8 else curses.color_pair(6)
-            else:
-                continue
             try:
                 self.stdscr.addstr(sy, sx, ch, attr)
             except curses.error:
@@ -348,7 +338,7 @@ def _draw_fire(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [p/P]=grow+/- [l/L]=lightning+/- [a/A]=ash+/- [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  p/P=growth  l/L=lightning  a/A=ash decay  +/-=speed  r=reset  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
