@@ -1,28 +1,11 @@
-"""Mode: Butterfly Effect — fork a simulation, perturb one cell, visualize divergence.
-
-Pause any running simulation, mark a "what-if" point, flip a single cell, then
-watch both timelines evolve in parallel with a real-time divergence heatmap
-overlay showing exactly how and where the perturbation cascades.
-
-Keys:
-  Ctrl+B            — enter Butterfly Effect mode (snapshot current state)
-  Click / arrows+Enter — select the cell to perturb
-  Space              — play/pause both timelines
-  n / .              — single-step both timelines
-  d                  — cycle divergence view: heatmap / side-by-side / overlay
-  h                  — toggle cumulative heatmap vs instantaneous diff
-  c                  — toggle color scale (linear / log)
-  r                  — reset and pick a new perturbation cell
-  </> , .            — adjust speed
-  Ctrl+B             — exit Butterfly Effect mode
-"""
+"""Butterfly Effect — fork the simulation, flip one cell, and show how the two timelines diverge."""
 
 import curses
 import math
 import time
 
-from life.colors import color_for_age, truecolor_available
-from life.constants import CELL_CHAR, SPEED_LABELS
+from life.colors import color_for_age
+from life.constants import CELL_CHAR, SPEEDS, SPEED_LABELS
 from life.grid import Grid
 from life.utils import sparkline
 
@@ -38,7 +21,7 @@ VIEW_NAMES = ["Heatmap Overlay", "Side-by-Side", "Dual Overlay"]
 # ── State initialization ──
 
 def _butterfly_init(self):
-    """Initialize butterfly-effect state variables."""
+    """Create the Butterfly Effect state on the App."""
     self.butterfly_mode = False          # whether butterfly mode is active
     self.butterfly_picking = False       # whether user is picking perturbation cell
     self.butterfly_running = False       # whether both timelines are advancing
@@ -62,8 +45,7 @@ def _butterfly_init(self):
 # ── Entry / exit ──
 
 def _enter_butterfly_mode(self):
-    """Enter butterfly effect mode: snapshot current grid, enter cell-picking."""
-    # Snapshot the current grid into the butterfly grid (deep copy)
+    """Enter Butterfly Effect: copy the grid into a second timeline and pick a cell."""
     self.butterfly_grid = Grid(self.grid.rows, self.grid.cols)
     for r in range(self.grid.rows):
         for c in range(self.grid.cols):
@@ -81,10 +63,8 @@ def _enter_butterfly_mode(self):
     self.butterfly_divergence_pct = 0.0
     self.butterfly_max_divergence = 0.0
 
-    # Initialize heatmap
     self.butterfly_heat = [[0.0] * self.grid.cols for _ in range(self.grid.rows)]
 
-    # Enter picking mode
     self.butterfly_mode = True
     self.butterfly_picking = True
     self.butterfly_running = False
@@ -94,14 +74,13 @@ def _enter_butterfly_mode(self):
     self.butterfly_cumulative = True
     self.butterfly_log_scale = False
 
-    # Pause primary sim
     self.running = False
 
     self._flash("Butterfly Effect — pick a cell to perturb (arrows + Enter)")
 
 
 def _exit_butterfly_mode(self):
-    """Exit butterfly effect mode, clean up."""
+    """Leave Butterfly Effect and drop the second timeline."""
     self.butterfly_mode = False
     self.butterfly_picking = False
     self.butterfly_running = False
@@ -112,13 +91,12 @@ def _exit_butterfly_mode(self):
 
 
 def _butterfly_apply_perturbation(self):
-    """Apply the single-cell perturbation to the butterfly grid."""
+    """Flip the picked cell in the perturbed timeline."""
     r, c = self.butterfly_pick_r, self.butterfly_pick_c
     self.butterfly_perturb_r = r
     self.butterfly_perturb_c = c
     self.butterfly_perturb_was_alive = self.butterfly_grid.cells[r][c] > 0
 
-    # Flip the cell
     if self.butterfly_perturb_was_alive:
         self.butterfly_grid.set_dead(r, c)
     else:
@@ -132,17 +110,16 @@ def _butterfly_apply_perturbation(self):
 # ── Key handling ──
 
 def _butterfly_handle_key(self, key: int) -> bool:
-    """Handle Ctrl+B to toggle butterfly mode. Returns True if consumed."""
-    # Ctrl+B = 2
-    if key == 2:
+    """Toggle the mode on Ctrl+B and handle keys while it is active.
+
+    Return True if the key was consumed.
+    """
+    if key == 2:  # Ctrl+B
         if self.butterfly_mode:
             self._exit_butterfly_mode()
-            return True
         else:
-            # Only enter from base Game of Life mode (grid-based)
             self._enter_butterfly_mode()
-            return True
-    # Consume all keys while in butterfly mode
+        return True
     if not self.butterfly_mode:
         return False
 
@@ -152,11 +129,10 @@ def _butterfly_handle_key(self, key: int) -> bool:
 
 
 def _butterfly_handle_pick_key(self, key: int) -> bool:
-    """Handle keys during cell-picking phase."""
+    """Handle keys while picking the cell to perturb."""
     if key == -1:
         return True
 
-    # Arrow keys to move pick cursor
     if key == curses.KEY_UP or key == ord("k"):
         self.butterfly_pick_r = max(0, self.butterfly_pick_r - 1)
         return True
@@ -170,12 +146,10 @@ def _butterfly_handle_pick_key(self, key: int) -> bool:
         self.butterfly_pick_c = min(self.grid.cols - 1, self.butterfly_pick_c + 1)
         return True
 
-    # Enter to confirm pick
     if key in (10, 13, curses.KEY_ENTER):
         self._butterfly_apply_perturbation()
         return True
 
-    # ESC or q to cancel
     if key == 27 or key == ord("q"):
         self._exit_butterfly_mode()
         return True
@@ -184,29 +158,25 @@ def _butterfly_handle_pick_key(self, key: int) -> bool:
 
 
 def _butterfly_handle_run_key(self, key: int) -> bool:
-    """Handle keys during simulation phase."""
+    """Handle keys while both timelines run."""
     if key == -1:
         return True
 
-    # Space = play/pause
     if key == ord(" "):
         self.butterfly_running = not self.butterfly_running
         self._flash("Playing" if self.butterfly_running else "Paused")
         return True
 
-    # n or . = single step
     if key == ord("n") or key == ord("."):
         self.butterfly_running = False
         _butterfly_step_once(self)
         return True
 
-    # d = cycle divergence view
     if key == ord("d"):
         self.butterfly_view = (self.butterfly_view + 1) % 3
         self._flash(f"View: {VIEW_NAMES[self.butterfly_view]}")
         return True
 
-    # h = toggle cumulative vs instantaneous
     if key == ord("h"):
         self.butterfly_cumulative = not self.butterfly_cumulative
         if not self.butterfly_cumulative:
@@ -215,32 +185,27 @@ def _butterfly_handle_run_key(self, key: int) -> bool:
         self._flash("Cumulative heatmap" if self.butterfly_cumulative else "Instantaneous diff")
         return True
 
-    # c = toggle log scale
     if key == ord("c"):
         self.butterfly_log_scale = not self.butterfly_log_scale
         self._flash("Log scale" if self.butterfly_log_scale else "Linear scale")
         return True
 
-    # r = reset perturbation
     if key == ord("r"):
-        # Re-snapshot and go back to picking
         self._enter_butterfly_mode()
         return True
 
-    # Speed controls
     if key == ord("<") or key == ord(","):
         if self.speed_idx > 0:
             self.speed_idx -= 1
             self._flash(f"Speed: {SPEED_LABELS[self.speed_idx]}")
         return True
     if key == ord(">"):
-        from life.constants import SPEEDS
         if self.speed_idx < len(SPEEDS) - 1:
             self.speed_idx += 1
             self._flash(f"Speed: {SPEED_LABELS[self.speed_idx]}")
         return True
 
-    # Arrow keys for scrolling viewport
+    # Arrow keys scroll the viewport.
     if key == curses.KEY_UP:
         self.cursor_r = max(0, self.cursor_r - 1)
         return True
@@ -264,26 +229,23 @@ def _butterfly_handle_run_key(self, key: int) -> bool:
 # ── Stepping ──
 
 def _butterfly_step_once(self):
-    """Step both grids one generation and update divergence tracking."""
+    """Step both timelines one generation and update the divergence."""
     if not self.butterfly_mode or not self.butterfly_grid:
         return
 
-    # Step primary grid
     self._push_history()
     self.grid.step()
     self._record_pop()
 
-    # Step perturbed grid
     self.butterfly_grid.step()
     self.butterfly_pop_history.append(self.butterfly_grid.population)
     self.butterfly_steps_since_fork += 1
 
-    # Update divergence heatmap
     _butterfly_update_heat(self)
 
 
 def _butterfly_step(self):
-    """Called from main loop when butterfly_running is True."""
+    """Step both timelines once; the main loop calls this while running."""
     if not self.butterfly_mode or not self.butterfly_grid or not self.butterfly_running:
         return
     if self.butterfly_picking:
@@ -292,7 +254,7 @@ def _butterfly_step(self):
 
 
 def _butterfly_update_heat(self):
-    """Recompute divergence metrics and update heatmap."""
+    """Recompute the divergence percentage and update the heatmap."""
     if not self.butterfly_grid or not self.butterfly_heat:
         return
 
@@ -320,7 +282,7 @@ def _butterfly_update_heat(self):
 # ── Drawing: cell picking ──
 
 def _butterfly_draw_pick(self, max_y: int, max_x: int):
-    """Draw grid with cell-picking cursor for perturbation selection."""
+    """Draw the grid with the pick cursor."""
     self.stdscr.erase()
 
     vis_rows = max_y - 4
@@ -330,11 +292,9 @@ def _butterfly_draw_pick(self, max_y: int, max_x: int):
     grid_vis_rows = vis_rows * zoom
     grid_vis_cols = vis_cols * zoom
 
-    # Centre viewport on pick cursor
     view_r = self.butterfly_pick_r - grid_vis_rows // 2
     view_c = self.butterfly_pick_c - grid_vis_cols // 2
 
-    # Draw grid cells
     for sy in range(min(vis_rows, max_y - 4)):
         for sx in range(min(vis_cols, (max_x - 1) // 2)):
             gr = (view_r + sy * zoom) % self.grid.rows
@@ -350,7 +310,7 @@ def _butterfly_draw_pick(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    # Draw pick cursor (blinking crosshair)
+    # Blinking crosshair on the pick cursor.
     pick_sy = self.butterfly_pick_r - view_r
     pick_sx = self.butterfly_pick_c - view_c
     pick_py = pick_sy // zoom if zoom > 0 else pick_sy
@@ -366,7 +326,6 @@ def _butterfly_draw_pick(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-        # Crosshair arms
         for delta in range(1, 4):
             for dy, dx in [(-1, 0), (1, 0), (0, -2), (0, 2)]:
                 hy = pick_py + dy * delta
@@ -379,7 +338,6 @@ def _butterfly_draw_pick(self, max_y: int, max_x: int):
                     except curses.error:
                         pass
 
-    # Info line
     cell_state = "ALIVE" if self.grid.cells[self.butterfly_pick_r][self.butterfly_pick_c] > 0 else "DEAD"
     info_y = max_y - 3
     if info_y > 0:
@@ -400,10 +358,9 @@ def _butterfly_draw_pick(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    # Hints
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [Arrows/hjkl]=move  [Enter]=perturb  [Esc/q]=cancel"
+        hint = " Arrows/hjkl=move  Enter=perturb  Esc/q=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -414,19 +371,6 @@ def _butterfly_draw_pick(self, max_y: int, max_x: int):
 # ── Drawing: heatmap color helpers ──
 
 _HEAT_CHARS = " .:-=+*#%@"
-_HEAT_RAMP = [
-    (0, 0, 40),       # dark blue (no divergence)
-    (0, 20, 100),      # blue
-    (0, 80, 160),      # cyan-blue
-    (0, 160, 160),     # cyan
-    (40, 200, 80),     # green
-    (160, 220, 0),     # yellow-green
-    (220, 180, 0),     # yellow
-    (240, 100, 0),     # orange
-    (240, 40, 0),      # red-orange
-    (220, 0, 0),       # red
-    (255, 60, 180),    # hot pink (maximum)
-]
 
 
 def _heat_color_idx(val: float, max_val: float, log_scale: bool) -> int:
@@ -444,7 +388,7 @@ def _heat_color_idx(val: float, max_val: float, log_scale: bool) -> int:
 # ── Drawing: heatmap overlay view ──
 
 def _butterfly_draw_heatmap(self, max_y: int, max_x: int):
-    """Draw original grid with divergence heatmap overlay."""
+    """Draw the original grid with the divergence heatmap on top."""
     self.stdscr.erase()
 
     vis_rows = max_y - 6
@@ -458,15 +402,13 @@ def _butterfly_draw_heatmap(self, max_y: int, max_x: int):
     view_r = self.cursor_r - grid_vis_rows // 2
     view_c = self.cursor_c - grid_vis_cols // 2
 
-    # Find max heat for normalization
+    # Normalize colors against the hottest cell.
     max_heat = 0.0
     if self.butterfly_heat:
         for row in self.butterfly_heat:
             for v in row:
                 if v > max_heat:
                     max_heat = v
-
-    use_tc = truecolor_available()
 
     for sy in range(min(vis_rows, max_y - 6)):
         for sx in range(min(vis_cols, (max_x - 1) // 2)):
@@ -482,32 +424,18 @@ def _butterfly_draw_heatmap(self, max_y: int, max_x: int):
 
             if heat > 0:
                 ci = _heat_color_idx(heat, max_heat, self.butterfly_log_scale)
-                if use_tc and ci > 0:
-                    rr, gg, bb = _HEAT_RAMP[ci]
-                    # Use truecolor escape
-                    ch = CELL_CHAR if age > 0 else _HEAT_CHARS[min(ci, len(_HEAT_CHARS) - 1)]
-                    tc_str = f"\033[38;2;{rr};{gg};{bb}m{ch}\033[0m"
-                    try:
-                        self.stdscr.addstr(py, px, ch, curses.color_pair(
-                            1 + min(ci // 2, 4)) | curses.A_BOLD)
-                    except curses.error:
-                        pass
-                else:
-                    # Fallback: use curses color pairs 1-5 (green→red age ramp)
-                    pair = 1 + min(ci // 2, 4)
-                    ch = CELL_CHAR if age > 0 else _HEAT_CHARS[min(ci, len(_HEAT_CHARS) - 1)]
-                    try:
-                        self.stdscr.addstr(py, px, ch,
-                                           curses.color_pair(pair) | curses.A_BOLD)
-                    except curses.error:
-                        pass
+                pair = 1 + min(ci // 2, 4)  # curses pairs 1-5, green to red
+                ch = CELL_CHAR if age > 0 else _HEAT_CHARS[min(ci, len(_HEAT_CHARS) - 1)]
+                try:
+                    self.stdscr.addstr(py, px, ch, curses.color_pair(pair) | curses.A_BOLD)
+                except curses.error:
+                    pass
             elif age > 0:
                 try:
                     self.stdscr.addstr(py, px, CELL_CHAR, color_for_age(age) | curses.A_DIM)
                 except curses.error:
                     pass
 
-    # Draw perturbation marker
     if self.butterfly_perturb_r >= 0:
         pr_sy = self.butterfly_perturb_r - view_r
         pr_sx = self.butterfly_perturb_c - view_c
@@ -528,7 +456,7 @@ def _butterfly_draw_heatmap(self, max_y: int, max_x: int):
 # ── Drawing: side-by-side view ──
 
 def _butterfly_draw_split(self, max_y: int, max_x: int):
-    """Draw original (left) vs perturbed (right) with divergence indicators."""
+    """Draw the original (left) and perturbed (right) timelines side by side."""
     self.stdscr.erase()
 
     half_x = max_x // 2
@@ -542,7 +470,6 @@ def _butterfly_draw_split(self, max_y: int, max_x: int):
     view_r = self.cursor_r - vis_rows // 2
     view_c = self.cursor_c - left_cell_cols // 2
 
-    # Draw left panel (original)
     for sy in range(min(vis_rows, self.grid.rows)):
         gr = (view_r + sy) % self.grid.rows
         for sx in range(min(left_cell_cols, self.grid.cols)):
@@ -558,14 +485,13 @@ def _butterfly_draw_split(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    # Vertical divider
     for sy in range(min(vis_rows, max_y - 6)):
         try:
             self.stdscr.addstr(sy, divider_x, "│", curses.color_pair(6) | curses.A_DIM)
         except curses.error:
             pass
 
-    # Draw right panel (perturbed) with diff highlighting
+    # Highlight cells that differ from the original.
     right_start = divider_x + 1
     for sy in range(min(vis_rows, self.butterfly_grid.rows)):
         gr = (view_r + sy) % self.butterfly_grid.rows
@@ -577,7 +503,6 @@ def _butterfly_draw_split(self, max_y: int, max_x: int):
             if py >= max_y - 6 or px + 1 >= max_x:
                 continue
 
-            # Check if this cell differs from original
             orig_alive = self.grid.cells[gr][gc] > 0
             pert_alive = age > 0
             differs = orig_alive != pert_alive
@@ -595,7 +520,6 @@ def _butterfly_draw_split(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    # Panel labels
     label_y = max_y - 6
     if label_y > 0:
         l1 = f" ORIGINAL  Gen:{self.grid.generation}  Pop:{self.grid.population}"
@@ -608,7 +532,6 @@ def _butterfly_draw_split(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    # Dual sparklines
     spark_y = max_y - 5
     if spark_y > 0:
         spark_w = divider_x - 2
@@ -632,7 +555,7 @@ def _butterfly_draw_split(self, max_y: int, max_x: int):
 # ── Drawing: overlay view ──
 
 def _butterfly_draw_overlay(self, max_y: int, max_x: int):
-    """Draw blended overlay: green = only original, red = only perturbed, yellow = both."""
+    """Draw one grid: green = alive only in the original, red = only in the perturbed, yellow = both."""
     self.stdscr.erase()
 
     vis_rows = max_y - 6
@@ -658,7 +581,7 @@ def _butterfly_draw_overlay(self, max_y: int, max_x: int):
             pert = self.butterfly_grid.cells[gr][gc] > 0
 
             if orig and pert:
-                # Both alive — white/normal (agreement)
+                # Both alive: yellow (agreement)
                 try:
                     self.stdscr.addstr(py, px, CELL_CHAR, curses.color_pair(3))
                 except curses.error:
@@ -683,7 +606,7 @@ def _butterfly_draw_overlay(self, max_y: int, max_x: int):
 # ── Drawing: shared status bar ──
 
 def _butterfly_draw_status(self, max_y: int, max_x: int):
-    """Draw status, divergence bar, and hints at the bottom."""
+    """Draw the divergence bar, perturbation info, status line and hints."""
     # Divergence bar
     div_y = max_y - 4
     if div_y > 0:
@@ -739,14 +662,13 @@ def _butterfly_draw_status(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    # Hints
     hint_y = max_y - 1
     if hint_y > 0:
         now = time.monotonic()
-        if hasattr(self, 'message') and self.message and now - self.message_time < 3.0:
+        if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [d]=view [h]=heat [c]=scale [r]=reset [Ctrl+B]=exit [q]=exit"
+            hint = " Space=play  n=step  d=view  h=heat  c=scale  r=reset  </>=speed  Ctrl+B/q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -757,7 +679,7 @@ def _butterfly_draw_status(self, max_y: int, max_x: int):
 # ── Main draw dispatch ──
 
 def _butterfly_draw(self, max_y: int, max_x: int):
-    """Main draw entry point for butterfly mode."""
+    """Draw the picking screen or the selected divergence view."""
     if self.butterfly_picking:
         _butterfly_draw_pick(self, max_y, max_x)
         return
@@ -773,7 +695,7 @@ def _butterfly_draw(self, max_y: int, max_x: int):
 # ── Registration ──
 
 def register(App):
-    """Register butterfly-effect methods on the App class."""
+    """Register Butterfly Effect methods on the App class."""
     App._butterfly_init = _butterfly_init
     App._enter_butterfly_mode = _enter_butterfly_mode
     App._exit_butterfly_mode = _exit_butterfly_mode
