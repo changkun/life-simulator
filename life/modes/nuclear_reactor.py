@@ -927,7 +927,7 @@ def _draw_reactor_thermal(self, max_y, max_x):
     except curses.error:
         pass
 
-    status = " q=exit  r=reset  v=view  +/-=rods  s=scram  p=pumps  l=loca  n=step"
+    status = " q=exit  r=reset  v=view  +/-=rod  s=scram  p=pump  l=loca  n=step"
     try:
         self.stdscr.addstr(max_y - 1, 0, status[:max_x - 1], curses.color_pair(7))
     except curses.error:
@@ -998,7 +998,7 @@ def _draw_reactor_graphs(self, max_y, max_x):
                 except curses.error:
                     pass
 
-    status = " q=exit  r=reset  v=view  +/-=rods  s=scram  p=pumps  l=loca  Space=pause  n=step"
+    status = " q=exit  r=reset  v=view  +/-=rod  s=scram  p=pump  l=loca  Space=pause  n=step"
     try:
         self.stdscr.addstr(max_y - 1, 0, status[:max_x - 1], curses.color_pair(7))
     except curses.error:

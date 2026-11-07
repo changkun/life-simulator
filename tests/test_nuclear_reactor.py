@@ -1,7 +1,9 @@
 """Tests for life.modes.nuclear_reactor — Nuclear Reactor Physics mode."""
 import curses
 from tests.conftest import make_mock_app
-from life.modes.nuclear_reactor import register, NUCLEAR_REACTOR_PRESETS
+from life.modes.nuclear_reactor import (
+    register, NUCLEAR_REACTOR_PRESETS, _draw_reactor_graphs,
+)
 
 
 def _make_app():
@@ -48,3 +50,14 @@ def test_decay_heat_scales_with_flux():
     for _ in range(20):
         app._nuclear_reactor_step()
     assert app.nuclear_reactor_decay_heat < 0.05
+
+
+def test_graphs_status_bar_fits_80_columns():
+    app = _make_app()
+    app._nuclear_reactor_init(0)
+    lines = []
+    app.stdscr.addstr = lambda y, x, s, *a: lines.append((y, s))
+    _draw_reactor_graphs(app, 24, 200)
+    status = [s for y, s in lines if y == 23][-1]
+    assert len(status) <= 79
+    assert status.rstrip().endswith("n=step")
