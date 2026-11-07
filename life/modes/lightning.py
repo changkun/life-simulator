@@ -1,4 +1,4 @@
-"""Mode: lightning — simulation mode for the life package."""
+"""Lightning — dielectric breakdown model: a discharge channel grows along the electric field."""
 import curses
 import math
 import random
@@ -20,7 +20,7 @@ LIGHTNING_PRESETS = [
 
 
 def _enter_lightning_mode(self):
-    """Enter Lightning / Dielectric Breakdown mode — show preset menu."""
+    """Enter Lightning mode and show the preset menu."""
     self.lightning_menu = True
     self.lightning_menu_sel = 0
     self._flash("Lightning / Dielectric Breakdown — select a scenario")
@@ -40,7 +40,7 @@ def _exit_lightning_mode(self):
 
 
 def _lightning_init(self, preset_idx: int):
-    """Initialize lightning simulation with the given preset."""
+    """Start the lightning simulation with the given preset."""
     (name, _desc, eta, source) = self.LIGHTNING_PRESETS[preset_idx]
     self.lightning_preset_name = name
     self.lightning_generation = 0
@@ -54,32 +54,27 @@ def _lightning_init(self, preset_idx: int):
     self.lightning_cols = max(10, (max_x - 1) // 2)
     rows, cols = self.lightning_rows, self.lightning_cols
 
-    # Initialize empty grid
     self.lightning_grid = [[0] * cols for _ in range(rows)]
     self.lightning_age = [[0] * cols for _ in range(rows)]
     self.lightning_channel_count = 0
 
-    # Set initial discharge source
+    # Seed the discharge.
     if source == "top":
-        # Discharge starts from center of top row
         c = cols // 2
         self.lightning_grid[0][c] = 1
         self.lightning_age[0][c] = 0
         self.lightning_channel_count = 1
     elif source == "center":
-        # Discharge starts from center
         r, c = rows // 2, cols // 2
         self.lightning_grid[r][c] = 1
         self.lightning_age[r][c] = 0
         self.lightning_channel_count = 1
     elif source == "point":
-        # Discharge from a single point near top-center
         r, c = rows // 4, cols // 2
         self.lightning_grid[r][c] = 1
         self.lightning_age[r][c] = 0
         self.lightning_channel_count = 1
 
-    # Compute initial potential field
     self.lightning_potential = [[0.0] * cols for _ in range(rows)]
     self._lightning_solve_potential()
 
@@ -90,7 +85,7 @@ def _lightning_init(self, preset_idx: int):
 
 
 def _lightning_solve_potential(self):
-    """Solve the electric potential using iterative relaxation (Laplace).
+    """Solve the electric potential by Gauss-Seidel relaxation of Laplace's equation.
 
     Boundary conditions:
     - Discharge channel cells: potential = 0
@@ -102,7 +97,7 @@ def _lightning_solve_potential(self):
     pot = self.lightning_potential
     source = self.lightning_source
 
-    # Initialize potential: channel=0, ground=1
+    # Channel cells are 0; free cells start at 0.5.
     for r in range(rows):
         for c in range(cols):
             if grid[r][c] == 1:
@@ -110,7 +105,6 @@ def _lightning_solve_potential(self):
             else:
                 pot[r][c] = 0.5  # initial guess
 
-    # Set ground boundary
     if source == "top":
         for c in range(cols):
             if grid[rows - 1][c] == 0:
@@ -128,22 +122,20 @@ def _lightning_solve_potential(self):
             if grid[r][cols - 1] == 0:
                 pot[r][cols - 1] = 1.0
 
-    # Iterative Gauss-Seidel relaxation
-    # Fewer iterations for speed; enough for reasonable field approximation
+    # Few iterations: enough for a usable field, cheap enough to repeat every step.
     iterations = min(80, max(rows, cols))
     for _ in range(iterations):
         for r in range(rows):
             for c in range(cols):
                 if grid[r][c] == 1:
                     continue  # channel is fixed at 0
-                # Ground boundary
                 if source == "top" and r == rows - 1:
                     continue
                 if source != "top":
                     if r == 0 or r == rows - 1 or c == 0 or c == cols - 1:
                         continue
 
-                # Average of neighbors (with boundary handling)
+                # Neumann edges: average only the neighbours that exist.
                 total = 0.0
                 count = 0
                 if r > 0:
@@ -164,25 +156,20 @@ def _lightning_solve_potential(self):
 
 
 def _lightning_step(self):
-    """Advance lightning simulation by one step.
+    """Grow the channel by one cell.
 
-    Dielectric Breakdown Model:
-    1. Find all empty cells adjacent to the discharge channel (growth candidates)
-    2. Compute growth probability proportional to (local E-field)^eta
-    3. Pick one candidate weighted by probability and add it to channel
-    4. Re-solve potential field
+    Each empty cell next to the channel is a candidate with weight phi^eta.
+    Pick one at random by weight, add it, then re-solve the potential.
     """
     grid = self.lightning_grid
     pot = self.lightning_potential
     rows, cols = self.lightning_rows, self.lightning_cols
     eta = self.lightning_eta
 
-    # Find growth candidates: empty cells adjacent to channel
     candidates = []
     for r in range(rows):
         for c in range(cols):
             if grid[r][c] == 1:
-                # Check 4-connected neighbors for empty cells
                 for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
                     nr, nc = r + dr, c + dc
                     if 0 <= nr < rows and 0 <= nc < cols:
@@ -193,10 +180,9 @@ def _lightning_step(self):
         self.lightning_running = False
         return
 
-    # Remove duplicates
     candidates = list(set(candidates))
 
-    # Compute weights: potential^eta (potential at candidate gives E-field proxy)
+    # The potential at a candidate stands in for the local field.
     weights = []
     for (r, c) in candidates:
         phi = pot[r][c]
@@ -205,11 +191,9 @@ def _lightning_step(self):
 
     total_w = sum(weights)
     if total_w <= 0:
-        # No valid growth sites
         self.lightning_running = False
         return
 
-    # Weighted random selection
     rval = random.random() * total_w
     cumulative = 0.0
     chosen = candidates[0]
@@ -219,13 +203,11 @@ def _lightning_step(self):
             chosen = (r, c)
             break
 
-    # Add chosen cell to discharge channel
     cr, cc = chosen
     grid[cr][cc] = 1
     self.lightning_age[cr][cc] = self.lightning_generation
     self.lightning_channel_count += 1
 
-    # Check if we've reached ground
     source = self.lightning_source
     reached_ground = False
     if source == "top" and cr == rows - 1:
@@ -237,14 +219,13 @@ def _lightning_step(self):
     if reached_ground:
         self.lightning_running = False
 
-    # Re-solve potential
     self._lightning_solve_potential()
     self.lightning_generation += 1
 
 
 
 def _handle_lightning_menu_key(self, key: int) -> bool:
-    """Handle input in lightning preset menu."""
+    """Handle keys in the lightning preset menu."""
     n = len(self.LIGHTNING_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.lightning_menu_sel = (self.lightning_menu_sel + 1) % n
@@ -260,7 +241,7 @@ def _handle_lightning_menu_key(self, key: int) -> bool:
 
 
 def _handle_lightning_key(self, key: int) -> bool:
-    """Handle input in active lightning simulation."""
+    """Handle keys in the running lightning simulation."""
     if key == ord(" "):
         self.lightning_running = not self.lightning_running
     elif key in (ord("n"), ord(".")):
@@ -330,7 +311,7 @@ def _draw_lightning_menu(self, max_y: int, max_x: int):
 
 
 def _draw_lightning(self, max_y: int, max_x: int):
-    """Draw the active Lightning / Dielectric Breakdown simulation."""
+    """Draw the discharge channel and the faint potential field."""
     self.stdscr.erase()
     grid = self.lightning_grid
     age = self.lightning_age
@@ -352,28 +333,23 @@ def _draw_lightning(self, max_y: int, max_x: int):
     view_rows = max_y - 3
     view_cols = (max_x - 1) // 2
 
-    # Draw grid
     for r in range(min(rows, view_rows)):
         for c in range(min(cols, view_cols)):
             sx = c * 2
             sy = 1 + r
             if grid[r][c] == 1:
-                # Discharge channel — color by age for visual effect
+                # Color the channel by age.
                 cell_age = gen - age[r][c] if gen > 0 else 0
                 if cell_age <= 2:
-                    # Fresh growth — bright white/yellow
                     attr = curses.color_pair(3) | curses.A_BOLD
                     ch = "██"
                 elif cell_age <= 8:
-                    # Recent — cyan
                     attr = curses.color_pair(6) | curses.A_BOLD
                     ch = "▓▓"
                 elif cell_age <= 20:
-                    # Older — blue
                     attr = curses.color_pair(4)
                     ch = "▒▒"
                 else:
-                    # Old — dim blue
                     attr = curses.color_pair(4) | curses.A_DIM
                     ch = "░░"
                 try:
@@ -381,7 +357,7 @@ def _draw_lightning(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
             else:
-                # Empty — show faint potential field
+                # Empty cell: show the potential faintly.
                 phi = self.lightning_potential[r][c] if r < len(self.lightning_potential) else 0
                 if phi > 0.7:
                     try:
@@ -409,10 +385,7 @@ def _draw_lightning(self, max_y: int, max_x: int):
             pass
 
 
-# ══════════════════════════════════════════════════════════════════════
-#  Hydraulic Erosion — Mode $
-# ══════════════════════════════════════════════════════════════════════
-
+# Hydraulic Erosion presets, registered by life/modes/erosion.py.
 # Each preset: (name, description, rain_rate, evap_rate, solubility, deposition, terrain_type)
 EROSION_PRESETS = [
     ("River Valley",
