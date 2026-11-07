@@ -1,7 +1,5 @@
-"""Mode: fractal — simulation mode for the life package."""
+"""Fractal Explorer — pan and zoom through the Mandelbrot and Julia sets."""
 import curses
-import math
-import random
 import time
 
 FRACTAL_PRESETS = [
@@ -18,8 +16,6 @@ FRACTAL_PRESETS = [
 ]
 
 FRACTAL_DENSITY = " .:-=+*#%@█"
-FRACTAL_DENSITY_FINE = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
-
 FRACTAL_COLOR_SCHEMES = [
     ("Classic",    [4, 6, 2, 3, 1, 5, 7]),   # magenta→white→green→yellow→green→red→white
     ("Ocean",      [2, 6, 2, 6, 7, 7]),       # cyan tones
@@ -167,6 +163,7 @@ def _fractal_compute(self):
 
 
 def _enter_fractal_mode(self):
+    """Enter Fractal Explorer — show the preset menu."""
     self.fractal_menu = True
     self.fractal_menu_sel = 0
     self._flash("Fractal Explorer — select a preset")
@@ -174,6 +171,7 @@ def _enter_fractal_mode(self):
 
 
 def _exit_fractal_mode(self):
+    """Exit Fractal Explorer."""
     self.fractal_mode = False
     self.fractal_menu = False
     self.fractal_running = False
@@ -183,6 +181,7 @@ def _exit_fractal_mode(self):
 
 
 def _handle_fractal_menu_key(self, key: int) -> bool:
+    """Handle input in the Fractal Explorer preset menu."""
     n = len(self.FRACTAL_PRESETS)
     if key == curses.KEY_UP or key == ord("k"):
         self.fractal_menu_sel = (self.fractal_menu_sel - 1) % n
@@ -202,6 +201,7 @@ def _handle_fractal_menu_key(self, key: int) -> bool:
 
 
 def _handle_fractal_key(self, key: int) -> bool:
+    """Handle input in the Fractal Explorer view."""
     pan_step = 0.15 / self.fractal_zoom
     if key == ord("q") or key == 27:
         self._exit_fractal_mode()
@@ -313,6 +313,7 @@ def _handle_fractal_key(self, key: int) -> bool:
 
 
 def _draw_fractal_menu(self, max_y: int, max_x: int):
+    """Draw the Fractal Explorer preset menu."""
     self.stdscr.erase()
     title = "═══ Fractal Explorer ═══"
     if max_x > len(title):
@@ -357,7 +358,7 @@ def _draw_fractal_menu(self, max_y: int, max_x: int):
 
 
 def _draw_fractal(self, max_y: int, max_x: int):
-    # Recompute viewport size if terminal resized
+    """Draw the fractal, recomputing it first if the view changed."""
     new_rows = max(10, max_y - 3)
     new_cols = max(20, max_x - 1)
     if new_rows != self.fractal_rows or new_cols != self.fractal_cols:
@@ -397,8 +398,6 @@ def _draw_fractal(self, max_y: int, max_x: int):
                     attr |= curses.A_BOLD
                 line_chars.append(ch)
                 line_attrs.append(attr)
-        # Batch render: build the line as one string, apply dominant attr
-        # For better color, render char by char
         for ci, (ch, at) in enumerate(zip(line_chars, line_attrs)):
             try:
                 self.stdscr.addch(r + 1, ci, ch, at)
@@ -436,7 +435,6 @@ def register(App):
     App.FRACTAL_COLOR_SCHEMES = FRACTAL_COLOR_SCHEMES
     App.FRACTAL_DENSITY = FRACTAL_DENSITY
     App.FRACTAL_PRESETS = FRACTAL_PRESETS
-    App.FRACTAL_DENSITY_FINE = FRACTAL_DENSITY_FINE
     App._fractal_init = _fractal_init
     App._fractal_compute = _fractal_compute
     App._enter_fractal_mode = _enter_fractal_mode
