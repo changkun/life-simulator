@@ -470,7 +470,8 @@ def _enter_reverse_life_mode(self):
         curses.init_pair(_PAIR_BASE + _CP_GARDEN, curses.COLOR_RED, curses.COLOR_BLACK)
         curses.init_pair(_PAIR_BASE + _CP_HEADER, curses.COLOR_CYAN, curses.COLOR_BLACK)
         curses.init_pair(_PAIR_BASE + _CP_DIM, curses.COLOR_WHITE, curses.COLOR_BLACK)
-    except curses.error:
+    except (curses.error, ValueError):
+        # Terminals with few color pairs reject pair numbers this high.
         pass
 
     # Capture current grid state as target
