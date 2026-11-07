@@ -1,4 +1,4 @@
-"""Mode: magfield — simulation mode for the life package."""
+"""Magnetic Field Lines — charged particles orbiting and drifting in electric and magnetic fields."""
 import curses
 import math
 import random
@@ -36,8 +36,7 @@ def _exit_magfield_mode(self):
 
 
 def _magfield_init(self, preset_idx: int):
-    """Initialize magnetic field simulation with the given preset."""
-    import math
+    """Initialize the simulation with the given preset."""
     name, _desc, preset_id = self.MAGFIELD_PRESETS[preset_idx]
     self.magfield_preset_name = name
     self.magfield_generation = 0
@@ -47,7 +46,6 @@ def _magfield_init(self, preset_idx: int):
     self.magfield_rows = max(10, max_y - 3)
     self.magfield_cols = max(10, max_x - 1)
 
-    # Defaults
     self.magfield_dt = 0.02
     self.magfield_Bz = 1.0
     self.magfield_Ex = 0.0
@@ -188,8 +186,7 @@ def _magfield_init(self, preset_idx: int):
 
 
 def _magfield_get_field(self, x: float, y: float) -> tuple[float, float, float]:
-    """Return (Bz, Ex, Ey) at position (x, y) based on field configuration."""
-    import math
+    """Return (Bz, Ex, Ey) at position (x, y) for the current field type."""
     cx = self.magfield_cols / 2.0
     cy = self.magfield_rows / 2.0
     dx = x - cx
@@ -201,7 +198,7 @@ def _magfield_get_field(self, x: float, y: float) -> tuple[float, float, float]:
     Ey = self.magfield_Ey
 
     if self.magfield_field_type == 0:
-        # Uniform field — check if shear preset (spatially varying)
+        # Uniform, except the shear preset where B varies with x
         if self.magfield_preset_name == "Magnetic Shear":
             # B varies linearly with x
             Bz = self.magfield_Bz * (0.5 + 1.5 * x / self.magfield_cols)
@@ -241,7 +238,7 @@ def _magfield_get_field(self, x: float, y: float) -> tuple[float, float, float]:
 
 
 def _magfield_step(self):
-    """Advance magnetic field simulation by one timestep using Boris integrator."""
+    """Advance every particle by one Boris-integrator step."""
     dt = self.magfield_dt
     rows = self.magfield_rows
     cols = self.magfield_cols
@@ -252,12 +249,10 @@ def _magfield_step(self):
 
         Bz, Ex, Ey = self._magfield_get_field(x, y)
 
-        # Boris push algorithm for charged particle in EM fields
-        # Half-step electric acceleration
+        # Boris push: half electric kick, magnetic rotation, half electric kick
         vx_minus = vx + qm * Ex * dt * 0.5
         vy_minus = vy + qm * Ey * dt * 0.5
 
-        # Rotation in magnetic field
         t_val = qm * Bz * dt * 0.5
         s_val = 2.0 * t_val / (1.0 + t_val * t_val)
 
@@ -267,15 +262,13 @@ def _magfield_step(self):
         vx_plus = vx_minus + vy_prime * s_val
         vy_plus = vy_minus - vx_prime * s_val
 
-        # Second half-step electric acceleration
         vx_new = vx_plus + qm * Ex * dt * 0.5
         vy_new = vy_plus + qm * Ey * dt * 0.5
 
-        # Update position
         x_new = x + vx_new * dt
         y_new = y + vy_new * dt
 
-        # Boundary: reflect
+        # Reflect off the walls
         if x_new < 0:
             x_new = -x_new
             vx_new = -vx_new
@@ -289,7 +282,7 @@ def _magfield_step(self):
             y_new = 2 * rows - y_new - 1
             vy_new = -vy_new
 
-        # Clamp to bounds
+        # Guard against float overshoot
         x_new = max(0.0, min(cols - 0.01, x_new))
         y_new = max(0.0, min(rows - 0.01, y_new))
 
@@ -298,7 +291,6 @@ def _magfield_step(self):
         p[2] = vx_new
         p[3] = vy_new
 
-        # Record trail
         self.magfield_trails[i].append((x_new, y_new))
         if len(self.magfield_trails[i]) > self.magfield_max_trail:
             self.magfield_trails[i] = self.magfield_trails[i][-self.magfield_max_trail:]
@@ -345,7 +337,7 @@ def _handle_magfield_key(self, key: int) -> bool:
             self._magfield_step()
         return True
     if key == ord("b") or key == ord("B"):
-        # Increase/decrease B-field
+        # b raises the field, B lowers it
         if key == ord("B"):
             self.magfield_Bz = max(0.1, self.magfield_Bz - 0.2)
         else:
@@ -406,8 +398,7 @@ def _handle_magfield_key(self, key: int) -> bool:
         self._flash(f"Trail length: {self.magfield_max_trail}")
         return True
     if key == ord("p"):
-        # Add a particle at center
-        import math
+        # Add a particle near the center
         cx = self.magfield_cols / 2.0
         cy = self.magfield_rows / 2.0
         angle = random.uniform(0, 2 * math.pi)
@@ -500,7 +491,6 @@ def _draw_magfield_menu(self, max_y: int, max_x: int):
 
 def _draw_magfield(self, max_y: int, max_x: int):
     """Draw the Magnetic Field Lines simulation."""
-    import math
     self.stdscr.erase()
     rows = self.magfield_rows
     cols = self.magfield_cols
@@ -530,7 +520,7 @@ def _draw_magfield(self, max_y: int, max_x: int):
                 else:
                     color = curses.color_pair(1) | curses.A_DIM  # red = out of page
                 try:
-                    self.stdscr.addch(fy, fx, ord(ch[0]) if len(ch) == 1 else ord('.'), color)
+                    self.stdscr.addch(fy, fx, ord(ch), color)
                 except curses.error:
                     pass
 
@@ -542,7 +532,7 @@ def _draw_magfield(self, max_y: int, max_x: int):
                     else:
                         arrow = "↓" if Ey > 0 else "↑"
                     try:
-                        self.stdscr.addstr(fy, fx + 1, arrow[0] if len(arrow) == 1 else ">" if Ex > 0 else "<",
+                        self.stdscr.addstr(fy, fx + 1, arrow,
                                            curses.color_pair(3) | curses.A_DIM)
                     except curses.error:
                         pass
@@ -639,7 +629,7 @@ def _draw_magfield(self, max_y: int, max_x: int):
         if 0 <= py < draw_rows and 0 <= px < draw_cols:
             pch = "⊕" if charge > 0 else "⊖"
             try:
-                self.stdscr.addstr(py, px, pch[0] if len(pch.encode('utf-8')) > 1 else pch,
+                self.stdscr.addstr(py, px, pch,
                                    base_color | curses.A_BOLD)
             except curses.error:
                 # Fallback to ASCII
@@ -671,7 +661,7 @@ def _draw_magfield(self, max_y: int, max_x: int):
     if self.message and now - self.message_time < 3.0:
         hint = f" {self.message}"
     else:
-        hint = " Space=play  n=step  b/B=field  e=E-field  f=lines  v=viz  p=add  c=clear  [/]=trail  R=menu  q=exit"
+        hint = " Space=play  n=step  b/B=field  e=E-field  f=lines  v=viz  p=add  c=clear  [/]=trail  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:
