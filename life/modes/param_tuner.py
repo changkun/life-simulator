@@ -45,16 +45,16 @@ TUNABLE_PARAMS: dict[str, list[dict]] = {
         {"attr": "boids_max_speed", "name": "Max Speed", "min": 0.2, "max": 5.0, "step": 0.1, "fmt": ".2f"},
     ],
     "plife": [
-        {"attr": "plife_force_scale", "name": "Force Scale", "min": 0.1, "max": 20.0, "step": 0.5, "fmt": ".1f"},
+        {"attr": "plife_force_scale", "name": "Force Scale", "min": 0.01, "max": 0.2, "step": 0.005, "fmt": ".3f"},
         {"attr": "plife_friction", "name": "Friction", "min": 0.01, "max": 1.0, "step": 0.01, "fmt": ".3f"},
-        {"attr": "plife_interact_radius", "name": "Interact R", "min": 5.0, "max": 50.0, "step": 1.0, "fmt": ".1f"},
+        {"attr": "plife_max_radius", "name": "Max Radius", "min": 5.0, "max": 40.0, "step": 1.0, "fmt": ".1f"},
     ],
     "physarum": [
         {"attr": "physarum_sensor_angle", "name": "Sensor Angle", "min": 0.05, "max": 1.5, "step": 0.05, "fmt": ".2f"},
         {"attr": "physarum_sensor_dist", "name": "Sensor Dist", "min": 1.0, "max": 30.0, "step": 1.0, "fmt": ".1f"},
         {"attr": "physarum_turn_speed", "name": "Turn Speed", "min": 0.05, "max": 1.5, "step": 0.05, "fmt": ".2f"},
         {"attr": "physarum_move_speed", "name": "Move Speed", "min": 0.2, "max": 5.0, "step": 0.2, "fmt": ".1f"},
-        {"attr": "physarum_deposit", "name": "Deposit", "min": 0.5, "max": 20.0, "step": 0.5, "fmt": ".1f"},
+        {"attr": "physarum_deposit", "name": "Deposit", "min": 0.1, "max": 5.0, "step": 0.1, "fmt": ".1f"},
         {"attr": "physarum_decay", "name": "Decay", "min": 0.001, "max": 0.1, "step": 0.005, "fmt": ".3f"},
     ],
     "nbody": [
@@ -63,7 +63,7 @@ TUNABLE_PARAMS: dict[str, list[dict]] = {
         {"attr": "nbody_softening", "name": "Softening", "min": 0.1, "max": 3.0, "step": 0.1, "fmt": ".2f"},
     ],
     "aco": [
-        {"attr": "aco_evaporation", "name": "Evaporation", "min": 0.01, "max": 0.5, "step": 0.01, "fmt": ".3f"},
+        {"attr": "aco_evaporation", "name": "Evaporation", "min": 0.001, "max": 0.2, "step": 0.005, "fmt": ".3f"},
         {"attr": "aco_deposit_strength", "name": "Deposit Str", "min": 0.1, "max": 5.0, "step": 0.1, "fmt": ".2f"},
     ],
     # ── Physics & Waves ──
@@ -86,24 +86,21 @@ TUNABLE_PARAMS: dict[str, list[dict]] = {
         {"attr": "cloth_wind", "name": "Wind", "min": -1.0, "max": 1.0, "step": 0.05, "fmt": ".2f"},
     ],
     "dpend": [
-        {"attr": "dpend_gravity", "name": "Gravity", "min": 1.0, "max": 30.0, "step": 0.5, "fmt": ".1f"},
+        {"attr": "dpend_g", "name": "Gravity", "min": 1.0, "max": 30.0, "step": 0.5, "fmt": ".1f"},
         {"attr": "dpend_dt", "name": "Time Step", "min": 0.001, "max": 0.05, "step": 0.001, "fmt": ".3f"},
-    ],
-    "fdtd": [
-        {"attr": "fdtd_source_freq", "name": "Source Freq", "min": 0.01, "max": 1.0, "step": 0.01, "fmt": ".2f"},
     ],
     # ── Fluid Dynamics ──
     "fluid": [
-        {"attr": "fluid_viscosity", "name": "Viscosity", "min": 0.01, "max": 0.5, "step": 0.01, "fmt": ".3f"},
+        {"attr": "fluid_omega", "name": "Omega (1/tau)", "min": 0.5, "max": 1.99, "step": 0.05, "fmt": ".2f"},
     ],
     "ns": [
-        {"attr": "ns_viscosity", "name": "Viscosity", "min": 0.0001, "max": 0.01, "step": 0.0001, "fmt": ".4f"},
+        {"attr": "ns_viscosity", "name": "Viscosity", "min": 1e-05, "max": 0.002, "step": 5e-06, "fmt": ".6f"},
         {"attr": "ns_dt", "name": "Time Step", "min": 0.01, "max": 2.0, "step": 0.01, "fmt": ".2f"},
     ],
     "sph": [
         {"attr": "sph_gravity", "name": "Gravity", "min": 0.0, "max": 100.0, "step": 0.5, "fmt": ".1f"},
-        {"attr": "sph_rest_density", "name": "Rest Density", "min": 0.5, "max": 5.0, "step": 0.1, "fmt": ".2f"},
-        {"attr": "sph_viscosity", "name": "Viscosity", "min": 0.01, "max": 1.0, "step": 0.01, "fmt": ".2f"},
+        {"attr": "sph_rest_density", "name": "Rest Density", "min": 100.0, "max": 5000.0, "step": 50.0, "fmt": ".0f"},
+        {"attr": "sph_viscosity", "name": "Viscosity", "min": 10.0, "max": 1000.0, "step": 10.0, "fmt": ".0f"},
     ],
     # ── Chemical & Biological ──
     "rd": [
@@ -137,13 +134,13 @@ TUNABLE_PARAMS: dict[str, list[dict]] = {
         {"attr": "bz_gamma", "name": "Gamma", "min": 0.1, "max": 5.0, "step": 0.1, "fmt": ".2f"},
     ],
     "chemo": [
-        {"attr": "chemo_diffusion", "name": "Diffusion", "min": 0.01, "max": 1.0, "step": 0.01, "fmt": ".2f"},
-        {"attr": "chemo_decay", "name": "Decay", "min": 0.001, "max": 0.1, "step": 0.005, "fmt": ".3f"},
-        {"attr": "chemo_sensitivity", "name": "Sensitivity", "min": 0.1, "max": 5.0, "step": 0.1, "fmt": ".1f"},
+        {"attr": "chemo_nutrient_diff", "name": "Nutrient Diff", "min": 0.01, "max": 0.3, "step": 0.01, "fmt": ".2f"},
+        {"attr": "chemo_signal_decay", "name": "Signal Decay", "min": 0.005, "max": 0.3, "step": 0.005, "fmt": ".3f"},
+        {"attr": "chemo_chemotaxis", "name": "Chemotaxis", "min": 0.0, "max": 2.0, "step": 0.05, "fmt": ".2f"},
     ],
     "snn": [
-        {"attr": "snn_coupling", "name": "Coupling", "min": 0.1, "max": 10.0, "step": 0.1, "fmt": ".2f"},
-        {"attr": "snn_noise", "name": "Noise", "min": 0.0, "max": 5.0, "step": 0.1, "fmt": ".2f"},
+        {"attr": "snn_weight", "name": "Syn. Weight", "min": 0.0, "max": 50.0, "step": 1.0, "fmt": ".1f"},
+        {"attr": "snn_noise_amp", "name": "Noise", "min": 0.0, "max": 30.0, "step": 0.5, "fmt": ".1f"},
     ],
     # ── Game Theory & Social ──
     "spd": [
@@ -152,30 +149,23 @@ TUNABLE_PARAMS: dict[str, list[dict]] = {
     "schelling": [
         {"attr": "schelling_tolerance", "name": "Tolerance", "min": 0.1, "max": 0.9, "step": 0.05, "fmt": ".2f"},
     ],
-    "rps": [
-        {"attr": "rps_threshold", "name": "Threshold", "min": 1, "max": 8, "step": 1, "fmt": "d"},
-    ],
     "mkt": [
         {"attr": "mkt_volatility", "name": "Volatility", "min": 0.01, "max": 1.0, "step": 0.01, "fmt": ".2f"},
     ],
     # ── Fractals & Chaos ──
     "snowflake": [
         {"attr": "snowflake_beta", "name": "Beta (vapor)", "min": 0.1, "max": 2.0, "step": 0.05, "fmt": ".2f"},
-        {"attr": "snowflake_gamma", "name": "Gamma (melt)", "min": 0.001, "max": 0.1, "step": 0.005, "fmt": ".3f"},
+        {"attr": "snowflake_gamma", "name": "Gamma (melt)", "min": 0.0, "max": 0.05, "step": 0.0005, "fmt": ".4f"},
     ],
     # ── Complex Simulations ──
     "traffic": [
         {"attr": "traffic_density", "name": "Density", "min": 0.05, "max": 0.95, "step": 0.05, "fmt": ".2f"},
-        {"attr": "traffic_slow_prob", "name": "Slow Prob", "min": 0.0, "max": 1.0, "step": 0.05, "fmt": ".2f"},
-        {"attr": "traffic_max_speed", "name": "Max Speed", "min": 1, "max": 10, "step": 1, "fmt": "d"},
+        {"attr": "traffic_p_slow", "name": "Slow Prob", "min": 0.0, "max": 1.0, "step": 0.05, "fmt": ".2f"},
+        {"attr": "traffic_vmax", "name": "Max Speed", "min": 1, "max": 10, "step": 1, "fmt": "d"},
     ],
     "galaxy": [
         {"attr": "galaxy_grav_const", "name": "Gravity G", "min": 0.1, "max": 5.0, "step": 0.1, "fmt": ".2f"},
         {"attr": "galaxy_dt", "name": "Time Step", "min": 0.005, "max": 0.1, "step": 0.005, "fmt": ".3f"},
-    ],
-    "moldyn": [
-        {"attr": "moldyn_temperature", "name": "Temperature", "min": 0.1, "max": 5.0, "step": 0.1, "fmt": ".2f"},
-        {"attr": "moldyn_dt", "name": "Time Step", "min": 0.001, "max": 0.05, "step": 0.001, "fmt": ".3f"},
     ],
     "spinglass": [
         {"attr": "spinglass_temperature", "name": "Temperature", "min": 0.01, "max": 5.0, "step": 0.1, "fmt": ".2f"},
