@@ -923,7 +923,7 @@ Instruction set (15 opcodes, 2 executed per cell per step):
                nearest target cell via Manhattan distance gradient
   BOND       — bond to the first adjacent cell found (both become bonded and
                stop moving)
-  UNBOND     — release all bonds, return to idle
+  UNBOND     — release this cell's bond, return to idle
   SIGNAL     — emit signal value (reg_b or reg_c) into signal field
   READ       — count 4-neighbors, average their signals into reg_c/reg_b
   IF_NBRS n  — skip next instruction if neighbor_count >= n
