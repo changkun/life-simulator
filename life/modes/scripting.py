@@ -474,6 +474,7 @@ def _script_launch_sim(self, sim_id):
 def _script_execute_immediate(self):
     """Execute commands starting at script_pc until we hit a blocking command
     (wait, sweep) or reach the end."""
+    wraps = 0
     while self.script_pc < len(self.script_commands):
         cmd = self.script_commands[self.script_pc]
 
@@ -550,8 +551,13 @@ def _script_execute_immediate(self):
             self.script_pc += 1
 
         elif cmd["cmd"] == "loop":
+            # A second wrap in one call means a whole pass without a wait or
+            # sweep, which would spin forever. Stop the script instead.
+            wraps += 1
+            if wraps > 1:
+                self.script_running = False
+                return
             self.script_pc = 0
-            # Continue executing from the top
 
         else:
             self.script_pc += 1

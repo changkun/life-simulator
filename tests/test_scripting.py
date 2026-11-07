@@ -145,3 +145,10 @@ def test_pause_does_not_consume_wait():
     assert app.script_paused is False
     assert app.script_wait_until == 170.0
     assert app.script_active_sweeps[0]["start_time"] == 160.0
+
+
+def test_loop_without_wait_terminates():
+    """A loop that never waits stops the script instead of spinning."""
+    app = _make_app()
+    assert app._script_init("mode gol\nloop\n", "Spin") is True
+    assert app.script_running is False
