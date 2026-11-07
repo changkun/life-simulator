@@ -196,7 +196,7 @@ def _exit_sweb_mode(self):
     self.sweb_menu = False
     self.sweb_running = False
     for attr in list(vars(self)):
-        if attr.startswith('sweb_') and attr not in ('sweb_mode',):
+        if attr.startswith('sweb_') and attr not in ('sweb_mode', 'sweb_menu', 'sweb_running'):
             try:
                 delattr(self, attr)
             except AttributeError:
