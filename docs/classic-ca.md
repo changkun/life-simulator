@@ -6,12 +6,12 @@ The foundations of artificial life — discrete rule systems that generate compl
 
 ## Game of Life
 
-**Background.** Conway's Game of Life, devised by mathematician John Horton Conway in 1970, is the most widely studied cellular automaton. Operating on a two-dimensional grid with only two states (alive or dead) and a single deterministic rule, it demonstrates that extraordinarily complex behavior — self-replication, computation, even universal Turing-completeness — can emerge from minimal ingredients. It remains a cornerstone of complexity science, recreational mathematics, and theoretical computer science.
+**Background.** Conway's Game of Life, devised by mathematician John Horton Conway in 1970, is the most widely studied cellular automaton. It runs on a two-dimensional grid with two states (alive or dead) and one deterministic rule. From these minimal ingredients come complex behavior, including self-replication and universal computation.
 
 **Formulation.**
 
 ```
-Grid:       2D square lattice, toroidal boundary conditions
+Grid:       2D square lattice, toroidal boundary by default (other topologies selectable)
 States:     {0 = dead, 1 = alive}
 Neighborhood: Moore (8 surrounding cells)
 
@@ -27,7 +27,7 @@ Parameters:
   survival  = {2, 3}   — set of neighbor counts that permit survival
 ```
 
-**What to look for.** Stable structures (blocks, beehives), oscillators (blinkers, pulsars), and gliders that translate across the grid. Glider guns produce an infinite stream of gliders, proving the system supports unbounded growth. Random initial densities near 37% produce the richest transient dynamics. The B3/S23 rule sits at a critical boundary between rules that die out and rules that fill the plane — this edge-of-chaos position is what makes it so generative.
+**What to look for.** Stable structures (blocks, beehives), oscillators (blinkers, pulsars), and gliders that translate across the grid. Glider guns emit an endless stream of gliders, so the population can grow without bound. Random initial densities near 37% produce the richest transient dynamics. B3/S23 sits between rules that die out and rules that fill the plane, which makes it so generative.
 
 **References.**
 - Gardner, M. "Mathematical Games: The Fantastic Combinations of John Conway's New Solitaire Game 'Life'." *Scientific American*, 223(4), 1970. https://doi.org/10.1038/scientificamerican1070-120
@@ -37,7 +37,7 @@ Parameters:
 
 ## Wolfram 1D Automaton
 
-**Background.** Stephen Wolfram's elementary cellular automata, systematically catalogued in the 1980s, operate on a one-dimensional array where each cell's next state depends on itself and its two immediate neighbors. Despite this extreme simplicity — 3 binary inputs yielding 256 possible rules — the system spans the full spectrum from trivial to Turing-complete. Rule 110 was proven computationally universal by Matthew Cook in 2004, making it perhaps the simplest known system capable of arbitrary computation.
+**Background.** Stephen Wolfram's elementary cellular automata, systematically catalogued in the 1980s, operate on a one-dimensional array where each cell's next state depends on itself and its two immediate neighbors. Three binary inputs give 256 possible rules, yet the behavior ranges from trivial to universal. Matthew Cook proved Rule 110 computationally universal in 2004.
 
 **Formulation.**
 
@@ -56,10 +56,11 @@ The 8-bit binary representation of R is the complete lookup table:
   Patterns:  111  110  101  100  011  010  001  000
   Outputs:   R_7  R_6  R_5  R_4  R_3  R_2  R_1  R_0
 
-Seed modes: "center" (single 1 in middle), "random", "gol_row" (from GoL grid)
+Seed modes: "center" (single 1 in middle), "gol_row" (middle row of the Game of Life grid; center cell if empty), "random"
+Each new row is the next generation and is drawn below the previous one.
 ```
 
-**What to look for.** Rule 30 produces pseudorandom output from a single seed — Wolfram used it in Mathematica's random number generator. Rule 90 generates a perfect Sierpinski triangle (the XOR rule). Rule 110 supports gliders and localized structures that interact to perform computation. Rule 184 models single-lane traffic flow. Cycling through rules with arrow keys reveals the four Wolfram classes: fixed point, periodic, chaotic, and complex.
+**What to look for.** Rule 30 produces pseudorandom output from a single seed — Wolfram used it in Mathematica's random number generator. Rule 90 generates a perfect Sierpinski triangle (the XOR rule). Rule 110 supports gliders and localized structures that interact to perform computation. Rule 184 models single-lane traffic flow. Stepping through rules with Left/Right (or h/l) reveals the four Wolfram classes: fixed point, periodic, chaotic, and complex.
 
 **References.**
 - Wolfram, S. *A New Kind of Science*. Wolfram Media, 2002. https://www.wolframscience.com/nks/
@@ -69,7 +70,7 @@ Seed modes: "center" (single 1 in middle), "random", "gol_row" (from GoL grid)
 
 ## Langton's Ant
 
-**Background.** Conceived by Chris Langton in 1986, Langton's Ant is a two-dimensional Turing machine where a single agent moves on a grid, turning and flipping cell colors according to a simple rule string. The classic "RL" ant exhibits a remarkable phase transition: after approximately 10,000 steps of seemingly chaotic behavior, it spontaneously constructs an infinite diagonal highway. This emergent order from chaos remains one of the most striking demonstrations of self-organization in discrete systems.
+**Background.** Chris Langton described Langton's Ant in 1986. A single agent moves on a grid, turning and changing cell colors according to a rule string. The classic "RL" ant behaves chaotically for about 10,000 steps, then builds an endless diagonal highway.
 
 **Formulation.**
 
@@ -89,11 +90,15 @@ At each step:
   3. Advance cell color: grid[r, c] = (s + 1) mod len(rule)
   4. Move forward one step in direction d
 
-Supports 1-4 simultaneous ants placed symmetrically around center.
-Steps per frame: adjustable (1, 5, 10, 50, 100, 500)
+1-4 ants start symmetrically around the center (a single ant starts at the center).
+Steps per frame: 1, 5, 10, 50, 100 or 500 (+/- keys, or the menu)
+Rule: at least 2 characters, R or L only
+
+Presets:
+  RL, RLR, LLRR, LRRRRRLLR, RRLLLRLLLRRR, RRLL, RLLR, LRRL
 ```
 
-**What to look for.** With "RL", watch the initial chaotic cloud resolve into a highway around step 10,000. Multi-character rules like "RLR" or "LLRR" produce symmetric, fractal-like patterns with intricate internal structure. Multiple ants interact through the shared grid state, creating interference patterns. The transition from disorder to order is robust — it occurs regardless of initial grid state, a fact that remains unproven mathematically.
+**What to look for.** With "RL", watch the initial chaotic cloud resolve into a highway around step 10,000. Multi-character rules like "RLR" or "LLRR" produce symmetric, fractal-like patterns with intricate internal structure. Multiple ants interact through the shared grid. The highway appears from every starting pattern tried, but no one has proved that it always does.
 
 **References.**
 - Langton, C. "Studying Artificial Life with Cellular Automata." *Physica D*, 22(1-3), 1986. https://doi.org/10.1016/0167-2789(86)90237-X
@@ -103,12 +108,12 @@ Steps per frame: adjustable (1, 5, 10, 50, 100, 500)
 
 ## Hexagonal Grid
 
-**Background.** Hexagonal cellular automata replace the standard square lattice with a hexagonal tiling, giving each cell exactly six equidistant neighbors instead of the Moore neighborhood's eight (at varying distances). This geometry is widespread in nature — basalt columns, honeycomb, and retinal cells all exhibit hexagonal packing. The uniform neighbor distance eliminates the anisotropy inherent in square grids, producing more isotropic growth patterns and different stability characteristics.
+**Background.** Hexagonal cellular automata replace the square lattice with a hexagonal tiling. Each cell has six equidistant neighbors instead of the Moore neighborhood's eight at two distances. The uniform distance removes some of the anisotropy of square grids.
 
 **Formulation.**
 
 ```
-Grid:       2D hexagonal lattice (offset coordinate representation)
+Grid:       2D hexagonal lattice (offset rows), same boundary as the Game of Life grid
 States:     {0 = dead, 1 = alive}
 Neighborhood: 6 adjacent hexagonal cells (all equidistant)
 
@@ -119,11 +124,11 @@ Default transition rule (B2/S34):
   If cell is alive and N(r,c) in {3, 4}:       cell stays alive     (survival)
   Otherwise:                                    cell becomes dead    (death)
 
-On exit, grid reverts to standard square rules:
+Turning hex mode off restores the square grid and Conway's rule:
   birth = {3}, survival = {2, 3}   (Conway B3/S23)
 ```
 
-**What to look for.** Patterns are more rounded and organic than their square-grid counterparts due to the six-fold symmetry. Oscillators and still lifes take different forms — the hex "beehive" is a natural stable structure. The B2/S34 rule was chosen to produce interesting dynamics on six neighbors (Conway's B3/S23 is too sparse for hex grids). Compare the same initial configuration on square vs. hexagonal grids to see how topology shapes emergent behavior.
+**What to look for.** Patterns look rounder than on the square grid because of the six-fold symmetry. Oscillators and still lifes take different forms. The mode switches to B2/S34, which suits six neighbors. Compare the same initial configuration on square vs. hexagonal grids to see how topology shapes emergent behavior.
 
 **References.**
 - Bays, C. "Cellular Automata in the Triangular Tessellation." *Complex Systems*, 8(2), 1994. https://doi.org/10.25088/ComplexSystems.8.2.127
@@ -133,7 +138,7 @@ On exit, grid reverts to standard square rules:
 
 ## Wireworld
 
-**Background.** Wireworld, invented by Brian Silverman in 1987, is a four-state cellular automaton designed specifically for simulating digital logic circuits. Electrons propagate along conductor paths, enabling the construction of AND, OR, and NOT gates, clocks, diodes, and even full adders. Unlike the Game of Life's biological metaphor, Wireworld provides a direct, intuitive model of electronic computation, making it a powerful pedagogical tool for understanding how physical systems implement Boolean logic.
+**Background.** Brian Silverman invented Wireworld in 1987. This four-state cellular automaton simulates digital logic circuits. Electrons travel along conductor paths, which allows gates, clocks, diodes, and even full adders.
 
 **Formulation.**
 
@@ -153,11 +158,15 @@ Transition rules:
   Conductor  -> Head    if exactly 1 or 2 Moore neighbors are Head
   Conductor  -> Conductor  otherwise
 
-Drawing interface provides cursor-based circuit editing:
+Presets: Diode, Clock, OR gate, AND gate, XOR gate, Loop, Empty grid
+
+Editing: move the cursor with the arrow keys (or hjkl) and toggle drawing with e.
   Brushes: conductor (1), electron head (2), electron tail (3), eraser (0)
+  Enter cycles the cell under the cursor through empty, conductor, head, tail.
+  r clears the grid.
 ```
 
-**What to look for.** Electrons (head-tail pairs) propagate along conductor wires at one cell per generation. A single-cell gap creates a diode (one-way propagation). T-junctions route signals. The constraint "1 or 2 heads" is critical — it prevents backward propagation while allowing signal merging for logic gates. Load a preset circuit to watch clock pulses propagate, or draw your own logic gates from scratch.
+**What to look for.** Electrons (head-tail pairs) propagate along conductor wires at one cell per generation. The "1 or 2 heads" condition lets signals merge at junctions, which logic gates rely on. Load a preset to watch signals propagate, or draw your own circuit from the Empty grid.
 
 **References.**
 - Silverman, B. Described in Dewdney, A. K. "Computer Recreations: The Cellular Automata Programs That Create Wireworld, Rugworld, and Other Diversions." *Scientific American*, 262(1), 1990. https://doi.org/10.1038/scientificamerican0190-146
@@ -165,9 +174,9 @@ Drawing interface provides cursor-based circuit editing:
 
 ---
 
-## Cyclic Cellular Automaton
+## Cyclic CA
 
-**Background.** The Cyclic Cellular Automaton, introduced by David Griffeath in the late 1980s, models systems where states advance through a fixed cycle — each state can only be consumed by its immediate successor. This asymmetric predator-prey dynamic spontaneously generates rotating spiral waves reminiscent of the Belousov-Zhabotinsky chemical reaction. The system demonstrates how simple local competition rules can produce large-scale self-organized spatial patterns, connecting cellular automata to excitable media theory.
+**Background.** David Griffeath introduced the Cyclic Cellular Automaton in the late 1980s. Cell states form a cycle, and a cell can only be overtaken by its immediate successor. This one-way competition produces rotating spiral waves, similar to those of the Belousov-Zhabotinsky reaction.
 
 **Formulation.**
 
@@ -196,7 +205,7 @@ Presets:            states  threshold  neighborhood
   Crystalline         6        2         Von Neumann
 ```
 
-**What to look for.** With threshold=1 and Moore neighborhood, beautiful rotating spirals emerge from random initial conditions within 50-100 generations. More states produce thinner, more intricate spiral arms. Higher thresholds require more neighbors to advance, producing blocky, crystalline patterns. Von Neumann neighborhoods yield diamond-shaped wavefronts instead of circular ones. Adjusting states and threshold in real time reveals phase transitions between spiral, turbulent, and frozen regimes.
+**What to look for.** With threshold=1 and Moore neighborhood, beautiful rotating spirals emerge from random initial conditions within 50-100 generations. More states produce thinner, more intricate spiral arms. Higher thresholds require more neighbors to advance, producing blocky, crystalline patterns. Von Neumann neighborhoods give diamond-shaped wavefronts. Change the threshold (t/T) and the number of states (s/S) while running to move between spiral, turbulent, and frozen regimes.
 
 **References.**
 - Fisch, R., Gravner, J., & Griffeath, D. "Cyclic Cellular Automata in Two Dimensions." In *Spatial Stochastic Processes*, Birkhäuser, 1991. https://doi.org/10.1007/978-1-4612-0451-0_11
@@ -206,7 +215,7 @@ Presets:            states  threshold  neighborhood
 
 ## Hodgepodge Machine
 
-**Background.** The Hodgepodge Machine, developed by Martin Gerhardt and Heike Schuster in 1989, is a cellular automaton that models the Belousov-Zhabotinsky (BZ) chemical reaction — the first experimentally observed chemical oscillator. Cells pass through a continuous infection cycle from healthy (0) through increasingly infected states to terminally ill, then reset to healthy. The model produces self-organizing spiral waves that closely match the concentric and rotating patterns seen in real BZ reaction dishes, bridging discrete computation and physical chemistry.
+**Background.** Martin Gerhardt and Heike Schuster developed the Hodgepodge Machine in 1989 to model the Belousov-Zhabotinsky (BZ) chemical reaction. Each cell moves from healthy (0) through increasing stages of infection to ill, then resets to healthy. The model produces spiral and concentric waves like those seen in BZ reaction dishes.
 
 **Formulation.**
 
@@ -226,12 +235,12 @@ Three rules based on current state s:
   Infected (0 < s < n-1):
     sum_s = s + sum of all non-zero neighbor states
     count = 1 + number of non-zero neighbors
-    new_state = min(floor(sum_s / count) + g, n-1)
+    new_state = min(sum_s // count + g, n-1)   (integer division)
 
   Ill (s = n-1):
     new_state = 0   (recovery to healthy)
 
-Parameters:      n_states   k1   k2    g
+Presets:         n_states   k1   k2    g
   Classic Spirals   100      2    3    28
   Tight Spirals     200      1    2    45
   Target Waves      100      3    3    18
@@ -242,7 +251,7 @@ Parameters:      n_states   k1   k2    g
   Thin Filaments    255      2    3    80
 ```
 
-**What to look for.** The parameter `g` controls the speed of infection progression — higher values produce faster, tighter spirals. Parameters `k1` and `k2` govern how readily healthy cells become infected by their neighbors. With Classic Spirals (g=28), watch self-organizing spiral arms emerge from random noise within 20-30 generations. "Target Waves" (higher k values) produce expanding concentric rings instead of spirals. The transition from spirals to target waves to chaos as parameters change mirrors real chemical reaction phase diagrams.
+**What to look for.** The parameter `g` sets how fast infection advances. Change it with g/G, and the state count with s/S. Parameters `k1` and `k2` govern how readily healthy cells become infected by their neighbors. With Classic Spirals (g=28), spiral arms emerge from random noise. Target Waves (k1=k2=3, g=18) produce expanding rings instead of spirals.
 
 **References.**
 - Gerhardt, M. & Schuster, H. "A Cellular Automaton Describing the Formation of Spatially Ordered Structures in Chemical Systems." *Physica D*, 36(3), 1989. https://doi.org/10.1016/0167-2789(89)90184-X
@@ -252,7 +261,7 @@ Parameters:      n_states   k1   k2    g
 
 ## Lenia
 
-**Background.** Lenia, developed by Bert Wang-Chak Chan in 2019, generalizes Conway's Game of Life from discrete states to continuous space. Cells hold real values between 0 and 1, a smooth ring-shaped convolution kernel replaces the discrete neighbor count, and a Gaussian growth function governs the dynamics. The result is strikingly organic: Lenia produces self-organizing lifeforms that glide, rotate, pulse, and even self-replicate with a biological realism unprecedented in cellular automata. It has been called "the missing link between cellular automata and artificial life."
+**Background.** Bert Wang-Chak Chan developed Lenia in 2019. It generalizes the Game of Life to continuous values: cells hold real numbers between 0 and 1, a smooth ring-shaped kernel replaces the neighbor count, and a Gaussian growth function drives the update. The result can be lifelike patterns that glide, rotate, pulse, and replicate.
 
 **Formulation.**
 
@@ -278,12 +287,16 @@ Update rule:
 Presets (name, R, mu, sigma, dt):
   Orbium            13   0.150   0.015   0.10
   Geminium          10   0.140   0.014   0.10
-  Smooth Life       15   0.170   0.020   0.08
-  Hydrogeminium      8   0.130   0.013   0.12
-  Scutium           12   0.160   0.018   0.10
+  Scutium           12   0.160   0.016   0.10
+  Hydrogeminium     15   0.150   0.017   0.05
+  Pentadecathlon     8   0.120   0.012   0.10
+  Wanderer          10   0.130   0.020   0.08
+
+Start: a few random smooth blobs near the center. Presets set only the
+parameters, so a given species may not appear from every seed.
 ```
 
-**What to look for.** The parameter `mu` sets the target local density for growth — cells with neighborhood potential near `mu` grow, others decay. Sigma controls the tolerance width. Orbium is the classic glider: a smooth, moving organism. Geminium self-replicates by splitting. Adjusting `mu` upward makes organisms denser; adjusting `sigma` wider makes them more tolerant of density variation. The kernel radius R determines the spatial scale of interaction. Watch how organisms maintain coherent identity while continuously updating — a key property of biological life.
+**What to look for.** The parameter `mu` sets the target local density for growth — cells with neighborhood potential near `mu` grow, others decay. Sigma controls the tolerance width. Orbium is the classic glider, a smooth moving organism. Geminium is known for splitting in two. Raising `mu` (u/U) favors denser patterns; widening `sigma` (s/S) tolerates more variation. The kernel radius R (d/D) sets the spatial scale of interaction, and dt (t/T) the step size.
 
 **References.**
 - Chan, B. W.-C. "Lenia: Biology of Artificial Life." *Complex Systems*, 28(3), 2019. https://doi.org/10.25088/ComplexSystems.28.3.251
@@ -293,7 +306,7 @@ Presets (name, R, mu, sigma, dt):
 
 ## Turmites
 
-**Background.** Turmites, named by A.K. Dewdney in 1989, generalize Langton's Ant by giving the agent internal states. The ant reads the cell color, consults a state-transition table to decide what color to write, which direction to turn, and what internal state to enter next. This makes turmites equivalent to two-dimensional Turing machines. Different transition tables produce a remarkable variety of emergent behavior — from Fibonacci spirals and growing squares to snowflake-like crystals and chaotic scribbling — all from deterministic table lookups.
+**Background.** A.K. Dewdney named turmites in 1989. They generalize Langton's Ant by giving the agent internal states. The agent reads the cell color, then a state-transition table gives the color to write, the turn, and the next internal state. Different tables produce spirals, growing squares, crystals, and chaotic scribbles.
 
 **Formulation.**
 
@@ -313,15 +326,18 @@ At each step:
   5. Update state: s = new_state
   6. Move forward one step in direction d
 
-Example presets (name, colors, states, table):
-  Langton's Ant    2C 1S  [[(1,1,0), (1,3,0)]]
+Presets (name, colors, states, table), first five shown:
+  Langton's Ant    2C 1S  [[(1,1,0), (0,3,0)]]
   Fibonacci Spiral 2C 2S  [[(1,1,1), (1,1,0)], [(1,0,0), (0,0,1)]]
   Square Builder   2C 2S  [[(1,1,0), (0,1,1)], [(1,3,1), (0,3,0)]]
   Snowflake        2C 3S  [[(1,1,1), (1,3,2)], [(1,1,0), (0,0,2)], [(1,3,0), (0,3,1)]]
   3-Color Spiral   3C 2S  [[(1,1,1), (2,3,0), (0,1,0)], [(2,1,0), (0,3,1), (1,3,1)]]
+
+Five more presets: Chaos, Highway Builder, Spiral Growth, Diamond, Worm Trail.
+One agent starts at the center. Steps per frame: 1, 5, 10, 50, 100 or 500 (+/-).
 ```
 
-**What to look for.** Langton's Ant (1 state) produces the classic highway. Fibonacci Spiral (2 states) constructs logarithmic spiral arms. Square Builder fills a growing square region. The Snowflake preset (3 states) grows a symmetric crystal. Compare the 3-Color Spiral's output to the simpler 2-color presets — additional colors dramatically expand the behavioral repertoire. The step counter shows how many iterations are needed before recognizable structure emerges; some presets require thousands of steps.
+**What to look for.** Langton's Ant (1 state) produces the classic highway. Fibonacci Spiral (2 states) constructs logarithmic spiral arms. Square Builder fills a growing square region. The Snowflake preset (3 states) grows a symmetric crystal. Compare the 3-Color Spiral with the 2-color presets. Some presets need thousands of steps before structure appears; the step counter shows progress.
 
 **References.**
 - Dewdney, A. K. "Computer Recreations: Two-Dimensional Turing Machines and Tur-mites Make Tracks on a Plane." *Scientific American*, 261(3), 1989. https://doi.org/10.1038/scientificamerican0989-180
@@ -331,12 +347,12 @@ Example presets (name, colors, states, table):
 
 ## 3D Game of Life
 
-**Background.** The 3D Game of Life extends Conway's cellular automaton into three-dimensional space, where each cell has 26 Moore neighbors (the surrounding cube minus itself). The vastly larger neighborhood requires different birth/survival thresholds to produce interesting dynamics. This implementation renders the volumetric simulation via ASCII ray casting with diffuse lighting, depth fog, and ambient occlusion — a full 3D graphics pipeline running entirely in the terminal. The camera orbits automatically, revealing the evolving structure from all angles.
+**Background.** The 3D Game of Life runs the Game of Life in three dimensions. Each cell has 26 Moore neighbors, so the rules need different birth and survival counts. The mode renders the volume as ASCII by ray marching, with diffuse lighting, depth fog, and ambient occlusion. The camera orbits automatically.
 
 **Formulation.**
 
 ```
-Grid:       3D cubic lattice of size S x S x S (non-wrapping boundaries)
+Grid:       3D cubic lattice of size S x S x S (S = 20, non-wrapping boundaries)
 States:     {0 = dead, 1 = alive}
 Neighborhood: 3D Moore (26 neighbors: 3^3 - 1)
 
@@ -351,13 +367,21 @@ Rendering:
   Camera: orbital (theta, phi, distance), auto-rotating
   Method: volumetric ray marching through voxel grid
   Shading: diffuse lighting + depth fog + ambient occlusion
-  Shade characters: " .:-=+*#%@" (10 brightness levels)
+  Shade characters: " .:-=+*#%@█" (11 brightness levels)
 
 Initial seeding: random within central sphere (radius < 0.4 * grid_size),
                  density set per preset
+
+Presets (birth / survival):
+  Classic 3D     B5 / S45        Clouds    B5-7 / S4-6
+  Crystal        B6 / S567       Amoeba    B5 / S3-5
+  Diamoeba 3D    B5-7 / S5-8     Sparse    B6-8 / S5-7
+  Pulse          B4 / S34        Builder   B6 / S456
+
+Keys: arrows orbit, a toggles auto-rotate, +/- zoom, n steps
 ```
 
-**What to look for.** 3D rules behave very differently from 2D due to the 26-neighbor count. Survival sets typically include higher values (e.g., {4,5} rather than {2,3}) to compensate for the larger neighborhood. Watch for hollow shell structures, 3D oscillators, and crystalline growth. The auto-rotating camera reveals internal structure invisible from any single angle. The ambient occlusion shading makes dense clusters appear darker inside, providing depth cues in pure ASCII. Population counts fluctuate more dramatically than in 2D as structures are inherently less stable.
+**What to look for.** 3D rules behave very differently from 2D due to the 26-neighbor count. Survival sets use higher counts (for example {4,5} rather than {2,3}) to suit the larger neighborhood. Watch for hollow shells, oscillators, and crystalline growth. Orbiting the camera reveals structure hidden from a single angle. Ambient occlusion darkens the inside of dense clusters, which gives depth cues in ASCII.
 
 **References.**
 - Bays, C. "Candidates for the Game of Life in Three Dimensions." *Complex Systems*, 1(3), 1987. https://doi.org/10.25088/ComplexSystems.1.3.373
@@ -367,7 +391,7 @@ Initial seeding: random within central sphere (radius < 0.4 * grid_size),
 
 ## Hyperbolic Cellular Automata
 
-**Background.** Hyperbolic cellular automata run on tilings of the hyperbolic plane — the negatively curved non-Euclidean geometry where the parallel postulate fails and the number of cells grows exponentially with distance. Rendered as a Poincare disk, these automata produce patterns impossible on flat grids: exponentially branching wavefronts, infinite-degree neighborhoods, and conformal shrinkage toward the disk boundary. The system combines two deep mathematical structures — hyperbolic geometry and cellular automata — revealing how curvature fundamentally alters emergent dynamics.
+**Background.** Hyperbolic cellular automata run on tilings of the hyperbolic plane, where the number of cells grows exponentially with distance. The mode draws the tiling as a Poincare disk, so cells shrink toward the boundary. Wavefronts branch exponentially, unlike on flat grids.
 
 **Formulation.**
 
@@ -378,8 +402,8 @@ Adjacency:  graph built via BFS with Mobius translation:
               z' = (z + a) / (1 + conj(a) * z)
             Center-to-center distance: r = tanh(acosh(cos(pi/q) / sin(pi/p)))
 
-Hyperbolic distance:
-  d(z1, z2) = acosh(1 + 2|z1-z2|^2 / ((1 - |z1-z2/(1-conj(z1)*z2)|^2)))
+Hyperbolic distance (with w = |(z1 - z2) / (1 - conj(z1)*z2)|):
+  d(z1, z2) = acosh(1 + 2 w^2 / (1 - w^2))
 
 Available tilings:
   {5,4}  Pentagonal     4 pentagons per vertex
@@ -389,14 +413,18 @@ Available tilings:
   {6,4}  Hexagonal      4 hexagons per vertex
   {8,3}  Octagonal      3 octagons per vertex
 
-CA rule: standard totalistic (birth/survival sets on neighbor count)
+Neighbors: the cells sharing an edge (up to p per cell)
+CA rule: totalistic (birth/survival sets on neighbor count)
   B3/S23 (Life), B2/S34 (Pulse), B3/S234 (Coral), B35/S2345 (Bloom),
-  B2/S23 (Spread), B3/S345 (Hardy), B23/S34 (Wave), B2/S{} (Seeds)
+  B2/S23 (Spread), B3/S345 (Hardy), B23/S34 (Wave), B2/S (Seeds)
+
+Start: about 30% of the cells within |z| < 0.5 are alive.
+Keys: n next rule, t next tiling, r randomize, c clear, s step, +/- speed
 
 Tiling generation: 6 BFS layers, cells clipped at |z| > 0.96
 ```
 
-**What to look for.** The same B3/S23 rule behaves very differently on hyperbolic tilings than on flat grids because the exponential growth of neighborhoods means signals spread much faster. "Bloom" (B35/S2345) fills the disk rapidly due to the high neighbor counts. Cells near the disk boundary appear smaller (conformal mapping) — this faithfully represents the hyperbolic geometry where equal-area cells appear increasingly compressed. Compare {5,4} (dense, many neighbors) to {7,3} (sparse, fewer neighbors per vertex) to see how local connectivity reshapes global dynamics.
+**What to look for.** The same B3/S23 rule behaves differently here than on a flat grid, because the cell count grows exponentially with distance. Bloom (B35/S2345) fills the disk quickly. Cells near the boundary look smaller, but all cells are the same size in hyperbolic geometry. Each cell has p neighbors, so compare {3,7} (3 neighbors) with {8,3} (8 neighbors) to see how connectivity changes the dynamics.
 
 **References.**
 - Margenstern, M. "A Weakly Universal Cellular Automaton in the Heptagrid of the Hyperbolic Plane." *Complex Systems* 27(4), 2018. https://doi.org/10.25088/ComplexSystems.27.4.377
@@ -406,12 +434,12 @@ Tiling generation: 6 BFS layers, cells clipped at |z| > 0.96
 
 ## Graph Cellular Automata
 
-**Background.** Graph Cellular Automata generalize the concept of a cellular automaton from regular lattices to arbitrary network topologies. Instead of a grid, cells live on the nodes of a graph — small-world networks, scale-free networks, random graphs, trees, or star topologies — with edges defining neighborhoods. This framework connects CA dynamics to network science, revealing how topology shapes information flow, synchronization, and pattern formation. It directly models processes on real-world networks: disease spread on social networks, signal propagation in neural circuits, and opinion dynamics in communities.
+**Background.** Graph Cellular Automata move cellular automata from regular lattices to network topologies. Cells sit on the nodes of a graph, and edges define neighborhoods. This shows how network structure shapes the dynamics.
 
 **Formulation.**
 
 ```
-Graph:      N nodes with adjacency defined by topology generator
+Graph:      N nodes (30-120 by default, scaled to the terminal; +/- changes it by 10) with adjacency from the topology generator
 States:     {alive, dead} with age tracking
 Neighborhood: all nodes connected by an edge
 
@@ -428,19 +456,27 @@ Available topologies:
   Random (ER)      Erdos-Renyi, edge probability p=0.08
   Star Graph       central hub connected to all others
   Binary Tree      complete binary tree
-  Grid 2D          standard square lattice (for comparison)
+  Grid 2D          square lattice without wrapping (for comparison)
   Caveman Graph    cliques of size 5 connected in a ring
+
+Rules (birth/survival): B3/S23 (Life), B2/S34 (Pulse), B3/S234 (Coral),
+  B23/S3 (Sparse), B1/S12 (Dense), B2/S23 (Spread), B34/S345 (Hardy),
+  B2/S (Seeds)
+
+Start: each node is alive with probability 0.3.
+Keys: n next rule, t next topology, r randomize, c clear, s step,
+  e toggle edges, m toggle metrics, l re-layout, +/- node count
 
 Layout: force-directed (Fruchterman-Reingold style)
   Repulsion: F_rep = k^2 / d    (k = sqrt(1/N))
   Attraction: F_att = d^2 / k   (along edges only)
-  Cooling: temperature *= 0.95 per iteration
+  Cooling: temperature *= 0.95 per iteration (starts at 0.1)
 
 Live metrics: clustering coefficient, average path length,
               degree distribution, population history sparkline
 ```
 
-**What to look for.** The same CA rule produces dramatically different dynamics on different topologies. On scale-free networks, high-degree hub nodes act as super-spreaders — a single activated hub can trigger cascading birth across the entire network. Small-world networks show rapid global synchronization due to their short average path lengths. Star graphs exhibit centralized control: the hub's state dominates. Compare the clustering coefficient (how clique-like the neighborhood is) with the CA's ability to sustain stable structures — high clustering tends to support persistent patterns. Toggle edges on/off to see how the network structure itself shapes what emerges.
+**What to look for.** The same rule behaves very differently on different topologies. Hubs in scale-free networks and the center of a star graph see many neighbors, so their state follows the birth and survival sets differently from low-degree nodes. Short average path lengths in small-world networks let activity cross the graph quickly. Compare the clustering coefficient with how long patterns persist. Toggle edges with e to see the layout without clutter.
 
 **References.**
 - Watts, D. & Strogatz, S. "Collective Dynamics of 'Small-World' Networks." *Nature*, 393, 1998. https://doi.org/10.1038/30918
