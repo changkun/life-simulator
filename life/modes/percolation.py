@@ -488,6 +488,11 @@ def _handle_perc_key(self, key: int) -> bool:
         self.perc_menu = True
         self.perc_menu_sel = 0
         return True
+    # Invasion percolation has no tuning parameter; p is only the occupied
+    # fraction, so setting it would show a value the grid does not match.
+    if key in (ord("p"), ord("P"), ord("c")) and self.perc_preset_id == "invasion":
+        self._flash("Invasion percolation has no tunable p")
+        return True
     # Adjust p directly
     if key == ord("p"):
         self.perc_p = min(1.0, self.perc_p + 0.01)
