@@ -1,21 +1,10 @@
-"""Mode: civilization — procedural civilization & cultural evolution simulation.
-
-A 2D world where tribes emerge on procedurally generated terrain, develop
-technologies, establish trade routes, and compete for resources.  Cultural
-traits diffuse across populations, alliances form and fracture, and
-civilizations rise and fall over time.
-
-Features terrain generation (mountains, rivers, forests, plains, desert),
-agent-based tribes with tech trees, resource harvesting, trade networks,
-cultural diffusion, diplomacy, warfare, and emergent historical narratives.
-
-Presets: Pangaea, Archipelago, River Valleys, Tundra & Steppe,
-Fertile Crescent, Random World.
-"""
+"""Civilization & Cultural Evolution — tribes on generated terrain research, trade, fight and spread culture."""
 import curses
 import math
 import random
 import time
+
+from life.constants import SPEEDS
 
 # ── Terrain types ───────────────────────────────────────────────────
 T_WATER = 0
@@ -80,7 +69,7 @@ CULTURE_TRAITS = [
     "Religious", "Artistic", "Scientific", "Expansionist", "Isolationist",
 ]
 
-# ── Civilization colors (up to 12 civs) ─────────────────────────────
+# ── Map symbols, one per tribe ──────────────────────────────────────
 CIV_SYMBOLS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnop"
 
 # ── Presets ──────────────────────────────────────────────────────────
@@ -131,7 +120,7 @@ _NBRS8 = [(-1, -1), (-1, 0), (-1, 1), (0, -1),
 # ── Terrain generation ──────────────────────────────────────────────
 
 def _generate_heightmap(rows, cols, octaves=5):
-    """Simple value-noise heightmap via multi-octave random smoothing."""
+    """Return a 0..1 heightmap made by repeatedly smoothing random noise."""
     hmap = [[random.random() for _ in range(cols)] for _ in range(rows)]
     for _oct in range(octaves):
         smoothed = [[0.0] * cols for _ in range(rows)]
@@ -157,7 +146,7 @@ def _generate_heightmap(rows, cols, octaves=5):
 
 
 def _generate_terrain(rows, cols, settings):
-    """Build terrain grid from heightmap + settings."""
+    """Return (terrain grid, heightmap) built from the preset settings."""
     hmap = _generate_heightmap(rows, cols)
     water_thresh = 1.0 - settings["land_pct"]
     mtn_thresh = 1.0 - settings["mountain_pct"]
@@ -246,7 +235,7 @@ def _generate_terrain(rows, cols, settings):
 # ── Tribe / Civilization class ──────────────────────────────────────
 
 def _make_tribe(tid, r, c, pop, settings):
-    """Create a new tribe dictionary."""
+    """Create a new tribe."""
     traits = random.sample(CULTURE_TRAITS, 2)
     return {
         "id": tid,
@@ -333,15 +322,11 @@ def _civ_init(self, preset_idx: int):
     self.civ_show_log = False
 
     # Generate terrain
-    terrain, hmap = _generate_terrain(rows, cols, settings)
+    terrain, _hmap = _generate_terrain(rows, cols, settings)
     self.civ_terrain = terrain
-    self.civ_hmap = hmap
 
     # Territory ownership: -1 = unclaimed
     self.civ_territory = [[-1] * cols for _ in range(rows)]
-
-    # Trade routes: list of (tribe_a, tribe_b, path_cells)
-    self.civ_trade_routes = []
 
     # Event log
     self.civ_log = []
@@ -473,14 +458,11 @@ def _civ_step(self):
         if tribe["research_target"] == -1:
             # Pick a tech to research
             available = []
-            for i, (tname, cost, prereq, _eff) in enumerate(TECH_TREE):
+            for i, (_name, _cost, prereq, _eff) in enumerate(TECH_TREE):
                 if i not in tribe["techs"]:
                     if prereq == -1 or prereq in tribe["techs"]:
                         available.append(i)
             if available:
-                if "Scientific" in tribe["traits"]:
-                    # Prefer higher-tier techs
-                    available.sort(key=lambda x: TECH_TREE[x][1])
                 tribe["research_target"] = random.choice(available)
                 tribe["research_progress"] = 0.0
 
@@ -572,7 +554,7 @@ def _civ_step(self):
 
             # War logic
             if t2["id"] in t1["at_war_with"]:
-                _resolve_conflict(t1, t2, terrain, territory, rows, cols, gen, self)
+                _resolve_conflict(t1, t2, territory, gen, self)
                 continue
 
             # Trade
@@ -663,7 +645,7 @@ def _civ_step(self):
         self.civ_log = self.civ_log[-100:]
 
 
-def _resolve_conflict(t1, t2, terrain, territory, rows, cols, gen, app):
+def _resolve_conflict(t1, t2, territory, gen, app):
     """Resolve one step of conflict between two tribes."""
     # Calculate military strength
     str1 = t1["attack"] * t1["pop"] * 0.01 + t1["defense"] * 0.5
@@ -769,11 +751,11 @@ def _handle_civ_key(self, key):
         return True
     if key == ord("+") or key == ord("="):
         self.civ_steps_per_frame = min(20, self.civ_steps_per_frame + 1)
-        self._flash(f"Speed: {self.civ_steps_per_frame}x")
+        self._flash(f"Steps/frame: {self.civ_steps_per_frame}")
         return True
     if key == ord("-"):
         self.civ_steps_per_frame = max(1, self.civ_steps_per_frame - 1)
-        self._flash(f"Speed: {self.civ_steps_per_frame}x")
+        self._flash(f"Steps/frame: {self.civ_steps_per_frame}")
         return True
     if key == ord("l"):
         # Toggle log view
@@ -790,8 +772,6 @@ def _handle_civ_key(self, key):
     if key == ord("q") or key == 27:
         self._exit_civ_mode()
         return True
-    # Speed controls inherited from main app
-    from life.constants import SPEEDS
     if key == ord("["):
         self.speed_idx = max(0, self.speed_idx - 1)
         return True
@@ -834,7 +814,7 @@ def _draw_civ_menu(self, max_y, max_x):
             pass
         y += 3
 
-    hint = " [↑↓]=select [Enter]=start [Esc]=cancel"
+    hint = " ↑/↓=select  Enter=start  Esc=cancel"
     if max_y - 1 > 0:
         try:
             self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
@@ -1028,7 +1008,7 @@ def _draw_civ(self, max_y, max_x):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [v]=view [l]=log [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  v=view  l=log  +/-=steps/frame  [/]=speed  r=reset  R=menu  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
