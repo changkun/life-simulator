@@ -1,29 +1,7 @@
-"""Cellular Symphony — real-time sonification that turns CA patterns into emergent music.
-
-Scans the grid row-by-row as a sequencer: columns map to pitch, cell density
-controls rhythm, neighbor counts shape timbre, and different CA rules produce
-different musical textures — from minimalist pulses (Rule 90) to chaotic jazz
-(Life).  Users paint cells and hear the pattern sing, creating a synesthetic
-experience where you *see* and *hear* emergence simultaneously.
-
-Controls:
-    Space       Toggle play / pause sequencer
-    Enter       Step one sequencer row
-    p           Toggle cell painting mode
-    s           Cycle scale (pentatonic / chromatic / blues / whole-tone)
-    t           Cycle timbre (sine / saw / square / triangle)
-    o           Cycle octave range (2 / 3 / 4 / 5)
-    +/-         Adjust tempo (BPM)
-    v/V         Volume up / down
-    r           Randomize grid
-    c           Clear grid
-    Tab         Cycle CA rule preset
-    m           Toggle mute
-    h           Toggle help overlay
-    q/Esc       Exit mode
-"""
+"""Cellular Symphony — scans the grid row by row as a sequencer and plays live cells as notes."""
 
 import math
+import random
 import struct
 import threading
 import time
@@ -165,7 +143,7 @@ def _synthesize_symphony(voices, duration, volume, timbre_name, sample_rate=SAMP
 # ── Mode state and handlers ───────────────────────────────────────────────
 
 def _enter_symphony_mode(self):
-    """Initialize Cellular Symphony mode."""
+    """Enter Cellular Symphony mode."""
     self.symphony_mode = True
     self.symphony_running = False
     self.symphony_scan_row = 0
@@ -197,7 +175,7 @@ def _enter_symphony_mode(self):
 
 
 def _exit_symphony_mode(self):
-    """Clean up Cellular Symphony mode."""
+    """Exit Cellular Symphony mode and restore the grid rule and sound state."""
     self.symphony_mode = False
     self.symphony_running = False
     saved = getattr(self, "symphony_saved_rule", None)
@@ -214,7 +192,7 @@ def _is_symphony_auto_stepping(self):
 
 
 def _handle_symphony_key(self, key):
-    """Handle key input for Cellular Symphony mode."""
+    """Handle keys in Cellular Symphony mode."""
     if key in (ord('q'), 27):  # q or Esc
         self._exit_symphony_mode()
         return True
@@ -261,7 +239,6 @@ def _handle_symphony_key(self, key):
         return True
 
     if key == ord('r'):
-        import random
         for r in range(self.grid.rows):
             for c in range(self.grid.cols):
                 self.grid.cells[r][c] = 1 if random.random() < 0.3 else 0
@@ -291,7 +268,7 @@ def _handle_symphony_key(self, key):
         self.symphony_show_help = not self.symphony_show_help
         return True
 
-    # Painting with arrow keys or mouse — paint cells at cursor
+    # Paint mode: arrows move the cursor, x toggles the cell under it.
     if self.symphony_painting:
         moved = False
         if key == curses.KEY_UP and hasattr(self, 'cursor_r'):
@@ -322,7 +299,10 @@ def _handle_symphony_key(self, key):
 
 
 def _symphony_advance_row(self):
-    """Advance the sequencer by one row, play the corresponding notes, then step CA."""
+    """Play the current row's notes and advance the scan row.
+
+    The CA steps once per full scan of the grid.
+    """
     grid = self.grid
     rows, cols = grid.rows, grid.cols
     cells = grid.cells
@@ -348,7 +328,6 @@ def _symphony_advance_row(self):
 
     self.symphony_last_voices = voices
 
-    # Play audio
     if voices and not self.symphony_muted and hasattr(self, 'sound') and self.sound:
         beat_duration = 60.0 / self.symphony_bpm
         duration = max(0.05, min(beat_duration * 0.8, 2.0))
@@ -365,7 +344,6 @@ def _symphony_advance_row(self):
             )
             sound._play_thread.start()
 
-    # Advance scan row
     self.symphony_scan_row = (r + 1) % rows
 
     # Step the CA every full scan cycle
@@ -375,7 +353,7 @@ def _symphony_advance_row(self):
 
 
 def _symphony_step(self):
-    """Auto-step: advance sequencer row at the BPM tempo."""
+    """Advance one row when a beat interval has elapsed."""
     now = time.time()
     beat_interval = 60.0 / self.symphony_bpm
     if now - self.symphony_last_step_time >= beat_interval:
@@ -384,7 +362,7 @@ def _symphony_step(self):
 
 
 def _draw_symphony(self, max_y=None, max_x=None):
-    """Render the Cellular Symphony display."""
+    """Draw the grid, scan row, status bars and help overlay."""
     win = self.stdscr
     win.erase()
     max_h, max_w = win.getmaxyx()
