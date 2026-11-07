@@ -913,7 +913,7 @@ Presets set four parameters (gravity G, lensing strength, frame drag coefficient
 - **Frame Drag Vortex** (0.6, 0.12, 0.9, 0.5): a rotating ring pattern with loose cells around it
 - **Gravitational Waves** (0.5, 0.15, 0.7, 0.6): five dense random clusters that collapse and emit ripples
 
-Press v to cycle four views: fabric, curvature, time dilation, and CA only. Keys g/G, l/L, f/F and c/C change gravity, lensing, frame drag and the CA interval (1 to 10). The arrow keys (or w/a/s/d) move a cursor, and Enter or e toggles the cell under it.
+Press v to cycle four views: fabric, curvature, time dilation, and CA only. Keys g/G, l/L, f/F and c/C change gravity, lensing, frame drag and the CA interval (1 to 10). Lensing sets how far the pull arrows reach: a cell shows an arrow when its normalized curvature times the lensing value exceeds 0.015, so stronger lensing reaches weaker curvature and 0 shows none. The arrow keys (or w/a/s/d) move a cursor, and Enter or e toggles the cell under it.
 
 **What to look for** — In the Fabric visualization, watch for directional arrows (→↗↑ etc.) showing the gravitational pull field around dense clusters. Gravitational waves appear as blue/cyan ripples expanding from sudden mass changes (cell death events). In the Time Dilation view, cells near massive regions glow red (nearly frozen) while isolated cells remain cyan (full speed) — you can see the CA evolving at different rates across the grid. The Curvature heatmap reveals the gravitational potential wells. Try the Binary Orbit preset to watch two clusters warp the space between them, or Glider Geodesics to see gliders bend around massive still lifes.
 

@@ -37,3 +37,11 @@ def test_presets_step():
         app._spacetime_init(idx)
         for _ in range(3):
             app._spacetime_step()
+
+
+def test_lensing_controls_arrow_reach():
+    from life.modes.spacetime_fabric import _lensing_visible
+    assert not _lensing_visible(0.5, 0.0)
+    assert not _lensing_visible(0.05, 0.15)
+    assert _lensing_visible(0.12, 0.15)
+    assert _lensing_visible(0.05, 0.5)

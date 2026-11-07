@@ -57,7 +57,7 @@ def _spacetime_init(self, preset_idx: int):
     self.spacetime_preset_name = name
     self.spacetime_preset_idx = preset_idx
     self.spacetime_gravity = gravity_str      # strength of gravitational pull
-    self.spacetime_lensing = lens_str         # visual lensing strength
+    self.spacetime_lensing = lens_str         # pull-arrow strength (see _lensing_visible)
     self.spacetime_drag = drag_str            # frame dragging coefficient
     self.spacetime_wave_str = wave_str        # gravitational wave amplitude
     self.spacetime_generation = 0
@@ -594,6 +594,11 @@ def _draw_spacetime_menu(self, max_y: int, max_x: int):
         pass
 
 
+def _lensing_visible(cv_norm: float, lensing: float) -> bool:
+    """Return True if a cell shows a pull arrow; stronger lensing reaches weaker curvature."""
+    return cv_norm * lensing > 0.015
+
+
 def _draw_spacetime(self, max_y: int, max_x: int):
     """Draw the active simulation."""
     self.stdscr.erase()
@@ -680,7 +685,7 @@ def _draw_spacetime(self, max_y: int, max_x: int):
                     combined = min(1.0, combined)
                     if combined > 0.02:
                         # Show gravitational lensing direction
-                        if self.spacetime_show_metric and cv_norm > 0.1:
+                        if self.spacetime_show_metric and _lensing_visible(cv_norm, self.spacetime_lensing):
                             # Gradient of curvature = direction of pull
                             gr = (curv[(r + 1) % rows][c] - curv[(r - 1) % rows][c])
                             gc = (curv[r][(c + 1) % cols] - curv[r][(c - 1) % cols])
