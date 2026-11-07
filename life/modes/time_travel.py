@@ -5,7 +5,9 @@ and frame-by-frame stepping through any simulation's timeline.
 """
 import copy
 import curses
+import math
 import pickle
+import time
 
 from life.registry import MODE_REGISTRY
 
@@ -37,6 +39,12 @@ def _tt_get_active_mode_prefix(self):
 
 # Total byte budget for pickled snapshots held in ``tt_history``.
 TT_BYTE_BUDGET = 64 * 1024 * 1024
+
+# Average time per frame recording may take. Modes whose snapshot costs
+# more (multi-MB state) are recorded every Nth generation instead of every
+# one; cheap modes keep frame-by-frame history.
+TT_FRAME_BUDGET = 0.002
+TT_MAX_STRIDE = 10
 
 _PICKLE_PROTO = pickle.HIGHEST_PROTOCOL
 
@@ -153,6 +161,18 @@ def _tt_restore(self, snapshot):
         setattr(self, key, val)
 
 
+def _tt_history_bytes(self):
+    """Byte total of tt_history, kept as a running sum by _tt_push.
+
+    Recomputed whenever the list was replaced or resized elsewhere
+    (scrub truncation, clear on mode switch, ...).
+    """
+    hist = self.tt_history
+    if getattr(self, "_tt_bytes_key", None) != (id(hist), len(hist)):
+        self._tt_bytes = sum(getattr(h, "nbytes", 0) for h in hist)
+    return self._tt_bytes
+
+
 def _tt_push(self):
     """Push current state to the time-travel history buffer."""
     prefix = self._tt_get_active_mode_prefix()
@@ -164,19 +184,24 @@ def _tt_push(self):
         self.tt_history = self.tt_history[:self.tt_pos + 1]
         self.tt_pos = None
 
-    self.tt_history.append(self._tt_snapshot(prefix))
+    total = _tt_history_bytes(self)
+    snap = self._tt_snapshot(prefix)
+    self.tt_history.append(snap)
+    total += getattr(snap, "nbytes", 0)
 
-    if len(self.tt_history) > self.tt_max:
-        self.tt_history = self.tt_history[-self.tt_max:]
+    # Enforce the entry cap and the byte budget by dropping the oldest
+    # entries (always keep the newest one).
+    hist = self.tt_history
+    drop = max(0, len(hist) - self.tt_max)
+    total -= sum(getattr(h, "nbytes", 0) for h in hist[:drop])
+    while total > TT_BYTE_BUDGET and drop < len(hist) - 1:
+        total -= getattr(hist[drop], "nbytes", 0)
+        drop += 1
+    if drop:
+        self.tt_history = hist[drop:]
 
-    # Enforce the byte budget by dropping the oldest entries (keep >= 1).
-    total = sum(getattr(h, "nbytes", 0) for h in self.tt_history)
-    if total > TT_BYTE_BUDGET:
-        drop = 0
-        while total > TT_BYTE_BUDGET and drop < len(self.tt_history) - 1:
-            total -= getattr(self.tt_history[drop], "nbytes", 0)
-            drop += 1
-        self.tt_history = self.tt_history[drop:]
+    self._tt_bytes = total
+    self._tt_bytes_key = (id(self.tt_history), len(self.tt_history))
 
 
 def _tt_rewind(self):
@@ -287,8 +312,20 @@ def _tt_auto_record(self):
         self.tt_history.clear()
         self.tt_pos = None
         self._tt_last_gen = -1
+        self._tt_stride = 1
+        self._tt_skip = 0
 
+    # Record every _tt_stride-th new generation (1 for cheap snapshots).
+    if self.tt_history:
+        self._tt_skip = (self._tt_skip or 0) + 1
+        if self._tt_skip < (self._tt_stride or 1):
+            return
+    self._tt_skip = 0
+
+    t0 = time.perf_counter()
     self._tt_push()
+    cost = time.perf_counter() - t0
+    self._tt_stride = max(1, min(TT_MAX_STRIDE, math.ceil(cost / TT_FRAME_BUDGET)))
 
 
 def _tt_handle_key(self, key):

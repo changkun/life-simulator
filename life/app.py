@@ -94,10 +94,12 @@ class App:
         # Bookmarks: list of (generation, grid_dict, pop_len) for notable moments
         self.bookmarks: list[tuple[int, dict, int]] = []
         # Universal time-travel history (for all non-GoL modes)
-        self.tt_history: list[dict] = []
+        self.tt_history: list = []  # _TTSnapshot entries, see life/modes/time_travel.py
         self.tt_max = 500
         self.tt_pos: int | None = None
         self._tt_last_gen = -1
+        self._tt_stride = 1  # record every Nth generation (raised for costly snapshots)
+        self._tt_skip = 0
         self.bookmark_menu = False
         self.bookmark_sel = 0
         # Rule editor state
