@@ -359,3 +359,16 @@ def test_draw_all_presets(_cp):
         for _ in range(5):
             app._pwave_step()
         app._draw_pwave(40, 120)
+
+
+@patch('curses.color_pair', side_effect=_mock_color_pair)
+def test_paused_redraw_does_not_flood_trail(_cp):
+    """Redrawing an unchanged frame must not add repeated trail points."""
+    app = _make_app()
+    app._pwave_init("classic")
+    app._pwave_step()
+    app._draw_pwave(40, 120)
+    lengths = [len(t) for t in app.pwave_trail]
+    for _ in range(10):
+        app._draw_pwave(40, 120)
+    assert [len(t) for t in app.pwave_trail] == lengths

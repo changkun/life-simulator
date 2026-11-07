@@ -345,10 +345,13 @@ def _draw_pwave(self, max_y: int, max_x: int):
             steps += 1
 
         # Store trail
+        # Skip repeats so redraws while paused do not flood the trail.
         if i < len(self.pwave_trail):
-            self.pwave_trail[i].append((bob_x, bob_y))
-            if len(self.pwave_trail[i]) > self.pwave_max_trail:
-                self.pwave_trail[i] = self.pwave_trail[i][-self.pwave_max_trail:]
+            trail_i = self.pwave_trail[i]
+            if not trail_i or trail_i[-1] != (bob_x, bob_y):
+                trail_i.append((bob_x, bob_y))
+                if len(trail_i) > self.pwave_max_trail:
+                    self.pwave_trail[i] = trail_i[-self.pwave_max_trail:]
 
     # Draw trails (fading)
     for i in range(min(n, len(self.pwave_trail))):
