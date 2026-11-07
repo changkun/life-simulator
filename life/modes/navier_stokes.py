@@ -314,6 +314,14 @@ def _ns_project(self):
 
 
 
+# Presets that inject fluid at the left wall, and the soft dye sponge that
+# lets their dye leave through the right edge (last cols // 6 columns,
+# removing up to 25% of the dye per step at the far edge).
+NS_INLET_PRESETS = ("Jet Stream", "Karman Vortices")
+NS_OUTFLOW_COLS_DIV = 6
+NS_OUTFLOW_STRENGTH = 0.25
+
+
 def _ns_step(self):
     """Advance Navier-Stokes simulation by one timestep."""
     rows, cols = self.ns_rows, self.ns_cols
@@ -370,6 +378,16 @@ def _ns_step(self):
     for r in range(rows):
         for c in range(cols):
             self.ns_dye[r][c] *= 0.999
+
+    # Outflow for presets fed from the left wall: the grid wraps in x, so
+    # without it their dye re-enters on the left and floods the screen.
+    if preset in NS_INLET_PRESETS:
+        k = max(3, cols // NS_OUTFLOW_COLS_DIV)
+        start = cols - k
+        for c in range(start, cols):
+            keep = 1.0 - NS_OUTFLOW_STRENGTH * (c - start + 1) / k
+            for r in range(rows):
+                self.ns_dye[r][c] *= keep
 
     self.ns_generation += 1
     self.ns_dye_hue = (self.ns_dye_hue + 0.005) % 1.0
