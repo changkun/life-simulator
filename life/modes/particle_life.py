@@ -1,15 +1,13 @@
-"""Mode: plife — simulation mode for the life package."""
+"""Particle Life — colored particles whose attraction and repulsion rules between types produce lifelike clusters."""
 import curses
 import math
 import random
 import time
 
-
 from life.constants import SPEEDS
-from life.grid import Grid
 
 # ══════════════════════════════════════════════════════════════════════
-#  Particle Life (Primordial Soup) — Mode 10 (key '0')
+#  Particle Life (Primordial Soup)
 # ══════════════════════════════════════════════════════════════════════
 
 # Particle type display characters and color pairs
@@ -28,7 +26,7 @@ PLIFE_PRESETS = [
 
 
 def _enter_plife_mode(self):
-    """Enter Particle Life mode — show preset menu."""
+    """Enter Particle Life mode and show the preset menu."""
     self.plife_menu = True
     self.plife_menu_sel = 0
     self._flash("Particle Life — select a configuration")
@@ -36,7 +34,7 @@ def _enter_plife_mode(self):
 
 
 def _exit_plife_mode(self):
-    """Exit Particle Life mode."""
+    """Leave Particle Life mode and clear its state."""
     self.plife_mode = False
     self.plife_menu = False
     self.plife_running = False
@@ -47,7 +45,7 @@ def _exit_plife_mode(self):
 
 
 def _plife_init(self, preset_idx: int):
-    """Initialize Particle Life simulation with the given preset."""
+    """Start a Particle Life simulation from the given preset."""
     name, _desc, num_types, density, max_r, friction, fscale, seed = self.PLIFE_PRESETS[preset_idx]
     self.plife_preset_name = name
     self.plife_num_types = num_types
@@ -94,7 +92,7 @@ def _plife_init(self, preset_idx: int):
 
 
 def _plife_step(self):
-    """Advance Particle Life simulation by one step."""
+    """Advance the simulation by one step."""
     particles = self.plife_particles
     n = len(particles)
     rows, cols = self.plife_rows, self.plife_cols
@@ -176,7 +174,7 @@ def _plife_step(self):
 
 
 def _handle_plife_menu_key(self, key: int) -> bool:
-    """Handle input in Particle Life preset menu."""
+    """Handle keys in the preset menu."""
     n = len(self.PLIFE_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.plife_menu_sel = (self.plife_menu_sel + 1) % n
@@ -192,7 +190,7 @@ def _handle_plife_menu_key(self, key: int) -> bool:
 
 
 def _handle_plife_key(self, key: int) -> bool:
-    """Handle input in active Particle Life simulation."""
+    """Handle keys in the running simulation."""
     if key == ord(" "):
         self.plife_running = not self.plife_running
     elif key in (ord("n"), ord(".")):
@@ -249,7 +247,7 @@ def _handle_plife_key(self, key: int) -> bool:
 
 
 def _draw_plife_menu(self, max_y: int, max_x: int):
-    """Draw the Particle Life preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Particle Life (Primordial Soup) ── Select Configuration ──"
     try:
@@ -282,7 +280,7 @@ def _draw_plife_menu(self, max_y: int, max_x: int):
 
 
 def _draw_plife(self, max_y: int, max_x: int):
-    """Draw the active Particle Life simulation."""
+    """Draw the particles, status line and hint bar."""
     self.stdscr.erase()
     particles = self.plife_particles
     rows, cols = self.plife_rows, self.plife_cols
