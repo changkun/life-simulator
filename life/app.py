@@ -3679,9 +3679,14 @@ class App:
                         lambda r, c: min(1.0, sand[r][c]) if r < len(sand) and c < len(sand[0]) else 0.0,
                         0, 0, rows, cols)
 
-        # Galaxy (density grid)
-        if self.galaxy_mode and self.galaxy_rows > 0 and self.galaxy_density:
-            d = self.galaxy_density
+        # Galaxy: the mode never fills galaxy_density, so bin the particles
+        # the way its draw code does (column = x, row = y, weight = mass).
+        if self.galaxy_mode and self.galaxy_rows > 0 and self.galaxy_particles:
+            d = [[0.0] * self.galaxy_cols for _ in range(self.galaxy_rows)]
+            for p in self.galaxy_particles:
+                gr, gc = int(p[1]), int(p[0])
+                if 0 <= gr < self.galaxy_rows and 0 <= gc < self.galaxy_cols:
+                    d[gr][gc] += p[4]
             return (self.galaxy_rows, self.galaxy_cols,
                     lambda r, c: min(1.0, d[r][c]) if r < len(d) and c < len(d[0]) else 0.0,
                     0, 0, self.galaxy_rows, self.galaxy_cols)
