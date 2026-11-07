@@ -89,7 +89,7 @@ def _kuramoto_init(self, preset_idx: int):
     self.kuramoto_mode = True
     self.kuramoto_menu = False
     self.kuramoto_running = False
-    self._flash(f"Kuramoto: {name} — Space to start, K/k=coupling")
+    self._flash(f"Kuramoto: {name} — Space to start, c/C=coupling")
 
 
 
