@@ -20,7 +20,7 @@ Physics, ecology, and climate simulations, plus audio-visual modes. Each entry l
 4. Movement:       position(t+1) = (position(t) + v(t+1)) mod L
 ```
 
-**Lane-changing.** Before the NaSch update, each car that lacks room ahead tries one randomly chosen adjacent lane:
+**Lane-changing.** Before the NaSch update, each car that lacks room ahead tries one randomly chosen adjacent lane. A car changes lane at most once per step:
 
 ```
 Change lane if ALL of:
@@ -58,7 +58,7 @@ Diagnostics:
 
 **Presets (10):** Open Highway, Moderate Flow, Rush Hour, Gridlock, Bottleneck, On-Ramp Merge, Incident, Cautious Drivers, Aggressive Drivers, Wide Highway (8 lanes).
 
-**Controls:** `Space`=play/pause, `n`=step, `v`=view toggle (road/space-time), `f`=fundamental diagram on/off, `l`=lane-changing on/off, `p/P`=decrease/increase p_slow (0.05 steps), `+/-`=steps per frame (1-50), `r`=reset, `R`=menu, `q`=exit. `d/D` change the stored density value but do not affect running cars.
+**Controls:** `Space`=play/pause, `n`=step, `v`=view toggle (road/space-time), `f`=fundamental diagram on/off, `l`=lane-changing on/off, `p/P`=decrease/increase p_slow (0.05 steps), `d/D`=decrease/increase the car density (0.05 steps, 0.01-0.95; cars are added or removed at once), `+/-`=steps per frame (1, 2, 3, 5, 10, 20, 50), `r`=reset, `R` or `m`=menu, `q` or `Esc`=exit.
 
 **What to look for.** At low density, cars cruise near vmax and flow grows with density. Above the critical density, phantom jams nucleate from the randomization step and move backward as dark bands in the space-time view. At high density, persistent stop-and-go waves dominate. Raising p_slow makes jams more frequent. In the Bottleneck preset, watch for flow breakdown at the speed-limit transition. In On-Ramp Merge, merging cars create disturbances that travel upstream. Toggle lane-changing off to compare with independent lanes.
 
