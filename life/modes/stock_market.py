@@ -104,6 +104,7 @@ def _mkt_init(self, preset_idx):
 
     # Current price
     self.mkt_price = fv
+    self.mkt_start_price = fv
     self.mkt_price_history = [fv]
     self.mkt_open_prices = [fv]
     self.mkt_high_prices = [fv]
@@ -450,7 +451,7 @@ def _draw_mkt(self, max_y, max_x):
     n_mm = sum(1 for a in self.mkt_agents if a.kind == "market_maker")
 
     # Title bar
-    chg = ((price / self.mkt_price_history[0]) - 1.0) * 100 if self.mkt_price_history else 0
+    chg = (price / self.mkt_start_price - 1.0) * 100
     chg_s = f"+{chg:.1f}%" if chg >= 0 else f"{chg:.1f}%"
     title = (f" MKT: {self.mkt_preset_name}  |  tick {gen}"
              f"  |  ${price:.2f} ({chg_s})"

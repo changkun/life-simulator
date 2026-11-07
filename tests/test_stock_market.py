@@ -76,3 +76,15 @@ def test_price_stays_positive():
     for _ in range(100):
         app._mkt_step()
     assert app.mkt_price > 0
+
+
+def test_start_price_survives_history_trim():
+    """The title's change % is measured from the opening price, even after trimming."""
+    app = _make_app()
+    app._mkt_init(3)
+    start = app.mkt_start_price
+    for _ in range(2100):
+        app._mkt_step()
+    assert len(app.mkt_price_history) < 2100
+    assert app.mkt_start_price == start
+    assert app.mkt_start_price == app.MKT_PRESETS[3][6]
