@@ -239,6 +239,9 @@ def _active_matter_step(self):
     half_cols = cols / 2.0
     max_r = max(align_r, repel_r)
     max_r2 = max_r * max_r
+    # Crowding radius for the run-and-tumble slowdown.  Presets without
+    # alignment (MIPS) use the repulsion radius.
+    quorum_r = align_r if align_r > 0 else repel_r
 
     # Build spatial grid for neighbor lookup
     cell_size = max(max_r, 1.0)
@@ -265,6 +268,7 @@ def _active_matter_step(self):
         sin_sum = 0.0
         cos_sum = 0.0
         n_align = 0
+        n_quorum = 0
         # Sum for repulsion force
         fr, fc = 0.0, 0.0
         # Sum for contractile/extensile dipole
@@ -295,6 +299,9 @@ def _active_matter_step(self):
                     if dist2 > max_r2 or dist2 < 0.001:
                         continue
                     dist = math.sqrt(dist2)
+
+                    if dist < quorum_r:
+                        n_quorum += 1
 
                     # Alignment interaction
                     if dist < align_r and align_w > 0:
@@ -365,10 +372,10 @@ def _active_matter_step(self):
         # Fuel-dependent self-propulsion
         prop_speed = v0 * fuel
 
-        # MIPS: speed decreases with local density
-        if tumble > 0 and n_align > 0:
-            # Quorum sensing: slow down in crowds
-            local_density = n_align / max(1.0, math.pi * align_r * align_r) if align_r > 0 else n_align / 10.0
+        # MIPS: particles slow down in crowds.  Counting alignment neighbours
+        # here would disable the slowdown for presets with no alignment.
+        if tumble > 0 and n_quorum > 0:
+            local_density = n_quorum / max(1.0, math.pi * quorum_r * quorum_r)
             prop_speed = v0 / (1.0 + 5.0 * local_density)
 
         # Self-propulsion velocity
