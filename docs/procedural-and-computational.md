@@ -837,7 +837,7 @@ In the memory view, watch colored blocks expand as organisms replicate and fill 
 
 **Background**
 
-The Living Labyrinth is a playable roguelike where the dungeon itself is a cellular automaton. Unlike all other modes in this project where the user observes a simulation, here the user is a *participant* -- an agent (`@`) navigating through a maze whose walls grow and decay by CA rules. The concept merges two traditions: roguelike dungeon crawlers (Rogue, 1980; Brogue, 2009) where procedural generation creates each run's unique challenge, and cellular automata as generative systems for dynamic environments. The result is a game where the dungeon is alive and the optimal path changes every turn.
+The Living Labyrinth is a playable roguelike where the dungeon itself is a cellular automaton. Here the user is a *participant*, not an observer: an agent (`@`) navigates a maze whose walls grow and decay by CA rules. The concept merges two traditions: roguelike dungeon crawlers (Rogue, 1980; Brogue, 2009) where procedural generation creates each run's unique challenge, and cellular automata as generative systems for dynamic environments. The dungeon changes every turn, so the best path changes with it.
 
 **Formulation**
 
@@ -853,16 +853,18 @@ CA evolution (Moore neighborhood, toroidal boundary):
     if alive:  survive if count in S, else die
     if dead:   birth if count in B, else stay dead
   Wall age tracks generations survived (used for rendering)
+  The player and exit cells are forced open after every tick.
 
 8 rule presets:
-  Maze:       B3/S12345    — stable corridors, slow drift
-  Coral:      B3/S45678    — crystalline growth, stable clusters
-  Anneal:     B4678/S35678 — smoothing, fills gaps gradually
-  Day&Night:  B3678/S34678 — symmetric rule, balanced growth/decay
-  Stains:     B3678/S235678— spreading blobs, moderate hostility
-  Diamoeba:   B35678/S5678 — amoeboid masses, unpredictable
-  Slow Decay: B3/S238      — structures erode slowly over time
-  Life:       B3/S23       — classic Conway, chaotic and fast
+  Maze:       B3/S12345
+  Coral:      B3/S45678
+  Anneal:     B4678/S35678
+  Day & Night: B3678/S34678
+  Stains:     B3678/S235678
+  Diamoeba:   B35678/S5678
+  Slow Decay: B3/S238
+  Life:       B3/S23   (Conway's rule)
+  r cycles the rule at any time.
 
 Items (radius-based effects):
   Freeze:  set frozen_mask[r][c] = 10 for cells within radius 5
@@ -876,12 +878,12 @@ Scoring:
   Level complete: speed_bonus + level_bonus
   speed_bonus = max(0, 500 - 2 * turns_taken)
   level_bonus = level_number * 100
-  Rules auto-cycle every 3 levels for gameplay variety
+  After a win, the rule advances at levels 4, 7, 10, ... for variety
 ```
 
 **What to look for**
 
-Each rule preset creates fundamentally different gameplay. The Maze rule (B3/S12345) preserves most corridor structure with slow drift, making it the easiest starting point. Anneal (B4678/S35678) gradually fills open spaces, creating a slowly tightening challenge. Day & Night is symmetric and creates large stable regions interspersed with chaotic borders. Life (B3/S23) is the most hostile -- structures dissipate rapidly, and the dungeon can become nearly impassable within a few turns. Watch wall age rendering: newly grown walls appear as light stipple (`░░`) while old walls become solid blocks (`██`), giving visual feedback about which walls are ephemeral versus structural. Items create dramatic local effects -- a well-timed Freeze locks a safe corridor, while Mutate can blast through a sealed passage at the cost of unpredictable side effects. The tension between CA evolution speed (adjustable with +/-) and player movement creates the core strategic challenge.
+Each rule plays differently. In a test run on a fresh 41x81 maze, the Maze rule thickened the walls to a steady density, Stains filled almost the whole grid, and Anneal, Day & Night, Slow Decay and Life thinned the walls. Coral and Diamoeba first thinned and then regrew them. Wall age shows in the glyph: `░░` for new walls, then `▒▒`, `▓▓`, and `██` for walls that have lasted more than 8 generations. Items act locally: Freeze locks nearby walls for 10 turns (`f`), Reverse rewinds them up to 5 steps (`v`), and Mutate flips about 40% of the cells nearby (`m`). `+`/`-` set how many CA ticks run per player move (1 to 5), which sets the pace against your movement.
 
 **References**
 
