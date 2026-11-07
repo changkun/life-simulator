@@ -1,31 +1,19 @@
-"""Mode: neural_ca — Neural Cellular Automata.
-
-Per-cell neural networks learn to self-organize into target patterns.
-Instead of lookup-table rules, each cell runs a small neural network:
-  perception (neighbor convolution) → hidden layer → state update.
-
-Training uses evolutionary strategies (ES) for gradient-free optimization.
-Users can draw a target shape, press train, and watch the NCA learn to
-reproduce it — all in the terminal, pure Python (no NumPy dependency).
-
-Inspired by Google's "Growing Neural Cellular Automata" (Mordvintsev et al.).
-"""
+"""Neural Cellular Automata — cells run a small neural network that evolution strategies train to grow a target shape."""
 import curses
 import math
-import os
 import random
 
-from life.constants import SAVE_DIR, SPEEDS, SPEED_LABELS
+from life.constants import SPEEDS
 
 # ── Constants ────────────────────────────────────────────────────────
 
 _NCA_CHANNELS = 3       # state channels per cell: [alive, hidden1, hidden2]
-_PERCEPTION_DIM = 9     # 3 sobel filters × 3 channels = 9 perception inputs
+_PERCEPTION_DIM = 9     # 3 kernels × 3 channels = 9 perception inputs
 _HIDDEN_DIM = 8         # hidden layer size (kept small for pure-Python speed)
 _UPDATE_DIM = _NCA_CHANNELS  # output updates all channels
 
-# Perception kernels (Sobel-like 3×3 for identity + gradients)
-# Each kernel is a flat list of 9 values (row-major 3×3)
+# Perception kernels: identity plus Sobel x and y gradients.
+# Each kernel is a flat row-major 3×3 list.
 _IDENTITY_K = [0, 0, 0, 0, 1, 0, 0, 0, 0]
 _SOBEL_X = [-0.125, 0, 0.125, -0.25, 0, 0.25, -0.125, 0, 0.125]
 _SOBEL_Y = [-0.125, -0.25, -0.125, 0, 0, 0, 0.125, 0.25, 0.125]
@@ -73,7 +61,6 @@ def _param_count():
 
 def _init_weights_flat():
     """Initialize neural network as a flat list of floats."""
-    n = _param_count()
     scale1 = math.sqrt(2.0 / _PERCEPTION_DIM)
     scale2 = math.sqrt(2.0 / _HIDDEN_DIM) * 0.1
     flat = []
@@ -500,18 +487,12 @@ def _handle_nca_menu_key(self, key):
             self.nca_es_pop = max(4, min(32, self.nca_es_pop + d * 2))
         elif sel == 5:  # Learning rate
             lr_vals = [0.001, 0.003, 0.01, 0.03, 0.05, 0.1, 0.2]
-            try:
-                idx = min(range(len(lr_vals)), key=lambda i: abs(lr_vals[i] - self.nca_es_lr))
-            except ValueError:
-                idx = 3
+            idx = min(range(len(lr_vals)), key=lambda i: abs(lr_vals[i] - self.nca_es_lr))
             idx = max(0, min(len(lr_vals) - 1, idx + d))
             self.nca_es_lr = lr_vals[idx]
         elif sel == 6:  # Sigma
             sig_vals = [0.005, 0.01, 0.02, 0.05, 0.1]
-            try:
-                idx = min(range(len(sig_vals)), key=lambda i: abs(sig_vals[i] - self.nca_es_sigma))
-            except ValueError:
-                idx = 2
+            idx = min(range(len(sig_vals)), key=lambda i: abs(sig_vals[i] - self.nca_es_sigma))
             idx = max(0, min(len(sig_vals) - 1, idx + d))
             self.nca_es_sigma = sig_vals[idx]
         return True
@@ -862,7 +843,8 @@ def _draw_nca(self, max_y, max_x):
             pass
 
     # Help bar
-    help_str = "t=train  Space=run  s=step  r=reset  R=reinit  d=draw  g=grow  b=best  p=preset  v=view  Esc=exit"
+    help_str = ("t=train  Space=run  s=step  r=reset  R=reinit  d=draw  g=grow  b=best  p=preset"
+                "  v=view  +/-=speed  Esc=exit")
     try:
         self.stdscr.addstr(max_y - 1, 0, help_str[:max_x - 1], curses.A_DIM)
     except curses.error:
