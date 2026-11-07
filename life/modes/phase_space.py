@@ -364,8 +364,9 @@ def _phasespace_start_scan(self):
 
     # Compute grid dimensions based on terminal size
     # Each heatmap cell is 2 chars wide, 1 char tall
+    # The heatmap starts 5 columns in, for the Y-axis labels.
     panel_w = 38
-    usable_w = max_x - panel_w - 2
+    usable_w = max_x - panel_w - 2 - 5
     usable_h = max_y - 5  # leave room for status
 
     self.phasespace_grid_w = max(8, min(60, usable_w // 2))
