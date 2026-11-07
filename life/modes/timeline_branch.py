@@ -1,17 +1,16 @@
-"""Mode: Timeline Branching — fork alternate timelines from any past frame.
+"""Timeline Branching — fork an alternate timeline from a past frame and run both side by side.
 
-Scrub back through history, fork the current frame into a branch, optionally
-modify it (change rule, draw cells, tweak parameters), then watch both the
-original and branched timelines evolve side-by-side in a split view.
+Scrub back with the time-travel keys, then press Ctrl+F to open the fork menu.
+A fork copies the grid and runs the copy in a split view next to the original,
+optionally under a different rule.
 
-Keys (when in branch view):
-  Left/Right arrows  — scrub through branch history frame-by-frame
-  F                   — fork a new branch from the current historical frame
-  R                   — change the branch's rule before forking
-  Space               — play/pause both timelines in lockstep
-  n                   — single-step both timelines
-  +/-                 — change speed
-  Ctrl+F              — exit branch view and return to normal
+Keys in the split view:
+  Space      play/pause both timelines
+  n or .     step both timelines once
+  < >        slower / faster
+  Arrows     scroll the viewport
+  Ctrl+F     close the branch view
+  q          quit
 """
 import curses
 import time
@@ -33,23 +32,14 @@ def _tbranch_init(self):
     self.tbranch_origin_gen = 0        # generation at which the fork happened
     self.tbranch_fork_gen = 0          # fork point generation (in history)
 
-    # Fork menu state
     self.tbranch_fork_menu = False     # showing the fork-options menu
     self.tbranch_fork_menu_sel = 0     # selected option in fork menu
-
-    # Pre-fork scrub state (uses existing timeline_pos / history)
-    # When user presses 'F' while scrubbed back, we enter fork menu
 
 
 # ── Forking ──
 
 def _tbranch_fork_from_current(self):
-    """Fork a branch from the current grid state (live or scrubbed-back).
-
-    Creates a deep copy of the primary grid into tbranch_grid with the same
-    rules, then enters split-view mode.
-    """
-    # Snapshot the current primary grid state
+    """Copy the current grid into a branch grid and open the split view."""
     self.tbranch_grid = Grid(self.grid.rows, self.grid.cols)
     for r in range(self.grid.rows):
         for c in range(self.grid.cols):
@@ -66,7 +56,7 @@ def _tbranch_fork_from_current(self):
     self.tbranch_fork_gen = self.grid.generation
     self.tbranch_mode = True
 
-    # If we were scrubbed back, resume from the scrub position on the primary
+    # Scrubbed back: drop the later history so the original continues from here.
     if self.timeline_pos is not None:
         self.history = self.history[:self.timeline_pos + 1]
         self.timeline_pos = None
@@ -78,7 +68,7 @@ def _tbranch_fork_from_current(self):
 
 
 def _tbranch_fork_with_rule(self):
-    """Fork from current state but prompt for a different rule on the branch."""
+    """Fork the current state, then prompt for a different rule on the branch."""
     rs = self._prompt_text("Branch rule (e.g. B36/S23)")
     if not rs:
         self._flash("Fork cancelled")
@@ -87,7 +77,6 @@ def _tbranch_fork_with_rule(self):
     if not parsed:
         self._flash("Invalid rule string (use format B.../S...)")
         return
-    # Fork first, then override rule
     self._tbranch_fork_from_current()
     self.tbranch_grid.birth, self.tbranch_grid.survival = parsed
     r1 = rule_string(self.grid.birth, self.grid.survival)
@@ -96,7 +85,7 @@ def _tbranch_fork_with_rule(self):
 
 
 def _tbranch_fork_menu_open(self):
-    """Open the fork options menu (fork same rule, fork different rule, cancel)."""
+    """Open the fork menu."""
     self.tbranch_fork_menu = True
     self.tbranch_fork_menu_sel = 0
 
@@ -113,29 +102,23 @@ def _tbranch_exit(self):
 # ── Key handling ──
 
 def _tbranch_handle_key(self, key: int) -> bool:
-    """Handle keys specific to the timeline-branch system. Returns True if consumed."""
-    # Fork menu handling
+    """Handle timeline-branch keys. Return True if the key was consumed."""
     if self.tbranch_fork_menu:
         return self._tbranch_handle_fork_menu_key(key)
 
-    # In branch split-view mode
     if self.tbranch_mode and self.tbranch_grid:
         return self._tbranch_handle_split_key(key)
 
-    # Not in branch mode — Ctrl+F (6) opens fork menu when scrubbed back
-    if key == 6:  # Ctrl+F
-        if self.timeline_pos is not None:
-            # Scrubbed back in history — offer to fork
-            self._tbranch_fork_menu_open()
-            return True
-        # Not scrubbed — let it fall through (e.g. fireworks)
-        return False
+    # Ctrl+F opens the fork menu only while scrubbed back; otherwise other modes get it.
+    if key == 6 and self.timeline_pos is not None:
+        self._tbranch_fork_menu_open()
+        return True
 
     return False
 
 
 def _tbranch_handle_fork_menu_key(self, key: int) -> bool:
-    """Handle keys in the fork options menu."""
+    """Handle keys in the fork menu."""
     if key == -1:
         return True
     options = ["Fork with same rules", "Fork with different rule", "Cancel"]
@@ -151,7 +134,6 @@ def _tbranch_handle_fork_menu_key(self, key: int) -> bool:
             self._tbranch_fork_from_current()
         elif self.tbranch_fork_menu_sel == 1:
             self._tbranch_fork_with_rule()
-        # else: Cancel — do nothing
         return True
     if key == 27 or key == ord("q"):  # ESC or q
         self.tbranch_fork_menu = False
@@ -160,22 +142,19 @@ def _tbranch_handle_fork_menu_key(self, key: int) -> bool:
 
 
 def _tbranch_handle_split_key(self, key: int) -> bool:
-    """Handle keys while in the branch split-view."""
+    """Handle keys in the branch split view."""
     if key == -1:
         return True
 
-    # Ctrl+F = exit branch view
-    if key == 6:
+    if key == 6:  # Ctrl+F
         self._tbranch_exit()
         return True
 
-    # Space = play/pause both
     if key == ord(" "):
         self.running = not self.running
         self._flash("Playing" if self.running else "Paused")
         return True
 
-    # n = single step both grids
     if key == ord("n") or key == ord("."):
         self.running = False
         self._push_history()
@@ -187,7 +166,6 @@ def _tbranch_handle_split_key(self, key: int) -> bool:
         self._flash(f"Step +{gens_since} from fork")
         return True
 
-    # Speed controls
     if key == ord("<") or key == ord(","):
         if self.speed_idx > 0:
             self.speed_idx -= 1
@@ -199,7 +177,6 @@ def _tbranch_handle_split_key(self, key: int) -> bool:
             self._flash(f"Speed: {SPEED_LABELS[self.speed_idx]}")
         return True
 
-    # Arrow keys for scrolling viewport
     if key == curses.KEY_UP:
         self.cursor_r = max(0, self.cursor_r - 1)
         return True
@@ -213,7 +190,6 @@ def _tbranch_handle_split_key(self, key: int) -> bool:
         self.cursor_c = min(self.grid.cols - 1, self.cursor_c + 1)
         return True
 
-    # q = quit
     if key == ord("q"):
         import sys
         sys.exit(0)
@@ -224,7 +200,7 @@ def _tbranch_handle_split_key(self, key: int) -> bool:
 # ── Stepping (called from main loop when running) ──
 
 def _tbranch_step(self):
-    """Step both the primary and branch grids (called from main loop)."""
+    """Advance the branch grid; the main loop steps the original."""
     if not self.tbranch_mode or not self.tbranch_grid:
         return
     self.tbranch_grid.step()
@@ -234,14 +210,13 @@ def _tbranch_step(self):
 # ── Drawing ──
 
 def _tbranch_draw_fork_menu(self, max_y: int, max_x: int):
-    """Draw the fork options menu overlay."""
+    """Draw the fork menu overlay."""
     options = ["Fork with same rules", "Fork with different rule", "Cancel"]
     box_w = 50
     box_h = len(options) + 6
     start_y = max(0, (max_y - box_h) // 2)
     start_x = max(0, (max_x - box_w) // 2)
 
-    # Title
     title = " Fork Timeline Branch "
     try:
         self.stdscr.addstr(start_y, start_x, "┌" + "─" * (box_w - 2) + "┐",
@@ -251,7 +226,6 @@ def _tbranch_draw_fork_menu(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    # Info line
     gen_info = f"Fork from Gen {self.grid.generation}"
     r1 = rule_string(self.grid.birth, self.grid.survival)
     info_line = f"{gen_info}  (current rule: {r1})"
@@ -263,14 +237,12 @@ def _tbranch_draw_fork_menu(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    # Separator
     try:
         self.stdscr.addstr(start_y + 2, start_x, "├" + "─" * (box_w - 2) + "┤",
                            curses.color_pair(6) | curses.A_DIM)
     except curses.error:
         pass
 
-    # Options
     for i, opt in enumerate(options):
         y = start_y + 3 + i
         if y >= max_y - 1:
@@ -286,7 +258,6 @@ def _tbranch_draw_fork_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    # Bottom border
     bottom_y = start_y + 3 + len(options)
     try:
         self.stdscr.addstr(bottom_y, start_x, "└" + "─" * (box_w - 2) + "┘",
@@ -294,7 +265,6 @@ def _tbranch_draw_fork_menu(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    # Hint
     hint = "↑↓=select  Enter=confirm  Esc=cancel"
     try:
         self.stdscr.addstr(bottom_y + 1, start_x + (box_w - len(hint)) // 2,
@@ -312,11 +282,9 @@ def _tbranch_draw_split(self, max_y: int, max_x: int):
     left_cell_cols = divider_x // 2
     right_cell_cols = (max_x - divider_x - 1) // 2
 
-    # Centre viewport on cursor
     self.view_r = self.cursor_r - vis_rows // 2
     self.view_c = self.cursor_c - left_cell_cols // 2
 
-    # Draw left panel (original timeline)
     for sy in range(min(vis_rows, self.grid.rows)):
         gr = (self.view_r + sy) % self.grid.rows
         for sx in range(min(left_cell_cols, self.grid.cols)):
@@ -332,14 +300,12 @@ def _tbranch_draw_split(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    # Draw vertical divider
     for sy in range(min(vis_rows, max_y - 5)):
         try:
             self.stdscr.addstr(sy, divider_x, "│", curses.color_pair(6) | curses.A_DIM)
         except curses.error:
             pass
 
-    # Draw right panel (branch timeline)
     right_start = divider_x + 1
     for sy in range(min(vis_rows, self.tbranch_grid.rows)):
         gr = (self.view_r + sy) % self.tbranch_grid.rows
@@ -356,7 +322,6 @@ def _tbranch_draw_split(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    # Panel labels
     r1 = rule_string(self.grid.birth, self.grid.survival)
     r2 = rule_string(self.tbranch_grid.birth, self.tbranch_grid.survival)
     gens_since = self.grid.generation - self.tbranch_fork_gen
@@ -372,7 +337,6 @@ def _tbranch_draw_split(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    # Dual sparklines
     spark_y = max_y - 5
     if spark_y > 0:
         spark_w = divider_x - 2
@@ -390,7 +354,6 @@ def _tbranch_draw_split(self, max_y: int, max_x: int):
             except curses.error:
                 pass
 
-    # Fork point indicator bar
     fork_y = max_y - 4
     if fork_y > 0:
         fork_info = f" Fork point: Gen {self.tbranch_fork_gen}  │  +{gens_since} generations since fork"
@@ -403,10 +366,9 @@ def _tbranch_draw_split(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    # Divergence metric
     div_y = max_y - 3
     if div_y > 0:
-        # Compute simple divergence: fraction of cells that differ
+        # Divergence is the share of cells whose alive state differs.
         diff_count = 0
         total = self.grid.rows * self.grid.cols
         for r in range(self.grid.rows):
@@ -427,7 +389,6 @@ def _tbranch_draw_split(self, max_y: int, max_x: int):
             except curses.error:
                 pass
 
-    # Status bar
     status_y = max_y - 2
     if status_y > 0:
         state = "▶ PLAY" if self.running else "⏸ PAUSE"
@@ -443,14 +404,13 @@ def _tbranch_draw_split(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    # Hint bar
     hint_y = max_y - 1
     if hint_y > 0:
         now = time.monotonic()
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play/pause [n]=step [</>]=speed [Arrows]=scroll [Ctrl+F]=exit branch [q]=quit"
+            hint = " Space=play/pause  n=step  </>=speed  Arrows=scroll  Ctrl+F=exit branch  q=quit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -461,7 +421,7 @@ def _tbranch_draw_split(self, max_y: int, max_x: int):
 # ── Registration ──
 
 def register(App):
-    """Register timeline-branch methods on the App class."""
+    """Bind the timeline-branch methods to App."""
     App._tbranch_init = _tbranch_init
     App._tbranch_fork_from_current = _tbranch_fork_from_current
     App._tbranch_fork_with_rule = _tbranch_fork_with_rule
