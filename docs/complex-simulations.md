@@ -546,32 +546,35 @@ Presets:      symmetry  style     palette
 
 ## ASCII Aquarium / Fish Tank
 
-**Background.** This mode renders a self-contained aquarium ecosystem with procedurally animated fish, swaying seaweed, rising bubbles, interactive feeding, and a sandy bottom terrain. Each fish species has distinct ASCII art sprites for left and right facing orientations, characteristic swimming speeds, and vertical bobbing behavior. The simulation models basic ecological behaviors including food-seeking, startle responses, and wrap-around swimming.
+**Background.** This mode draws a fish tank with animated fish, swaying seaweed, rising bubbles, a sandy bottom, and food you can drop. Each of the 8 fish species has its own ASCII sprite for each facing, its own speed range, and a vertical bob. Fish chase food, bolt when you tap the glass, and wrap around the tank edges.
 
 **Formulation.** The aquarium maintains several entity lists updated each tick:
 
 ```
 Fish dynamics:
   x += vx * startle_multiplier    (startle_mult = 2.5 when startled, else 1.0)
-  Wrap: if x > cols + body_len, x = -body_len (and vice versa)
+  Wrap: past the right edge, a fish re-enters from the left (and vice versa)
   Direction reversal: 0.5% chance per tick
   Vertical bobbing:
     bob_phase += 0.08
     y = target_y + bob_amp * sin(bob_phase)
-  Depth change: 1% chance per tick, new target_y ~ U(water_top, sand_row)
-  Startle decay: startled -= 0.1 per tick
+  Depth change: 1% chance per tick, new target_y ~ U(water_top + 1, sand_row - 3)
+  Startle: tapping the glass sets startled = 3.0; it drops by 0.1 per tick
+           (about 30 ticks), and fish move at 2.5x speed meanwhile
 
 Food-seeking behavior:
-  If food exists within distance 15:
+  If food exists within Manhattan distance 15 of the nearest food:
     Turn toward nearest food
-    Adjust target_y toward food's y (10% per tick)
-  Eat food when distance < 2
+    Move target_y 10% of the way toward the food's y each tick
+  Eat food when Manhattan distance < 2
 
 Bubble dynamics:
   y += vy                         (vy ~ U(-0.8, -0.3))
   x += sin(age * 0.3) * 0.15     (lateral wobble)
-  Growth: 5% chance per tick to increase char size
-  Stream spawning: 30% chance per update cycle from stream origin
+  Growth: after age 5, 5% chance per tick to use the next bubble glyph
+  Stream spawning: every (8 - speed) ticks of age, 30% chance to emit a
+                   new bubble at the stream's x
+  Removed at the water surface
 
 Food particles:
   y += 0.15 (slow sinking)
@@ -582,15 +585,17 @@ Seaweed animation:
   Sway driven by sin(time * speed + phase) per segment
 
 Presets:
-  Tropical Reef:  10-16 fish, species 0-5 (diverse small fish)
-  Deep Ocean:     5-8 fish, species 5-7 (large, slow species)
-  Koi Pond:       6-10 fish, species 3-4 (medium ornamental)
-  Goldfish Bowl:  4-7 fish, species 1-2 (classic goldfish)
+  Goldfish Bowl:  4-7 fish, Goldfish and Angelfish
+  Tropical Reef:  10-16 fish, Neon Tetra, Goldfish, Angelfish, Koi, Guppy, Clownfish
+  Koi Pond:       6-10 fish, Koi and Guppy
+  Deep Sea:       5-8 fish, Clownfish, Pufferfish and Anglerfish
 
 Caustic light effect: phase advances at 0.05/tick for surface shimmer
 ```
 
-**What to look for.** Fish swim back and forth with a natural bobbing motion driven by sinusoidal oscillation. Dropping food (f key) causes nearby fish to break from their patrol pattern and converge on the sinking particles. Tapping the glass (t key) startles all fish, causing them to reverse direction at 2.5x speed before gradually calming. Bubble streams rise from the bottom with gentle lateral oscillation and occasionally spawn new bubbles. Seaweed sways continuously with per-plant phase offsets creating asynchronous motion. Sand terrain is procedurally generated with varying heights per column.
+**Controls:** `Space`=play/pause, `f`=drop food, `t`=tap the glass, `a`=add a fish, `d`=remove a fish, `b`=add a bubble stream, `+/-`=speed (1-5), `i`=info overlay, `R` or `Esc`=menu, `q`=exit.
+
+**What to look for.** Fish swim back and forth with a natural bobbing motion driven by sinusoidal oscillation. Dropped food (`f`) pulls nearby fish out of their patrol and into the sinking particles. Tapping the glass (`t`) makes every fish reverse and swim faster for a few seconds. Bubble streams rise from the bottom with a small sideways wobble. Seaweed sways with a different phase per plant. The sand has random heights per column.
 
 **References.**
 - Reynolds, C.W. "Flocks, Herds, and Schools: A Distributed Behavioral Model." *Computer Graphics (SIGGRAPH '87 Proceedings)*, 21(4), 25-34, 1987. https://doi.org/10.1145/37402.37406
