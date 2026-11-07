@@ -28,6 +28,6 @@ Most mode entries have four parts:
 
 Some entries add **Presets**.
 
-Meta modes use a lighter format: **Source** (the module), **Background**, **How it works**, **What to explore** and, for some, **Controls**. They have no formulations.
+Meta modes use a lighter format: **Source** (the module), **Background**, **How it works**, **What to explore** and, for some, **Controls**. They have no formulations. The page also covers overlays that work on top of other modes and have no registry entry: Long-Exposure Photography, Ghost Trail / Temporal Echo, Parameter Tuner, Mode Morph Transitions, 2D Spatial Frequency Spectrum and Phase Transition Detector.
 
 Modes whose registry category is "Audio & Visual" are in Complex Simulations & Audio-Visual. Particle Collider (registry category "Physics & Math") is in Physics & Waves.
