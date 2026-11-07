@@ -338,6 +338,17 @@ def test_export_creates_files(tmp_path, monkeypatch):
     assert len(data["pixels"]) == 2
 
 
+def test_export_unwritable_dir_flashes(tmp_path, monkeypatch):
+    app = _make_app()
+    app.long_exp_frozen = True
+    app._long_exp_composite = {(2, 3): (200, 150, 100, 0.9)}
+    blocker = tmp_path / "file"
+    blocker.write_text("x")
+    monkeypatch.setattr("life.constants.SAVE_DIR", str(blocker))
+    app._long_exposure_export()
+    assert "Export error" in app.message
+
+
 def test_export_no_composite():
     app = _make_app()
     app.long_exp_frozen = False

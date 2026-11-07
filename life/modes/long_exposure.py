@@ -247,7 +247,11 @@ def _long_exposure_export(self):
 
     from life.constants import SAVE_DIR
     exp_dir = os.path.join(SAVE_DIR, "long_exposure")
-    os.makedirs(exp_dir, exist_ok=True)
+    try:
+        os.makedirs(exp_dir, exist_ok=True)
+    except OSError as e:
+        self._flash(f"Export error: {e}")
+        return
 
     ts = time.strftime("%Y%m%d_%H%M%S")
     base = f"exposure_{ts}"
