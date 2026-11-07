@@ -21,8 +21,10 @@ _MATRIX_SYMBOLS = "+-*/<>=$#@&!?~^%"
 
 def _enter_matrix_mode(self):
     """Enter Matrix Digital Rain mode — show preset menu."""
+    self.matrix_mode = True
     self.matrix_menu = True
     self.matrix_menu_sel = 0
+    self.matrix_running = False
 
 
 

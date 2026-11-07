@@ -364,3 +364,11 @@ def test_draw_all_color_modes():
         for _ in range(3):
             app._matrix_step()
         app._draw_matrix(40, 120)
+
+
+def test_enter_marks_mode_active():
+    """The menu counts as the active mode so a mode switch can exit it."""
+    app = _make_app()
+    app._enter_matrix_mode()
+    assert app.matrix_mode is True
+    assert app.matrix_running is False
