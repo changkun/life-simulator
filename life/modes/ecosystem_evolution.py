@@ -846,10 +846,17 @@ def _evoeco_step(self):
                 self.evoeco_stats["speciations"] += 1
 
     # ── Extinction check ──
+    totals = {}
+    niches = {}
+    for p in self.evoeco_pops:
+        if p["size"] > 0:
+            psid = p["species_id"]
+            totals[psid] = totals.get(psid, 0) + p["size"]
+            niches.setdefault(psid, set()).add(biome[p["r"]][p["c"]])
     for sp in species_list:
         if not sp["alive"]:
             continue
-        total = sum(p["size"] for p in self.evoeco_pops if p["species_id"] == sp["id"])
+        total = totals.get(sp["id"], 0)
         sp["total_pop"] = total
         sp["peak_pop"] = max(sp["peak_pop"], total)
         if total == 0:
@@ -862,15 +869,8 @@ def _evoeco_step(self):
             self.evoeco_log.append(f"Gen {gen}: {sp['name']} ({TROPHIC_NAMES[sp['trophic']]}) went extinct")
             self.evoeco_extinction_events += 1
             self.evoeco_stats["extinctions"] += 1
-
-    # ── Update niche biomes ──
-    for sp in species_list:
-        if not sp["alive"]:
-            continue
-        sp["niche_biomes"] = set()
-        for p in self.evoeco_pops:
-            if p["species_id"] == sp["id"] and p["size"] > 0:
-                sp["niche_biomes"].add(biome[p["r"]][p["c"]])
+        else:
+            sp["niche_biomes"] = niches[sp["id"]]
 
     # ── Rebuild food web periodically ──
     if gen % 10 == 0:
