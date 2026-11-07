@@ -1,4 +1,4 @@
-"""Mode: mashup — layer two simulations on the same grid with emergent coupling."""
+"""Simulation Mashup — run two simulations on one grid, each steered by the other's density."""
 import curses
 import math
 import random
