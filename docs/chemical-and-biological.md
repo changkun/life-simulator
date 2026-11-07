@@ -615,8 +615,8 @@ Coral dynamics:
 
 Algae dynamics:
   Turf algae spread onto water/dead coral at rate 0.02 * nutrients
-  Turf -> macroalgae in high nutrients (probability 0.008 * nutrients)
-  Macroalgae smother adjacent coral (health -= 0.05)
+  Turf -> macroalgae when nutrients > 0.5 (probability 0.008 * nutrients)
+  Macroalgae smother adjacent coral when nutrients > 0.5 (health -= 0.05, probability 0.005)
   Coralline algae (CCA) facilitate coral recruitment (probability 0.003)
 
 Mobile entities:
@@ -628,13 +628,13 @@ Mobile entities:
   Plankton: drift, feed coral polyps (+0.005 health)
 
 Environmental parameters:
-  temperature = 26-30C (with optional warming trend)
-  acidity (pH) = 7.8-8.1 (with optional acidification trend)
+  temperature = 26-29C at start (with optional warming trend)
+  acidity (pH) = 7.8-8.1 at start (with optional acidification trend)
   light_level = 0.8-1.0
   nutrient_level = 0.3-0.7 (high nutrients favor algae)
 ```
 
-**What to look for** — "Healthy Reef" shows a balanced ecosystem with branching coral (YY) and massive coral (OO) dominating. "Bleaching Event" (starting at 29C with warming trend) triggers white bleached patches ([]); watch whether the reef recovers or flips to dead coral (##) colonized by algae (,,). "Algal Takeover" demonstrates what happens when herbivore fishing removes algae grazers. "Crown-of-Thorns Outbreak" shows coral-eating starfish (XX) devastating reef structure. Heat waves ('h' key) and herbivore additions ('f' key) let you intervene in real time.
+**What to look for** — "Healthy Reef" shows a balanced ecosystem with branching coral (YY) and massive coral (OO) dominating. "Bleaching Event" (starting at 29C with warming trend) triggers white bleached patches ([]); watch whether the reef recovers or flips to dead coral (##) colonized by algae (,,). "Algal Takeover" demonstrates what happens when herbivore fishing removes algae grazers. "Crown-of-Thorns Outbreak" shows coral-eating starfish (XX) devastating reef structure. The other two presets are "Recovery" (a damaged reef with little coral) and "Acidification Crisis" (falling pH and slow warming). Intervene in real time: `h` adds a heat wave (+1.5C), `c` cools by 1C, `f` releases ten herbivorous fish and `N` adds a nutrient pulse. `v` cycles the reef, light and health views.
 
 **References**
 - Hughes, T. P. et al. "Global warming and recurrent mass bleaching of corals." *Nature* 543 (2017): 373-377. https://doi.org/10.1038/nature21707
