@@ -46,6 +46,17 @@ def _voronoi_init(self, preset_idx: int):
     self.voronoi_angles = []
     self.voronoi_frontier = []
 
+    taken: set[tuple[int, int]] = set()
+
+    def free_cell(pick):
+        """Draw cells from pick() until one is unused, so grains stay distinct."""
+        for _ in range(50):
+            pos = pick()
+            if pos not in taken:
+                break
+        taken.add(pos)
+        return pos
+
     # Place seeds based on mode
     if seed_mode == "edge":
         # Seeds along left edge
@@ -63,22 +74,29 @@ def _voronoi_init(self, preset_idx: int):
     elif seed_mode == "center":
         # Seeds clustered near center
         cr, cc = rows // 2, cols // 2
-        for _i in range(num_seeds):
+        def near_centre():
             angle = random.random() * math.pi * 2
             dist = random.random() * min(rows, cols) * 0.15
             r = int(cr + dist * math.sin(angle))
             c = int(cc + dist * math.cos(angle))
-            r = max(0, min(rows - 1, r))
-            c = max(0, min(cols - 1, c))
-            self.voronoi_seeds.append((r, c))
+            return max(0, min(rows - 1, r)), max(0, min(cols - 1, c))
+
+        for _i in range(num_seeds):
+            self.voronoi_seeds.append(free_cell(near_centre))
             self.voronoi_angles.append(random.random() * math.pi * 2)
     else:
         # Random placement
         for _i in range(num_seeds):
-            r = random.randint(0, rows - 1)
-            c = random.randint(0, cols - 1)
-            self.voronoi_seeds.append((r, c))
+            self.voronoi_seeds.append(free_cell(
+                lambda: (random.randint(0, rows - 1), random.randint(0, cols - 1))))
             self.voronoi_angles.append(random.random() * math.pi * 2)
+
+    # Edge seeds can outnumber the rows; a repeated cell would leave an empty grain.
+    unique: dict[tuple[int, int], float] = {}
+    for pos, ang in zip(self.voronoi_seeds, self.voronoi_angles):
+        unique.setdefault(pos, ang)
+    self.voronoi_seeds = list(unique)
+    self.voronoi_angles = list(unique.values())
 
     # Initialize seeds on grid and frontier
     for gid, (r, c) in enumerate(self.voronoi_seeds):

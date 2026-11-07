@@ -265,3 +265,16 @@ class TestVoronoi:
         )
         total = self.app.voronoi_rows * self.app.voronoi_cols
         assert filled > total * 0.3
+
+
+def test_seeds_are_unique_and_counted():
+    """Columnar Growth has more seeds than rows on a 24-row screen."""
+    app = make_mock_app(rows=24, cols=80)
+    register(type(app))
+    random.seed(3)
+    app._voronoi_init(2)
+    assert len(set(app.voronoi_seeds)) == len(app.voronoi_seeds)
+    assert app.voronoi_grain_count == len(app.voronoi_seeds)
+    assert len(app.voronoi_angles) == len(app.voronoi_seeds)
+    placed = {v for row in app.voronoi_grid for v in row if v >= 0}
+    assert placed == set(range(app.voronoi_grain_count))
