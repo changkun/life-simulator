@@ -1,4 +1,4 @@
-"""Mode: chemo — simulation mode for the life package."""
+"""Chemotaxis — bacterial colony growth driven by nutrients and a chemoattractant signal."""
 import curses
 import math
 import random
@@ -27,7 +27,7 @@ CHEMOTAXIS_PRESETS = [
 
 
 def _enter_chemo_mode(self):
-    """Enter Chemotaxis & Bacterial Colony Growth mode — show preset menu."""
+    """Enter Chemotaxis mode and show the preset menu."""
     self.chemo_menu = True
     self.chemo_menu_sel = 0
     self._chemo_view = "bacteria"
@@ -49,7 +49,7 @@ def _exit_chemo_mode(self):
 
 
 def _chemo_init(self, preset_idx: int):
-    """Initialize the Chemotaxis simulation with the given preset."""
+    """Start the Chemotaxis simulation with the given preset."""
     (name, _desc, growth, ndiff, motility, chemotaxis,
      sig_prod, sig_decay, consumption, init_type) = self.CHEMOTAXIS_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
@@ -68,7 +68,6 @@ def _chemo_init(self, preset_idx: int):
     self.chemo_generation = 0
     self.chemo_steps_per_frame = 1
 
-    # Initialize grids
     self.chemo_bacteria = [[0.0] * cols for _ in range(rows)]
     self.chemo_nutrient = [[1.0] * cols for _ in range(rows)]
     self.chemo_signal = [[0.0] * cols for _ in range(rows)]
@@ -76,7 +75,7 @@ def _chemo_init(self, preset_idx: int):
     cr, cc = rows // 2, cols // 2
 
     if init_type == "center_seed":
-        # Small inoculation in center
+        # Small inoculation in the center.
         for dr in range(-2, 3):
             for dc in range(-2, 3):
                 nr, nc = cr + dr, cc + dc
@@ -124,13 +123,14 @@ def _chemo_init(self, preset_idx: int):
 def _chemo_step(self):
     """Advance the Chemotaxis simulation by one time step.
 
-    The model couples three fields:
-    1. Bacteria: grow where nutrients exist, move up signal gradients, diffuse randomly
-    2. Nutrients: diffuse and are consumed by bacteria
-    3. Signal (chemoattractant): produced by bacteria, diffuses, and decays
+    Three coupled fields:
+    1. Bacteria grow where nutrients exist, move up signal gradients and
+       diffuse randomly.
+    2. Nutrients diffuse and are consumed by bacteria.
+    3. Signal (chemoattractant) is produced by bacteria, diffuses and decays.
 
-    This produces the fractal-like colony morphologies seen in real
-    petri dish experiments (Eden clusters, DLA tendrils, concentric rings).
+    Together they give the fractal colony shapes seen in petri dishes
+    (Eden clusters, DLA tendrils, concentric rings).
     """
     bact = self.chemo_bacteria
     nutr = self.chemo_nutrient
@@ -168,16 +168,10 @@ def _chemo_step(self):
             lap_n = nutr[rn][c] + nutr[rs][c] + nutr_r[ce] + nutr_r[cw] - 4.0 * nv
             lap_s = sig[rn][c] + sig[rs][c] + sig_r[ce] + sig_r[cw] - 4.0 * sv
 
-            # Signal gradient for chemotaxis (central differences)
-            grad_sr = (sig[rn][c] - sig[rs][c]) * 0.5
-            grad_sc = (sig_r[ce] - sig_r[cw]) * 0.5
-
-            # Chemotactic flux divergence: -div(bacteria * chi * grad(signal))
-            # Approximate: bacteria moves up gradient
-            # Use upwind scheme for stability
+            # Chemotactic flux -div(bacteria * chi * grad(signal)), discretised
+            # with an upwind scheme for stability.
             chemo_flux = 0.0
             if chemotaxis > 0 and bv > 0.001:
-                # Flux of bacteria toward higher signal
                 bact_n = bact[rn][c]
                 bact_s = bact[rs][c]
                 bact_e = bact_r[ce]
@@ -201,19 +195,16 @@ def _chemo_step(self):
                 flux_out += bv * max(0.0, sig_w - sv)
                 chemo_flux = chemotaxis * (flux_in - flux_out)
 
-            # Bacterial dynamics
-            # Growth: logistic with nutrient limitation
+            # Logistic growth limited by nutrient, plus random motility.
             db = (growth * bv * nv * (1.0 - bv)    # logistic growth
                   + motility * lap_b                 # random motility
                   + chemo_flux)                      # chemotactic movement
 
-            # Nutrient dynamics
             dn = ndiff * lap_n - consumption * bv * nv  # diffusion - consumption
 
-            # Signal dynamics
             ds = sig_prod * bv - sig_decay * sv + 0.1 * lap_s  # production - decay + diffusion
 
-            # Euler step
+            # Explicit Euler step, clamped to [0, 1].
             nb = bv + dt * db
             nn = nv + dt * dn
             ns = sv + dt * ds
@@ -230,7 +221,7 @@ def _chemo_step(self):
 
 
 def _handle_chemo_menu_key(self, key: int) -> bool:
-    """Handle input in Chemotaxis preset menu."""
+    """Handle keys in the Chemotaxis preset menu."""
     presets = self.CHEMOTAXIS_PRESETS
     if key == curses.KEY_DOWN or key == ord("j"):
         self.chemo_menu_sel = (self.chemo_menu_sel + 1) % len(presets)
@@ -246,7 +237,7 @@ def _handle_chemo_menu_key(self, key: int) -> bool:
 
 
 def _handle_chemo_key(self, key: int) -> bool:
-    """Handle input in active Chemotaxis simulation."""
+    """Handle keys in the running Chemotaxis simulation."""
     if key == ord("q") or key == 27:
         self._exit_chemo_mode()
         return True
@@ -281,7 +272,6 @@ def _handle_chemo_key(self, key: int) -> bool:
         self.chemo_steps_per_frame = choices[max(idx - 1, 0)]
         self._flash(f"Speed: {self.chemo_steps_per_frame} steps/frame")
         return True
-    # Growth rate: g/G
     if key == ord("g"):
         self.chemo_growth_rate = max(0.1, self.chemo_growth_rate - 0.05)
         self._flash(f"Growth rate: {self.chemo_growth_rate:.2f}")
@@ -290,7 +280,6 @@ def _handle_chemo_key(self, key: int) -> bool:
         self.chemo_growth_rate = min(2.0, self.chemo_growth_rate + 0.05)
         self._flash(f"Growth rate: {self.chemo_growth_rate:.2f}")
         return True
-    # Chemotaxis strength: c/C
     if key == ord("c"):
         self.chemo_chemotaxis = max(0.0, self.chemo_chemotaxis - 0.05)
         self._flash(f"Chemotaxis: {self.chemo_chemotaxis:.2f}")
@@ -299,7 +288,6 @@ def _handle_chemo_key(self, key: int) -> bool:
         self.chemo_chemotaxis = min(2.0, self.chemo_chemotaxis + 0.05)
         self._flash(f"Chemotaxis: {self.chemo_chemotaxis:.2f}")
         return True
-    # Motility: d/D
     if key == ord("d"):
         self.chemo_motility = max(0.0, self.chemo_motility - 0.005)
         self._flash(f"Motility: {self.chemo_motility:.3f}")
@@ -308,7 +296,6 @@ def _handle_chemo_key(self, key: int) -> bool:
         self.chemo_motility = min(0.5, self.chemo_motility + 0.005)
         self._flash(f"Motility: {self.chemo_motility:.3f}")
         return True
-    # Consumption: a/A
     if key == ord("a"):
         self.chemo_consumption = max(0.05, self.chemo_consumption - 0.05)
         self._flash(f"Consumption: {self.chemo_consumption:.2f}")
@@ -317,7 +304,7 @@ def _handle_chemo_key(self, key: int) -> bool:
         self.chemo_consumption = min(2.0, self.chemo_consumption + 0.05)
         self._flash(f"Consumption: {self.chemo_consumption:.2f}")
         return True
-    # Perturb: p — add bacteria at random location
+    # p: inoculate a random spot.
     if key == ord("p"):
         rows, cols = self.chemo_rows, self.chemo_cols
         pr = random.randint(3, rows - 4)
@@ -331,7 +318,7 @@ def _handle_chemo_key(self, key: int) -> bool:
                         1.0, self.chemo_bacteria[nr][nc] + 0.6 * math.exp(-d * d * 0.5))
         self._flash("Inoculated!")
         return True
-    # Mouse click to inoculate
+    # Mouse click inoculates under the cursor.
     if key == curses.KEY_MOUSE:
         try:
             _, mx, my, _, _ = curses.getmouse()
@@ -349,7 +336,7 @@ def _handle_chemo_key(self, key: int) -> bool:
         except curses.error:
             pass
         return True
-    # Toggle view: v — cycle through bacteria/nutrient/signal views
+    # v: cycle bacteria, nutrient and signal views.
     if key == ord("v"):
         views = ["bacteria", "nutrient", "signal"]
         cur = getattr(self, '_chemo_view', 'bacteria')
@@ -385,7 +372,7 @@ def _draw_chemo_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+        hint = " j/k=navigate  Enter=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
@@ -394,14 +381,10 @@ def _draw_chemo_menu(self, max_y: int, max_x: int):
 
 
 def _draw_chemo(self, max_y: int, max_x: int):
-    """Draw the active Chemotaxis simulation.
+    """Draw the running Chemotaxis simulation in the selected view.
 
-    Default view shows bacteria as colony morphology:
-    - Dense bacteria: bright green/yellow (colony mass)
-    - Medium: green characters
-    - Low/frontier: dim green dots
-    - Nutrient-depleted zones: dark blue
-    - Signal hotspots: shown as magenta overlay when in signal view
+    The bacteria view shades colony density from yellow (dense) to dim green
+    (frontier) and marks nutrient-depleted ground in dark blue.
     """
     self.stdscr.erase()
     bact = self.chemo_bacteria
@@ -506,7 +489,7 @@ def _draw_chemo(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [g/G]=growth [c/C]=chemotaxis [d/D]=motility [a/A]=consumption [v]=view [p]=inoculate [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  g/G=growth  c/C=chemotaxis  d/D=motility  a/A=consumption  v=view  p=inoculate  +/-=speed  r=reset  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -515,7 +498,7 @@ def _draw_chemo(self, max_y: int, max_x: int):
 
 
 def register(App):
-    """Register chemo mode methods on the App class."""
+    """Register Chemotaxis methods on the App class."""
     App.CHEMOTAXIS_PRESETS = CHEMOTAXIS_PRESETS
     App._enter_chemo_mode = _enter_chemo_mode
     App._exit_chemo_mode = _exit_chemo_mode
