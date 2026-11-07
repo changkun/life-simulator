@@ -477,3 +477,13 @@ def test_step_density_matches_brute_force():
     app._sph_step()
     for p, rho in zip(ps, expected):
         assert math.isclose(p[4], rho, rel_tol=1e-9)
+
+
+def test_menu_lists_every_preset_at_24_rows(monkeypatch):
+    monkeypatch.setattr(curses, "color_pair", lambda n: 0)
+    app = _make_app()
+    drawn = []
+    app.stdscr.addstr = lambda y, x, text, *a: drawn.append(text)
+    app._draw_sph_menu(24, 80)
+    for name, _desc, _pid in SPH_PRESETS:
+        assert any(name in t for t in drawn)
