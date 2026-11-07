@@ -226,16 +226,19 @@ where:
 Spatial discretization: 5-point stencil, central differences, periodic BCs
 Time integration: explicit Euler, dt = 0.02
 Velocity and B clamped to [-2, 2] for stability
+Density floored at 0.1
 
-Typical parameters:
-  eta (resistivity): 0.005 - 0.050
-  nu  (viscosity):   0.005 - 0.050
-  p_coeff:           0.5 - 2.0
+Preset parameters:
+  eta (resistivity): 0.005 - 0.010   (keys allow 0.001 - 0.1)
+  nu  (viscosity):   0.005 - 0.010   (keys allow 0.001 - 0.1)
+  p_coeff:           0.8 - 1.2
 ```
 
-**What to look for.** The Harris Current Sheet preset initializes anti-parallel magnetic fields (Bx = tanh(y)) separated by a thin current layer. Over time, the tearing instability breaks the sheet into magnetic islands -- this is magnetic reconnection, the same process that powers solar flares. The Orszag-Tang Vortex is a classic MHD turbulence benchmark: initially smooth velocity and magnetic fields cascade into shock-like structures and current sheets. Switch to the "current" view to see where Jz concentrates -- these are reconnection sites. The "magnetic" view colors field lines by direction, revealing the topology of magnetic flux.
+**What to look for.** The Harris Current Sheet preset initializes anti-parallel magnetic fields (Bx = tanh(y)) separated by a thin current layer. The tearing instability can break the sheet into magnetic islands. This is magnetic reconnection, the process behind solar flares. The Orszag-Tang Vortex is a classic MHD turbulence benchmark: initially smooth velocity and magnetic fields cascade into shock-like structures and current sheets. The mode opens in the "current" view, which shows where Jz concentrates. These are the reconnection sites. The "magnetic" view colors the field by direction, revealing the topology of magnetic flux. The "density" and "velocity" views show the other fields.
 
-**Presets:** Harris Current Sheet, Orszag-Tang Vortex, Magnetic Island, MHD Blast Wave, Kelvin-Helmholtz (MHD), Double Current Sheet, Flux Rope, Random Turbulence.
+**Keys.** `Space` play/pause, `n` step, `v` cycles views, `e`/`E` lower/raise resistivity, `w`/`W` lower/raise viscosity, `p` adds a random magnetic perturbation, `+`/`-` steps per frame, `r` reset, `R` or `m` menu, `q` exit. A mouse click adds a pulse.
+
+**Presets:** Harris Current Sheet, Orszag-Tang Vortex, Magnetic Island, Blast Wave, Kelvin-Helmholtz, Double Current Sheet, Magnetic Flux Rope, Random Turbulence.
 
 **References.**
 - Orszag, S.A. and Tang, C.M. "Small-Scale Structure of Two-Dimensional Magnetohydrodynamic Turbulence." *Journal of Fluid Mechanics*, 90(1), 1979. https://doi.org/10.1017/S0022112079000100
