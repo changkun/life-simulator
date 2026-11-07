@@ -618,11 +618,15 @@ def _handle_nca_key(self, key):
     if key == ord('p'):
         self.nca_target_idx = (self.nca_target_idx + 1) % len(_PRESET_NAMES)
         preset = _PRESET_NAMES[self.nca_target_idx]
-        if preset != "custom":
+        if preset == "custom" and self.nca_custom_target is None:
+            # Nothing drawn yet: skip to the first preset instead of showing a stale target.
+            self.nca_target_idx = 0
+            preset = _PRESET_NAMES[0]
+        if preset == "custom":
+            self.nca_target = _copy_2d(self.nca_custom_target)
+        else:
             self.nca_target = _make_target(preset, self.nca_grid_h_actual,
                                            self.nca_grid_w_actual)
-        elif self.nca_custom_target is not None:
-            self.nca_target = _copy_2d(self.nca_custom_target)
         self._flash(f"Target: {preset}")
         return True
 

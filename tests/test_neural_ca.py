@@ -161,3 +161,13 @@ def test_side_by_side_grids_do_not_overlap():
     assert right, "target grid must be drawn in the right half"
     assert max(left) + 1 <= half_w
     assert max(x + len(t) for _, x, t in cells) <= 80
+
+
+def test_preset_key_skips_custom_without_drawing():
+    app = _make_app()
+    app._nca_init()
+    app.nca_target_idx = _PRESET_NAMES.index("custom") - 1
+    app._handle_nca_key(ord("p"))
+    assert _PRESET_NAMES[app.nca_target_idx] != "custom"
+    assert app.nca_target == _make_target(_PRESET_NAMES[app.nca_target_idx], 12, 16)
+
