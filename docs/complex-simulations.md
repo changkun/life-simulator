@@ -233,7 +233,7 @@ Life fraction:   life / max_life determines spark brightness
 
 **Source:** `life/modes/sonification.py`
 
-**Background.** The sonification engine is a cross-cutting audio layer that attaches to any running simulation mode and maps its spatial dynamics to a real-time generative music composition. Rather than a standalone mode, it operates as a toggleable overlay (Ctrl+A) that transforms the simulator from a purely visual experience into a synesthetic one — Conway's Game of Life sounds fundamentally different from a fluid simulation or a strange attractor. The engine synthesizes four simultaneous voices (bass, melody, harmony, rhythm) using additive waveform synthesis, with musical parameters driven by frame-by-frame analysis of the simulation's spatial state.
+**Background.** The sonification engine is a cross-cutting audio layer that attaches to any running simulation mode and maps its spatial dynamics to a real-time generative music composition. Rather than a standalone mode, it operates as a toggleable overlay (Ctrl+S) that adds sound to the visuals. Conway's Game of Life sounds fundamentally different from a fluid simulation or a strange attractor. The engine synthesizes four simultaneous voices (bass, melody, harmony, rhythm) using additive waveform synthesis, with musical parameters driven by frame-by-frame analysis of the simulation's spatial state.
 
 **Formulation.** Five core mappings translate simulation metrics to musical parameters:
 
@@ -302,7 +302,7 @@ Audio profiles per category (12 defined):
   (and 6 more)
 ```
 
-**What to look for.** Toggle sonification with Ctrl+A during any running simulation. In a Game of Life glider gun, you'll hear a steady low-register pulse with sparse rhythm; as the field fills, the pitch register climbs and chord complexity increases. In Boids, the melody pans across the stereo field as the flock moves. In Reaction-Diffusion, high entropy produces extended 9th/13th chords while stable Turing patterns stay in simple triads. In chaotic rules like Seeds (B2/S), expect dense syncopated rhythms and wide chord voicings. The status bar shows the current root note, melody note count, cluster count (pan:N), and frame number.
+**What to look for.** Toggle sonification with Ctrl+S during any running simulation. In a Game of Life glider gun, you'll hear a steady low-register pulse with sparse rhythm; as the field fills, the pitch register climbs and chord complexity increases. In Boids, the melody pans across the stereo field as the flock moves. In Reaction-Diffusion, high entropy produces extended 9th/13th chords while stable Turing patterns stay in simple triads. In chaotic rules like Seeds (B2/S), expect dense syncopated rhythms and wide chord voicings. The status bar shows the current root note, melody note count, cluster count (pan:N), and frame number.
 
 **References.**
 - Hermann, T., Hunt, A. & Neuhoff, J.G. *The Sonification Handbook*. Logos Publishing House, 2011. https://sonification.de/handbook/
