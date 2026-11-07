@@ -1,4 +1,4 @@
-"""Mode: sph — simulation mode for the life package."""
+"""SPH Fluid — smoothed particle hydrodynamics for free-surface water."""
 import curses
 import math
 import random
@@ -21,7 +21,7 @@ SPH_GRAVITY_MAX = 100.0
 
 
 def _enter_sph_mode(self):
-    """Enter SPH mode — show preset menu."""
+    """Enter SPH Fluid mode and show the preset menu."""
     self.sph_menu = True
     self.sph_menu_sel = 0
     self._flash("Smoothed Particle Hydrodynamics — select a configuration")
@@ -29,7 +29,7 @@ def _enter_sph_mode(self):
 
 
 def _exit_sph_mode(self):
-    """Exit SPH mode."""
+    """Exit SPH Fluid mode."""
     self.sph_mode = False
     self.sph_menu = False
     self.sph_running = False
@@ -39,9 +39,7 @@ def _exit_sph_mode(self):
 
 
 def _sph_init(self, preset_idx: int):
-    """Initialize SPH simulation with the given preset."""
-    import random
-    import math
+    """Set up the SPH simulation for the chosen preset."""
     name, _desc, preset_id = self.SPH_PRESETS[preset_idx]
     self.sph_preset_name = name
     self.sph_generation = 0
@@ -107,7 +105,6 @@ def _sph_init(self, preset_idx: int):
                 self.sph_particles.append([px, py, 0.0, 0.0, 0.0, 0.0])
 
     elif preset_id == "rain":
-        spacing = self.sph_h * 0.6
         # Scattered particles across the top half
         num_drops = max(50, int(rows * cols * 0.015))
         for _ in range(num_drops):
@@ -149,7 +146,7 @@ def _sph_init(self, preset_idx: int):
 
 
 def _sph_step(self):
-    """Advance SPH simulation by one timestep.
+    """Advance the simulation by one timestep.
 
     Uses the standard SPH formulation:
     1. Compute density at each particle using kernel summation
@@ -158,7 +155,6 @@ def _sph_step(self):
     4. Integrate with symplectic Euler
     5. Handle boundary collisions
     """
-    import math
     particles = self.sph_particles
     n = len(particles)
     if n == 0:
@@ -287,7 +283,7 @@ def _sph_step(self):
 
 
 def _handle_sph_menu_key(self, key: int) -> bool:
-    """Handle keys in the SPH preset menu."""
+    """Handle keys in the SPH Fluid preset menu."""
     if key == -1:
         return True
     n = len(self.SPH_PRESETS)
@@ -309,7 +305,7 @@ def _handle_sph_menu_key(self, key: int) -> bool:
 
 
 def _handle_sph_key(self, key: int) -> bool:
-    """Handle keys while in SPH mode."""
+    """Handle keys while SPH Fluid is running."""
     if key == -1:
         return True
     if key == ord("q") or key == 27:
@@ -358,7 +354,7 @@ def _handle_sph_key(self, key: int) -> bool:
 
 
 def _draw_sph_menu(self, max_y: int, max_x: int):
-    """Draw the SPH preset selection menu."""
+    """Draw the SPH Fluid preset menu."""
     self.stdscr.erase()
     title = "── Smoothed Particle Hydrodynamics (SPH) ──"
     try:
@@ -419,8 +415,7 @@ def _draw_sph_menu(self, max_y: int, max_x: int):
 
 
 def _draw_sph(self, max_y: int, max_x: int):
-    """Draw the active SPH simulation."""
-    import math
+    """Draw the SPH Fluid simulation."""
     self.stdscr.erase()
     particles = self.sph_particles
     rows = self.sph_rows
@@ -548,7 +543,7 @@ def _draw_sph(self, max_y: int, max_x: int):
 
 
 def register(App):
-    """Register sph mode methods on the App class."""
+    """Register SPH Fluid methods on the App class."""
     App.SPH_CHARS = SPH_CHARS
     App.SPH_PRESETS = SPH_PRESETS
     App._enter_sph_mode = _enter_sph_mode
