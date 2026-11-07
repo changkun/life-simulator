@@ -742,25 +742,27 @@ Gate operations (applied to state vector):
     P(outcome=1) = sum |alpha_i|^2 for all i where bit q is 1
     Collapse: zero out non-matching amplitudes, renormalize
 
-Bloch sphere projection for qubit q:
-  alpha_0, alpha_1 = square roots of the probabilities of q being 0 or 1,
-    with the relative phase taken from the summed amplitudes of each branch
-  theta = 2 * acos(|alpha_0|)
-  phi = phase(alpha_1) - phase(alpha_0)
-  Display: project (sin(theta)*cos(phi), cos(theta)) onto 2D circle
+Bloch vector for qubit q (from its reduced density matrix rho):
+  rho_01 = sum over basis states i with bit q = 0 of alpha_i * conj(alpha_j),
+    where j is i with bit q set to 1
+  r = (x, y, z) = (2*Re(rho_01), -2*Im(rho_01), p0 - p1)
+  |r| = 1 for a pure qubit and shrinks toward 0 as q entangles with the rest
+  Display: project (x, z) onto a small 2D circle
 
-Entanglement indicator (a heuristic):
-  purity = p0^2 + p1^2 where p0, p1 are the qubit's 0/1 probabilities
-  if purity < 0.99: qubit is flagged, and flagged qubits are linked in pairs
-  A lone qubit in superposition is flagged too, so a link is not proof of entanglement.
+Entanglement indicator:
+  purity = (1 + |r|^2) / 2
+  if purity < 0.99: the qubit's reduced state is mixed, so it is flagged,
+    and flagged qubits are linked in pairs. The link does not say which
+    qubits are entangled with each other.
 
 Histogram: run the full circuit N times (m = 100 shots, M = 1000 shots),
   sample one basis state from each run's final distribution
+  (M gates in the circuit collapse the state during each run)
 ```
 
 **What to look for**
 
-The Bell State circuit produces exactly two outcomes (|00> and |11>) with 50% probability each, while individual qubit measurements are completely random -- the hallmark of entanglement. In Grover's Search, the marked state |11> goes from 25% to 100% probability after one oracle + diffusion iteration. The Quantum Fourier Transform produces a uniform superposition of all basis states when applied to |100> (the binary representation of 4). The Bloch sphere projections show qubit states moving from the north pole (|0>) to the equator (superposition) at Hadamard gates. `Space` runs, `n` applies the next gate, `f` applies all remaining gates, `m`/`M` take 100/1000 shots, and `+`/`-` set the speed.
+The Bell State circuit produces exactly two outcomes (|00> and |11>) with 50% probability each, while individual qubit measurements are completely random -- the hallmark of entanglement. In Grover's Search, the marked state |11> goes from 25% to 100% probability after one oracle + diffusion iteration. The Quantum Fourier Transform produces a uniform superposition of all basis states when applied to |100> (the binary representation of 4). The Bloch sphere projections show qubit states moving from the north pole (|0>) to the equator (superposition) at Hadamard gates. A qubit entangled with the rest draws near the sphere centre. The Deutsch-Jozsa preset uses four qubits and a balanced oracle (a CNOT from each of q0-q2 to q3), so q0-q2 all measure 1. `Space` runs, `n` applies the next gate, `f` applies all remaining gates, `m`/`M` take 100/1000 shots, and `+`/`-` set the speed.
 
 **References**
 
