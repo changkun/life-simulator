@@ -662,7 +662,7 @@ Forward pass:
   for each layer l:
     z[l][j] = sum_i(w[l][j][i] * a[l-1][i]) + b[l][j]
     a[l][j] = activation(z[l][j])
-  Output layer: softmax (more than one output); otherwise the preset's activation
+  Output layer: softmax (more than one output); otherwise always sigmoid
 
 Activation functions (hidden layers; presets use sigmoid or relu):
   sigmoid(x) = 1 / (1 + exp(-x));     deriv: s * (1-s)
@@ -675,7 +675,7 @@ Loss functions:
 
 Backpropagation:
   Output deltas:
-    Single:  delta[L] = (out - target) * activation'(out)
+    Single:  delta[L] = (out - target) * out * (1 - out)
     Softmax: delta[L] = out - target
 
   Hidden deltas:
@@ -699,7 +699,7 @@ Visualization: neuron activation mapped to fill characters (empty to full circle
 
 **What to look for**
 
-The decision boundary view reveals how the network partitions input space. For XOR, watch the 2-2-1 network learn a non-linear boundary that no single perceptron can produce. The spiral task uses a deeper network (2-8-8-3) to separate three interleaved classes. The loss curve shows characteristic training dynamics: initial plateau (random weights), rapid descent (gradient catches), and potential oscillation (learning rate too high). Press `[` or `]` to lower or raise the learning rate and see its effect on stability. `v` cycles the panels, `+`/`-` change the training speed, and `n` trains one step.
+The decision boundary view reveals how the network partitions input space. For XOR, watch the 2-2-1 network learn a non-linear boundary that no single perceptron can produce. The spiral task uses a deeper network (2-8-8-3) to separate three interleaved classes. The loss curve shows characteristic training dynamics: initial plateau (random weights), rapid descent (gradient catches), and potential oscillation (learning rate too high). Press `[` or `]` to lower or raise the learning rate and see its effect on stability. `Space` pauses, `v` cycles the panels, `+`/`-` change the training speed, and `n` trains one step.
 
 **References**
 
