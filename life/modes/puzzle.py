@@ -1,15 +1,12 @@
-"""Mode: puzzle — simulation mode for the life package."""
+"""Puzzle / Challenge — place a few cells, run Life, and meet a goal such as a still life or an escape."""
 import curses
-import math
-import random
 import time
-
 
 from life.colors import color_for_age
 from life.constants import CELL_CHAR
-from life.grid import Grid
 from life.patterns import PUZZLES
 from life.utils import sparkline
+
 
 def _enter_puzzle_mode(self):
     """Open the puzzle selection menu."""
@@ -17,7 +14,6 @@ def _enter_puzzle_mode(self):
     self.puzzle_sel = 0
     self.puzzle_mode = False
     self.puzzle_phase = "idle"
-
 
 
 def _exit_puzzle_mode(self):
@@ -31,7 +27,6 @@ def _exit_puzzle_mode(self):
     self.puzzle_win_gen = None
     self.draw_mode = None
     self._flash("Puzzle mode OFF")
-
 
 
 def _puzzle_start_planning(self, puzzle: dict):
@@ -54,11 +49,9 @@ def _puzzle_start_planning(self, puzzle: dict):
     self.pop_history.clear()
     self._record_pop()
     self._reset_cycle_detection()
-    # Centre cursor
     self.cursor_r = self.grid.rows // 2
     self.cursor_c = self.grid.cols // 2
     self._flash(f"Puzzle: {puzzle['name']} — place cells, then press Enter to run!")
-
 
 
 def _puzzle_run(self):
@@ -81,7 +74,7 @@ def _puzzle_run(self):
     self.puzzle_peak_pop = n
     self.puzzle_state_hashes.clear()
     self.puzzle_state_hashes[self.grid.state_hash()] = 0
-    # Compute initial bounding box for escape_box puzzles
+    # Fix the escape box around the placed cells now, so later growth cannot move it.
     if puzzle["type"] == "escape_box":
         rows = [r for r, c in self.puzzle_placed_cells]
         cols = [c for r, c in self.puzzle_placed_cells]
@@ -92,7 +85,6 @@ def _puzzle_run(self):
                                     mid_r + half, mid_c + half)
     self.running = True
     self._flash("Simulating...")
-
 
 
 def _puzzle_step(self):
@@ -110,7 +102,7 @@ def _puzzle_step(self):
     sim_gens = puzzle.get("sim_gens", 100)
     ptype = puzzle["type"]
 
-    # Cycle detection for puzzles
+    # A repeated state hash means the pattern has settled into a cycle.
     h = self.grid.state_hash()
     cycle_period = None
     if h in self.puzzle_state_hashes:
@@ -118,7 +110,6 @@ def _puzzle_step(self):
     else:
         self.puzzle_state_hashes[h] = self.puzzle_sim_gen
 
-    # Check win conditions by puzzle type
     if ptype == "still_life":
         if cycle_period is not None and cycle_period == 1 and pop > 0:
             self._puzzle_win()
@@ -196,7 +187,7 @@ def _puzzle_step(self):
 
     elif ptype == "survive_gens":
         target_gens = puzzle.get("target_gens", 500)
-        # Fail if extinct or still life before target
+        # Extinction or a still life before the target fails the puzzle.
         if pop == 0:
             self._puzzle_fail(f"Went extinct at gen {self.puzzle_sim_gen} — needed {target_gens}+ active.")
             return
@@ -207,9 +198,8 @@ def _puzzle_step(self):
             self._puzzle_win()
             return
         if self.puzzle_sim_gen >= sim_gens:
-            self._puzzle_fail(f"Simulation ended. Pattern didn't stay active long enough.")
+            self._puzzle_fail("Simulation ended. Pattern didn't stay active long enough.")
             return
-
 
 
 def _puzzle_win(self):
@@ -217,27 +207,24 @@ def _puzzle_win(self):
     self.running = False
     self.puzzle_phase = "success"
     puzzle = self.puzzle_current
-    # Score: fewer cells = better, bonus for fewer generations to win
+    # Fewer cells score higher; winning early adds a bonus.
     cells_used = len(self.puzzle_placed_cells)
     max_cells = puzzle.get("max_cells", cells_used)
-    # Base score: 100 * (max_cells / cells_used), clamped
     if cells_used > 0:
         cell_bonus = int(100 * max_cells / cells_used)
     else:
         cell_bonus = 100
-    # Speed bonus: for types where winning fast matters
+    # Only puzzles that set puzzle_win_gen get a speed bonus.
     gen_bonus = 0
     if self.puzzle_win_gen is not None:
         sim_gens = puzzle.get("sim_gens", 100)
         remaining = sim_gens - self.puzzle_win_gen
         gen_bonus = int(50 * remaining / max(1, sim_gens))
     self.puzzle_score = min(999, cell_bonus + gen_bonus)
-    # Track best score
     pid = puzzle["id"]
     if pid not in self.puzzle_scores or self.puzzle_score > self.puzzle_scores[pid]:
         self.puzzle_scores[pid] = self.puzzle_score
     self._flash(f"PUZZLE SOLVED! Score: {self.puzzle_score} ({cells_used} cells used)")
-
 
 
 def _puzzle_fail(self, reason: str):
@@ -246,7 +233,6 @@ def _puzzle_fail(self, reason: str):
     self.puzzle_phase = "fail"
     self.puzzle_score = 0
     self._flash(f"FAILED: {reason}")
-
 
 
 def _handle_puzzle_menu_key(self, key: int) -> bool:
@@ -266,7 +252,6 @@ def _handle_puzzle_menu_key(self, key: int) -> bool:
         self._puzzle_start_planning(PUZZLES[self.puzzle_sel])
         return True
     return True
-
 
 
 def _handle_puzzle_planning_key(self, key: int) -> bool:
@@ -354,7 +339,6 @@ def _handle_puzzle_planning_key(self, key: int) -> bool:
     return True  # consume all keys in puzzle planning
 
 
-
 def _handle_puzzle_result_key(self, key: int) -> bool:
     """Handle input on puzzle success/fail screen."""
     if key == -1:
@@ -377,13 +361,9 @@ def _handle_puzzle_result_key(self, key: int) -> bool:
         return True
     return True
 
-# ── Mode Browser ──────────────────────────────────────────────────────────
-
-
-
 def _draw_puzzle_menu(self, max_y: int, max_x: int):
     """Draw the puzzle selection menu."""
-    title = "── Puzzle / Challenge Mode (Enter=start, q/Esc=cancel) ──"
+    title = "── Puzzle / Challenge ──"
     try:
         self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
                            curses.color_pair(7) | curses.A_BOLD)
@@ -419,13 +399,12 @@ def _draw_puzzle_menu(self, max_y: int, max_x: int):
 
     tip_y = max_y - 1
     if tip_y > 0:
-        tip = " Up/Down=select │ Enter=start puzzle │ q/Esc=cancel"
+        tip = " Up/Down=select  Enter=start  q/Esc=cancel"
         try:
             self.stdscr.addstr(tip_y, 0, tip[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
         except curses.error:
             pass
-
 
 
 def _draw_puzzle(self, max_y: int, max_x: int):
@@ -434,7 +413,6 @@ def _draw_puzzle(self, max_y: int, max_x: int):
     if not puzzle:
         return
 
-    # Header
     phase_label = {"planning": "PLANNING", "running": "SIMULATING",
                    "success": "SOLVED!", "fail": "FAILED"}.get(self.puzzle_phase, "")
     cells_used = len(self.puzzle_placed_cells)
@@ -452,7 +430,6 @@ def _draw_puzzle(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    # Goal text
     goal = f" Goal: {puzzle['goal_text']}"
     goal = goal[:max_x - 1]
     try:
@@ -460,7 +437,6 @@ def _draw_puzzle(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    # Grid rendering
     grid_start_y = 2
     vis_rows = max_y - 7  # leave room for header, goal, status, hint
     vis_cols = (max_x - 1) // 2
@@ -516,7 +492,6 @@ def _draw_puzzle(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    # Progress / status bar
     status_y = max_y - 4
     if status_y > 0:
         if self.puzzle_phase == "running":
@@ -555,7 +530,6 @@ def _draw_puzzle(self, max_y: int, max_x: int):
             except curses.error:
                 pass
 
-    # Sparkline
     spark_y = max_y - 3
     if spark_y > 0 and len(self.pop_history) > 1:
         spark_width = max_x - 16
@@ -589,13 +563,13 @@ def _draw_puzzle(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 4.0:
             hint = f" {self.message}"
         elif self.puzzle_phase == "planning":
-            hint = " [e]=toggle cell [d]=draw [x]=erase [c]=clear [?]=hint [Enter]=run [Esc]=quit"
+            hint = " e=toggle  d=draw  x=erase  c=clear  ?=hint  Enter=run  Esc=quit"
         elif self.puzzle_phase == "running":
-            hint = " Simulating... [Esc]=abort"
+            hint = " Simulating...  Esc=abort"
         elif self.puzzle_phase == "success":
-            hint = " [r]=retry [n/Enter]=next puzzle [l]=puzzle list [q]=quit"
+            hint = " r=retry  n/Enter=next puzzle  l=puzzle list  q=quit"
         elif self.puzzle_phase == "fail":
-            hint = " [r]=retry [l]=puzzle list [q]=quit"
+            hint = " r=retry  l=puzzle list  q=quit"
         else:
             hint = ""
         hint = hint[:max_x - 1]
