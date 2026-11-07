@@ -1059,7 +1059,7 @@ def _handle_deepsea_menu_key(self, key):
         self.deepsea_menu_sel = (self.deepsea_menu_sel + 1) % len(DEEPSEA_PRESETS)
     elif key == curses.KEY_UP or key == ord('k'):
         self.deepsea_menu_sel = (self.deepsea_menu_sel - 1) % len(DEEPSEA_PRESETS)
-    elif key in (ord('\n'), ord(' ')):
+    elif key in (10, 13, curses.KEY_ENTER, ord(' ')):
         self.deepsea_menu = False
         _deepsea_init(self, self.deepsea_menu_sel)
         self.deepsea_running = True

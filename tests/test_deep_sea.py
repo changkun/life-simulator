@@ -35,7 +35,7 @@ class TestDeepSeaLifecycle:
         assert app.deepsea_menu is True
         assert app.deepsea_menu_sel == 0
 
-    @pytest.mark.parametrize("enter_key", [10, ord(" ")])
+    @pytest.mark.parametrize("enter_key", [10, 13, curses.KEY_ENTER, ord(" ")])
     def test_menu_start_keys(self, enter_key):
         app = _make_app()
         app._enter_deepsea_mode()
