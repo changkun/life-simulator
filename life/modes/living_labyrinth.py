@@ -333,12 +333,6 @@ def _labyrinth_tick_ca(self):
     self.labyrinth_cells[self.labyrinth_player_r][self.labyrinth_player_c] = FLOOR
     self.labyrinth_cells[self.labyrinth_exit_r][self.labyrinth_exit_c] = FLOOR
 
-    # Tick down freeze timers
-    for r in range(h):
-        for c in range(w):
-            if self.labyrinth_frozen_mask[r][c] > 0:
-                self.labyrinth_frozen_mask[r][c] -= 1
-
 
 # ── Item usage ──
 
@@ -449,6 +443,12 @@ def _labyrinth_player_turn(self, dr, dc):
     self.labyrinth_turn += 1
     for _ in range(self.labyrinth_ca_ticks):
         _labyrinth_tick_ca(self)
+
+    # Freeze timers count player turns, not CA ticks.
+    for row in self.labyrinth_frozen_mask:
+        for c, t in enumerate(row):
+            if t > 0:
+                row[c] = t - 1
 
     # Check if player got trapped (surrounded by walls)
     pr, pc = self.labyrinth_player_r, self.labyrinth_player_c
