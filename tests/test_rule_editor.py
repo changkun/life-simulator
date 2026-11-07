@@ -175,3 +175,18 @@ def test_misspelled_name_is_reported_when_compiling():
     # Errors that depend on the cell data are not compile errors.
     code, err = _compile_expr("1 / sum(neighbors) > 0.2")
     assert err is None and code is not None
+
+
+def test_import_from_ep_builds_count_expressions():
+    app = _make_app()
+    app._re_init()
+    app.ep_genomes = [{"birth": {3, 6}, "survival": {2}},
+                      {"birth": set(), "survival": {2, 3}}]
+    app.ep_cursor = 0
+    app._re_import_from_ep()
+    assert app.re_birth_expr == "sum(neighbors) in (3, 6)"
+    assert app.re_survival_expr == "sum(neighbors) == 2"
+    assert app.re_birth_err is None and app.re_survival_err is None
+    app.ep_cursor = 1
+    app._re_import_from_ep()
+    assert app.re_birth_expr == "False"

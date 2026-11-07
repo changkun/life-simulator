@@ -1,28 +1,13 @@
-"""Mode: rule_editor — Live Rule Editor.
-
-Interactive REPL/editor where users type Python expressions to define
-custom cellular automaton rules and see them execute on the grid in
-real time.  Expressions can reference ``neighbors`` (list of 8 neighbor
-states), ``sum(neighbors)``, ``age`` (current cell age), ``x``, ``y``
-(cell coordinates), ``step`` (generation number), and ``random()``
-(random float 0-1).
-
-Includes ~10 starter snippets and save/load to
-``~/.life_saves/custom_rules.json``.
-"""
+"""Live Rule Editor — type Python expressions as birth and survival rules and watch them run on a grid."""
 import curses
 import json
 import math
 import os
 import random as _random
-import time
 
-from life.constants import SAVE_DIR, SPEEDS, SPEED_LABELS
-from life.grid import Grid
+from life.constants import SAVE_DIR, SPEEDS
 
 # ── Constants ────────────────────────────────────────────────────────
-
-_DENSITY = ["  ", "░░", "▒▒", "▓▓", "██"]
 
 _CUSTOM_RULES_FILE = os.path.join(SAVE_DIR, "custom_rules.json")
 
@@ -151,7 +136,7 @@ def _save_custom_rules(rules):
 # ── Mode functions ───────────────────────────────────────────────────
 
 def _enter_rule_editor_mode(self):
-    """Enter the Live Rule Editor mode — starts with snippet menu."""
+    """Enter the Live Rule Editor and show the snippet menu."""
     self.re_mode = False
     self.re_menu = True
     self.re_menu_sel = 0
@@ -280,7 +265,7 @@ def _re_save_rule(self):
         "survival": self.re_survival_expr,
     }
     self.re_saved_rules = _load_custom_rules()
-    # Replace if same name exists
+    # Saving under an existing name replaces that rule
     replaced = False
     for i, r in enumerate(self.re_saved_rules):
         if r.get("name") == entry["name"]:
@@ -296,8 +281,11 @@ def _re_save_rule(self):
 
 
 def _re_adopt_to_gol(self):
-    """Try to translate the current rule to standard B/S format and apply to main grid."""
-    # Only works for simple sum-based rules
+    """Translate the rule to B/S counts and apply it to the main grid.
+
+    Probes each neighbor count 0-8, so only the sum-based part of a rule
+    carries over (age is fixed at 5 for survival).
+    """
     birth_set = set()
     survival_set = set()
     for n in range(9):
@@ -327,8 +315,17 @@ def _re_randomize_grid(self):
     self.re_pop_history.clear()
 
 
+def _counts_expr(counts):
+    """Return an expression that is true for the given neighbor counts."""
+    if not counts:
+        return "False"
+    if len(counts) == 1:
+        return f"sum(neighbors) == {counts[0]}"
+    return f"sum(neighbors) in ({', '.join(map(str, counts))})"
+
+
 def _re_import_from_ep(self):
-    """Import the selected genome from Evolutionary Playground (if available)."""
+    """Import the selected genome from Evolutionary Playground."""
     if not hasattr(self, 'ep_genomes') or not self.ep_genomes:
         self._flash("No EP genomes available")
         return
@@ -336,8 +333,8 @@ def _re_import_from_ep(self):
     genome = self.ep_genomes[idx]
     birth = sorted(genome["birth"])
     survival = sorted(genome["survival"])
-    self.re_birth_expr = f"sum(neighbors) in ({', '.join(map(str, birth))})" if len(birth) > 1 else f"sum(neighbors) == {birth[0]}" if birth else "False"
-    self.re_survival_expr = f"sum(neighbors) in ({', '.join(map(str, survival))})" if len(survival) > 1 else f"sum(neighbors) == {survival[0]}" if survival else "False"
+    self.re_birth_expr = _counts_expr(birth)
+    self.re_survival_expr = _counts_expr(survival)
     self.re_birth_code, self.re_birth_err = _compile_expr(self.re_birth_expr)
     self.re_survival_code, self.re_survival_err = _compile_expr(self.re_survival_expr)
     self.re_rule_name = f"EP-{','.join(map(str, birth))}/{','.join(map(str, survival))}"
@@ -534,19 +531,19 @@ def _handle_re_edit_key(self, key):
         self.re_edit_cursor = len(self.re_edit_buf)
         return True
 
-    # Ctrl+A: select all (go to start)
+    # Ctrl+A: start of line
     if key == 1:
         self.re_edit_cursor = 0
         return True
-    # Ctrl+E: end
+    # Ctrl+E: end of line
     if key == 5:
         self.re_edit_cursor = len(self.re_edit_buf)
         return True
-    # Ctrl+K: kill to end of line
+    # Ctrl+K: delete to end of line
     if key == 11:
         self.re_edit_buf = self.re_edit_buf[:self.re_edit_cursor]
         return True
-    # Ctrl+U: kill to start of line
+    # Ctrl+U: delete to start of line
     if key == 21:
         self.re_edit_buf = self.re_edit_buf[self.re_edit_cursor:]
         self.re_edit_cursor = 0
