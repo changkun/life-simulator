@@ -480,25 +480,26 @@ def _draw_screensaver_menu(self, max_y, max_x):
 
     # Preset list
     menu_y = 6
-    for i in range(n):
-        if menu_y + i >= max_y - 2:
-            break
+    # Each preset takes two rows; scroll so the selection stays visible.
+    visible = max(1, (max_y - 2 - menu_y) // 2)
+    first = max(0, min(self.screensaver_menu_sel - visible + 1, n - visible))
+    for i in range(first, min(n, first + visible)):
+        row = menu_y + (i - first) * 2
         name, desc, _ = SCREENSAVER_PRESETS[i]
         selected = i == self.screensaver_menu_sel
         marker = "▸ " if selected else "  "
         attr = curses.color_pair(2) | curses.A_REVERSE | curses.A_BOLD if selected else curses.color_pair(6)
         line = f"{marker}{name}"
         try:
-            self.stdscr.addstr(menu_y + i * 2, 4, line[:max_x - 6], attr)
+            self.stdscr.addstr(row, 4, line[:max_x - 6], attr)
         except curses.error:
             pass
         # Description on next line
-        if menu_y + i * 2 + 1 < max_y - 2:
-            desc_attr = curses.color_pair(7) | curses.A_DIM
-            try:
-                self.stdscr.addstr(menu_y + i * 2 + 1, 8, desc[:max_x - 10], desc_attr)
-            except curses.error:
-                pass
+        desc_attr = curses.color_pair(7) | curses.A_DIM
+        try:
+            self.stdscr.addstr(row + 1, 8, desc[:max_x - 10], desc_attr)
+        except curses.error:
+            pass
 
     # Footer
     footer = " ↑↓ Select │ Enter Launch │ +/- Interval │ Esc Back "
