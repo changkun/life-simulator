@@ -75,3 +75,26 @@ def test_history_and_edits_stay_bounded():
                for v in app.crispr_history.values())
     assert len(app.crispr_edits) <= crispr._EDITS_MAX
 
+
+def test_insertion_overwrites_inserted_length(monkeypatch):
+    """An insertion of n bases changes n bases and keeps the length."""
+    random.seed(0)
+    app = _make_app()
+    app._crispr_init(0)
+    dna = app.crispr_dna
+    pos = 40
+    dna[pos:pos + 3] = list("AAA")
+    app.crispr_cas9_list = []
+    site = crispr._DSBSite(pos)
+    site.state = crispr._DSB_NHEJ_ACTIVE
+    site.timer = crispr._NHEJ_DURATION - 1
+    app.crispr_dsb_sites = [site]
+    monkeypatch.setattr(crispr.random, "random", lambda: 0.0)
+    monkeypatch.setattr(
+        crispr.random, "choice",
+        lambda seq: 3 if isinstance(seq[0], int) else "C")
+    n = len(dna)
+    app._crispr_step()
+    assert len(dna) == n
+    assert dna[pos:pos + 3] == list("CCC")
+    assert app.crispr_edits[-1].new_bases == "CCC"

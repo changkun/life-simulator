@@ -700,10 +700,11 @@ def _crispr_step(self):
                     if indel_size > 0:
                         # Insertion
                         insert = [random.choice(_BASES) for _ in range(indel_size)]
-                        old = dna[cut_pos] if cut_pos < dna_len else "?"
-                        for ib in reversed(insert):
-                            if cut_pos < dna_len:
-                                dna[cut_pos] = ib
+                        # The strand keeps a fixed length, so the insert
+                        # overwrites the bases after the cut.
+                        end = min(dna_len, cut_pos + indel_size)
+                        old = ''.join(dna[cut_pos:end])
+                        dna[cut_pos:end] = insert[:end - cut_pos]
                         edit = _Edit(cut_pos, 'nhej_indel', old,
                                      ''.join(insert), gen)
                         self.crispr_edits.append(edit)
