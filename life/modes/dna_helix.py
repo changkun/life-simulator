@@ -1,8 +1,7 @@
-"""Mode: dnahelix — simulation mode for the life package."""
+"""DNA Helix & Genetic Algorithm — a rotating double helix showing a genetic algorithm evolve bit strings toward a target."""
 import curses
 import math
 import random
-import time
 
 DNAHELIX_PRESETS = [
     ("Classic Binary GA", "Evolve a 32-bit genome to match a random target — standard genetic algorithm", "classic"),
@@ -15,7 +14,7 @@ DNAHELIX_PRESETS = [
 
 
 def _enter_dnahelix_mode(self):
-    """Enter DNA Helix & Genetic Algorithm — show preset menu."""
+    """Show the preset menu."""
     self.dnahelix_menu = True
     self.dnahelix_menu_sel = 0
 
@@ -23,7 +22,7 @@ def _enter_dnahelix_mode(self):
 
 
 def _exit_dnahelix_mode(self):
-    """Exit DNA Helix & Genetic Algorithm."""
+    """Leave the mode and clear the population."""
     self.dnahelix_mode = False
     self.dnahelix_menu = False
     self.dnahelix_running = False
@@ -37,8 +36,7 @@ def _exit_dnahelix_mode(self):
 
 
 def _dnahelix_init(self, preset: str):
-    """Initialize DNA helix + GA simulation from preset."""
-    import random as _rnd
+    """Set up the genetic algorithm for the named preset."""
     rows, cols = self.grid.rows, self.grid.cols
     self.dnahelix_rows = rows
     self.dnahelix_cols = cols
@@ -85,15 +83,14 @@ def _dnahelix_init(self, preset: str):
         self.dnahelix_crossover_rate = 0.7
 
     gl = self.dnahelix_genome_len
-    # For onemax the target is all 1s; for royal road it's all 1s too
+    # OneMax and Royal Road both target the all-ones genome.
     if preset == "onemax" or preset == "royal":
         self.dnahelix_target = [1] * gl
     else:
-        self.dnahelix_target = [_rnd.randint(0, 1) for _ in range(gl)]
+        self.dnahelix_target = [random.randint(0, 1) for _ in range(gl)]
 
-    # Random initial population
     self.dnahelix_population = [
-        [_rnd.randint(0, 1) for _ in range(gl)]
+        [random.randint(0, 1) for _ in range(gl)]
         for _ in range(self.dnahelix_pop_size)
     ]
 
@@ -106,13 +103,13 @@ def _dnahelix_init(self, preset: str):
 
 
 def _dnahelix_fitness(self, genome: list[int]) -> float:
-    """Compute fitness of a genome against the target. Returns 0.0-1.0."""
+    """Return the fitness of a genome, from 0.0 to 1.0."""
     gl = self.dnahelix_genome_len
     target = self.dnahelix_target
     preset = self.dnahelix_preset_name
 
     if preset == "royal":
-        # Royal Road: fitness = number of complete 8-bit blocks matching target
+        # Royal Road scores only complete, matching 8-bit blocks.
         block_size = 8
         n_blocks = gl // block_size
         matched = 0
@@ -122,7 +119,6 @@ def _dnahelix_fitness(self, genome: list[int]) -> float:
                 matched += 1
         return matched / max(1, n_blocks)
     else:
-        # Standard: fraction of bits matching target
         matching = sum(1 for i in range(gl) if genome[i] == target[i])
         return matching / gl
 
@@ -130,7 +126,7 @@ def _dnahelix_fitness(self, genome: list[int]) -> float:
 
 
 def _dnahelix_evaluate(self):
-    """Evaluate fitness of entire population and update best/avg."""
+    """Update best and average fitness for the population."""
     best_f = 0.0
     best_g = None
     total_f = 0.0
@@ -152,8 +148,7 @@ def _dnahelix_evaluate(self):
 
 
 def _dnahelix_step(self):
-    """Run one generation of the genetic algorithm."""
-    import random as _rnd
+    """Run one generation: tournament selection, crossover, mutation."""
     if self.dnahelix_solved:
         return
 
@@ -163,17 +158,16 @@ def _dnahelix_step(self):
     mr = self.dnahelix_mutation_rate
     cr = self.dnahelix_crossover_rate
 
-    # Compute fitness for selection
     fits = [self._dnahelix_fitness(g) for g in pop]
 
     # Tournament selection (size 3)
     def select():
-        candidates = _rnd.sample(range(len(pop)), min(3, len(pop)))
+        candidates = random.sample(range(len(pop)), min(3, len(pop)))
         best = max(candidates, key=lambda i: fits[i])
         return pop[best][:]
 
     new_pop = []
-    # Elitism: keep best
+    # Elitism: the best genome survives unchanged.
     best_idx = max(range(len(pop)), key=lambda i: fits[i])
     new_pop.append(pop[best_idx][:])
 
@@ -181,16 +175,14 @@ def _dnahelix_step(self):
         p1 = select()
         p2 = select()
 
-        # Crossover
-        if _rnd.random() < cr:
-            cx = _rnd.randint(1, gl - 1)
+        if random.random() < cr:
+            cx = random.randint(1, gl - 1)
             child = p1[:cx] + p2[cx:]
         else:
             child = p1[:]
 
-        # Mutation
         for i in range(gl):
-            if _rnd.random() < mr:
+            if random.random() < mr:
                 child[i] = 1 - child[i]
 
         new_pop.append(child)
@@ -204,7 +196,7 @@ def _dnahelix_step(self):
 
 
 def _handle_dnahelix_menu_key(self, key: int) -> bool:
-    """Handle keys in the DNA helix preset menu."""
+    """Handle keys in the preset menu."""
     n = len(DNAHELIX_PRESETS)
     if key in (curses.KEY_DOWN, ord('j')):
         self.dnahelix_menu_sel = (self.dnahelix_menu_sel + 1) % n
@@ -229,7 +221,7 @@ def _handle_dnahelix_menu_key(self, key: int) -> bool:
 
 
 def _handle_dnahelix_key(self, key: int) -> bool:
-    """Handle keys during DNA helix simulation."""
+    """Handle keys while the algorithm runs."""
     if key in (27, ord('q')):
         self._exit_dnahelix_mode()
         return True
@@ -256,7 +248,7 @@ def _handle_dnahelix_key(self, key: int) -> bool:
 
 
 def _draw_dnahelix_menu(self, max_y: int, max_x: int):
-    """Draw the DNA helix preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── DNA Helix & Genetic Algorithm ──"
     if max_x > len(title) + 2:
@@ -310,7 +302,7 @@ def _draw_dnahelix_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    footer = " ↑↓=select  Enter=start  q=back "
+    footer = " ↑↓=select  Enter=start  q=exit "
     try:
         self.stdscr.addstr(max_y - 1, 0, footer[:max_x - 1], curses.A_DIM | curses.A_REVERSE)
     except curses.error:
@@ -320,8 +312,7 @@ def _draw_dnahelix_menu(self, max_y: int, max_x: int):
 
 
 def _draw_dnahelix(self, max_y: int, max_x: int):
-    """Draw the DNA Helix & Genetic Algorithm visualization."""
-    import math
+    """Draw the helix, GA statistics and fitness history."""
     self.stdscr.erase()
     rows = min(max_y, self.dnahelix_rows)
     cols = min(max_x, self.dnahelix_cols)
@@ -332,10 +323,6 @@ def _draw_dnahelix(self, max_y: int, max_x: int):
             pass
         return
 
-    try:
-        has_color = curses.has_colors()
-    except curses.error:
-        has_color = False
     genome = self.dnahelix_best_genome
     gl = self.dnahelix_genome_len
     target = self.dnahelix_target
@@ -444,7 +431,7 @@ def _draw_dnahelix(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    hint = " Space=play n=step +/-=speed i=info r=reset R=menu q=exit"
+    hint = " Space=play  n=step  +/-=speed  i=info  r=reset  R=menu  q=exit"
     if status_y + 1 < rows:
         try:
             self.stdscr.addstr(status_y + 1, 0, hint[:cols - 1], curses.A_DIM)
