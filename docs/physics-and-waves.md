@@ -192,14 +192,16 @@ Parameters:
   c       — plate stiffness (default 1.0)
   gamma   — damping coefficient (default 0.02)
   A       — drive amplitude (default 0.5)
-  f       — drive frequency, related to mode numbers: f = sqrt(m^2 + n^2) * 0.3
-  (m, n)  — mode numbers (1-9 each), determining nodal line geometry
+  f       — drive frequency, set from the mode numbers: f = sqrt(m^2 + n^2) * 0.3
+  (m, n)  — mode numbers (1-9 each, keys m and N); they only set f, the
+            nodal lines come from the plate's response to that frequency
 
-Integration: Velocity Verlet, clamped boundary conditions (edges fixed at zero)
+Integration: semi-implicit Euler (velocity first, then position), dt = 0.05.
+Boundaries:  clamped, the outer two rows and columns are held at zero.
 Sand migration: sand flows from high-amplitude to low-amplitude regions
 ```
 
-**What to look for** — Sand accumulates along nodal lines, producing the classic Chladni figures. Mode (1,2) creates a simple pattern with a few nodal lines; higher modes like (5,5) produce intricate geometric tilings. The "Harmonic Sweep" preset gradually increases frequency, letting you watch patterns dissolve and reform as new resonances are excited. Three visualization modes show sand density, plate displacement, and vibrational energy.
+**What to look for** — Sand accumulates along nodal lines, producing the classic Chladni figures. "Simple (1,2)" and "Classic (2,3)" use low drive frequencies and give a few nodal lines; "Cathedral (5,7)" drives much higher and gives denser patterns. The "Harmonic Sweep" preset raises the frequency from 0.5 by 0.0005 per step, so patterns dissolve and reform as new resonances are excited. Three visualization modes show sand density, plate displacement, and vibrational energy.
 
 **References**
 - Chladni, E.F.F. *Entdeckungen uber die Theorie des Klanges*, Leipzig, 1787. https://en.wikipedia.org/wiki/Chladni_figure
