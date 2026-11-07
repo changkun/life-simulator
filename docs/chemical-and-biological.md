@@ -424,8 +424,9 @@ Morphogen diffusion:
   dB/dt = Db * laplacian(B) + production_B - decay_B * B
   dN/dt = 0.02 * laplacian(N) - 0.1 * (living_cell) + nutr_rate * (1-N) * 0.05
 
-  Da = 0.05-0.09,  Db = 0.04-0.09  (morphogen diffusion)
-  decay_A = 0.015-0.03,  decay_B = 0.01-0.025
+  Euler step dt = 0.15; grid edges do not wrap; all fields are clamped to [0, 1]
+  Da = 0.05-0.10,  Db = 0.04-0.09  (morphogen diffusion, by preset)
+  decay_A = 0.01-0.03,  decay_B = 0.01-0.025
   Signal cells produce extra morphogen A (+0.3)
 
 Per-cell genome (heritable, mutable):
@@ -442,12 +443,27 @@ Differentiation rules (for stem cells):
   A > thresh_A and B < thresh_B  ->  ectoderm
   B > thresh_B and A < thresh_A  ->  endoderm
   A > 0.7*thresh_A and B > 0.7*thresh_B  ->  mesoderm
-  Neural induction: A > 0.6, B < 0.2, age > 15, adjacent ecto >= 2  ->  neural
+  Neural induction (presets with it): A > 0.6, B < 0.2, age > 15, adjacent ecto >= 2  ->  neural
+
+Death: background apoptosis, plus 0.05 when crowded (>= 7 neighbors),
+  0.04 when nutrient < 0.1, and 0.03 far from the center in presets with sculpting
+Division needs nutrient > div_nutrient and < 6 occupied neighbors; children may revert to stem (0.15)
 
 Cell types: stem(@), ectoderm(#), mesoderm(%), endoderm(&), neural(*), signal(<>), dead(..)
 ```
 
-**What to look for** — "Radial Embryo" produces concentric tissue layers from a central egg. "Bilateral Body Plan" uses a dorsal organiser to establish left-right symmetry. "Gastrulation" shows cells folding inward. "Neural Tube Formation" demonstrates induction: ectoderm near the organiser becomes neural tissue. "Regeneration" cuts the embryo at generation 100 and watches it regrow. Switch views (cells, morphA, morphB, nutrient) to see the invisible chemical landscapes driving visible pattern formation.
+**What to look for** — The eight presets are Radial Embryo, Bilateral Body Plan, Gastrulation, Neural Tube Formation, Limb Bud Outgrowth, Regeneration, Somitogenesis and Minimal Egg.
+
+- "Radial Embryo" produces tissue layers around a central egg.
+- "Bilateral Body Plan" uses a dorsal organiser and biases early division toward the midline.
+- "Gastrulation" uses faster morphogen diffusion and decay; the code does not model folding.
+- "Neural Tube Formation" turns ectoderm with high A and low B into neural cells.
+- "Limb Bud Outgrowth" places a signaling cell on the flank at generation 60.
+- "Regeneration" removes the right half of the embryo at generation 100 and lets it regrow.
+- "Somitogenesis" adds an oscillating clock that turns stem cells into mesoderm.
+- "Minimal Egg" has no organiser.
+
+Press `v` to cycle the views (cells, morphA, morphB, nutrient) and see the chemical fields behind the pattern. `f`/`F` change the nutrient rate, `u`/`U` the mutation rate, and a mouse click places a stem cell.
 
 **References**
 - Turing, A. M. "The chemical basis of morphogenesis." *Philosophical Transactions of the Royal Society B* 237 (1952): 37-72. https://doi.org/10.1098/rstb.1952.0012
@@ -462,21 +478,22 @@ Cell types: stem(@), ectoderm(#), mesoderm(%), endoderm(&), neural(*), signal(<>
 **Formulation** — Molecules are character strings of length 1-16 on a 2D grid:
 
 ```
-Reaction types (when two adjacent molecules collide):
-  1. Template replication (if enabled):
-     Template mol1 (len >= 3) + raw material mol2 (len >= 2)
-     Product = complement of mol1 (each char mapped: A<->E, B<->F, C<->G, D<->H)
-     Cost: 0.3 energy from template, 0.2 from material
+Reaction types (each adjacent pair reacts with probability react_prob):
+  1. Template replication (if enabled; chosen with probability template_bias, default 0.2):
+     Template mol1 (len >= 3) + raw material mol2 (len >= 2), combined energy > 0.5
+     Product = complement of mol1, cut to min(len(mol1), len(mol2) + 1) chars
+       (each char mapped: A<->E, B<->F, C<->G, D<->H)
+     Cost: 0.3 energy from template; mol2 loses its first char and 0.2 energy
      Mutation: each output char has mutation_rate chance of random substitution
 
   2. Catalysis (if enabled):
-     Catalyst mol1 (len >= 3) must contain complement of mol2's first 2 chars
-     Product: mol2 with each char shifted +1 in alphabet (A->B, B->C, ...)
+     Catalyst mol1 (len >= 3, energy > 0.2) must contain complement of mol2's first 2 chars
+     Product: mol2 with each char shifted +1 in alphabet (A->B, ..., H->A)
      Cost: 0.1 energy from catalyst; product gains 0.2
 
   3. Concatenation:
      mol1 + mol2 -> mol1+mol2  (if combined length <= 16)
-     Probability: react_prob * 0.5,  requires energy > 0.3
+     Extra probability: react_prob * 0.5,  requires e1 + e2 > 0.3
      Energy: min(1.0, e1 + e2*0.5 + 0.3)
 
   4. Spontaneous cleavage:
@@ -485,15 +502,17 @@ Reaction types (when two adjacent molecules collide):
 
 Energy dynamics:
   All molecules lose energy_decay per step (0.003-0.01)
-  Depleted molecules degrade: lose last char, then disappear
-  Food monomers injected at edges at rate food_rate
+  Molecules with no energy lose their last char; empty monomers vanish with probability 0.3
+  Food monomers are injected at random cells, often on the left or right edge, at rate food_rate
 
 Autocatalytic cycle detection (every 20 steps):
   Build catalytic graph: A -> B means A catalyzes production of B
   Search for cycles of length 2-4 via DFS
 ```
 
-**What to look for** — "RNA World" (high template bias) favors replication — watch for replicator sequences (marked with diamond glyphs). "Metabolism First" (catalysis only, no templates) emphasizes autocatalytic cycles. Monitor the stats line: species diversity, longest polymer, cycle count, and replicator count chart the soup's chemical evolution. "Lipid World" enables clustering — long polymers attract nearby monomers, forming proto-compartments. Toggle between soup view (molecule type), energy view, and diversity view (colored by first character) to see different aspects of the chemistry.
+**What to look for** — "RNA World" (high template bias) favors replication — watch for replicator sequences (marked with diamond glyphs). "Metabolism First" (catalysis only, no templates) emphasizes autocatalytic cycles. Monitor the stats line: species diversity, longest polymer, cycle count, and replicator count chart the soup's chemical evolution. "Lipid World" enables clustering — long polymers attract nearby monomers, forming proto-compartments. Press `v` to cycle the soup view (molecule type), energy view and diversity view (colored by first character). `e`/`E` change reactivity, `f`/`F` the food rate and `u`/`U` the mutation rate. A mouse click drops a short polymer.
+
+The eight presets are Primordial Soup, Rich Broth, Sparse Tidepools, RNA World, Metabolism First, Lipid World, Volcanic Vent and Minimal Abiogenesis. "Minimal Abiogenesis" turns off both templates and catalysis.
 
 **References**
 - Kauffman, S. A. *The Origins of Order.* Oxford University Press, 1993. https://global.oup.com/academic/product/9780195079517
