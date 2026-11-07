@@ -116,3 +116,14 @@ def test_synthesize_produces_audio():
     assert len(pcm) > 0
     assert "frame_count" in state
     assert state["frame_count"] == 1
+
+
+def test_detect_player_returns_command_for_afplay_only():
+    """afplay is the only player on macOS; detection must return its command."""
+    from unittest.mock import patch
+    from life.modes import sonification
+
+    with patch("shutil.which", side_effect=lambda c: "/usr/bin/afplay" if c == "afplay" else None):
+        assert sonification._sonify_detect_player() == ["afplay"]
+    with patch("shutil.which", return_value=None):
+        assert sonification._sonify_detect_player() is None

@@ -953,7 +953,7 @@ def _sonify_detect_player():
         ("paplay", ["paplay", "--raw", "--rate=22050", "--channels=2",
                      "--format=s16le"]),
         ("aplay", ["aplay", "-q", "-f", "S16_LE", "-r", "22050", "-c", "2"]),
-        ("afplay", None),
+        ("afplay", ["afplay"]),
     ]:
         if shutil.which(cmd):
             return args
