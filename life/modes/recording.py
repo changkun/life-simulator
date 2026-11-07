@@ -354,7 +354,7 @@ def _draw_cast_export_menu(self, max_y, max_x):
 
     lines += [
         row(),
-        row("  Enter=export  d=discard  Esc=cancel"),
+        row("  Enter=export  d/q/Esc=discard"),
         row("  Files saved to: ~/.life_saves/"),
         "╚" + "═" * w + "╝",
     ]

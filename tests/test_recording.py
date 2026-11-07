@@ -173,3 +173,17 @@ def test_export_both_writes_files(tmp_path):
         app._cast_rec_export_both()
     assert sorted(p.suffix for p in tmp_path.iterdir()) == [".cast", ".txt"]
     assert app.cast_frames == [] and app.cast_export_menu is False
+
+
+def test_export_menu_hint_says_esc_discards():
+    """The dialog must not call Esc 'cancel': Esc, q and d all discard."""
+    app = _make_app()
+    app.cast_frames = ["x"] * 3
+    app.cast_timestamps = [0.0, 1.0, 2.0]
+    app.cast_width, app.cast_height = 200, 60
+    app.stdscr = unittest.mock.MagicMock()
+    with unittest.mock.patch("curses.color_pair", return_value=0):
+        app._draw_cast_export_menu(70, 200)
+    text = "\n".join(c.args[2] for c in app.stdscr.addstr.call_args_list)
+    assert "Esc=cancel" not in text
+    assert "d/q/Esc=discard" in text
