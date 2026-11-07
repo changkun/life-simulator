@@ -1201,21 +1201,22 @@ Starting counts are placement attempts. Some fail because the random cell is not
 
 ## Spider Orb Web Construction & Prey Capture
 
-**Background.** Orb-weaving spiders (family Araneidae) construct geometrically regular webs that are marvels of biological engineering — radial frame threads provide structural support while sticky spiral threads capture prey. The spider sits at the hub or on a signal thread, reading vibrations transmitted through the silk network to detect, locate, and identify trapped prey. This simulation models the complete lifecycle: web construction (frame → radii → auxiliary spiral → capture spiral), prey interception via collision with sticky threads, vibration-based prey triangulation, wind-driven elastic deformation of the thread network, thread degradation and repair, and adaptive geometry based on capture history.
+**Background.** Orb-weaving spiders (family Araneidae) construct geometrically regular webs that are marvels of biological engineering — radial frame threads provide structural support while sticky spiral threads capture prey. The spider sits at the hub or on a signal thread, reading vibrations transmitted through the silk network to detect, locate, and identify trapped prey. The mode generates a finished web at the start, then simulates prey hitting sticky threads, vibrations spreading through the silk, the spider rushing out to wrap prey, wind deforming the elastic web, and thread breakage and repair.
 
-**Web construction.** The web is built as a graph of nodes and threads:
+**Web structure.** The web is a graph of nodes and threads, generated all at once (the spider does not build it step by step):
 
 ```
-1. Frame:    4 anchor nodes form a rectangular boundary (SILK_FRAME, strength=1.0, elasticity=0.3)
-2. Radii:    N radial threads from central hub to frame (SILK_RADIAL, strength=0.8, elasticity=0.4)
-             Intermediate nodes placed at regular intervals along each radius
-3. Aux:      Inner spiral connecting radial nodes (SILK_AUX, strength=0.4, elasticity=0.2)
-             Non-sticky scaffold for spider locomotion
-4. Sticky:   Outer spiral connecting radial nodes (SILK_STICKY, strength=0.5, elasticity=0.8)
-             Capture zone — glue droplets trap prey on contact
+1. Frame:    4 anchor nodes form a rectangular boundary (SILK_FRAME, strength=1.0, elasticity=0.3);
+             each radius tip also connects to the nearest anchor
+2. Radii:    N radial threads from the central hub to the tips (SILK_RADIAL, strength=0.8, elasticity=0.4)
+             Intermediate nodes sit at regular intervals along each radius
+3. Aux:      Rings of threads between neighboring radii, in the inner quarter of the web
+             (SILK_AUX, strength=0.4, elasticity=0.2); a non-sticky scaffold
+4. Sticky:   The same rings in the outer part (SILK_STICKY, strength=0.5, elasticity=0.8)
+             Capture zone: prey stick on contact
 ```
 
-The tangle weaver preset adds random cross-threads between nodes within half the web radius, producing an irregular 3D-style cobweb.
+The Cobweb Tangle Weaver preset adds up to 2 × N random sticky cross-threads between nodes less than half the web radius apart.
 
 **Silk types.** Four silk types with distinct mechanical properties:
 
@@ -1250,7 +1251,7 @@ The spider detects the node with maximum vibration (threshold > 0.05) and checks
 | Beetle | B | 0.9 | 0.8 | 1 |
 | Butterfly | W | 0.4 | 0.4 | 1 |
 
-Prey spawn at random screen edges, fly with random walk + slight center attraction + wind drift, and stick to SILK_STICKY threads via point-to-segment collision (distance < 0.8). Trapped prey snap to the nearest thread node and generate an initial vibration burst of mass × 1.5. Struggle decays at ×0.995/tick; wrapping by the spider further suppresses it at ×0.9/tick.
+Prey spawn at random screen edges, fly with a random walk, a slight pull toward the center, and wind drift, and stick to SILK_STICKY threads via point-to-segment collision (distance < 0.8). Trapped prey snap to the nearest thread node and generate an initial vibration burst of mass × 1.5. Struggle decays at ×0.995/tick; wrapping by the spider further suppresses it at ×0.9/tick.
 
 **Wind physics.** Elastic spring model on the thread network:
 
@@ -1292,18 +1293,18 @@ Threads enter STRESSED state when tension > 0.7 × strength. Broken threads are 
 | REPAIRING | Moves to broken threads, repairs (-3.0 silk each, restored at 70% strength) | -0.002/tick |
 | RESTING | Returns to hub, fast regeneration (+0.005 energy, +0.1 silk/tick) | None |
 
-Energy < 0.1 forces RESTING state. Successful capture grants +0.2 energy and records the angular zone (8 bins) for adaptive behavior.
+Energy < 0.1 forces RESTING state. A completed wrap counts as a capture, grants +0.2 energy, and records the angular zone (8 bins). The zone counts are kept but do not change the web.
 
 **Presets (6):**
 
 | Preset | Character | Configuration |
 |--------|-----------|--------------|
-| Garden Orb Weaver | Classic orb web, sheltered garden | 24 radii, 1.2 spiral spacing, moderate wind, prey rate 0.02 |
+| Garden Orb Weaver | Classic orb web, sheltered garden | 24 radii, 1.2 spiral spacing, no wind, prey rate 0.02 |
 | Morning Dew Web | Calm dawn, dew on silk | Wind 0.01, prey rate 0.01, slow peaceful web |
 | Storm Damage & Repair | Fierce gusts shred the web | Wind 0.5, gusts ×2, prey rate 0.015, frequent breakage |
 | Prey Bonanza | Insect swarm overwhelms web | Prey rate 0.08, wind 0.05, rapid silk depletion |
 | Cobweb Tangle Weaver | Irregular 3D tangle web | 40 radii, 0.8 spacing, extra random cross-threads, prey rate 0.025 |
-| Golden Silk Orbweaver | Nephila-style giant web | Radius ×0.48, 32 radii, 150 silk reserve, prey rate 0.03 |
+| Golden Silk Orbweaver | Nephila-style giant web | Radius 0.48 of the smaller screen side (others 0.40), 32 radii, 150 starting silk, prey rate 0.03 |
 
 **View modes (3, cycle with `v`):**
 1. **Web Structure** — thread network drawn with Unicode line characters (`─│╲╱·`), junction dots at nodes, vibration ripples (`○` high / `∙` medium), prey glyphs color-coded (green free, red trapped, dim wrapped `●`), spider `◆` colored by state (green waiting, red rushing, yellow wrapping, cyan repairing), wind direction arrow with magnitude bar, spider state label
@@ -1312,7 +1313,7 @@ Energy < 0.1 forces RESTING state. Successful capture grants +0.2 energy and rec
 
 **Controls:** `Space`=play/pause, `n`/`.`=step, `v`=cycle views, `+/-`=simulation speed, `r`=reset, `R`/`m`=menu, `q`=exit.
 
-**What to look for.** In Garden Orb Weaver, watch the web gently flex in the wind while the spider waits at the hub. When a prey insect (colored green) drifts into a sticky spiral thread, it snaps to the nearest node and begins struggling — vibration ripples (`○∙`) radiate outward through the thread network. The spider turns red and rushes along the radial threads toward the trapped prey, then turns yellow while wrapping it in silk. Switch to Vibration Heatmap view to see wave propagation clearly — trapped prey appear as bright `◎` spots with `▓█` intensity fading outward through connected threads. Storm Damage & Repair is the most dramatic preset: violent gusts deform the web, threads snap (gaps appear in the spiral), and the spider enters repair mode, patching broken sections with weaker replacement silk. Watch the Graphs view — web integrity drops during gusts and recovers as the spider repairs. Prey Bonanza overwhelms the web with insects; the spider can't wrap them all before silk runs out, and some prey struggle free. Morning Dew Web is serene — barely any wind, slow prey arrival, the web stays pristine. Golden Silk Orbweaver builds a noticeably larger web with more silk reserves. Cobweb Tangle Weaver produces a messy, irregular web with cross-threads in all directions — vibrations propagate differently through the tangled structure.
+**What to look for.** In Garden Orb Weaver, the spider waits at the hub while the web stays still. When a prey insect (colored green) drifts into a sticky spiral thread, it snaps to the nearest node and begins struggling — vibration ripples (`○∙`) radiate outward through the thread network. The spider turns red and rushes along the radial threads toward the trapped prey, then turns yellow while wrapping it in silk. Switch to Vibration Heatmap view to see wave propagation clearly — trapped prey appear as bright `◎` spots with `▓█` intensity fading outward through connected threads. Storm Damage & Repair has strong gusts. They deform the web, threads snap, and the spider repairs them with weaker silk. In the Graphs view, web integrity drops during gusts and recovers as the spider repairs. Prey Bonanza brings many insects, and wrapping drains the spider's silk and energy. Morning Dew Web has almost no wind and slow prey. Golden Silk Orbweaver has a larger web and more silk. Cobweb Tangle Weaver adds cross-threads in all directions, so vibrations take different paths.
 
 **References.**
 - Vollrath, F. "Spider webs and silks." *Scientific American*, 266(3), 70–76, 1992. https://doi.org/10.1038/scientificamerican0392-70
