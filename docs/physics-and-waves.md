@@ -956,7 +956,8 @@ Entanglement:
 
 Measurement (click):
   Collapse cell to |1⟩ with probability P, or |0⟩ with probability 1−P.
-  Entangled partners partially collapse proportional to entanglement strength.
+  Each entangled partner (strength > 0.1) collapses with probability
+  0.5 × strength, and the link is removed.
 
 Environmental decoherence (rate d, adjustable 0–1):
   Each step, each cell has probability d of undergoing spontaneous measurement,
@@ -971,14 +972,14 @@ Environmental decoherence (rate d, adjustable 0–1):
 **Presets** — Six configurations showcase different quantum phenomena:
 - **Quantum Glider**: Superposition of a glider at two translated positions with a π/3 phase offset — produces interference fringes as the two copies evolve
 - **Schrödinger's Blinker**: Period-2 oscillator in superposition of both horizontal and vertical phases simultaneously — the quantum version of the simplest oscillator
-- **Entangled Gosper Gun**: Classic Gosper glider gun with phase-varying birth sites — glider streams carry correlated quantum states
-- **Quantum Soup**: 30% of cells initialized with random amplitude (up to 0.8) and random phase — watch decoherence crystallize classical structures from quantum chaos
-- **Bell State Pair**: Two cells separated by 10 columns, each with amplitude 1/√2, maximally entangled — measuring one instantly collapses the other
+- **Entangled Gosper Gun**: Classic Gosper glider gun whose cells have amplitude 0.92 and a slowly varying phase — glider streams carry that phase
+- **Quantum Soup**: 30% of cells initialized with a random alive probability (up to 0.8) and random phase — watch decoherence crystallize classical structures from quantum chaos
+- **Bell State Pair**: Two cells separated by 10 columns, each with amplitude 1/√2 and entanglement strength 1.0 — measuring one collapses the other with probability 0.5, and the link otherwise decays by 0.95 per step
 - **Quantum Garden of Eden**: Uniform low-amplitude (0.15) superposition across the entire grid with a slowly varying phase gradient — a state with no classical predecessor
 
 **Controls**: `Space` play/pause, `n` single step, `v` cycle view mode, `d`/`D` increase/decrease decoherence rate, `+`/`-` adjust steps per frame, `click` measure a cell, `r` reset current preset, `R` return to preset menu.
 
-**What to look for** — In the Quantum Glider preset, watch the two glider copies interfere as they evolve — bright regions where amplitudes constructively interfere and dark gaps where they cancel. Switch to Phase view to see the π/3 offset between the two copies. With the Bell State Pair, click one cell and watch the other instantly collapse — then switch to Entanglement view to see the correlation link vanish. Try increasing decoherence (`d` key) on the Quantum Soup to watch a quantum superposition gradually crystallize into recognizable classical Life structures like blinkers and blocks. The Entangled Gosper Gun produces the most visually complex dynamics — streams of quantum gliders carrying phase information from the gun's birth events.
+**What to look for** — In the Quantum Glider preset, watch the two glider copies interfere as they evolve — bright regions where amplitudes constructively interfere and dark gaps where they cancel. Switch to Phase view to see the π/3 offset between the two copies. With the Bell State Pair, click one cell and watch whether the other collapses (50% chance) — then switch to Entanglement view to see the link vanish. Try increasing decoherence (`d` key) on the Quantum Soup to watch a quantum superposition gradually crystallize into recognizable classical Life structures like blinkers and blocks. The Entangled Gosper Gun produces the most visually complex dynamics — streams of quantum gliders carrying phase information from the gun's birth events.
 
 **References**
 - Bleh, D., Calarco, T., and Montangero, S. "Quantum Game of Life," *EPL (Europhysics Letters)*, 97(2), 2012. https://doi.org/10.1209/0295-5075/97/20012
