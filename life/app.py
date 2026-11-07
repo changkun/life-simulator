@@ -6593,7 +6593,7 @@ class App:
             "║  + / -     Zoom in / out (density glyphs)      ║",
             "║  0         Reset zoom to 1:1                   ║",
             "║  < / >     Decrease / increase speed           ║",
-            "║  Arrows    Move cursor (also vim hjkl)         ║",
+            "║  Arrows    Move cursor (also vim k/j/l)        ║",
             "║  e         Toggle cell under cursor            ║",
             "║  d         Draw mode (paint while moving)      ║",
             "║  x         Erase mode (erase while moving)     ║",
