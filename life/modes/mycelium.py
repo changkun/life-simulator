@@ -404,6 +404,12 @@ def _mycelium_step(self):
     for r in range(surface_row + 1, rows - 1):
         for c in range(cols):
             ct = grid[r][c]
+            if ct == CELL_HYPHA and random.random() < 0.005 * sf:
+                # Chance to form hub where hyphae are dense
+                hypha_near = _count_neighbors(grid, r, c, rows, cols, HYPHA_TYPES)
+                if hypha_near >= 3:
+                    grid[r][c] = CELL_HYPHA_HUB
+                    ct = CELL_HYPHA_HUB
             if ct == CELL_HYPHA or ct == CELL_HYPHA_HUB:
                 if random.random() > 0.03 * sf * moisture:
                     continue
@@ -413,12 +419,6 @@ def _mycelium_step(self):
                     # Weight by nutrient concentration
                     best = max(adj, key=lambda p: nutrient[p[0]][p[1]] + random.random() * 0.3)
                     grow_candidates.append(best)
-
-            elif ct == CELL_HYPHA and random.random() < 0.005 * sf:
-                # Chance to form hub where hyphae are dense
-                hypha_near = _count_neighbors(grid, r, c, rows, cols, HYPHA_TYPES)
-                if hypha_near >= 3:
-                    grid[r][c] = CELL_HYPHA_HUB
 
     for nr, nc in grow_candidates:
         if grid[nr][nc] in GROWABLE_SOIL:

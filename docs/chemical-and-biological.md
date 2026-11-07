@@ -732,8 +732,9 @@ Grid layers (top to bottom):
 
 Cell types:
   HYPHA (~~): fungal strand, grows through soil toward roots and nutrients
-  HYPHA_HUB (@@): thick junction; set up at the start where a hypha has 4+ hypha-type
-                  neighbors, and no new hubs form during the run
+  HYPHA_HUB (@@): thick junction; formed at the start where a hypha has 4+ hypha-type
+                  neighbors, and during the run (0.5% chance per step, scaled by
+                  the season factor) where a hypha has 3+ hypha-type neighbors
   MYCORRHIZA (<>): root-hypha interface (nutrient exchange point)
   ROOT (rr): tree root network
   ROOT_TIP (r>): actively growing root tip

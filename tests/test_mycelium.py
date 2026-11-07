@@ -80,3 +80,22 @@ def test_stats_updated_after_step():
     assert "trees_alive" in stats
     # After steps on Old-Growth, there should be trees
     assert stats["trees_alive"] > 0
+
+
+def test_step_can_form_hub_from_dense_hyphae(monkeypatch):
+    """A hypha with 3+ hypha neighbours can become a hub during a run."""
+    from life.modes.mycelium import CELL_HYPHA_HUB
+    app = _make_app()
+    app._mycelium_init(0)
+    grid = app.mycelium_grid
+    r0 = app.mycelium_rows - 4
+    # T shape: the centre has exactly 3 hypha neighbours, below the
+    # start-up threshold of 4, so only the in-run rule can make it a hub.
+    for r, c in [(r0, 10), (r0, 11), (r0, 12), (r0 + 1, 11)]:
+        grid[r][c] = CELL_HYPHA
+    monkeypatch.setattr(random, "random", lambda: 0.99)
+    app._mycelium_step()
+    assert grid[r0][11] != CELL_HYPHA_HUB
+    monkeypatch.setattr(random, "random", lambda: 0.0)
+    app._mycelium_step()
+    assert grid[r0][11] == CELL_HYPHA_HUB
