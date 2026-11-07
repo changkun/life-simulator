@@ -220,7 +220,6 @@ def make_mock_app(rows=40, cols=120, grid_rows=30, grid_cols=50):
     app.mp_sim_gens = 200
     app.mp_start_gen = 0
     app.mp_territory_bonus = [0, 0]
-    app.mp_state_dirty = False
     app.mp_host_port = 7654
     app.mp_connect_addr = ""
     # Puzzle
