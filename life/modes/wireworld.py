@@ -1,12 +1,9 @@
-"""Mode: ww — simulation mode for the life package."""
+"""Wireworld — four-state cellular automaton where electrons travel along wires."""
 import curses
-import math
-import random
 import time
 
 
 from life.constants import SPEEDS, SPEED_LABELS
-from life.grid import Grid
 
 # States: 0=empty, 1=conductor, 2=electron head, 3=electron tail
 WW_EMPTY = 0
@@ -61,7 +58,7 @@ WW_PRESETS = [
 def _ww_step(self):
     """Advance the Wireworld simulation by one generation."""
     new_grid: dict[tuple[int, int], int] = {}
-    # Gather all cells that need checking: conductors and their neighbors
+    # Only occupied cells and the neighbours of conductors can change.
     check_cells: set[tuple[int, int]] = set()
     for (r, c), state in self.ww_grid.items():
         check_cells.add((r, c))
@@ -77,13 +74,12 @@ def _ww_step(self):
     for (r, c) in check_cells:
         state = self.ww_grid.get((r, c), self.WW_EMPTY)
         if state == self.WW_EMPTY:
-            continue  # empty stays empty
+            continue
         elif state == self.WW_HEAD:
             new_grid[(r, c)] = self.WW_TAIL
         elif state == self.WW_TAIL:
             new_grid[(r, c)] = self.WW_CONDUCTOR
         elif state == self.WW_CONDUCTOR:
-            # Count electron head neighbors
             head_count = 0
             for dr in (-1, 0, 1):
                 for dc in (-1, 0, 1):
@@ -104,7 +100,7 @@ def _ww_step(self):
 
 
 def _ww_init(self, preset_cells: dict[tuple[int, int], int] | None = None):
-    """Initialize the Wireworld grid."""
+    """Clear the grid, optionally loading a preset."""
     max_y, max_x = self.stdscr.getmaxyx()
     self.ww_rows = max_y - 5
     self.ww_cols = (max_x - 1) // 2
@@ -117,18 +113,17 @@ def _ww_init(self, preset_cells: dict[tuple[int, int], int] | None = None):
     self.ww_cursor_r = self.ww_rows // 2
     self.ww_cursor_c = self.ww_cols // 2
     if preset_cells:
-        # Center the preset on the grid
-        if preset_cells:
-            min_r = min(r for r, c in preset_cells)
-            max_r = max(r for r, c in preset_cells)
-            min_c = min(c for r, c in preset_cells)
-            max_c = max(c for r, c in preset_cells)
-            off_r = self.ww_rows // 2 - (min_r + max_r) // 2
-            off_c = self.ww_cols // 2 - (min_c + max_c) // 2
-            for (r, c), state in preset_cells.items():
-                nr = (r + off_r) % self.ww_rows
-                nc = (c + off_c) % self.ww_cols
-                self.ww_grid[(nr, nc)] = state
+        # Centre the preset on the grid.
+        min_r = min(r for r, c in preset_cells)
+        max_r = max(r for r, c in preset_cells)
+        min_c = min(c for r, c in preset_cells)
+        max_c = max(c for r, c in preset_cells)
+        off_r = self.ww_rows // 2 - (min_r + max_r) // 2
+        off_c = self.ww_cols // 2 - (min_c + max_c) // 2
+        for (r, c), state in preset_cells.items():
+            nr = (r + off_r) % self.ww_rows
+            nc = (c + off_c) % self.ww_cols
+            self.ww_grid[(nr, nc)] = state
 
 
 
@@ -330,7 +325,7 @@ def _draw_ww_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate [Enter]=select [q/Esc]=cancel"
+        hint = " j/k=move  Enter=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
@@ -428,7 +423,7 @@ def _draw_ww(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [e]=draw [0-3]=brush [Enter]=cycle [r]=clear [R]=menu [</>]=speed [q]=exit"
+            hint = " Space=play  n=step  hjkl=move  e=draw  0-3=brush  Enter=cycle cell  r=clear  R=menu  </>=speed  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
