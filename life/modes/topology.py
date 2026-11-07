@@ -1,9 +1,7 @@
-"""Topology Mode — run any simulation on non-Euclidean surfaces.
+"""Topology Mode — run grid simulations on non-Euclidean surfaces.
 
-A horizontal feature that transforms how ALL existing simulations behave by
-changing the grid's boundary conditions and cell connectivity.  Users cycle
-through surface types (plane, torus, Klein bottle, Möbius strip, projective
-plane) and watch how patterns wrap, twist, and tile differently on each surface.
+Ctrl+W cycles the grid's boundary conditions through plane, torus, Klein
+bottle, Möbius strip and projective plane.
 
 Supported topologies:
   plane            – hard edges, no wrapping (finite flat sheet)
@@ -51,20 +49,11 @@ TOPOLOGY_INFO = {
     },
 }
 
-# Drawing characters for edge indicators
-_EDGE_CHARS = {
-    "wall":    ("─", "│"),   # horizontal wall, vertical wall
-    "wrap-h":  ("═", "║"),   # seamless wrap
-    "wrap-v":  ("═", "║"),
-    "twist-h": ("≈", "┃"),   # twist wrap (wavy = twist)
-    "twist-v": ("≈", "┃"),
-}
-
 # ── Topology cycling ────────────────────────────────────────────────────────
 
 
 def _topology_cycle(self, direction=1):
-    """Cycle to the next (or previous) topology and apply to the grid."""
+    """Switch the grid to the next (or previous) topology."""
     topo_list = Grid.TOPOLOGIES
     grid = self.grid
     cur_idx = topo_list.index(grid.topology) if grid.topology in topo_list else 0
@@ -77,7 +66,7 @@ def _topology_cycle(self, direction=1):
 
 
 def _topology_set(self, topo_name):
-    """Set topology directly by name."""
+    """Switch the grid to the named topology."""
     if topo_name in Grid.TOPOLOGIES:
         self.grid.topology = topo_name
         info = TOPOLOGY_INFO[topo_name]
@@ -87,8 +76,7 @@ def _topology_set(self, topo_name):
 # ── Key handling ────────────────────────────────────────────────────────────
 
 def _topology_handle_key(self, key):
-    """Handle topology-related keys. Returns True if key was consumed."""
-    # Ctrl+W (0x17 = 23) — cycle topology forward
+    """Handle topology keys. Return True if the key was consumed."""
     if key == 23:  # Ctrl+W
         _topology_cycle(self, 1)
         return True
@@ -98,7 +86,7 @@ def _topology_handle_key(self, key):
 # ── Visual indicators ───────────────────────────────────────────────────────
 
 def _draw_topology_indicator(self, max_y, max_x):
-    """Draw a small topology indicator in the top-right corner."""
+    """Draw the topology name in the top-right corner."""
     topo = self.grid.topology
     if topo == Grid.TOPO_TORUS:
         return  # Torus is default — no indicator needed
@@ -118,12 +106,11 @@ def _draw_topology_indicator(self, max_y, max_x):
 
 
 def _draw_topology_edges(self, max_y, max_x):
-    """Draw edge indicators showing wrapping/twist behavior on the grid borders.
+    """Draw border characters that show how each edge wraps.
 
-    This renders subtle border characters that visually communicate:
-      wall   → thin single line (─ │)
-      wrap   → double line (═ ║) with arrow hints
-      twist  → wavy line (≈ ┃) indicating flip
+      wall   → thin line (─ │)
+      wrap   → double line (═ ║)
+      twist  → wavy line (≈ ┃), which flips the other axis
     """
     topo = self.grid.topology
     if topo == Grid.TOPO_TORUS:
@@ -134,13 +121,12 @@ def _draw_topology_edges(self, max_y, max_x):
         return
 
     edges = info["edges"]
-    # We need at least 3 rows and 3 cols to draw borders
     if max_y < 3 or max_x < 4:
         return
 
-    # Determine the rendering area (status bar takes bottom 2-3 lines usually)
-    draw_h = min(max_y - 2, max_y)
-    draw_w = min(max_x - 1, max_x)
+    # The bottom two rows belong to the status and hint bars.
+    draw_h = max_y - 2
+    draw_w = max_x - 1
 
     # Color: walls=dim, wraps=cyan, twists=magenta
     try:
