@@ -532,10 +532,10 @@ Parameters: G (gravitational constant), dt (timestep), epsilon (softening). Each
 | Preset | G | dt | epsilon | Setup |
 |---|---|---|---|---|
 | Solar System | 1.0 | 0.02 | 0.5 | Star of mass 500 and six planets on circular orbits at random angles |
-| Binary Star | 1.0 | 0.02 | 0.5 | Two stars of mass 200 in mutual orbit, plus 20 light debris bodies |
+| Binary Star | 1.0 | 0.02 | 0.5 | Two stars of mass 200, 12 apart, on a circular mutual orbit, plus 20 light debris bodies |
 | Galaxy Collision | 0.5 | 0.03 | 1.0 | Two disks of 40 light bodies around a mass-100 centre, on a collision course |
 | Random Cluster | 0.8 | 0.03 | 0.8 | 60 bodies of random mass in a small cloud |
-| Figure-Eight | 1.0 | 0.01 | 0.1 | Three equal masses started from the Chenciner-Montgomery initial conditions |
+| Figure-Eight | 1.0 | 0.01 | 0.1 | Three masses of 10 started from the Chenciner-Montgomery initial conditions, with velocities scaled for G, mass and size |
 | Lagrange Points | 1.0 | 0.02 | 0.5 | Central mass 400, one planet, two light trojans at L4/L5, and 15 debris bodies |
 
 ### Controls
@@ -544,9 +544,7 @@ Parameters: G (gravitational constant), dt (timestep), epsilon (softening). Each
 
 ### What to look for
 
-The Solar System preset shows Keplerian orbits, with inner planets moving faster than outer ones. Binary Star shows mutual orbital motion. Galaxy Collision produces tidal tails and merging structures. Bodies that come closer than the merge distance combine, so counts fall over time. In Lagrange Points, the trojans start 60 degrees ahead of and behind the planet.
-
-In the current code, the Figure-Eight velocities are scaled differently from its masses and lengths, so the three bodies do not follow the figure-8 and merge into one early in the run.
+The Solar System preset shows Keplerian orbits, with inner planets moving faster than outer ones. Binary Star starts the two stars on a circular mutual orbit. Figure-Eight starts the three bodies on the figure-8 solution. Galaxy Collision produces tidal tails and merging structures. Bodies that come closer than the merge distance combine, so counts fall over time. In Lagrange Points, the trojans start 60 degrees ahead of and behind the planet.
 
 ### References
 
