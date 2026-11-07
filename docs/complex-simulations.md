@@ -434,7 +434,7 @@ Flake sizes: 0=small, 1=medium, 2=large
 
 ## Matrix Digital Rain
 
-**Background.** Inspired by the iconic cascading green characters from the 1999 film *The Matrix*, this mode renders columns of falling character streams with head-glow, brightness decay, and stochastic character mutation. The algorithm creates an illusion of depth through layered streams with varying speeds and lengths within each column.
+**Background.** Inspired by the iconic cascading green characters from the 1999 film *The Matrix*, this mode draws columns of falling character streams with a bright head, a fading tail, and random character changes. Streams in a column have different speeds and lengths, which gives a sense of depth.
 
 **Formulation.** Each column maintains a list of independent streams:
 
@@ -445,7 +445,8 @@ Stream spawning:
   speed       ~ U(0.3, 1.5)
   length      ~ randint(4, max(5, rows/2))
   mutate_rate ~ U(0.02, 0.1)
-  New streams spawn with probability: density * 0.02 per column per step
+  At reset, each column gets one stream with probability = density.
+  Afterwards, a new stream spawns with probability density * 0.02 per column per step.
 
 Stream update:
   y += speed
@@ -461,28 +462,30 @@ Brightness model (per character cell):
     fraction < 0.5: 2 (mid — normal green)
     else:           1 (tail — dim green)
 
-  Later streams overwrite earlier (front layering)
+  Where streams overlap, the brighter cell wins
 
 Character pools:
   Katakana:  half-width katakana block (U+FF66-FF9D)
   Digits:    0-9
   Latin:     A-Z
-  Symbols:   =+*#@!?%&<>{}[]
+  Symbols:   +-*/<>=$#@&!?~^%
   Binary mode: "01" only
 
-Color modes: green (classic), blue, rainbow
+Color modes: green (classic), blue (drawn in cyan), rainbow
   Rainbow: color_pair = (col * 7 + generation) % 6 + 1
 
-Presets:    density  speed  chars
-  Classic   0.40     2      full set
-  Dense     0.75     3      full set
-  Sparse    0.15     1      no symbols
-  Katakana  0.40     2      katakana only
-  Binary    0.50     2      "01" only
-  Rainbow   0.40     2      full set, rainbow color
+Presets:         density  speed  chars
+  Classic Green  0.40     2      full set
+  Dense Rain     0.75     3      full set
+  Sparse Drizzle 0.15     1      no symbols
+  Katakana Only  0.40     2      katakana only
+  Binary         0.50     2      "01" only
+  Rainbow        0.40     2      full set, rainbow color
 ```
 
-**What to look for.** The white "head" of each stream creates the illusion of an advancing cursor, while the dimming tail fades into the background. Character mutation (flickering) makes streams appear to continuously decode new data. Dense mode fills most columns, creating a near-solid wall of falling text. Sparse mode leaves large gaps, emphasizing individual stream trajectories. In rainbow mode, column position modulates color, creating diagonal color bands that scroll with the animation frame counter.
+**Controls:** `Space`=play/pause, `n` or `.`=step, `s/S` or `+/-`=faster/slower (1-10), `d/D`=density up/down, `c`=cycle color (green, blue, rainbow), `i`=info overlay, `r`=reset, `R` or `m`=menu, `q`=exit.
+
+**What to look for.** The white head of each stream reads as an advancing cursor, and the tail fades into the background. Character mutation makes the streams flicker. Dense Rain fills most columns with falling text. Sparse Drizzle leaves large gaps, so you can follow single streams. In rainbow mode, color depends on the column and the frame counter, so diagonal color bands scroll across the screen.
 
 **References.**
 - Pimenta, S. & Poovaiah, R. "On defining visual rhythms for digital media." *Design Thoughts*, 2010. https://doi.org/10.1080/14626268.2010.521913
