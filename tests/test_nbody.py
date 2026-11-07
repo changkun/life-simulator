@@ -722,3 +722,13 @@ class TestNBodyOrbitalPhysics:
         for _ in range(5000):
             app._nbody_step()
         assert len(app.nbody_bodies) == 3
+
+    def test_binary_stars_orbit_circularly(self):
+        """The two stars keep their initial separation (circular mutual orbit)."""
+        app = _make_nbody_app()
+        app._nbody_init(1)
+        for _ in range(1500):
+            app._nbody_step()
+        a, b = sorted(app.nbody_bodies, key=lambda x: -x[4])[:2]
+        sep = math.hypot(a[0] - b[0], a[1] - b[1])
+        assert 11.0 < sep < 13.0

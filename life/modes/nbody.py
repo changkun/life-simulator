@@ -81,8 +81,8 @@ def _nbody_init(self, preset_idx: int):
     elif setup_key == "binary":
         sep = 12.0
         star_mass = 200.0
-        # Orbital velocity for binary: v = sqrt(G*M/(4*r))
-        v = math.sqrt(self.nbody_grav_const * star_mass / (4.0 * sep))
+        # Circular orbit of two equal masses M at separation d: v = sqrt(G*M/(2*d)).
+        v = math.sqrt(self.nbody_grav_const * star_mass / (2.0 * sep))
         self.nbody_bodies.append([cr - sep / 2, cc, 0.0, v, star_mass])
         self.nbody_bodies.append([cr + sep / 2, cc, 0.0, -v, star_mass])
         self.nbody_grav_const = 1.0
