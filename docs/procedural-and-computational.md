@@ -383,7 +383,7 @@ Parameters A and B (`a`/`A`, `b`/`B`) mostly scale spatial frequency, so raising
 
 **Background**
 
-The Doom-style raycaster reproduces the rendering technique used by Wolfenstein 3D (id Software, 1992), where a single ray is cast per screen column to determine wall distance and projected height. This was one of the first real-time 3D rendering methods for consumer hardware. The implementation adds fisheye correction, distance-based wall shading, floor rendering, and a minimap overlay.
+The Doom-style raycaster reproduces the rendering technique used by Wolfenstein 3D (id Software, 1992), where a single ray is cast per screen column to determine wall distance and projected height. This was one of the first real-time 3D rendering methods for consumer hardware. This version marches each ray in fixed 0.02 steps instead of using a grid DDA. It adds fisheye correction, distance-based wall shading, and floor shading, and the player walks through one of six fixed 16x16 maps.
 
 **Formulation**
 
@@ -391,12 +391,12 @@ The Doom-style raycaster reproduces the rendering technique used by Wolfenstein 
 Camera model:
   position = (px, py) in map coordinates
   angle = pa (player angle in radians)
-  FOV = field of view (radians)
+  FOV = field of view (60 degrees)
 
 For each screen column x in [0, screen_w):
   ray_angle = (pa - FOV/2) + (x / screen_w) * FOV
 
-  Ray stepping (step_size = 0.02, max_depth):
+  Ray stepping (step_size = 0.02, max_depth = 16):
     ray_x = px + cos(ray_angle) * dist
     ray_y = py + sin(ray_angle) * dist
     if map[int(ray_y)][int(ray_x)] == '#': HIT
@@ -416,17 +416,17 @@ For each screen column x in [0, screen_w):
 
   Wall color by distance:
     < 25% depth: bold magenta    < 50%: yellow
-    < 75%: dim                   else: very dim
+    < 75%: red                   else: dim
 
 Collision detection with wall sliding:
   margin = 0.2 (player radius)
-  Try full movement, then X-only, then Y-only
-  Check all four corners of player bounding box
+  Try full movement (checks all four corners of the bounding box),
+  then X-only, then Y-only (each checks two opposite corners)
 ```
 
 **What to look for**
 
-The fisheye correction eliminates the barrel distortion that would otherwise occur when projecting rays at angles away from the view center. Notice how wall shading characters transition from solid blocks at close range to sparse dots at distance, creating a convincing depth effect in pure ASCII. Wall sliding allows smooth movement along walls instead of abrupt stops. The implementation directly descends from the column-based rendering that powered the early 1990s FPS revolution.
+The fisheye correction eliminates the barrel distortion that would otherwise occur when projecting rays at angles away from the view center. Notice how wall shading characters transition from solid blocks at close range to sparse dots at distance, creating a convincing depth effect in pure ASCII. Wall sliding allows smooth movement along walls instead of abrupt stops. The presets are Dungeon, Office, Outdoor Ruins, Arena, Maze and Fortress. `W`/`S` or the up/down arrows move, `A`/`D` strafe, `Q`/`E` or the left/right arrows turn, and `Esc` exits.
 
 **References**
 
