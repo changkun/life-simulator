@@ -1,8 +1,6 @@
-"""Mode: shadertoy — simulation mode for the life package."""
+"""Shader Toy — animated per-pixel math shaders rendered as colored ASCII."""
 import curses
 import math
-import random
-import time
 
 
 SHADERTOY_SHADE_CHARS = " .,:;=+*#%@\u2588"
@@ -24,8 +22,10 @@ SHADERTOY_COLOR_NAMES = ["Rainbow", "Fire", "Ocean", "Mono"]
 
 
 def _shadertoy_eval(self, nx: float, ny: float, t: float) -> float:
-    """Evaluate the current shader preset at normalized coords (nx, ny) and time t.
-    Returns a value in [0, 1]."""
+    """Evaluate the current shader at normalized coords (nx, ny) and time t.
+
+    Returns a brightness in [0, 1].
+    """
     preset = self.shadertoy_preset_idx
     a = self.shadertoy_param_a
     b = self.shadertoy_param_b
@@ -215,7 +215,7 @@ def _shadertoy_init(self, preset_idx: int):
 
 
 def _shadertoy_step(self):
-    """Advance one frame — increment time."""
+    """Advance one frame by increasing the shader time."""
     self.shadertoy_time += 0.05 * self.shadertoy_speed
     self.shadertoy_generation += 1
 
@@ -316,7 +316,7 @@ def _draw_shadertoy_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hint = " [j/k]=navigate  [Enter]=select  [q]=cancel"
+    hint = " j/k=navigate  Enter=select  q=cancel"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:

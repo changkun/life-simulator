@@ -1,12 +1,10 @@
-"""Mode: raymarch — simulation mode for the life package."""
+"""SDF Ray Marching — render signed-distance-field scenes as shaded ASCII."""
 import curses
 import math
-import random
-import time
 
 RAYMARCH_PRESETS = [
     ("Sphere", "Classic unit sphere — clean SDF baseline", "sphere"),
-    ("Torus", "Torus knot with smooth shading", "torus"),
+    ("Torus", "Torus with smooth shading", "torus"),
     ("Multi-Shape", "Sphere + torus + box combined scene", "multi"),
     ("Mandelbulb", "Mandelbulb fractal — power-8 by default", "mandelbulb"),
     ("Infinite Spheres", "Infinite repeating sphere lattice", "infinite"),
@@ -155,7 +153,7 @@ def _raymarch_shadow(self, ox: float, oy: float, oz: float,
 
 
 def _raymarch_step(self):
-    """Advance one frame — rotate camera if auto-rotate is on."""
+    """Advance one frame; orbit the camera if auto-rotate is on."""
     if self.raymarch_auto_rotate:
         self.raymarch_cam_theta += self.raymarch_rotate_speed
     self.raymarch_generation += 1
@@ -267,7 +265,7 @@ def _draw_raymarch_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hint = " [j/k]=navigate  [Enter]=select  [q]=cancel"
+    hint = " j/k=navigate  Enter=select  q=cancel"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:
@@ -465,7 +463,7 @@ def _draw_raymarch(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    help_text = (" ←→↑↓=orbit  +/-=zoom  a=auto-rotate  s=shadows"
+    help_text = (" Space=pause  ←→↑↓=orbit  +/-=zoom  a=auto-rotate  s=shadows"
                  "  l/L=light  p/P=power  r=reset  m=menu  q=quit")
     try:
         self.stdscr.addstr(max_y - 1, 0, help_text[:max_x - 1],
