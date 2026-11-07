@@ -467,7 +467,7 @@ Algorithms and their complexities:
     For each digit position (units, tens, ...):
       counting sort by current digit
 
-  Shell Sort:      O(n^(3/2)) with gap/2 sequence
+  Shell Sort:      O(n^2) worst case with the gap/2 sequence
     gap = n/2; while gap > 0:
       insertion sort with stride = gap; gap /= 2
 
@@ -475,12 +475,14 @@ Each operation recorded as a step tuple:
   ("cmp", i, j, array_state)   -- comparison
   ("swap", i, j, array_state)  -- element exchange
   ("write", i, array_state)    -- overwrite (merge/radix)
+  ("pivot", i, array_state)    -- quicksort pivot selected
+  ("read", i, array_state)     -- radix digit read
   ("sorted", idx, array_state) -- mark position final
 ```
 
 **What to look for**
 
-Bubble sort's quadratic nature is immediately visible as the algorithm makes many passes with diminishing effect. Quicksort shows dramatic pivot-based partitioning with recursive subdivision. Merge sort's merge phase creates satisfying sorted runs that double in length. Radix sort operates digit-by-digit with no comparisons, producing wave-like reorganization patterns. The info panel tracks comparisons vs. swaps -- compare merge sort's high write count against quicksort's lower total operations.
+Bubble sort's quadratic nature is immediately visible as the algorithm makes many passes with diminishing effect. Quicksort shows dramatic pivot-based partitioning with recursive subdivision. Merge sort's merge phase creates satisfying sorted runs that double in length. Radix sort operates digit-by-digit with no comparisons, producing wave-like reorganization patterns. The info panel (toggle with `i`) tracks comparisons and swaps/writes. Compare how many writes merge sort makes against the swaps quicksort makes. `Space` plays, `n` steps, `+`/`-` change the speed, and `r` reshuffles.
 
 **References**
 
