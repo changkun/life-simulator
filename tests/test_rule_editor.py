@@ -166,3 +166,12 @@ def test_corrupt_and_unwritable_rule_files_do_not_crash(tmp_path, monkeypatch):
     app._re_save_rule()
     assert "Could not save" in app.message
 
+
+def test_misspelled_name_is_reported_when_compiling():
+    from life.modes.rule_editor import _compile_expr
+    code, err = _compile_expr("sum(neighbours) == 3")
+    assert code is None
+    assert "neighbours" in err
+    # Errors that depend on the cell data are not compile errors.
+    code, err = _compile_expr("1 / sum(neighbors) > 0.2")
+    assert err is None and code is not None

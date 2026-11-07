@@ -62,20 +62,52 @@ _STARTER_SNIPPETS = [
 
 # ── Compilation helpers ──────────────────────────────────────────────
 
+def _rule_namespace(neighbors, age, x, y, step):
+    """Return the names a rule expression may use."""
+    return {
+        "neighbors": neighbors,
+        "sum": sum,
+        "len": len,
+        "min": min,
+        "max": max,
+        "abs": abs,
+        "any": any,
+        "all": all,
+        "age": age,
+        "x": x,
+        "y": y,
+        "step": step,
+        "random": _random.random,
+        "math": math,
+        "True": True,
+        "False": False,
+        "int": int,
+        "float": float,
+    }
+
+
 def _compile_expr(expr_str):
     """Compile a rule expression string to a code object.
 
     Returns (code_obj, None) on success or (None, error_str) on failure.
+    A trial run catches misspelled names, which would otherwise make the
+    rule silently never fire.
     """
     if not expr_str.strip():
         return None, "empty expression"
     try:
         code = compile(expr_str, "<rule>", "eval")
-        return code, None
     except SyntaxError as exc:
         return None, f"syntax error: {exc.msg}"
     except Exception as exc:
         return None, str(exc)
+    try:
+        eval(code, {"__builtins__": {}}, _rule_namespace([0] * 8, 0, 0, 0, 0))
+    except NameError as exc:
+        return None, f"unknown name: {exc.name}"
+    except Exception:
+        pass  # data-dependent errors are handled while stepping
+    return code, None
 
 
 def _eval_rule(code, neighbors, age, x, y, step):
@@ -84,26 +116,8 @@ def _eval_rule(code, neighbors, age, x, y, step):
     Returns bool result, or None on error.
     """
     try:
-        result = eval(code, {"__builtins__": {}}, {
-            "neighbors": neighbors,
-            "sum": sum,
-            "len": len,
-            "min": min,
-            "max": max,
-            "abs": abs,
-            "any": any,
-            "all": all,
-            "age": age,
-            "x": x,
-            "y": y,
-            "step": step,
-            "random": _random.random,
-            "math": math,
-            "True": True,
-            "False": False,
-            "int": int,
-            "float": float,
-        })
+        result = eval(code, {"__builtins__": {}},
+                      _rule_namespace(neighbors, age, x, y, step))
         return bool(result)
     except Exception:
         return None
