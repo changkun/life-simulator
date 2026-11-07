@@ -1,4 +1,4 @@
-"""Mode: mhd — simulation mode for the life package."""
+"""MHD Plasma — 2D resistive magnetohydrodynamics: reconnection, islands and turbulence."""
 import curses
 import math
 import random
@@ -34,7 +34,7 @@ def _enter_mhd_mode(self):
 
 
 def _exit_mhd_mode(self):
-    """Exit MHD Plasma mode."""
+    """Exit MHD Plasma mode and free the fields."""
     self.mhd_mode = False
     self.mhd_menu = False
     self.mhd_running = False
@@ -193,7 +193,8 @@ def _mhd_init(self, preset_idx: int):
 def _mhd_step(self):
     """Advance the MHD simulation by one time step.
 
-    Solves the incompressible resistive MHD equations using finite differences:
+    Solves the compressible, isothermal resistive MHD equations with explicit
+    finite differences:
         ∂ρ/∂t = -∇·(ρv) + ν_ρ∇²ρ          (continuity)
         ∂v/∂t = -(v·∇)v - ∇p/ρ + (J×B)/ρ + ν∇²v   (momentum + Lorentz force)
         ∂B/∂t = ∇×(v×B) + η∇²B             (induction + resistive diffusion)
@@ -252,10 +253,8 @@ def _mhd_step(self):
             dvy_dx = (vy[r][cp] - vy[r][cm]) * 0.5
             dvy_dy = (vy[rp][c] - vy[rm][c]) * 0.5
 
-            dbx_dx = (bx[r][cp] - bx[r][cm]) * 0.5
             dbx_dy = (bx[rp][c] - bx[rm][c]) * 0.5
             dby_dx = (by[r][cp] - by[r][cm]) * 0.5
-            dby_dy = (by[rp][c] - by[rm][c]) * 0.5
 
             # Current density: Jz = dBy/dx - dBx/dy (only z-component in 2D)
             jz = dby_dx - dbx_dy
@@ -302,7 +301,7 @@ def _mhd_step(self):
             new_bx[r][c] = bxv + dt * dbx_dt
             new_by[r][c] = byv + dt * dby_dt
 
-            # Soft clamp to prevent blowup
+            # Hard clamp keeps the explicit scheme from blowing up
             clamp = 2.0
             new_vx[r][c] = max(-clamp, min(clamp, new_vx[r][c]))
             new_vy[r][c] = max(-clamp, min(clamp, new_vy[r][c]))
@@ -379,7 +378,7 @@ def _handle_mhd_key(self, key: int) -> bool:
         self.mhd_resistivity = min(0.1, self.mhd_resistivity + 0.002)
         self._flash(f"Resistivity η={self.mhd_resistivity:.3f}")
         return True
-    # Viscosity: v/V
+    # Viscosity: w/W
     if key == ord("w"):
         self.mhd_viscosity = max(0.001, self.mhd_viscosity - 0.002)
         self._flash(f"Viscosity ν={self.mhd_viscosity:.3f}")
@@ -443,7 +442,7 @@ def _draw_mhd_menu(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    for i, (name, desc, eta, nu, pr, init) in enumerate(self.MHD_PRESETS):
+    for i, (name, desc, eta, nu, pr, _init) in enumerate(self.MHD_PRESETS):
         y = 3 + i
         if y >= max_y - 2:
             break
