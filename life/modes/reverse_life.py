@@ -1,42 +1,11 @@
-"""Mode: reverse_life — Constraint-solver that runs the Game of Life backwards.
-
-Given any GoL configuration, this mode uses constraint propagation and
-backtracking to find predecessor states — configurations that produce the
-current pattern when stepped forward one generation.  It effectively runs
-time in reverse.
-
-The solver's search process is visualized live: candidate cells flicker as
-the algorithm explores possibilities, dead-ends flash red, and solutions
-cascade in green.  The mode also detects **Garden of Eden** patterns
-(configurations with no possible predecessor), one of the deepest results
-in cellular automaton theory.
-
-Keys:
-    SPC     Start/pause the solver
-    Enter   Accept current solution & step backwards again
-    n       Find next alternative predecessor (if one exists)
-    r       Reset solver, keep current pattern
-    g       Check if current pattern is a Garden of Eden
-    s       Cycle solver speed (slow/medium/fast/instant)
-    v       Cycle view mode (solver / solution / overlay / diff)
-    c       Toggle constraint-propagation visualization
-    d       Cycle display (cells / search-tree / stats)
-    p       Place a preset pattern to solve
-    +/-     Grow/shrink search region
-    h       Toggle help overlay
-    q       Quit mode
-"""
+"""Reverse Life — a constraint solver that runs Game of Life backwards to find predecessor states."""
 import curses
-import math
-import random
 import time
 
 from life.grid import Grid
 from life.rules import rule_string
 
 # ── Constants ────────────────────────────────────────────────────────
-
-_SPARKLINE = "▁▂▃▄▅▆▇█"
 
 # Solver speed presets: (label, cells-per-frame)
 _SPEEDS = [
@@ -52,8 +21,7 @@ _INSTANT_BUDGET = 0.2
 _VIEW_MODES = ["solver", "solution", "overlay", "diff"]
 _DISPLAY_MODES = ["cells", "search-tree", "stats"]
 
-# Color pair offsets (we'll use pairs 80-89)
-_CP_DEAD = 0        # default
+# Color pairs, offset from _PAIR_BASE
 _CP_ALIVE = 1       # current pattern cell
 _CP_CANDIDATE = 2   # solver is considering this cell
 _CP_CONFIRMED = 3   # cell confirmed alive in predecessor
@@ -136,7 +104,6 @@ class _ReverseSolver:
 
         # Generator-based solver for incremental execution
         self._solver_gen = None
-        self._paused = False
 
     def _set_region(self, pad):
         """Limit the search to the live cells' bounding box grown by ``pad``.
@@ -171,7 +138,7 @@ class _ReverseSolver:
                 self.pred[r][c] = _CellState.DEAD
 
     def _neighbors(self, r, c):
-        """Return list of neighbor coordinates (with wrapping)."""
+        """Return the neighbor coordinates, wrapping at the edges."""
         nbrs = []
         for dr in (-1, 0, 1):
             for dc in (-1, 0, 1):
@@ -700,7 +667,7 @@ def _reverse_life_step(self):
         self.reverse_life_running = False
         return
 
-    speed_label, cells_per_frame = _SPEEDS[self.reverse_life_speed_idx]
+    _label, cells_per_frame = _SPEEDS[self.reverse_life_speed_idx]
 
     if cells_per_frame == 0:
         # Instant: search until done, but hand control back each frame so
@@ -718,7 +685,7 @@ def _reverse_life_step(self):
 
 
 def _is_reverse_life_auto_stepping(self):
-    """Check if solver is actively running."""
+    """Return True while the solver is running."""
     return getattr(self, 'reverse_life_running', False)
 
 
