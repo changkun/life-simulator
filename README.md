@@ -22,10 +22,10 @@
   ╚═══════════════════════════════════════════════════════════════════╝
 ```
 
-A terminal-based life simulator built entirely with Python's standard library.
-Cellular automata, fluid dynamics, particle systems,
-quantum circuits, neural networks, ecology, game theory, fractals, and more — all
-rendered with curses at 60 fps. No external dependencies.
+A terminal-based life simulator written in pure Python. It covers cellular
+automata, fluid dynamics, particle systems, quantum circuits, neural networks,
+ecology, game theory, fractals, and more, all rendered with curses.
+It needs only the standard library.
 
 For the scientific background, mathematical formulations, and literature references
 behind each simulation mode, see the **[Scientific Guide](docs/README.md)**.
@@ -94,14 +94,14 @@ pip install -e .
 ```bash
 uv run life                          # Launch (opens dashboard)
 uv run life --pattern glider         # Start with a specific pattern
-uv run life --pattern gosper         # Gosper glider gun
-uv run life --pattern random         # Random initial state
+uv run life --pattern glider_gun     # Gosper glider gun
 uv run life --rows 100 --cols 200    # Custom grid size
 uv run life --no-dashboard           # Skip dashboard, start in Game of Life
 uv run life --screensaver            # Demo reel (shuffled, all modes)
 uv run life --screensaver all_sequential   # Demo reel (ordered)
 uv run life --screensaver-interval 5 # 5 seconds per mode
 uv run life --list-patterns          # List all built-in patterns
+uv run life --terrarium              # Persistent terrarium (saves on exit, resumes on next launch)
 uv run life --host                   # Host a multiplayer game
 uv run life --host 9000              # Host on a specific port
 uv run life --connect HOST:PORT      # Join a multiplayer game
@@ -117,13 +117,14 @@ python life.py
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--pattern` | — | Start with a preset pattern (`glider`, `gosper`, `pulsar`, `random`, etc.) |
+| `-p`, `--pattern` | — | Start with a built-in pattern (see `--list-patterns`, e.g. `glider`, `glider_gun`, `pulsar`) |
 | `--rows` | 80 | Grid height |
 | `--cols` | 120 | Grid width |
 | `--no-dashboard` | off | Skip dashboard, start directly in Game of Life |
 | `--screensaver` | — | Demo reel mode (`all_sequential`, `all_shuffle`, `fav_sequential`, `fav_shuffle`) |
 | `--screensaver-interval` | 15 | Seconds per mode in screensaver mode |
 | `--list-patterns` | — | List available patterns and exit |
+| `--terrarium` | off | Launch Terrarium mode: persistent simulation that saves on exit and resumes on next launch |
 | `--host` | — | Host a multiplayer game (optional port, default 7654) |
 | `--connect` | — | Connect to a multiplayer game (`HOST:PORT`) |
 
