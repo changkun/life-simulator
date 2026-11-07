@@ -147,8 +147,10 @@ def _quake_init(self, preset_idx: int):
     self.quake_coupling = 0.15          # neighbor spring coupling
     self.quake_dynamic_drop = 0.85      # fraction of stress dropped on slip
     self.quake_damping = 0.96           # wave damping per step
-    self.quake_p_speed = 1.5            # P-wave speed (cells/step)
-    self.quake_s_speed = 0.9            # S-wave speed (cells/step)
+    # Wave speeds (cells/step). The explicit 2D scheme is stable only for
+    # speed**2 <= 0.5, so these stay below 0.707; P:S is about 5:3.
+    self.quake_p_speed = 0.65
+    self.quake_s_speed = 0.39
 
     # Display mode: "fault" or "waves"
     self.quake_view = "fault"
