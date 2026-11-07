@@ -17,6 +17,8 @@ NS_PRESETS = [
     ("Shear Layer", "Opposing horizontal flows creating Kelvin-Helmholtz instability", "shear"),
 ]
 
+NS_DEFAULT_VISCOSITY = 0.0001
+
 NS_DYE_CHARS = [" ", "░", "▒", "▓", "█"]
 NS_VEL_CHARS = [" ", "·", "∘", "○", "●"]
 NS_VORT_POS = [" ", "·", "∘", "○", "◉"]
@@ -62,6 +64,7 @@ def _ns_init(self, preset_idx: int):
     self.ns_running = False
     self.ns_viz_mode = 0
     self.ns_dye_hue = 0.0
+    self.ns_viscosity = NS_DEFAULT_VISCOSITY
 
     max_y, max_x = self.stdscr.getmaxyx()
     self.ns_rows = max(10, max_y - 3)

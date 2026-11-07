@@ -389,3 +389,15 @@ class TestNSMassConservation:
         )
         # Semi-Lagrangian can produce small negatives from interpolation
         assert min_dye > -0.1
+
+
+def test_init_resets_viscosity():
+    """A preset's viscosity (or the V/b keys) must not leak into the next preset."""
+    app = _make_app()
+    app._ns_init(3)  # Karman Vortices sets a lower viscosity
+    assert app.ns_viscosity != 0.0001
+    app._ns_init(0)  # Dye Playground uses the default
+    assert app.ns_viscosity == 0.0001
+    app.ns_viscosity *= 8
+    app._ns_init(0)
+    assert app.ns_viscosity == 0.0001
