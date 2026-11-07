@@ -457,7 +457,7 @@ Pyroclastic density current:
 
 Ejecta particles (ballistic):
   dr/dt = vr,  vr += 0.15 * speed   (gravity)
-  dc/dt = vc + wind * 0.05
+  dc/dt = vc,  vc += wind * 0.05 * speed
 
 Ash dispersion (semi-Lagrangian advection + diffusion):
   new_ash[r][c] = ash[r - wind_v][c - wind_u] * 0.92
@@ -467,7 +467,7 @@ Ash dispersion (semi-Lagrangian advection + diffusion):
 Cone geometry: height = peak * (1 - dist/radius)^1.3
 ```
 
-**What to look for** — "Strombolian" produces moderate eruptions with lava fountains. "Plinian" generates massive explosive columns with pyroclastic surges (deadly fast-moving clouds). "Hawaiian" features fluid lava flows from shield volcanos with secondary flank vents. "Caldera" shows multiple ring vents erupting simultaneously. Cycle through visualization layers (terrain, lava, temperature, ash, pyroclastic) with "v" to examine each phenomenon separately.
+**What to look for** — "Strombolian" produces moderate eruptions with lava fountains. "Plinian" generates massive explosive columns with pyroclastic surges (deadly fast-moving clouds). "Hawaiian" features fluid lava flows from shield volcanos with secondary flank vents. "Vulcanian" pairs viscous magma with violent bursts and pyroclastic surges. "Caldera Collapse" shows four ring vents erupting at once. "Fissure Eruption" runs six vents along a rift and floods the plain with lava. Press l or v to cycle through the layers (terrain, lava, temperature, ash, pyroclastic) and e to force an eruption by filling the chamber.
 
 **References**
 - Sparks, R.S.J. et al. *Volcanic Plumes*, John Wiley & Sons, 1997. https://doi.org/10.1002/0470023449
