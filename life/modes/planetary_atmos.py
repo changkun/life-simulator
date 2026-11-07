@@ -1,23 +1,4 @@
-"""Mode: planetary_atmos — Planetary Atmosphere & Weather System.
-
-Simulates a 2D cylindrical/Mercator projection of a planet with:
-- Atmospheric circulation cells (Hadley/Ferrel/Polar) driven by differential
-  solar heating with latitude-dependent insolation
-- Coriolis-deflected jet streams and geostrophic wind balance
-- Cyclone/anticyclone genesis from baroclinic instability
-- Moisture transport & precipitation (evaporation, advection, condensation)
-- Ocean-atmosphere coupling (SST fueling tropical cyclones)
-- Greenhouse forcing with adjustable CO2 and ice-albedo feedback
-
-Three views:
-  1) Pressure/wind map with isobar contours + storm glyphs + precipitation
-  2) Temperature/moisture heatmap with ocean currents + ice extent
-  3) Time-series sparkline graphs — 10 metrics
-
-Six presets:
-  Stable Temperate Earth, Tropical Cyclone Season, Ice Age Glaciation,
-  Runaway Greenhouse Venus, Tidally Locked Exoplanet, Snowball Earth Deglaciation
-"""
+"""Planetary Atmosphere & Weather System — a 2D planetary climate with circulation, storms, moisture and ice."""
 import curses
 import math
 import random
@@ -349,7 +330,6 @@ def _planetary_atmos_step(self):
     u = self.planetary_atmos_u
     v = self.planetary_atmos_v
     moisture = self.planetary_atmos_moisture
-    precip = self.planetary_atmos_precip
     ice = self.planetary_atmos_ice
     sst = self.planetary_atmos_sst
     land = self.planetary_atmos_land
@@ -403,7 +383,6 @@ def _planetary_atmos_step(self):
                 if 0 <= rr < rows:
                     t_lap += temp[rr][cc] - temp[r][c]
             # Advection by wind
-            t_adv = 0.0
             # Upwind advection
             src_r = r - int(round(v[r][c] * 2))
             src_c = c - int(round(u[r][c] * 2))
@@ -427,7 +406,6 @@ def _planetary_atmos_step(self):
 
             # --- Wind from pressure gradient + Coriolis ---
             # Pressure gradient force
-            dp_dx = 0.0
             dp_dy = 0.0
             cl = _wrap_col(c - 1, cols)
             cr_ = _wrap_col(c + 1, cols)
@@ -749,7 +727,7 @@ def _draw_planetary_atmos_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hint = "[up/dn] select  [Enter] start  [q] back"
+    hint = "up/down=select  Enter=start  q=exit"
     try:
         self.stdscr.addstr(max_y - 2, max(0, (max_x - len(hint)) // 2), hint,
                            curses.color_pair(7))
@@ -899,7 +877,7 @@ def _draw_pressure_view(self, max_y: int, max_x: int):
     co2 = self.planetary_atmos_co2
     state = "RUNNING" if self.planetary_atmos_running else "PAUSED"
     status = (f" {self.planetary_atmos_preset_name} | tick {gen} | {state} | "
-              f"storms:{n_storms} | CO2:{co2:.2f} | [v]iew [+/-]CO2 [space] [r]eset [q]uit")
+              f"storms:{n_storms} | CO2:{co2:.2f} | v=view  +/-=CO2  Space=play  n=step  r=reset  R=menu  q=exit")
     try:
         self.stdscr.addstr(max_y - 2, 0, status[:max_x - 1], curses.color_pair(7) | curses.A_BOLD)
     except curses.error:
@@ -1001,7 +979,7 @@ def _draw_temperature_view(self, max_y: int, max_x: int):
     ice_a = hist['ice_area'][-1] if hist['ice_area'] else 0
     status = (f" {self.planetary_atmos_preset_name} | tick {gen} | {state} | "
               f"T:{g_temp:.3f} | ice:{ice_a:.1%} | CO2:{self.planetary_atmos_co2:.2f} | "
-              f"[v]iew [+/-]CO2 [space] [r]eset [q]uit")
+              f"v=view  +/-=CO2  Space=play  n=step  r=reset  R=menu  q=exit")
     try:
         self.stdscr.addstr(max_y - 2, 0, status[:max_x - 1], curses.color_pair(7) | curses.A_BOLD)
     except curses.error:
@@ -1081,7 +1059,7 @@ def _draw_graphs_view(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    status = "[v]iew [+/-]CO2 [space]pause [r]estart [q]uit"
+    status = "v=view  +/-=CO2  Space=play  n=step  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(max_y - 1, 2, status[:max_x - 3], curses.color_pair(7))
     except curses.error:
