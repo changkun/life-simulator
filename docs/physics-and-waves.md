@@ -1340,7 +1340,7 @@ Parameters:
 | **Hall of Mirrors** | 6 flat mirrors at various angles, omnidirectional white source (16 rays) | Multiple specular reflections creating complex ray patterns |
 | **Solar Concentrator** | 14-segment parabolic mirror, parallel downward rays | Caustic focusing — all rays converge to a single focal point |
 
-**Controls**: `Tab`/`e` cycle element selection, `WASD`/arrows move selected element, `[`/`]` rotate, `f`/`F` adjust focal length, `h` toggle caustic heatmap, `Space` animate source wobble, `+`/`-` adjust speed, `r` reset current preset, `R` return to preset menu, `q` exit mode.
+**Controls**: `Tab`/`e` cycle element selection, `WASD`/arrows move selected element, `[`/`]` rotate, `f`/`F` adjust focal length, `h` toggle caustic heatmap, `Space` play/pause the source wobble, `n`/`.` single step, `r` reset current preset, `R`/`m` return to preset menu, `q` exit mode.
 
 **What to look for** — Start with Rainbow Prism and watch white light enter the prism as a single beam, then emerge as seven distinct spectral colors fanned out by wavelength-dependent refraction — violet bends most, red least. Rotate the prism with `[`/`]` to see total internal reflection kick in at steep angles. The Telescope preset shows how two properly spaced lenses can collimate diverging light. In Fiber Optic Cable, rays bounce between the curved mirror walls, which models how a fiber guides light. The Solar Concentrator is best viewed with the caustic heatmap (`h`): the parabolic mirror focuses parallel rays to a bright focal point, with the heatmap revealing the intensity distribution. Hall of Mirrors produces the most complex ray patterns — move mirrors with arrow keys to create kaleidoscopic interference paths.
 
