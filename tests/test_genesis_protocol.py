@@ -74,3 +74,29 @@ def test_exit_clears_state():
     app._exit_genesis_mode()
     assert not app.genesis_mode and not app.genesis_running
     assert app.genesis_sims == []
+
+
+_HALL_ENTRY = {"genome": {"birth": [3], "survival": [2, 3]},
+               "label": "x", "score": 90.0}
+
+
+def test_esc_and_q_in_hall_view_exit_mode():
+    for key in (27, ord("q")):
+        app = _make_app()
+        app.genesis_mode = True
+        app.genesis_hall = [dict(_HALL_ENTRY)]
+        app.genesis_hall_view = True
+        app.genesis_hall_sel = 0
+        app._handle_genesis_key(key)
+        assert not app.genesis_mode
+
+
+def test_h_in_hall_view_returns_to_explorer():
+    app = _make_app()
+    app.genesis_mode = True
+    app.genesis_hall = [dict(_HALL_ENTRY)]
+    app.genesis_hall_view = True
+    app.genesis_hall_sel = 0
+    app._handle_genesis_key(ord("h"))
+    assert app.genesis_mode
+    assert not app.genesis_hall_view

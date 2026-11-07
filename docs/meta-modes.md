@@ -1141,6 +1141,7 @@ The next round breeds from the best: crossover between hall-of-fame members and 
 | **Enter** | Adopt the selected universe's rules into the main grid and leave the mode |
 | **h** | Toggle Hall of Fame browser (only once it has entries) |
 | **↑ / ↓** or **k / j** (in HoF view) | Scroll through Hall of Fame entries |
+| **h** (in HoF view) | Return to the explorer |
 | **Enter** (in HoF view) | Adopt the selected entry's rules |
 | **x** (in HoF view) | Remove the selected entry |
 | **A** | Toggle auto-continue between rounds |
@@ -1148,7 +1149,7 @@ The next round breeds from the best: crossover between hall-of-fame members and 
 | **r** | Start over with a new random batch |
 | **R** | Return to the settings menu |
 | **> / <** | Change speed |
-| **Esc** / **q** | Exit Genesis Protocol |
+| **Esc** / **q** | Exit Genesis Protocol (also from the Hall of Fame view) |
 
 ### What to explore
 

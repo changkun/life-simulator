@@ -1084,7 +1084,7 @@ def _handle_genesis_hall_key(self, key):
         return True
 
     # Back
-    if key == ord("h") or key == 27:
+    if key == ord("h"):
         self.genesis_hall_view = False
         return True
 
