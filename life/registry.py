@@ -128,7 +128,7 @@ MODE_REGISTRY = [
     {"name": "Snowflake Growth", "key": "*", "category": "Fractals & Chaos",
      "desc": "Reiter crystal growth model", "attr": "snowflake_mode", "enter": "_enter_snowflake_mode", "exit": "_exit_snowflake_mode"},
     {"name": "Erosion Patterns", "key": "$", "category": "Fractals & Chaos",
-     "desc": "Dielectric breakdown fractal branching", "attr": "erosion_mode", "enter": "_enter_erosion_mode", "exit": "_exit_erosion_mode"},
+     "desc": "Hydraulic erosion carving valleys and river networks", "attr": "erosion_mode", "enter": "_enter_erosion_mode", "exit": "_exit_erosion_mode"},
     {"name": "Chaos Game / IFS Fractals", "key": "Ctrl+G", "category": "Fractals & Chaos",
      "desc": "Iterated function system fractal generation", "attr": "ifs_mode", "enter": "_enter_ifs_mode", "exit": "_exit_ifs_mode"},
     {"name": "L-System Fractal Garden", "key": "/", "category": "Fractals & Chaos",
@@ -163,7 +163,7 @@ MODE_REGISTRY = [
     {"name": "Galaxy Formation", "key": "\"", "category": "Complex Simulations",
      "desc": "N-body spiral galaxy dynamics", "attr": "galaxy_mode", "enter": "_enter_galaxy_mode", "exit": "_exit_galaxy_mode"},
     {"name": "Smoke & Fire", "key": "\\", "category": "Complex Simulations",
-     "desc": "Fluid-based smoke and fire particles", "attr": "smokefire_mode", "enter": "_enter_smokefire_mode", "exit": "_exit_smokefire_mode"},
+     "desc": "Buoyant fire and smoke on a grid with fuel and fire sources", "attr": "smokefire_mode", "enter": "_enter_smokefire_mode", "exit": "_exit_smokefire_mode"},
     {"name": "Fireworks", "key": "Ctrl+F", "category": "Complex Simulations",
      "desc": "Particle explosion fireworks display", "attr": "fireworks_mode", "enter": "_enter_fireworks_mode", "exit": "_exit_fireworks_mode"},
     # ── Meta Modes ──
@@ -222,10 +222,10 @@ MODE_REGISTRY = [
      "desc": "Draw a path, then watch spinning epicycles reconstruct it via Discrete Fourier Transform", "attr": "fourier_mode", "enter": "_enter_fourier_mode", "exit": "_exit_fourier_mode"},
     # ── Fluid Rope / Honey Coiling ──
     {"name": "Fluid Rope / Honey Coiling", "key": "—", "category": "Fluid Dynamics",
-     "desc": "Viscous fluid pouring simulation with rope coiling, folding & buckling patterns", "attr": "fluidrope_mode", "enter": "_enter_fluidrope_mode", "exit": "_exit_fluidrope_mode"},
+     "desc": "Viscous fluid pouring simulation with rope coiling", "attr": "fluidrope_mode", "enter": "_enter_fluidrope_mode", "exit": "_exit_fluidrope_mode"},
     # ── Lissajous Curve / Harmonograph ──
     {"name": "Lissajous Curve / Harmonograph", "key": "—", "category": "Fractals & Chaos",
-     "desc": "Coupled pendulum oscillator tracing decaying Lissajous figures and harmonograph spirals in real-time ASCII", "attr": "lissajous_mode", "enter": "_enter_lissajous_mode", "exit": "_exit_lissajous_mode"},
+     "desc": "Damped oscillators tracing decaying Lissajous figures and harmonograph spirals in real-time ASCII", "attr": "lissajous_mode", "enter": "_enter_lissajous_mode", "exit": "_exit_lissajous_mode"},
     # ── Maze Solving Algorithm Visualizer ──
     {"name": "Maze Solver Visualizer", "key": "—", "category": "Procedural & Computational",
      "desc": "Watch BFS, DFS, A* & Wall Follower solve mazes with color-coded exploration", "attr": "mazesolver_mode", "enter": "_enter_mazesolver_mode", "exit": "_exit_mazesolver_mode"},
@@ -273,10 +273,10 @@ MODE_REGISTRY = [
      "desc": "Run any two simulations side-by-side with independent state and toggle-able focus", "attr": "split_mode", "enter": "_enter_split_mode", "exit": "_exit_split_mode"},
     # ── Simulation Observatory ──
     {"name": "Simulation Observatory", "key": "—", "category": "Meta Modes",
-     "desc": "Tiled split-screen running 4-9 simulations simultaneously with synced controls", "attr": "obs_mode", "enter": "_enter_observatory_mode", "exit": "_exit_observatory_mode"},
+     "desc": "Tiled split-screen running 2-9 simulations simultaneously with shared playback controls", "attr": "obs_mode", "enter": "_enter_observatory_mode", "exit": "_exit_observatory_mode"},
     # ── Layer Compositing ──
     {"name": "Layer Compositing", "key": "—", "category": "Meta Modes",
-     "desc": "Stack 2-4 simulations as transparent layers with blend modes (add, XOR, mask, multiply)", "attr": "comp_mode", "enter": "_enter_comp_mode", "exit": "_exit_comp_mode"},
+     "desc": "Stack 2-4 simulations as transparent layers with blend modes (add, XOR, mask, multiply, screen)", "attr": "comp_mode", "enter": "_enter_comp_mode", "exit": "_exit_comp_mode"},
     # ── Cinematic Demo Reel ──
     {"name": "Cinematic Demo Reel", "key": "—", "category": "Meta Modes",
      "desc": "Auto-playing director with crossfade transitions, camera moves & parameter sweeps", "attr": "cinem_mode", "enter": "_enter_cinematic_demo_mode", "exit": "_exit_cinematic_demo_mode"},
@@ -395,7 +395,7 @@ MODE_REGISTRY = [
      "desc": "Comparative genomics for CA rules — builds evolutionary family trees, identifies conserved behavioral motifs, traces lineage from Hall of Fame", "attr": "phylo_mode", "enter": "_enter_phylo_mode", "exit": "_exit_phylo_mode"},
     # ── Reverse Life ──
     {"name": "Reverse Life", "key": "—", "category": "Meta Modes",
-     "desc": "Constraint solver that runs Game of Life backwards — finds predecessor states, detects Garden of Eden patterns", "attr": "reverse_life_mode", "enter": "_enter_reverse_life_mode", "exit": "_exit_reverse_life_mode"},
+     "desc": "Constraint solver that runs Game of Life backwards — finds predecessor states, flags Garden of Eden targets within the search region", "attr": "reverse_life_mode", "enter": "_enter_reverse_life_mode", "exit": "_exit_reverse_life_mode"},
     # ── Fluid of Life ──
     {"name": "Fluid of Life", "key": "—", "category": "Fluid Dynamics",
      "desc": "Hybrid CA+fluid — live cells generate buoyancy, fluid advects cells, two-way coupling with fans/heaters/walls", "attr": "fluidlife_mode", "enter": "_enter_fluidlife_mode", "exit": "_exit_fluidlife_mode"},
