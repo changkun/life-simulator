@@ -1,8 +1,7 @@
-"""Mode: blackhole — simulation mode for the life package."""
+"""Black Hole Accretion Disk — orbiting matter, relativistic jets, Hawking radiation and lensed stars."""
 import curses
 import math
 import random
-import time
 
 BLACKHOLE_PRESETS = [
     ("Stellar Mass", "10-30 solar mass black hole with accretion disk", "stellar"),
@@ -23,8 +22,6 @@ def _enter_blackhole_mode(self):
     self.blackhole_menu_sel = 0
 
 
-
-
 def _exit_blackhole_mode(self):
     """Exit Black Hole mode and clean up."""
     self.blackhole_mode = False
@@ -35,13 +32,8 @@ def _exit_blackhole_mode(self):
     self.blackhole_lensed = []
 
 
-
-
 def _blackhole_init(self, preset: str):
     """Initialize simulation grids and spawn particles for a preset."""
-    import math
-    import random as rng
-
     rows, cols = self.grid.rows, self.grid.cols
     self.blackhole_rows = rows
     self.blackhole_cols = cols
@@ -120,10 +112,10 @@ def _blackhole_init(self, preset: str):
     for _ in range(n_disk):
         # Orbital radius: inner stable circular orbit ~ 3*rs to max_r
         r_inner = 3.0 * rs * (1.0 - self.blackhole_spin * 0.3)
-        r_orbit = r_inner + rng.random() ** 0.5 * (max_r - r_inner)
-        angle = rng.uniform(0, 2 * math.pi)
+        r_orbit = r_inner + random.random() ** 0.5 * (max_r - r_inner)
+        angle = random.uniform(0, 2 * math.pi)
         # Slight vertical spread for disk thickness
-        spread = rng.gauss(0, 0.3) * (r_orbit / max_r)
+        spread = random.gauss(0, 0.3) * (r_orbit / max_r)
 
         x = cx + r_orbit * math.cos(angle)
         y = cy + r_orbit * math.sin(angle) * 0.3 + spread  # flatten for inclination
@@ -144,21 +136,21 @@ def _blackhole_init(self, preset: str):
     n_jet = int(30 * self.blackhole_jet_power)
     for _ in range(n_jet):
         # Jets emerge from near the poles
-        jx = cx + rng.gauss(0, rs * 0.3)
-        direction = rng.choice([-1, 1])  # up or down jet
-        jy = cy + direction * rng.uniform(rs * 0.5, max_r * 0.8)
-        jvx = rng.gauss(0, 0.1)
-        jvy = direction * rng.uniform(1.5, 4.0) * self.blackhole_jet_power
-        temp = rng.uniform(0.7, 1.0)
+        jx = cx + random.gauss(0, rs * 0.3)
+        direction = random.choice([-1, 1])  # up or down jet
+        jy = cy + direction * random.uniform(rs * 0.5, max_r * 0.8)
+        jvx = random.gauss(0, 0.1)
+        jvy = direction * random.uniform(1.5, 4.0) * self.blackhole_jet_power
+        temp = random.uniform(0.7, 1.0)
         self.blackhole_particles.append([jx, jy, jvx, jvy, temp, 0.0, 1])
 
     # Generate Hawking radiation particles near horizon
     for _ in range(n_hawking):
-        angle = rng.uniform(0, 2 * math.pi)
-        hr = rs * rng.uniform(1.0, 1.5)
+        angle = random.uniform(0, 2 * math.pi)
+        hr = rs * random.uniform(1.0, 1.5)
         hx = cx + hr * math.cos(angle)
         hy = cy + hr * math.sin(angle) * 0.3
-        speed = rng.uniform(0.5, 2.0)
+        speed = random.uniform(0.5, 2.0)
         hvx = speed * math.cos(angle)
         hvy = speed * math.sin(angle) * 0.3
         self.blackhole_particles.append([hx, hy, hvx, hvy, 0.3, 0.0, 2])
@@ -167,22 +159,17 @@ def _blackhole_init(self, preset: str):
     self.blackhole_bg_stars = []
     n_stars = int(rows * cols * 0.01)
     for _ in range(n_stars):
-        sx = rng.uniform(0, cols)
-        sy = rng.uniform(0, rows)
-        brightness = rng.uniform(0.2, 1.0)
+        sx = random.uniform(0, cols)
+        sy = random.uniform(0, rows)
+        brightness = random.uniform(0.2, 1.0)
         self.blackhole_bg_stars.append((sx, sy, brightness))
 
     # Initialize lensed star grid
     self.blackhole_lensed = [[0.0] * cols for _ in range(rows)]
 
 
-
-
 def _blackhole_step(self):
     """Advance black hole simulation by one timestep."""
-    import math
-    import random as rng
-
     dt = self.blackhole_dt
     mass = self.blackhole_mass
     spin = self.blackhole_spin
@@ -214,7 +201,6 @@ def _blackhole_step(self):
             ay_g += drag_strength * dx * 0.3
 
             # Relativistic precession correction
-            v2 = vx * vx + vy * vy
             rel_factor = 1.0 + 3.0 * mass / (r * r) * 0.01
             ax_g *= rel_factor
             ay_g *= rel_factor
@@ -237,20 +223,20 @@ def _blackhole_step(self):
             if r < rs:
                 self.blackhole_total_accreted += 1
                 # Occasionally spawn jet particle when matter accreted
-                if n_jets < _MAX_JETS and rng.random() < 0.1 * self.blackhole_jet_power:
+                if n_jets < _MAX_JETS and random.random() < 0.1 * self.blackhole_jet_power:
                     n_jets += 1
-                    direction = rng.choice([-1, 1])
-                    jvx = rng.gauss(0, 0.15)
-                    jvy = direction * rng.uniform(2.0, 5.0) * self.blackhole_jet_power
-                    new_particles.append([cx + rng.gauss(0, rs * 0.2), cy, jvx, jvy, 1.0, 0.0, 1])
+                    direction = random.choice([-1, 1])
+                    jvx = random.gauss(0, 0.15)
+                    jvy = direction * random.uniform(2.0, 5.0) * self.blackhole_jet_power
+                    new_particles.append([cx + random.gauss(0, rs * 0.2), cy, jvx, jvy, 1.0, 0.0, 1])
                 continue  # particle consumed
 
             # Re-emit particle if it goes too far
             if x < 0 or x >= cols or y < 0 or y >= rows:
-                angle = rng.uniform(0, 2 * math.pi)
+                angle = random.uniform(0, 2 * math.pi)
                 r_inner = 3.0 * rs * (1.0 - spin * 0.3)
                 max_orbit = min(rows, cols) * 0.45
-                r_orbit = r_inner + rng.random() ** 0.5 * (max_orbit - r_inner)
+                r_orbit = r_inner + random.random() ** 0.5 * (max_orbit - r_inner)
                 x = cx + r_orbit * math.cos(angle)
                 y = cy + r_orbit * math.sin(angle) * 0.3
                 v_mag = math.sqrt(mass / max(r_orbit, 1.0))
@@ -277,12 +263,12 @@ def _blackhole_step(self):
 
             # Re-emit if out of bounds or too old
             if x < 0 or x >= cols or y < 0 or y >= rows or age > 50:
-                direction = rng.choice([-1, 1])
-                x = cx + rng.gauss(0, rs * 0.3)
+                direction = random.choice([-1, 1])
+                x = cx + random.gauss(0, rs * 0.3)
                 y = cy + direction * rs * 0.5
-                vx = rng.gauss(0, 0.1)
-                vy = direction * rng.uniform(1.5, 4.0) * self.blackhole_jet_power
-                temp = rng.uniform(0.7, 1.0)
+                vx = random.gauss(0, 0.1)
+                vy = direction * random.uniform(1.5, 4.0) * self.blackhole_jet_power
+                temp = random.uniform(0.7, 1.0)
                 age = 0.0
 
             new_particles.append([x, y, vx, vy, temp, age, 1])
@@ -292,19 +278,19 @@ def _blackhole_step(self):
             escape_dir_x = dx / r
             escape_dir_y = (y - cy) / r
             acc_escape = 0.3 / (r + 1.0)
-            vx += (acc_escape * escape_dir_x + rng.gauss(0, 0.1)) * dt
-            vy += (acc_escape * escape_dir_y + rng.gauss(0, 0.1)) * dt
+            vx += (acc_escape * escape_dir_x + random.gauss(0, 0.1)) * dt
+            vy += (acc_escape * escape_dir_y + random.gauss(0, 0.1)) * dt
 
             x += vx * dt
             y += vy * dt
             temp *= (1.0 - 0.01)
 
             if x < 0 or x >= cols or y < 0 or y >= rows or age > 80:
-                angle = rng.uniform(0, 2 * math.pi)
-                hr = rs * rng.uniform(1.0, 1.5)
+                angle = random.uniform(0, 2 * math.pi)
+                hr = rs * random.uniform(1.0, 1.5)
                 x = cx + hr * math.cos(angle)
                 y = cy + hr * math.sin(angle) * 0.3
-                speed = rng.uniform(0.5, 2.0)
+                speed = random.uniform(0.5, 2.0)
                 vx = speed * math.cos(angle)
                 vy = speed * math.sin(angle) * 0.3
                 temp = 0.3
@@ -312,7 +298,6 @@ def _blackhole_step(self):
 
             new_particles.append([x, y, vx, vy, temp, age, 2])
 
-    particles = new_particles + new_particles.__class__(new_particles[:0])  # just new_particles
     self.blackhole_particles = new_particles
 
     # Compute gravitational lensing of background stars
@@ -351,8 +336,6 @@ def _blackhole_step(self):
     self.blackhole_generation += 1
 
 
-
-
 def _handle_blackhole_menu_key(self, key: int) -> bool:
     """Handle keys in the Black Hole preset menu."""
     n = len(BLACKHOLE_PRESETS)
@@ -374,8 +357,6 @@ def _handle_blackhole_menu_key(self, key: int) -> bool:
     else:
         return False
     return True
-
-
 
 
 def _handle_blackhole_key(self, key: int) -> bool:
@@ -430,8 +411,6 @@ def _handle_blackhole_key(self, key: int) -> bool:
     return True
 
 
-
-
 def _draw_blackhole_menu(self, max_y: int, max_x: int):
     """Draw the Black Hole preset selection menu."""
     self.stdscr.erase()
@@ -483,12 +462,8 @@ def _draw_blackhole_menu(self, max_y: int, max_x: int):
         pass
 
 
-
-
 def _draw_blackhole(self, max_y: int, max_x: int):
     """Draw the Black Hole simulation."""
-    import math
-
     self.stdscr.erase()
     rows = min(self.blackhole_rows, max_y - 2)
     cols = min(self.blackhole_cols, max_x)
@@ -600,14 +575,9 @@ def _draw_blackhole(self, max_y: int, max_x: int):
                     color_buf[r][c] = 0  # event horizon boundary
 
     # Render to screen
-    color_map = {0: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6}
     for r in range(rows):
-        line_parts = []
-        for c in range(cols):
-            ch = buf[r][c]
-            line_parts.append(ch)
         try:
-            self.stdscr.addstr(r, 0, ''.join(line_parts)[:cols])
+            self.stdscr.addstr(r, 0, ''.join(buf[r]))
         except curses.error:
             pass
         # Apply colors
@@ -635,13 +605,11 @@ def _draw_blackhole(self, max_y: int, max_x: int):
         pass
 
     # Hint bar
-    hint = " Space=play n=step v=viz M/N=mass s/S=spin j/J=jets h=horizon p=photon +/-=speed r=reset R=menu q=exit"
+    hint = " Space=play  n=step  v=view  M/N=mass  s/S=spin  j/J=jets  h=horizon  p=photon  +/-=speed  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(status_y + 1, 0, hint[:max_x - 1], curses.A_DIM)
     except curses.error:
         pass
-
-
 
 
 def register(App):
