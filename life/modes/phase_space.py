@@ -281,6 +281,17 @@ def _compute_complexity_score(grid, pop_history, classification):
     return max(0.0, min(1.0, score))
 
 
+def _pattern_entropy(grid):
+    """Return the Shannon entropy (0-1 bits) of the live/dead split."""
+    total = grid.rows * grid.cols
+    if total == 0:
+        return 0.0
+    p = grid.population / total
+    if p <= 0.0 or p >= 1.0:
+        return 0.0
+    return -p * math.log2(p) - (1.0 - p) * math.log2(1.0 - p)
+
+
 def _sparkline(data, width):
     """Render a sparkline string."""
     if not data or width <= 0:
@@ -942,9 +953,11 @@ def _draw_phasespace(self, max_y, max_x):
                 score = self.phasespace_scores.get(key, 0.0)
                 char, attr = _complexity_to_char(score)
             else:
-                # Entropy heatmap (compute from final state)
-                score = self.phasespace_scores.get(key, 0.0)
-                char, attr = _complexity_to_char(score)
+                grid = self.phasespace_sims.get(key)
+                if grid is not None and self.phasespace_completed.get(key, False):
+                    char, attr = _complexity_to_char(_pattern_entropy(grid))
+                else:
+                    char, attr = _complexity_to_char(0.0)
 
             if is_cursor:
                 attr = curses.A_REVERSE | curses.A_BOLD

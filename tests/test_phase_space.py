@@ -36,3 +36,13 @@ def test_teleport_and_adopt_use_scanned_rule():
         assert (g.birth, g.survival) == (src.birth, src.survival)
     phase_space._phasespace_adopt(app)
     assert (app.grid.birth, app.grid.survival) == (src.birth, src.survival)
+
+
+def test_pattern_entropy():
+    from life.grid import Grid
+    g = Grid(4, 4)
+    assert phase_space._pattern_entropy(g) == 0.0
+    g.population = 8
+    assert phase_space._pattern_entropy(g) == pytest.approx(1.0)
+    g.population = 16
+    assert phase_space._pattern_entropy(g) == 0.0
