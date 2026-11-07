@@ -1,4 +1,4 @@
-"""Mode: attractor — simulation mode for the life package."""
+"""Strange Attractors — particles trace chaotic 3D flows, drawn as a density heatmap."""
 import curses
 import math
 import random
@@ -26,7 +26,7 @@ ATTRACTOR_PRESETS = [
 
 
 def _enter_attractor_mode(self):
-    """Enter Strange Attractor mode — show preset menu."""
+    """Enter Strange Attractors mode and show the preset menu."""
     self.attractor_menu = True
     self.attractor_menu_sel = 0
     self._flash("Strange Attractors — select a system")
@@ -34,7 +34,7 @@ def _enter_attractor_mode(self):
 
 
 def _exit_attractor_mode(self):
-    """Exit Strange Attractor mode."""
+    """Exit Strange Attractors mode."""
     self.attractor_mode = False
     self.attractor_menu = False
     self.attractor_running = False
@@ -45,7 +45,7 @@ def _exit_attractor_mode(self):
 
 
 def _attractor_init(self, preset_idx: int):
-    """Initialize the Strange Attractor with the given preset."""
+    """Start the preset at the given index."""
     name, _desc, atype, params = self.ATTRACTOR_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(20, max_y - 4)
@@ -63,7 +63,6 @@ def _attractor_init(self, preset_idx: int):
     self.attractor_zoom = 1.0
     self.attractor_max_density = 1.0
 
-    # Clear density grid
     self.attractor_density = [[0.0] * cols for _ in range(rows)]
 
     # Initialize particles with small random offsets from an initial point
@@ -125,7 +124,7 @@ def _attractor_init(self, preset_idx: int):
 
 
 def _attractor_ode(self, x: float, y: float, z: float) -> tuple:
-    """Compute dx/dt, dy/dt, dz/dt for the current attractor type."""
+    """Return (dx/dt, dy/dt, dz/dt) for the current attractor type."""
     p = self.attractor_params
     atype = self.attractor_type
     if atype == "lorenz":
@@ -165,7 +164,7 @@ def _attractor_ode(self, x: float, y: float, z: float) -> tuple:
 
 
 def _attractor_step_no_density(self):
-    """Advance particles one step without accumulating density (for warm-up)."""
+    """Advance particles one step without drawing (used for warm-up)."""
     dt = self.attractor_dt
     new_trails = []
     for x, y, z in self.attractor_trails:
@@ -210,10 +209,8 @@ def _attractor_step(self):
             # Rotate around z-axis
             rx = x * cos_az - y * sin_az
             ry = x * sin_az + y * cos_az
-            rz = z
             # Rotate around x-axis
-            ry2 = ry * cos_ax - rz * sin_ax
-            rz2 = ry * sin_ax + rz * cos_ax
+            rz2 = ry * sin_ax + z * cos_ax
             pxs.append(rx)
             pys.append(rz2)
         if pxs:
@@ -252,21 +249,14 @@ def _attractor_step(self):
         new_trails.append((nx, ny, nz))
 
         # Project to 2D and accumulate density
-        # Rotate around z-axis
+        # Rotate around z-axis, then x-axis; only the screen-space x and z' are needed.
         rx = nx * cos_az - ny * sin_az
-        # ry = nx * sin_az + ny * cos_az (not needed for final x)
-        ry_full = nx * sin_az + ny * cos_az
-        rz = nz
-        # Rotate around x-axis
-        rz2 = ry_full * sin_ax + rz * cos_ax
+        ry = nx * sin_az + ny * cos_az
+        rz2 = ry * sin_ax + nz * cos_ax
 
         # Map to grid coordinates
         sc = int((rx - cx) * scale + cols * 0.5)
         sr = int((rz2 - cy) * scale + rows * 0.5)
-
-        # Depth-based fade
-        ry2 = ry_full * cos_ax - rz * sin_ax
-        # We don't use ry2 for position, just for depth shading
 
         if 0 <= sr < rows and 0 <= sc < cols:
             density[sr][sc] += 1.0
@@ -288,7 +278,7 @@ def _attractor_step(self):
 
 
 def _handle_attractor_menu_key(self, key: int) -> bool:
-    """Handle input in Strange Attractor preset menu."""
+    """Handle input in the preset menu."""
     presets = self.ATTRACTOR_PRESETS
     if key == curses.KEY_DOWN or key == ord("j"):
         self.attractor_menu_sel = (self.attractor_menu_sel + 1) % len(presets)
@@ -304,7 +294,7 @@ def _handle_attractor_menu_key(self, key: int) -> bool:
 
 
 def _handle_attractor_key(self, key: int) -> bool:
-    """Handle input in active Strange Attractor simulation."""
+    """Handle input while the simulation is active."""
     if key == ord("q") or key == 27:
         self._exit_attractor_mode()
         return True
@@ -315,7 +305,6 @@ def _handle_attractor_key(self, key: int) -> bool:
         self._attractor_step()
         return True
     if key == ord("r"):
-        # Reset: re-init current preset
         idx = next(
             (i for i, p in enumerate(self.ATTRACTOR_PRESETS) if p[0] == self.attractor_preset_name),
             0,
@@ -340,7 +329,6 @@ def _handle_attractor_key(self, key: int) -> bool:
         self.attractor_steps_per_frame = choices[max(idx - 1, 0)]
         self._flash(f"Speed: {self.attractor_steps_per_frame} steps/frame")
         return True
-    # Rotation controls
     if key == curses.KEY_LEFT or key == ord("h"):
         self.attractor_angle_z -= 0.1
         return True
@@ -353,7 +341,6 @@ def _handle_attractor_key(self, key: int) -> bool:
     if key == curses.KEY_DOWN or key == ord("j"):
         self.attractor_angle_x += 0.1
         return True
-    # Zoom
     if key == ord("z"):
         self.attractor_zoom = min(5.0, self.attractor_zoom * 1.15)
         self._flash(f"Zoom: {self.attractor_zoom:.2f}x")
@@ -362,7 +349,6 @@ def _handle_attractor_key(self, key: int) -> bool:
         self.attractor_zoom = max(0.2, self.attractor_zoom / 1.15)
         self._flash(f"Zoom: {self.attractor_zoom:.2f}x")
         return True
-    # dt adjustment
     if key == ord("d"):
         self.attractor_dt = max(0.0005, self.attractor_dt * 0.8)
         self._flash(f"dt={self.attractor_dt:.4f}")
@@ -371,7 +357,6 @@ def _handle_attractor_key(self, key: int) -> bool:
         self.attractor_dt = min(0.05, self.attractor_dt * 1.25)
         self._flash(f"dt={self.attractor_dt:.4f}")
         return True
-    # Clear density (fresh heatmap)
     if key == ord("c"):
         rows, cols = self.attractor_rows, self.attractor_cols
         self.attractor_density = [[0.0] * cols for _ in range(rows)]
@@ -424,7 +409,7 @@ def _handle_attractor_key(self, key: int) -> bool:
 
 
 def _draw_attractor_menu(self, max_y: int, max_x: int):
-    """Draw the Strange Attractor preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Strange Attractors ── Select System ──"
     try:
@@ -447,7 +432,7 @@ def _draw_attractor_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+        hint = " j/k=select  Enter=start  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
@@ -456,12 +441,11 @@ def _draw_attractor_menu(self, max_y: int, max_x: int):
 
 
 def _draw_attractor(self, max_y: int, max_x: int):
-    """Draw the active Strange Attractor simulation as a density heatmap."""
+    """Draw the density heatmap and status lines."""
     self.stdscr.erase()
     rows, cols = self.attractor_rows, self.attractor_cols
     state = "▶ RUNNING" if self.attractor_running else "⏸ PAUSED"
 
-    # Build param string
     p = self.attractor_params
     pstr = " ".join(f"{k}={v:.2f}" for k, v in p.items())
 
@@ -508,8 +492,6 @@ def _draw_attractor(self, max_y: int, max_x: int):
                 ch = "··"
                 attr = curses.color_pair(4)  # dim blue
             else:
-                ch = "  "
-                attr = curses.color_pair(4) | curses.A_DIM
                 continue
 
             try:
@@ -524,7 +506,7 @@ def _draw_attractor(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [arrows]=rotate [z/Z]=zoom [1-4]=params [d/D]=dt [c]=clear [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  arrows/hjkl=rotate  z/Z=zoom  1-4=params  d/D=dt  c=clear  +/-=steps/frame  r=reset  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -568,7 +550,7 @@ QWALK_PRESETS = [
 
 
 def register(App):
-    """Register attractor mode methods on the App class."""
+    """Register Strange Attractors methods on the App class."""
     App.ATTRACTOR_PRESETS = ATTRACTOR_PRESETS
     App._enter_attractor_mode = _enter_attractor_mode
     App._exit_attractor_mode = _exit_attractor_mode
