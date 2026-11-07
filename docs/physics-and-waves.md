@@ -1392,7 +1392,7 @@ Instabilities:
 - **Moderator cells**: Light water or graphite that thermalizes fast neutrons to increase fission probability (`(r+c) % 3 == 1`, absent in breeder preset)
 - **Coolant channels**: Water flowing through the core to remove heat (`(r+c) % 3 == 2`)
 - **Control rod channels**: 5 vertical columns of neutron-absorbing material (boron/hafnium), adjustable from fully inserted (0) to fully withdrawn (1)
-- **Reflector ring**: Returns escaping neutrons back into the core (albedo 0.85)
+- **Reflector ring**: Passes on 85% of the flux each step (multiplier 0.85)
 - **Vessel wall**: Steel pressure boundary
 
 **Neutron transport** — Neutron flux φ evolves via diffusion with sources and sinks:
@@ -1419,17 +1419,18 @@ The delayed neutron fraction β = 0.0065 is critical to reactor control — it s
 
 ```
 dI/dt = γ_I × φ - λ_I × I          (I-135: produced by fission, decays to Xe)
-dXe/dt = λ_I × I + γ_Xe × φ - λ_Xe × Xe - σ_Xe × φ × Xe
+dXe/dt = λ_I × I + γ_Xe × φ - λ_Xe × Xe - k_burn × φ × Xe
 
 where:
   γ_I = 0.006    I-135 fission yield
   γ_Xe = 0.003   Xe-135 direct fission yield
   λ_I = 0.0003   I-135 decay rate (half-life ~6.6 hours)
   λ_Xe = 0.0001  Xe-135 decay rate (half-life ~9.2 hours)
-  σ_Xe = 0.60    Xe-135 absorption (2.6 × 10⁶ barns in reality)
+  k_burn = 0.002 Xe-135 burnup by neutron flux (the flux equation above uses the
+                 separate absorption strength Σ_Xe = 0.60)
 ```
 
-At steady state, xenon burnup (σ_Xe × φ × Xe) balances production. On shutdown, burnup stops instantly but iodine continues decaying to xenon for hours, causing Xe concentration to *rise* — the "xenon pit." Attempting to restart during a xenon pit requires pulling control rods dangerously far out. This is exactly what happened at Chernobyl on April 26, 1986: operators withdrew nearly all rods to overcome xenon poisoning, then a sudden power surge in the RBMK's positive-void-coefficient core caused a prompt-critical excursion.
+At steady state, xenon burnup (k_burn × φ × Xe) balances production. On shutdown, burnup stops instantly but iodine continues decaying to xenon for hours, causing Xe concentration to *rise* — the "xenon pit." Attempting to restart during a xenon pit requires pulling control rods dangerously far out. This is exactly what happened at Chernobyl on April 26, 1986: operators withdrew nearly all rods to overcome xenon poisoning, then a sudden power surge in the RBMK's positive-void-coefficient core caused a prompt-critical excursion.
 
 **Reactivity feedback** — Two temperature-dependent feedback mechanisms:
 
@@ -1449,7 +1450,8 @@ dT_cool/dt = h(T_fuel - T_cool) × 0.5 - flow × (T_cool - T_inlet) × coolant_l
 
 where:
   q_fission = 0.15 × φ          heat from fission
-  q_decay = 0.07 × P_history    decay heat (7% of operating power)
+  q_decay = 0.5 × decay_heat    decay heat; decay_heat follows 0.07 × (fission/flux)
+                                 and falls by 1/300 per tick (Station Blackout starts at 0.06)
   k = 0.04                       fuel conductivity
   h = 0.08                       convective coefficient
   flow = 0.05 (pumps on) or 0.0025 (natural circulation)
@@ -1478,7 +1480,7 @@ where:
 | **Station Blackout (Fukushima)** | Pumps off, rod_pos=0.10, decay heat active | Fukushima scenario — reactor scrammed successfully but decay heat with no forced cooling slowly boils off coolant |
 | **Breeder Reactor Fast Spectrum** | No moderator, enrichment 1.4×, fast neutrons | Fast reactor — no thermalization, higher enrichment compensates, breeding Pu-239 from U-238 blanket |
 
-**Controls**: `Space` play/pause, `v` cycle views (cross-section/thermal/graphs), `+`/`-` adjust control rods, `s` emergency SCRAM, `n` step, `r` restart, `R`/`m` return to preset menu, `q` exit mode.
+**Controls**: `Space` play/pause, `v` cycle views (cross-section/thermal/graphs), `+`/`-` withdraw/insert control rods (`+` also clears SCRAM), `s` emergency SCRAM, `p` toggle pumps, `l` toggle a LOCA, `n` step, `r` restart, `R`/`m` return to preset menu, `q` exit mode.
 
 **What to look for** — Start with Normal Power Operation: watch neutron flux stabilize as the control rods balance fission production against absorption, observe xenon building to equilibrium over ~100 ticks, and note how Doppler feedback self-corrects small perturbations. Switch to the Xenon Poisoning Restart to see the Chernobyl mechanism in action: the initially suppressed flux suddenly surges as xenon burns away and the positive void coefficient amplifies the excursion — note how quickly the situation becomes unrecoverable with rods nearly fully withdrawn and SCRAM disabled. The LOCA preset shows the TMI scenario: coolant drains, void fraction climbs, fuel temperatures steadily rise toward melting — switch to the temperature view to watch the thermal front propagate. The Station Blackout preset is the most insidious: the reactor is safely shutdown (rods in), but the relentless 7% decay heat slowly boils away coolant with only natural circulation (5% of normal flow) available — watch the temperature creep upward over hundreds of ticks. The Breeder preset shows how a fast-spectrum reactor operates without a moderator, relying on higher enrichment and fast-neutron fission.
 
