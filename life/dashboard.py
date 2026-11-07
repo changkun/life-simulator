@@ -256,8 +256,10 @@ def _preview_static(name, tick, h, w):
 
     elif "collider" in name.lower() or "hadron" in name.lower():
         cx, cy = w // 2, h // 2
-        radius = min(cx - 1, cy - 1, 8)
-        for angle_i in range(max(1, int(radius * 6))):
+        # A preview only 2-3 rows tall gives cy - 1 == 0; keep the ring at
+        # radius 1 (points off the box are skipped below) instead of dividing by 0.
+        radius = max(1, min(cx - 1, cy - 1, 8))
+        for angle_i in range(radius * 6):
             a = angle_i * 2 * math.pi / (radius * 6)
             r = int(cy + math.sin(a) * radius * 0.8)
             c = int(cx + math.cos(a) * radius)
