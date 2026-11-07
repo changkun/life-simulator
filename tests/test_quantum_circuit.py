@@ -124,3 +124,11 @@ def test_deutsch_jozsa_balanced_measures_all_ones():
     app._qcirc_run_full()
     for label, p in _measure_probabilities(app.qcirc_state, 4):
         assert label[:3] == "111", (label, p)
+
+
+def test_menu_select_keypad_enter():
+    import curses
+    app = _make_app()
+    app._enter_qcirc_mode()
+    app._handle_qcirc_menu_key(curses.KEY_ENTER)
+    assert app.qcirc_mode is True

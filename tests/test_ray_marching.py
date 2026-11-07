@@ -419,3 +419,10 @@ def test_draw_tiny_viewport(_mock_cp):
     app = _make_app()
     app._raymarch_init(0)
     app._draw_raymarch(3, 5)  # too small, early return
+
+
+def test_menu_select_keypad_enter():
+    app = _make_app()
+    app._enter_raymarch_mode()
+    app._handle_raymarch_menu_key(curses.KEY_ENTER)
+    assert app.raymarch_mode is True

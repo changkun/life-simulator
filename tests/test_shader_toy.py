@@ -343,3 +343,11 @@ def test_key_q_exits():
     app._handle_shadertoy_key(ord("q"))
     assert app.shadertoy_mode is False
     assert app.shadertoy_running is False
+
+
+def test_menu_select_keypad_enter():
+    import curses
+    app = _make_app()
+    app._enter_shadertoy_mode()
+    app._handle_shadertoy_menu_key(curses.KEY_ENTER)
+    assert app.shadertoy_mode is True

@@ -169,7 +169,7 @@ def _handle_raymarch_menu_key(self, key: int) -> bool:
         self.raymarch_menu_sel = (self.raymarch_menu_sel + 1) % n
     elif key in (ord("k"), curses.KEY_UP):
         self.raymarch_menu_sel = (self.raymarch_menu_sel - 1) % n
-    elif key in (ord("\n"), ord("\r")):
+    elif key in (ord("\n"), ord("\r"), curses.KEY_ENTER):
         self._raymarch_init(self.raymarch_menu_sel)
     elif key in (ord("q"), 27):
         self.raymarch_menu = False

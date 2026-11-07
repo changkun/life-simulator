@@ -404,7 +404,7 @@ def _handle_qcirc_menu_key(self, key):
     elif key == curses.KEY_DOWN:
         self.qcirc_menu_sel = (self.qcirc_menu_sel + 1) % len(QCIRC_PRESETS)
         return True
-    elif key in (ord('\n'), ord(' ')):
+    elif key in (ord('\n'), ord('\r'), curses.KEY_ENTER, ord(' ')):
         _qcirc_init(self, self.qcirc_menu_sel)
         return True
     elif key == ord('q'):

@@ -228,7 +228,7 @@ def _handle_shadertoy_menu_key(self, key: int) -> bool:
         self.shadertoy_menu_sel = (self.shadertoy_menu_sel + 1) % n
     elif key in (ord("k"), curses.KEY_UP):
         self.shadertoy_menu_sel = (self.shadertoy_menu_sel - 1) % n
-    elif key in (ord("\n"), ord("\r")):
+    elif key in (ord("\n"), ord("\r"), curses.KEY_ENTER):
         self._shadertoy_init(self.shadertoy_menu_sel)
     elif key in (ord("q"), 27):
         self.shadertoy_menu = False
