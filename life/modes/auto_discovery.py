@@ -1,12 +1,4 @@
-"""Mode: auto_discovery — Autonomous Pattern Discovery Engine.
-
-Autonomously explores the CA rule space by mutating rules and initial conditions,
-scoring each configuration by visual complexity (entropy, symmetry, periodicity),
-and curating a gallery of the most "interesting" emergent patterns found.
-
-An automated explorer that breeds and evolves configurations toward maximum
-visual interest, surfacing hidden gems no human would find by hand.
-"""
+"""Auto-Discovery — breed random CA rules and seeds, score their visual interest, and keep the best in a gallery."""
 import curses
 import json
 import math
@@ -21,7 +13,7 @@ from life.analytics import (
 )
 from life.constants import SAVE_DIR, SPEEDS
 from life.grid import Grid
-from life.rules import rule_string, parse_rule_string
+from life.rules import rule_string
 
 # ── Constants ────────────────────────────────────────────────────────
 
@@ -105,7 +97,7 @@ def _mutate(genome, rate=0.15):
 
 
 def _genome_label(genome):
-    """Short human-readable label."""
+    """Return a short label such as "B3/S23" or "B3/S23 VN"."""
     rs = rule_string(genome["birth"], genome["survival"])
     nh = "VN" if genome["neighborhood"] == "von_neumann" else ""
     parts = [rs]
@@ -118,7 +110,7 @@ def _genome_label(genome):
 
 
 def _count_neighbors(cells, r, c, rows, cols, neighborhood):
-    """Count live neighbors for a cell."""
+    """Count live neighbours of (r, c) on a torus."""
     count = 0
     if neighborhood == "von_neumann":
         for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
@@ -135,10 +127,10 @@ def _count_neighbors(cells, r, c, rows, cols, neighborhood):
 
 
 def _seed_grid(grid, density, style):
-    """Seed a grid with initial conditions based on style."""
+    """Fill a grid according to the seed style."""
     rows, cols = grid.rows, grid.cols
     if style == "symmetric":
-        # 4-fold symmetric seeding
+        # Mirror one quadrant into the other three.
         hr, hc = rows // 2, cols // 2
         for r in range(hr):
             for c in range(hc):
@@ -148,7 +140,6 @@ def _seed_grid(grid, density, style):
                     grid.cells[rows - 1 - r][c] = 1
                     grid.cells[rows - 1 - r][cols - 1 - c] = 1
     elif style == "clustered":
-        # A few random clusters
         n_clusters = random.randint(2, 5)
         for _ in range(n_clusters):
             cr, cc = random.randint(0, rows - 1), random.randint(0, cols - 1)
@@ -158,13 +149,11 @@ def _seed_grid(grid, density, style):
                     if random.random() < density * 1.5:
                         grid.cells[r][c] = 1
     elif style == "sparse":
-        # Very sparse random
         for r in range(rows):
             for c in range(cols):
                 if random.random() < density * 0.3:
                     grid.cells[r][c] = 1
     elif style == "striped":
-        # Horizontal or vertical stripes with noise
         horiz = random.random() < 0.5
         stripe_w = random.randint(1, 3)
         for r in range(rows):
@@ -173,7 +162,6 @@ def _seed_grid(grid, density, style):
                 if (coord // stripe_w) % 2 == 0 and random.random() < density:
                     grid.cells[r][c] = 1
     elif style == "central":
-        # Dense center, sparse edges
         cr, cc = rows // 2, cols // 2
         for r in range(rows):
             for c in range(cols):
@@ -191,7 +179,7 @@ def _seed_grid(grid, density, style):
 
 
 def _create_sim(genome, rows, cols):
-    """Create a mini Grid for a genome."""
+    """Create a small seeded Grid for a genome."""
     g = Grid(rows, cols)
     g.birth = set(genome["birth"])
     g.survival = set(genome["survival"])
@@ -201,7 +189,10 @@ def _create_sim(genome, rows, cols):
 
 
 def _step_sim(grid):
-    """Step a mini simulation."""
+    """Advance a candidate grid by one generation.
+
+    Cells hold their age (capped at 200); the neighbourhood comes from the genome.
+    """
     rows, cols = grid.rows, grid.cols
     nh = getattr(grid, '_adisco_nh', 'moore')
     cells = grid.cells
@@ -239,7 +230,7 @@ def _compute_interest_score(grid, pop_history, period_detector):
 
     # ── Entropy (0-100): structured complexity ──
     ent = shannon_entropy(grid)
-    ent_score = min(ent / 1.0, 1.0) * 100  # normalize to ~1 bit max
+    ent_score = min(ent, 1.0) * 100  # saturates at 1 bit
 
     # ── Symmetry (0-100): emergent order ──
     sym = symmetry_score(grid)
@@ -323,7 +314,7 @@ def _compute_interest_score(grid, pop_history, period_detector):
 
 
 def _snapshot_cells(grid, max_rows=24, max_cols=32):
-    """Capture a compact snapshot of live cell positions."""
+    """Return the live cells in the top-left corner as (row, col) pairs."""
     alive = []
     for r in range(min(grid.rows, max_rows)):
         for c in range(min(grid.cols, max_cols)):
@@ -336,7 +327,7 @@ def _snapshot_cells(grid, max_rows=24, max_cols=32):
 
 
 def _enter_adisco_mode(self):
-    """Enter Auto-Discovery mode — show settings menu."""
+    """Enter Auto-Discovery and show the settings menu."""
     self.adisco_mode = False
     self.adisco_menu = True
     self.adisco_menu_sel = 0
@@ -344,7 +335,7 @@ def _enter_adisco_mode(self):
 
 
 def _exit_adisco_mode(self):
-    """Exit Auto-Discovery mode."""
+    """Leave Auto-Discovery and drop the candidate state."""
     self.adisco_mode = False
     self.adisco_menu = False
     self.adisco_running = False
@@ -358,14 +349,14 @@ def _exit_adisco_mode(self):
 
 
 def _adisco_init(self, seed_genomes=None):
-    """Initialize a batch of candidate configurations."""
+    """Start a new round of candidates, bred from seed_genomes when given."""
     max_y, max_x = self.stdscr.getmaxyx()
     usable_h = max_y - 6
     usable_w = max_x - 1
 
     batch_size = self.adisco_batch_size
 
-    # Find tile layout
+    # Pick the tile layout that fits the screen.
     best_r, best_c = 2, 4
     for gc in range(2, 8):
         gr = math.ceil(batch_size / gc)
@@ -388,7 +379,6 @@ def _adisco_init(self, seed_genomes=None):
     sim_rows = max(4, self.adisco_tile_h - 2)
     sim_cols = max(4, self.adisco_tile_w)
 
-    # Generate genomes
     if seed_genomes and len(seed_genomes) >= 2:
         genomes = []
         for sg in seed_genomes[:actual_batch // 3]:
@@ -403,7 +393,6 @@ def _adisco_init(self, seed_genomes=None):
     else:
         genomes = [_random_genome() for _ in range(actual_batch)]
 
-    # Create simulations
     self.adisco_sims = []
     self.adisco_genomes = genomes
     self.adisco_pop_histories = []
@@ -428,18 +417,17 @@ def _adisco_init(self, seed_genomes=None):
 
 
 def _adisco_step(self):
-    """Advance all candidates by one simulation step."""
+    """Advance every candidate by one step and score the round when it is due."""
     if self.adisco_phase != "simulating":
         return
     for i, grid in enumerate(self.adisco_sims):
         _step_sim(grid)
         self.adisco_pop_histories[i].append(grid.population)
-        # Update periodicity detector every 5 steps
+        # The period detector samples every 5th step.
         if self.adisco_sim_step % 5 == 0:
             self.adisco_period_detectors[i].update(grid)
     self.adisco_sim_step += 1
 
-    # Auto-score when enough steps have run
     if self.adisco_sim_step >= self.adisco_eval_steps:
         _adisco_score_and_curate(self)
 
@@ -448,13 +436,12 @@ def _adisco_score_and_curate(self):
     """Score all candidates, add best to gallery, breed next round."""
     self.adisco_phase = "scored"
 
-    # Score all
     for i, grid in enumerate(self.adisco_sims):
         self.adisco_fitness[i] = _compute_interest_score(
             grid, self.adisco_pop_histories[i], self.adisco_period_detectors[i]
         )
 
-    # Sort by total score (best first)
+    # Best first.
     indices = list(range(len(self.adisco_sims)))
     indices.sort(key=lambda i: -self.adisco_fitness[i].get("total", 0))
 
@@ -464,7 +451,7 @@ def _adisco_score_and_curate(self):
     self.adisco_pop_histories = [self.adisco_pop_histories[i] for i in indices]
     self.adisco_period_detectors = [self.adisco_period_detectors[i] for i in indices]
 
-    # Add top performers to gallery (if they meet threshold)
+    # Admit the top three that reach the threshold.
     threshold = self.adisco_gallery_threshold
     added = 0
     for i in range(min(3, len(self.adisco_sims))):
@@ -487,18 +474,17 @@ def _adisco_score_and_curate(self):
                 "sim_cols": self.adisco_sims[i].cols,
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             }
-            # Avoid near-duplicates (same rule string)
+            # Skip near-duplicates: same rule and a similar score.
             label = entry["label"]
             if not any(g["label"] == label and abs(g["score"] - score) < 20
                        for g in self.adisco_gallery):
                 self.adisco_gallery.append(entry)
                 added += 1
 
-    # Keep gallery sorted and bounded
     self.adisco_gallery.sort(key=lambda g: -g["score"])
     self.adisco_gallery = self.adisco_gallery[:self.adisco_gallery_max]
 
-    # Update adaptive threshold
+    # Never lower the threshold; keep it near the weakest gallery score.
     if self.adisco_gallery:
         min_gallery_score = self.adisco_gallery[-1]["score"]
         self.adisco_gallery_threshold = max(threshold, min_gallery_score * 0.9)
@@ -512,7 +498,6 @@ def _adisco_score_and_curate(self):
     else:
         self._flash(f"Round {self.adisco_round}: no new gems — best: {best_label} ({best.get('total', 0):.0f}pts)")
 
-    # Track history
     avg_score = sum(f.get("total", 0) for f in self.adisco_fitness) / max(1, len(self.adisco_fitness))
     self.adisco_history.append({
         "round": self.adisco_round,
@@ -522,14 +507,12 @@ def _adisco_score_and_curate(self):
         "gallery_size": gallery_size,
     })
 
-    # Auto-breed next round from gallery + top performers
     if self.adisco_auto_continue:
         _adisco_breed_next(self)
 
 
 def _adisco_breed_next(self):
-    """Breed next round from gallery entries and top performers."""
-    # Collect parent genomes from gallery + current top
+    """Start the next round from the gallery and the current top three."""
     parents = []
     for entry in self.adisco_gallery[:6]:
         g = entry["genome"]
@@ -540,7 +523,6 @@ def _adisco_breed_next(self):
             "density": g["density"],
             "seed_style": g["seed_style"],
         })
-    # Add current top performers
     for i in range(min(3, len(self.adisco_genomes))):
         parents.append({
             "birth": set(self.adisco_genomes[i]["birth"]),
@@ -551,7 +533,7 @@ def _adisco_breed_next(self):
         })
 
     if len(parents) < 2:
-        parents = None  # fall back to random
+        parents = None  # too few parents: start from random genomes
 
     self.adisco_sim_step = 0
     _adisco_init(self, seed_genomes=parents)
@@ -559,7 +541,7 @@ def _adisco_breed_next(self):
 
 
 def _adisco_save_gallery(self):
-    """Save the gallery to disk."""
+    """Write the gallery to disk."""
     if not self.adisco_gallery:
         self._flash("Gallery is empty — nothing to save")
         return
@@ -574,7 +556,7 @@ def _adisco_save_gallery(self):
 
 
 def _adisco_load_gallery(self):
-    """Load gallery from disk."""
+    """Return the saved gallery, or an empty list if there is none."""
     if not os.path.isfile(_GALLERY_FILE):
         return []
     try:
@@ -585,7 +567,7 @@ def _adisco_load_gallery(self):
 
 
 def _adisco_adopt_rule(self, genome_data):
-    """Adopt a genome's ruleset into the main Game of Life."""
+    """Copy a genome's birth and survival sets to the main grid and exit."""
     birth = set(genome_data["birth"])
     survival = set(genome_data["survival"])
     self.grid.birth = birth
@@ -599,7 +581,7 @@ def _adisco_adopt_rule(self, genome_data):
 
 
 def _handle_adisco_menu_key(self, key):
-    """Handle keys in the Auto-Discovery settings menu."""
+    """Handle keys in the settings menu."""
     if key == -1:
         return True
     menu_items = ["batch_size", "eval_steps", "mutation_rate",
@@ -705,14 +687,13 @@ def _handle_adisco_menu_key(self, key):
 
 
 def _handle_adisco_key(self, key):
-    """Handle keys during active Auto-Discovery exploration."""
+    """Handle keys during exploration."""
     if key == -1:
         return True
     if key == 27 or key == ord("q"):
         _exit_adisco_mode(self)
         return True
 
-    # Toggle gallery view
     if key == ord("g"):
         if self.adisco_gallery:
             self.adisco_gallery_view = not self.adisco_gallery_view
@@ -724,14 +705,12 @@ def _handle_adisco_key(self, key):
             self._flash("Gallery empty — keep exploring!")
         return True
 
-    # Gallery view keys
     if self.adisco_gallery_view:
         return _handle_adisco_gallery_key(self, key)
 
     pop_size = len(self.adisco_sims)
     gc = self.adisco_grid_cols
 
-    # Play/pause
     if key == ord(" "):
         self.adisco_running = not self.adisco_running
         if self.adisco_phase == "scored" and self.adisco_running:
@@ -740,7 +719,6 @@ def _handle_adisco_key(self, key):
             self._flash("Running" if self.adisco_running else "Paused")
         return True
 
-    # Navigate cursor
     if key == curses.KEY_UP or key == ord("w"):
         self.adisco_cursor = max(0, self.adisco_cursor - gc)
         return True
@@ -754,7 +732,6 @@ def _handle_adisco_key(self, key):
         self.adisco_cursor = min(pop_size - 1, self.adisco_cursor + 1)
         return True
 
-    # Skip to scoring
     if key == ord("S"):
         if self.adisco_phase == "simulating":
             # The last step scores the round. Use _adisco_step so the
@@ -763,7 +740,6 @@ def _handle_adisco_key(self, key):
                 _adisco_step(self)
         return True
 
-    # Force breed now
     if key == ord("b"):
         if self.adisco_phase == "simulating":
             _adisco_score_and_curate(self)
@@ -771,18 +747,15 @@ def _handle_adisco_key(self, key):
             _adisco_breed_next(self)
         return True
 
-    # Toggle auto-continue
     if key == ord("A"):
         self.adisco_auto_continue = not self.adisco_auto_continue
         self._flash(f"Auto-continue: {'ON' if self.adisco_auto_continue else 'OFF'}")
         return True
 
-    # Save gallery
     if key == ord("W"):
         _adisco_save_gallery(self)
         return True
 
-    # Adopt current cursor's rule
     if key == ord("a"):
         if 0 <= self.adisco_cursor < pop_size:
             _adisco_adopt_rule(self, {
@@ -791,7 +764,6 @@ def _handle_adisco_key(self, key):
             })
         return True
 
-    # New random batch
     if key == ord("r"):
         self.adisco_round = 0
         self.adisco_history = []
@@ -799,7 +771,6 @@ def _handle_adisco_key(self, key):
         self._flash("New random exploration")
         return True
 
-    # Speed controls
     if key == ord(">"):
         if self.speed_idx < len(SPEEDS) - 1:
             self.speed_idx += 1
@@ -809,7 +780,6 @@ def _handle_adisco_key(self, key):
             self.speed_idx -= 1
         return True
 
-    # Return to menu
     if key == ord("R"):
         self.adisco_mode = False
         self.adisco_running = False
@@ -821,7 +791,7 @@ def _handle_adisco_key(self, key):
 
 
 def _handle_adisco_gallery_key(self, key):
-    """Handle keys in gallery browsing view."""
+    """Handle keys in the gallery view."""
     n = len(self.adisco_gallery)
     if n == 0:
         self.adisco_gallery_view = False
@@ -834,13 +804,11 @@ def _handle_adisco_gallery_key(self, key):
         self.adisco_gallery_sel = min(n - 1, self.adisco_gallery_sel + 1)
         return True
 
-    # Adopt selected rule
     if key in (10, 13, curses.KEY_ENTER):
         entry = self.adisco_gallery[self.adisco_gallery_sel]
         _adisco_adopt_rule(self, entry["genome"])
         return True
 
-    # Delete from gallery
     if key == ord("x"):
         entry = self.adisco_gallery[self.adisco_gallery_sel]
         self.adisco_gallery.pop(self.adisco_gallery_sel)
@@ -848,13 +816,11 @@ def _handle_adisco_gallery_key(self, key):
         self._flash(f"Removed {entry['label']} from gallery")
         return True
 
-    # Save gallery
     if key == ord("W"):
         _adisco_save_gallery(self)
         return True
 
-    # Back to explorer
-    if key == ord("g") or key == 27:
+    if key == ord("g"):
         self.adisco_gallery_view = False
         return True
 
@@ -865,7 +831,7 @@ def _handle_adisco_gallery_key(self, key):
 
 
 def _draw_adisco_menu(self, max_y, max_x):
-    """Draw the Auto-Discovery settings menu."""
+    """Draw the settings menu."""
     self.stdscr.erase()
 
     title = "── Auto-Discovery: Autonomous Pattern Explorer ──"
@@ -937,7 +903,7 @@ def _draw_adisco_menu(self, max_y, max_x):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter/Space]=select  [q/Esc]=cancel"
+        hint = " j/k=move  Enter/Space=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -946,7 +912,7 @@ def _draw_adisco_menu(self, max_y, max_x):
 
 
 def _draw_adisco(self, max_y, max_x):
-    """Draw the Auto-Discovery explorer or gallery view."""
+    """Draw the candidate tiles, or the gallery when it is open."""
     if self.adisco_gallery_view:
         _draw_adisco_gallery(self, max_y, max_x)
         return
@@ -978,7 +944,7 @@ def _draw_adisco(self, max_y, max_x):
     except curses.error:
         pass
 
-    # Recalculate tile dimensions
+    # Recompute tile size from the current screen.
     usable_h = max_y - 6
     usable_w = max_x - 1
     th = max(4, usable_h // gr - 1)
@@ -1003,13 +969,11 @@ def _draw_adisco(self, max_y, max_x):
         fitness = self.adisco_fitness[idx] if idx < len(self.adisco_fitness) else {}
         is_cursor = (idx == self.adisco_cursor)
 
-        # Border color
         if is_cursor:
             border_attr = curses.color_pair(7) | curses.A_BOLD
         else:
             border_attr = curses.color_pair(6) | curses.A_DIM
 
-        # Header: label + score
         label = _genome_label(genome)
         score = fitness.get("total", 0)
         if score > 0:
@@ -1023,13 +987,11 @@ def _draw_adisco(self, max_y, max_x):
         except curses.error:
             pass
 
-        # Border line
         try:
             self.stdscr.addstr(tile_y + 1, tile_x, "─" * (tw * 2), border_attr)
         except curses.error:
             pass
 
-        # Simulation content
         sim_rows = min(th - 2, grid.rows)
         sim_cols = min(tw, grid.cols)
         for sr in range(sim_rows):
@@ -1055,7 +1017,6 @@ def _draw_adisco(self, max_y, max_x):
                     except curses.error:
                         pass
 
-        # Cursor marker
         if is_cursor:
             try:
                 self.stdscr.addstr(tile_y + 1, tile_x, "▸", curses.color_pair(7) | curses.A_BOLD)
@@ -1128,7 +1089,7 @@ def _draw_adisco(self, max_y, max_x):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=pause [g]=gallery [b]=score now [S]=skip [a]=adopt [W]=save [A]=auto [R]=menu [q]=exit"
+            hint = " Space=pause  arrows=move  g=gallery  b=score  S=skip  a=adopt  R=menu  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -1137,7 +1098,7 @@ def _draw_adisco(self, max_y, max_x):
 
 
 def _draw_adisco_gallery(self, max_y, max_x):
-    """Draw the gallery browsing view."""
+    """Draw the gallery list with a preview of the selected entry."""
     self.stdscr.erase()
 
     title = f"── Auto-Discovery Gallery ({len(self.adisco_gallery)} patterns) ──"
@@ -1255,7 +1216,7 @@ def _draw_adisco_gallery(self, max_y, max_x):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [j/k]=navigate  [Enter]=adopt rule  [x]=remove  [W]=save gallery  [g/Esc]=back to explorer"
+            hint = " j/k=move  Enter=adopt rule  x=remove  W=save  g=back  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
