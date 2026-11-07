@@ -94,3 +94,11 @@ def test_syntax_error_in_expression():
     assert code is None
     assert err is not None
     assert "syntax" in err.lower()
+
+
+def test_grid_rows_match_the_drawn_area():
+    """The drawn grid is max_y - 7 rows; a taller grid hides a simulated row."""
+    app = _make_app()
+    app._re_init()
+    assert app.re_rows == app.stdscr.getmaxyx()[0] - 7
+    assert app.re_cols == (app.stdscr.getmaxyx()[1] - 1) // 2

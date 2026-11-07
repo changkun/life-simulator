@@ -154,7 +154,7 @@ def _re_init(self, birth_expr="sum(neighbors) == 3",
              rule_name="Custom Rule"):
     """Initialize the live rule editor with given expressions."""
     max_y, max_x = self.stdscr.getmaxyx()
-    self.re_rows = max_y - 6  # leave room for editor panel
+    self.re_rows = max_y - 7  # title bar above, six-row editor panel below
     self.re_cols = (max_x - 1) // 2
     if self.re_rows < 5:
         self.re_rows = 5
