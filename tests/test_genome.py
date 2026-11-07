@@ -74,3 +74,18 @@ def test_abbrev_reverse_mapping_consistent():
     """Every abbreviation maps back to the correct prefix."""
     for prefix, abbrev in _MODE_ABBREVS.items():
         assert _ABBREV_TO_PREFIX[abbrev] == prefix
+
+
+def test_decode_rejects_malformed_config():
+    """Valid compressed JSON with the wrong shape must not reach _apply_genome."""
+    for cfg in ([1, 2], 5, {"_mode": 3}, {"rule_b": 5}, {"speed_idx": "x"},
+                {"cells": [1], "grid_size": [3, 3]}, {"grid_size": [3]}):
+        code = _encode_genome("gol", cfg)
+        assert _decode_genome(code) == (None, None), cfg
+
+
+def test_decode_accepts_gol_config():
+    cfg = {"_mode": "gol", "speed_idx": 1, "rule_b": [3], "rule_s": [2, 3],
+           "grid_size": [5, 5], "cells": [[1, 2], [2, 3]]}
+    prefix, decoded = _decode_genome(_encode_genome("gol", cfg))
+    assert prefix == "gol" and decoded == cfg

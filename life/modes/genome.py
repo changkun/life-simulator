@@ -191,6 +191,32 @@ def _encode_genome(prefix, config):
     return f"{abbrev}-{b64}"
 
 
+def _is_ints(val, n=None):
+    """Return True if val is a list of ints (of length n, when given)."""
+    return (isinstance(val, list) and (n is None or len(val) == n)
+            and all(type(x) is int for x in val))
+
+
+def _is_valid_config(config):
+    """Check that the fields _apply_genome reads have the types it expects."""
+    if not isinstance(config, dict):
+        return False
+    if not isinstance(config.get("_mode", ""), str):
+        return False
+    if "speed_idx" in config and type(config["speed_idx"]) is not int:
+        return False
+    for key in ("rule_b", "rule_s"):
+        if key in config and not _is_ints(config[key]):
+            return False
+    if "grid_size" in config and not _is_ints(config["grid_size"], 2):
+        return False
+    if "cells" in config:
+        cells = config["cells"]
+        if not isinstance(cells, list) or not all(_is_ints(c, 2) for c in cells):
+            return False
+    return True
+
+
 def _decode_genome(code):
     """Decode a genome string back into (prefix, config_dict).
 
@@ -220,6 +246,8 @@ def _decode_genome(code):
     except Exception:
         return None, None
 
+    if not _is_valid_config(config):
+        return None, None
     return prefix, config
 
 
