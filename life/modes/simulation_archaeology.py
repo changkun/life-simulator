@@ -1,32 +1,26 @@
-"""Mode: simulation_archaeology — Reverse-engineer unknown CA rules from artifacts.
+"""Simulation Archaeology — a puzzle game: deduce the birth/survival rule behind a frozen cellular automaton.
 
-A puzzle game where you're presented with a mysterious end-state (or short
-animation) and must deduce what rules and initial conditions produced it.
-It's a detective game played in rule-space.
+Each puzzle runs a hidden rule forward and shows the final state. Revealed
+clues (entropy, symmetry, stability and more) and test runs of your own
+guess narrow down the rule.
 
-The mode generates puzzles by running random (or curated) rules forward,
-then presenting the result. Players get clues (symmetry hints, entropy
-readings, partial timeline fragments), form hypotheses, test candidate
-rules against the evidence, and narrow down the answer.
-
-Difficulty scales from easy (which well-known rule?) to hard (identify
-birth/survival sets from a single frozen frame with minimal clues).
-
-Keys (main puzzle view):
-    SPC     Start/stop candidate simulation
-    Enter   Submit guess (check answer)
-    ←/→     Cycle through birth digits to toggle
-    Tab     Switch between editing birth vs survival set
-    +/-     Adjust initial density guess
-    s       Cycle seed style guess
-    c       Request a clue (costs points)
-    n       New puzzle (skip current)
-    d       Cycle difficulty (easy/medium/hard/expert)
-    t       Toggle timeline fragment clue
-    v       Cycle view mode (artifact / candidate / diff / side-by-side)
-    r       Reset candidate to default
-    h       Toggle hint overlay
-    q       Quit mode
+Keys in the puzzle view:
+    0-8     Toggle a digit in the birth or survival set
+    Tab     Switch between editing birth and survival
+    Left/Right  Move the digit highlight
+    Space   Run the candidate rule and show its result
+    Enter   Submit the guess
+    +/-     Adjust the guessed initial density
+    s       Cycle the guessed seed style
+    c       Reveal the next clue (costs points)
+    t       Toggle the timeline (once its clue is revealed)
+    v       Cycle the view: artifact, candidate, diff, side by side
+    d       Cycle the difficulty (applies to the next puzzle)
+    n       New puzzle
+    r       Reset the guess
+    a       Give up and show the answer
+    h       Show or hide the key hints
+    q, Esc  Exit the mode
 """
 import curses
 import math
@@ -41,13 +35,11 @@ from life.analytics import (
 from life.grid import Grid
 from life.rules import rule_string
 
-# ── Constants ────────────────────────────────────────────────────────
-
 _SPARKLINE = "▁▂▃▄▅▆▇█"
 
 _DIFFICULTIES = ["easy", "medium", "hard", "expert"]
 
-# How many generations to run the source simulation for puzzle generation
+# Generations the hidden rule runs before the artifact is captured
 _PUZZLE_GENS = {
     "easy": 40,
     "medium": 80,
@@ -55,7 +47,7 @@ _PUZZLE_GENS = {
     "expert": 200,
 }
 
-# How many clues are initially revealed per difficulty
+# Clues revealed at the start of a puzzle
 _INITIAL_CLUES = {
     "easy": 4,
     "medium": 2,
@@ -63,13 +55,13 @@ _INITIAL_CLUES = {
     "expert": 0,
 }
 
-# Max score per puzzle (before clue penalties)
+# Score for a solved puzzle before clue penalties
 _MAX_SCORE = 100
 
-# Score penalty per clue requested
+# Points lost per clue revealed
 _CLUE_COST = 15
 
-# Well-known rules for easy difficulty
+# Well-known rules used on easy, and as the base for mutations on medium
 _EASY_RULES = [
     {"name": "Conway's Life", "birth": {3}, "survival": {2, 3}},
     {"name": "HighLife", "birth": {3, 6}, "survival": {2, 3}},
@@ -83,7 +75,7 @@ _EASY_RULES = [
 
 _SEED_STYLES = ["random", "symmetric", "clustered", "sparse", "central"]
 
-# Clue types available
+# Clue types, in the order c reveals them
 _CLUE_TYPES = [
     "entropy",          # Shannon entropy of the final state
     "symmetry",         # Symmetry scores (H/V/rot)
@@ -102,7 +94,7 @@ _CLUE_TYPES = [
 # ── Sparkline helper ─────────────────────────────────────────────────
 
 def _sparkline(data, width):
-    """Render a sparkline string from numerical data."""
+    """Render data as a sparkline at most width characters wide."""
     if not data:
         return ""
     lo = min(data)
@@ -120,22 +112,20 @@ def _sparkline(data, width):
 # ── Puzzle generation ────────────────────────────────────────────────
 
 def _generate_puzzle(self):
-    """Generate a new puzzle: run a random rule forward and capture artifact."""
+    """Pick a rule for the current difficulty, run it forward and store the puzzle."""
     difficulty = self.archaeo_difficulty
     rows, cols = self.archaeo_sim_rows, self.archaeo_sim_cols
 
-    # Pick a rule based on difficulty
     if difficulty == "easy":
         rule_info = random.choice(_EASY_RULES)
         birth = set(rule_info["birth"])
         survival = set(rule_info["survival"])
     elif difficulty == "medium":
-        # Mix of known rules and slight mutations
+        # Half known rules with one digit flipped, half random.
         if random.random() < 0.5:
             rule_info = random.choice(_EASY_RULES)
             birth = set(rule_info["birth"])
             survival = set(rule_info["survival"])
-            # Mutate one digit
             if random.random() < 0.5 and birth:
                 d = random.randint(0, 8)
                 birth.symmetric_difference_update({d})
@@ -152,7 +142,7 @@ def _generate_puzzle(self):
             if not survival:
                 survival.add(random.randint(2, 4))
     else:
-        # Hard/expert: fully random rules
+        # Hard and expert use fully random rules.
         birth = {d for d in range(9) if random.random() < 0.3}
         survival = {d for d in range(9) if random.random() < 0.3}
         if not birth:
@@ -160,20 +150,17 @@ def _generate_puzzle(self):
         if not survival:
             survival.add(random.randint(2, 4))
 
-    # Pick seed style and density
     density = random.uniform(0.1, 0.45)
     seed_style = random.choice(_SEED_STYLES)
 
-    # Create source grid and seed it
     src = Grid(rows, cols)
     src.birth = birth
     src.survival = survival
     _seed_grid(src, density, seed_style)
 
-    # Capture initial state
     initial_cells = [[src.cells[r][c] for c in range(cols)] for r in range(rows)]
 
-    # Run forward, capturing timeline snapshots
+    # Keep about eight snapshots for the timeline clue.
     gens = _PUZZLE_GENS[difficulty]
     timeline = []
     pop_history = [src.population]
@@ -189,21 +176,18 @@ def _generate_puzzle(self):
                       for c in range(cols)] for r in range(rows)]
             timeline.append(snap)
 
-    # If the sim died completely, retry
+    # An empty artifact is no puzzle; try another rule.
     if src.population == 0:
         return _generate_puzzle(self)
 
-    # Capture final state as the artifact
     artifact = [[1 if src.cells[r][c] > 0 else 0
                   for c in range(cols)] for r in range(rows)]
 
-    # Compute analytical clues about the artifact
     entropy = shannon_entropy(src)
     sym = symmetry_score(src)
     stability = classify_stability(pop_history, period_det.period)
     pop_pct = src.population / (rows * cols) * 100
 
-    # Store puzzle data
     self.archaeo_answer_birth = birth
     self.archaeo_answer_survival = survival
     self.archaeo_answer_density = density
@@ -220,18 +204,15 @@ def _generate_puzzle(self):
     self.archaeo_artifact_period = period_det.period
     self.archaeo_artifact_gens = gens
 
-    # Determine which clues are revealed
     self.archaeo_revealed_clues = set()
     self.archaeo_clues_used = 0
 
-    # Auto-reveal some clues based on difficulty
     initial = _INITIAL_CLUES[difficulty]
     available = list(_CLUE_TYPES)
     random.shuffle(available)
     for i in range(min(initial, len(available))):
         self.archaeo_revealed_clues.add(available[i])
 
-    # Reset candidate guess
     self.archaeo_guess_birth = {3}  # default starting guess
     self.archaeo_guess_survival = {2, 3}
     self.archaeo_guess_density = 0.25
@@ -239,7 +220,6 @@ def _generate_puzzle(self):
     self.archaeo_editing_birth = True
     self.archaeo_edit_cursor = 0
 
-    # Reset candidate simulation
     self.archaeo_candidate_grid = None
     self.archaeo_candidate_running = False
     self.archaeo_candidate_artifact = None
@@ -252,7 +232,7 @@ def _generate_puzzle(self):
 
 
 def _seed_grid(grid, density, style):
-    """Seed a grid with initial conditions based on style."""
+    """Fill a grid at the given density in one of the _SEED_STYLES."""
     rows, cols = grid.rows, grid.cols
     if style == "random":
         for r in range(rows):
@@ -260,14 +240,13 @@ def _seed_grid(grid, density, style):
                 if random.random() < density:
                     grid.set_alive(r, c)
     elif style == "symmetric":
-        # Horizontally symmetric
+        # Left-right mirror image.
         for r in range(rows):
             for c in range(cols // 2 + 1):
                 if random.random() < density:
                     grid.set_alive(r, c)
                     grid.set_alive(r, cols - 1 - c)
     elif style == "clustered":
-        # Place several random clusters
         n_clusters = random.randint(3, 8)
         for _ in range(n_clusters):
             cr = random.randint(0, rows - 1)
@@ -284,7 +263,7 @@ def _seed_grid(grid, density, style):
                 if random.random() < density * 0.4:
                     grid.set_alive(r, c)
     elif style == "central":
-        # Dense center, sparse edges
+        # Dense in the middle, sparse toward the edges.
         mr, mc = rows // 2, cols // 2
         for r in range(rows):
             for c in range(cols):
@@ -294,7 +273,7 @@ def _seed_grid(grid, density, style):
                 if random.random() < local_density:
                     grid.set_alive(r, c)
     else:
-        # Fallback: random
+        # Unknown style: fall back to random.
         for r in range(rows):
             for c in range(cols):
                 if random.random() < density:
@@ -302,7 +281,7 @@ def _seed_grid(grid, density, style):
 
 
 def _run_candidate(self):
-    """Run the candidate guess forward and capture its artifact."""
+    """Run the guessed rule forward and store its result."""
     rows, cols = self.archaeo_sim_rows, self.archaeo_sim_cols
     gens = self.archaeo_artifact_gens
 
@@ -327,7 +306,6 @@ def _check_answer(self):
     survival_match = self.archaeo_guess_survival == self.archaeo_answer_survival
 
     if birth_match and survival_match:
-        # Perfect rule match
         clue_penalty = self.archaeo_clues_used * _CLUE_COST
         score = max(10, _MAX_SCORE - clue_penalty)
         self.archaeo_total_score += score
@@ -336,7 +314,7 @@ def _check_answer(self):
         self.archaeo_last_result = f"CORRECT! +{score}pts"
         return True
     else:
-        # Partial credit based on digit overlap
+        # Feedback is the mean Jaccard similarity of the birth and survival sets.
         b_overlap = len(self.archaeo_guess_birth & self.archaeo_answer_birth)
         b_total = len(self.archaeo_answer_birth | self.archaeo_guess_birth)
         s_overlap = len(self.archaeo_guess_survival & self.archaeo_answer_survival)
@@ -363,7 +341,6 @@ def _reveal_clue(self):
     if not unrevealed:
         self.archaeo_last_result = "All clues revealed!"
         return
-    # Prioritize less-powerful clues first
     clue = unrevealed[0]
     self.archaeo_revealed_clues.add(clue)
     self.archaeo_clues_used += 1
@@ -391,7 +368,7 @@ def _exit_archaeo_mode(self):
 # ── Key handling ─────────────────────────────────────────────────────
 
 def _handle_archaeo_key(self, key):
-    """Handle keys in the main puzzle view."""
+    """Handle keys in the puzzle view and the difficulty menu."""
     if key == ord('q') or key == 27:
         _exit_archaeo_mode(self)
         return True
@@ -400,13 +377,12 @@ def _handle_archaeo_key(self, key):
         return _handle_archaeo_menu_key(self, key)
 
     if self.archaeo_show_answer:
-        # Any key after showing answer goes to next puzzle
+        # With the answer shown, only these keys move on.
         if key in (ord('n'), ord(' '), 10, 13, curses.KEY_ENTER):
             _generate_puzzle(self)
         return True
 
     if key == ord(' '):
-        # Run candidate simulation
         _run_candidate(self)
         self.archaeo_last_result = "Candidate simulated"
         return True
@@ -419,7 +395,6 @@ def _handle_archaeo_key(self, key):
         return True
 
     if key == ord('\t'):
-        # Toggle birth/survival editing
         self.archaeo_editing_birth = not self.archaeo_editing_birth
         self.archaeo_edit_cursor = 0
         return True
@@ -432,7 +407,6 @@ def _handle_archaeo_key(self, key):
         self.archaeo_edit_cursor = min(8, self.archaeo_edit_cursor + 1)
         return True
 
-    # Toggle digit at cursor
     if ord('0') <= key <= ord('8'):
         digit = key - ord('0')
         if self.archaeo_editing_birth:
@@ -452,7 +426,6 @@ def _handle_archaeo_key(self, key):
         return True
 
     if key == ord('s'):
-        # Cycle seed style
         styles = _SEED_STYLES
         idx = styles.index(self.archaeo_guess_seed_style) if self.archaeo_guess_seed_style in styles else 0
         self.archaeo_guess_seed_style = styles[(idx + 1) % len(styles)]
@@ -467,7 +440,6 @@ def _handle_archaeo_key(self, key):
         return True
 
     if key == ord('d'):
-        # Cycle difficulty
         idx = _DIFFICULTIES.index(self.archaeo_difficulty)
         self.archaeo_difficulty = _DIFFICULTIES[(idx + 1) % len(_DIFFICULTIES)]
         self.archaeo_last_result = f"Difficulty: {self.archaeo_difficulty}"
@@ -482,14 +454,12 @@ def _handle_archaeo_key(self, key):
         return True
 
     if key == ord('v'):
-        # Cycle view mode
         views = ["artifact", "candidate", "diff", "side_by_side"]
         idx = views.index(self.archaeo_view_mode) if self.archaeo_view_mode in views else 0
         self.archaeo_view_mode = views[(idx + 1) % len(views)]
         return True
 
     if key == ord('r'):
-        # Reset candidate
         self.archaeo_guess_birth = {3}
         self.archaeo_guess_survival = {2, 3}
         self.archaeo_guess_density = 0.25
@@ -506,7 +476,6 @@ def _handle_archaeo_key(self, key):
         return True
 
     if key == ord('a'):
-        # Give up and show answer
         self.archaeo_show_answer = True
         self.archaeo_last_result = f"Answer: {self.archaeo_answer_rule_str}"
         return True
@@ -515,7 +484,7 @@ def _handle_archaeo_key(self, key):
 
 
 def _handle_archaeo_menu_key(self, key):
-    """Handle keys in the menu/splash screen."""
+    """Handle keys in the difficulty menu."""
     if key == ord('q') or key == 27:
         _exit_archaeo_mode(self)
         return True
@@ -529,7 +498,6 @@ def _handle_archaeo_menu_key(self, key):
         return True
 
     if key in (10, 13, curses.KEY_ENTER, ord(' ')):
-        # Start game with selected difficulty
         self.archaeo_difficulty = _DIFFICULTIES[self.archaeo_menu_sel]
         self.archaeo_menu = False
         _generate_puzzle(self)
@@ -541,7 +509,7 @@ def _handle_archaeo_menu_key(self, key):
 # ── Stepping ─────────────────────────────────────────────────────────
 
 def _archaeo_step(self):
-    """Auto-step: animate timeline if showing."""
+    """Advance the timeline animation while it is shown."""
     if self.archaeo_show_timeline and self.archaeo_timeline:
         self.archaeo_timeline_tick += 1
         if self.archaeo_timeline_tick % 8 == 0:
@@ -551,14 +519,14 @@ def _archaeo_step(self):
 
 
 def _is_archaeo_auto_stepping(self):
-    """Return True when mode should auto-step."""
+    """Return True while a puzzle (not the menu) is shown."""
     return self.archaeo_mode and not self.archaeo_menu
 
 
 # ── Drawing ──────────────────────────────────────────────────────────
 
 def _draw_archaeo(self, max_y=None, max_x=None):
-    """Main draw function."""
+    """Draw the difficulty menu or the puzzle."""
     self.stdscr.erase()
     try:
         max_y, max_x = self.stdscr.getmaxyx()
@@ -599,12 +567,12 @@ def _draw_archaeo(self, max_y=None, max_x=None):
 
 
 def _draw_archaeo_menu(self, max_y=None, max_x=None):
-    """Alias for menu draw."""
+    """Draw the menu; _draw_archaeo handles both screens."""
     _draw_archaeo(self)
 
 
 def _draw_archaeo_splash(self, max_y, max_x):
-    """Draw the difficulty selection splash screen."""
+    """Draw the difficulty menu."""
     try:
         title = "═══ Simulation Archaeology ═══"
         self.stdscr.addstr(2, max(0, (max_x - len(title)) // 2), title, curses.A_BOLD)
@@ -612,7 +580,6 @@ def _draw_archaeo_splash(self, max_y, max_x):
         subtitle = "Reverse-engineer unknown CA rules from their artifacts"
         self.stdscr.addstr(4, max(0, (max_x - len(subtitle)) // 2), subtitle, curses.A_DIM)
 
-        # Description
         desc_lines = [
             "You'll be shown the end-state of an unknown cellular automaton.",
             "Your mission: deduce the birth/survival rules that created it.",
@@ -627,12 +594,11 @@ def _draw_archaeo_splash(self, max_y, max_x):
             if y < max_y - 6:
                 self.stdscr.addstr(y, max(0, (max_x - len(line)) // 2), line)
 
-        # Difficulty options
         diff_descs = {
             "easy": "Well-known rules (Life, HighLife, etc.) + 4 free clues",
             "medium": "Known rules + mutations, 2 free clues",
             "hard": "Random rules, 1 free clue",
-            "expert": "Random rules, no free clues, larger grids",
+            "expert": "Random rules, no free clues, 200 generations",
         }
         base_y = 14
         for i, diff in enumerate(_DIFFICULTIES):
@@ -645,26 +611,24 @@ def _draw_archaeo_splash(self, max_y, max_x):
             label = f"{marker}{diff.upper()}: {diff_descs[diff]}"
             self.stdscr.addstr(y, 4, label[:max_x - 6], attr)
 
-        # Stats
         stats_y = base_y + len(_DIFFICULTIES) * 2 + 1
         if stats_y < max_y - 2:
             stats = f"Total score: {self.archaeo_total_score}  Puzzles solved: {self.archaeo_puzzles_solved}"
             self.stdscr.addstr(stats_y, 4, stats, curses.A_DIM)
 
-        # Help
         help_y = max_y - 1
-        help_text = " ↑/↓:select  Enter:start  q:quit "
+        help_text = " ↑↓=select  Enter=start  q=quit "
         self.stdscr.addstr(help_y, 0, help_text[:max_x - 1], curses.A_REVERSE)
     except curses.error:
         pass
 
 
 def _draw_grid_view(self, start_y, start_x, width, height, max_x):
-    """Draw the artifact and/or candidate grid."""
+    """Draw the artifact, candidate, diff or side-by-side view."""
     rows = self.archaeo_sim_rows
     cols = self.archaeo_sim_cols
 
-    # Scale to fit
+    # Sample every scale-th cell when the grid is larger than the area.
     scale_r = max(1, rows // max(1, height - 2))
     scale_c = max(1, (cols * 2) // max(1, width - 1))
     disp_rows = min(rows, height - 2)
@@ -729,7 +693,7 @@ def _draw_grid_view(self, start_y, start_x, width, height, max_x):
 
 
 def _render_cells(self, cells, y, x, disp_rows, disp_cols, scale_r, scale_c, color_pair):
-    """Render a 2D cell array to screen."""
+    """Render a 2D cell array, two characters per cell."""
     if not cells:
         return
     rows = len(cells)
@@ -755,7 +719,7 @@ def _render_cells(self, cells, y, x, disp_rows, disp_cols, scale_r, scale_c, col
 
 
 def _render_diff(self, y, x, disp_rows, disp_cols, scale_r, scale_c):
-    """Render diff between artifact and candidate."""
+    """Render the artifact with mismatching candidate cells in red."""
     art = self.archaeo_artifact
     cand = self.archaeo_candidate_artifact
     if not art or not cand:
@@ -782,7 +746,6 @@ def _render_diff(self, y, x, disp_rows, disp_cols, scale_r, scale_c):
                     else:
                         self.stdscr.addstr(py, ppx, "  ")
                 else:
-                    # Mismatch: red
                     attr = curses.color_pair(1) if curses.has_colors() else curses.A_REVERSE
                     self.stdscr.addstr(py, ppx, "▓▓", attr)
             except curses.error:
@@ -790,12 +753,11 @@ def _render_diff(self, y, x, disp_rows, disp_cols, scale_r, scale_c):
 
 
 def _draw_control_panel(self, px, panel_w, max_y, max_x):
-    """Draw the right-side control panel with clues and guess editor."""
+    """Draw the guess editor, clues and result on the right."""
     py = 2
     pw = panel_w - 2
 
     try:
-        # Difficulty & puzzle info
         diff_str = self.archaeo_difficulty.upper()
         self.stdscr.addstr(py, px, f"Difficulty: {diff_str}", curses.A_BOLD)
         py += 1
@@ -806,7 +768,6 @@ def _draw_control_panel(self, px, panel_w, max_y, max_x):
         self.stdscr.addstr(py, px, "── Your Guess ──", curses.A_BOLD)
         py += 1
 
-        # Birth set editor
         b_label = "Birth:    "
         b_active = self.archaeo_editing_birth
         b_attr = curses.A_BOLD if b_active else curses.A_DIM
@@ -826,7 +787,6 @@ def _draw_control_panel(self, px, panel_w, max_y, max_x):
             self.stdscr.addstr(py, px + len(b_label) + d * 2 + 1, " ", curses.A_DIM)
         py += 1
 
-        # Survival set editor
         s_label = "Survival: "
         s_active = not self.archaeo_editing_birth
         s_attr = curses.A_BOLD if s_active else curses.A_DIM
@@ -902,7 +862,6 @@ def _draw_control_panel(self, px, panel_w, max_y, max_x):
 
         py += 1
 
-        # Population sparkline
         if (self.archaeo_pop_history and "population" in revealed
                 and py + 2 < clue_bottom):
             self.stdscr.addstr(py, px, "── Pop History ──", curses.A_BOLD)
@@ -911,7 +870,6 @@ def _draw_control_panel(self, px, panel_w, max_y, max_x):
             self.stdscr.addstr(py, px, spark[:pw], curses.A_DIM)
             py += 2
 
-        # Result message
         if self.archaeo_last_result:
             py = min(py, max_y - 4)
             result_attr = curses.A_BOLD
@@ -921,7 +879,6 @@ def _draw_control_panel(self, px, panel_w, max_y, max_x):
             self.stdscr.addstr(py, px, self.archaeo_last_result[:pw], result_attr)
             py += 1
 
-        # Show answer if revealed
         if self.archaeo_show_answer:
             py = min(py + 1, max_y - 3)
             self.stdscr.addstr(py, px, f"Answer: {self.archaeo_answer_rule_str}", curses.A_BOLD)
@@ -949,7 +906,7 @@ def _draw_status_bar(self, max_y, max_x):
 # ── State initialization ─────────────────────────────────────────────
 
 def _archaeo_init_state(self):
-    """Initialize all state variables for Simulation Archaeology mode."""
+    """Set the default state on App (the score persists across puzzles)."""
     self.archaeo_mode = False
     self.archaeo_menu = False
     self.archaeo_menu_sel = 0
@@ -1013,7 +970,7 @@ def _archaeo_init_state(self):
 # ── Registration ─────────────────────────────────────────────────────
 
 def register(App):
-    """Register Simulation Archaeology mode methods on the App class."""
+    """Bind the Simulation Archaeology methods to App."""
     _archaeo_init_state(App)
 
     App._enter_archaeo_mode = _enter_archaeo_mode
