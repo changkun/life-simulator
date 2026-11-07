@@ -5508,26 +5508,6 @@ class App:
     _ISO_SHADE_MAP = {"█": "▓", "▓": "▒", "▒": "░", "░": " ", "·": " "}
 
 
-    def _start_compare(self, birth2: set, survival2: set):
-        """Clone the current grid into a second grid with different rules and start comparison."""
-        self.grid2 = Grid(self.grid.rows, self.grid.cols)
-        # Copy cell state from the primary grid
-        for r in range(self.grid.rows):
-            for c in range(self.grid.cols):
-                self.grid2.cells[r][c] = self.grid.cells[r][c]
-        self.grid2.generation = self.grid.generation
-        self.grid2.population = self.grid.population
-        # Apply the chosen rule to the second grid
-        self.grid2.birth = birth2
-        self.grid2.survival = survival2
-        self.pop_history2 = list(self.pop_history)
-        self.compare_mode = True
-        self.compare_rule_menu = False
-        r1 = rule_string(self.grid.birth, self.grid.survival)
-        r2 = rule_string(birth2, survival2)
-        self._flash(f"Comparing: {r1} vs {r2}  (V to exit)")
-
-
     def _start_race(self):
         """Clone current grid into N grids with different rules and start the race."""
         self.race_grids = []
