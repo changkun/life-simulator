@@ -1,28 +1,12 @@
-"""Mode: immune_system — Immune System Response & Pathogen Defense.
+"""Immune System Response & Pathogen Defense — innate and adaptive immunity in a 2D tissue.
 
-Simulates innate and adaptive immunity as a 2D tissue cross-section.
-Pathogen particles invade through a wound breach, neutrophil first-responders
-rush via chemotaxis toward cytokine gradients, macrophage phagocytosis with
-antigen presentation, T-cell activation cascade (naive → helper/killer with
-clonal expansion), B-cell antibody production creating diffusible antibody
-fields that opsonize pathogens, complement system membrane attack,
-inflammatory cytokine signaling (TNF-α, IL-6) with positive feedback and
-tissue damage from excessive inflammation, fever mechanic boosting immune
-kinetics but risking tissue at high levels, and memory cell formation for
-faster secondary response.
+Pathogens enter through a wound on the left edge. Innate cells follow cytokine
+gradients, T and B cells act on 6-bit antigen matches, and antibody, complement
+and fever shape the outcome.
 
-Three views:
-  1) Tissue map — immune cell glyphs + pathogen spread + wound site
-  2) Cytokine/antibody heatmap overlay
-  3) Time-series sparkline graphs (pathogen load, immune cells,
-     inflammation, antibody titer, tissue damage, fever, etc.)
-
-Six presets:
-  Normal Bacterial Infection, Viral Invasion, Cytokine Storm,
-  Immunodeficiency, Allergic Hypersensitivity, Vaccination & Re-exposure
+Views (v cycles): tissue map, cytokine/antibody heatmap, time-series graphs.
 """
 import curses
-import math
 import random
 import time
 
@@ -46,14 +30,6 @@ ENT_MEMORY = 11        # memory cell (T or B lineage)
 ENT_DEBRIS = 12        # dead cell debris
 ENT_MAST = 13          # mast cell (allergic response)
 ENT_DENDRITIC = 14     # dendritic cell — antigen presenter to T cells
-
-ENT_NAMES = {
-    ENT_EMPTY: "empty", ENT_TISSUE: "tissue", ENT_INFECTED: "infected",
-    ENT_BACTERIA: "bact", ENT_VIRUS: "virus", ENT_MACROPHAGE: "macro",
-    ENT_NEUTROPHIL: "neut", ENT_NAIVE_T: "naiveT", ENT_HELPER_T: "helpT",
-    ENT_KILLER_T: "killT", ENT_BCELL: "Bcell", ENT_MEMORY: "mem",
-    ENT_DEBRIS: "debris", ENT_MAST: "mast", ENT_DENDRITIC: "DC",
-}
 
 ENT_CHARS = {
     ENT_EMPTY: "  ", ENT_TISSUE: "..", ENT_INFECTED: "xx",
@@ -1323,7 +1299,7 @@ def _draw_immune_menu(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    hint = "[j/k] select  [Enter] start  [q] back"
+    hint = "j/k=select  Enter=start  q=exit"
     try:
         self.stdscr.addstr(max_y - 1, max(0, (max_x - len(hint)) // 2), hint,
                            curses.color_pair(6) | curses.A_DIM)
@@ -1336,7 +1312,7 @@ def _draw_immune_menu(self, max_y: int, max_x: int):
 # ══════════════════════════════════════════════════════════════════════
 
 def _draw_immune(self, max_y: int, max_x: int):
-    """Dispatch to current view."""
+    """Draw the current view."""
     if self.immune_view == "cells":
         _draw_immune_cells(self, max_y, max_x)
     elif self.immune_view == "heatmap":
@@ -1449,7 +1425,7 @@ def _draw_immune_cells(self, max_y: int, max_x: int):
     if hasattr(self, 'message') and self.message and now - self.message_time < 3.0:
         hint = f" {self.message}"
     else:
-        hint = " [Space] [n]step [v]iew [p]athogen [i]mmune [u]mutate [+/-]speed [r]eset [R]menu [q]uit"
+        hint = " Space=play  n=step  v=view  p=pathogens  i=immune boost  u=mutate  +/-=speed  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
                            curses.color_pair(6) | curses.A_DIM)
@@ -1523,7 +1499,7 @@ def _draw_immune_heatmap(self, max_y: int, max_x: int):
             except curses.error:
                 pass
 
-    hint = " [v]iew [Space]pause [q]uit"
+    hint = " Space=play  n=step  v=view  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
                            curses.color_pair(6) | curses.A_DIM)
@@ -1598,7 +1574,7 @@ def _draw_immune_graphs(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    hint = " [v]iew [Space]pause [q]uit"
+    hint = " Space=play  n=step  v=view  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(max_y - 1, 2, hint[:max_x - 3],
                            curses.color_pair(7))
