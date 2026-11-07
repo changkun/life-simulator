@@ -26,18 +26,6 @@ def _conj(z):
     return complex(z.real, -z.imag)
 
 
-def _hyp_dist(z1, z2):
-    """Hyperbolic distance between two points in the Poincaré disk."""
-    diff = z1 - z2
-    denom = 1.0 - _conj(z1) * z2
-    if abs(denom) < 1e-15:
-        return 0.0
-    ratio = abs(diff / denom)
-    if ratio >= 1.0:
-        return 20.0  # cap
-    return math.acosh(1.0 + 2.0 * ratio * ratio / ((1.0 - ratio * ratio) + 1e-15))
-
-
 # ── Tiling generation ─────────────────────────────────────────────
 
 # Presets: (name, description, p, q) where {p,q} = Schläfli symbol
@@ -168,10 +156,6 @@ def _build_tiling(p, q, max_layers):
 
 # ── ASCII Poincaré disk rendering ──────────────────────────────────
 
-# Characters for cell states by age
-_ALIVE_CHARS = "●◉◎⊙○"
-_ALIVE_ASCII = "@#O*o."
-_DEAD_CHAR = " "
 _DISK_BORDER = "·"
 
 
@@ -182,7 +166,6 @@ def _disk_render(cells, states, ages, cx, cy, radius, max_age):
     where color_idx 0=dead, 1-6=alive by age
     """
     output = {}
-    r2 = radius * radius
 
     # Draw disk boundary
     for angle_step in range(int(radius * 8)):
@@ -264,7 +247,6 @@ def _hyp_init(self, tiling_idx, rule_idx):
     self.hyp_generation = 0
     self.hyp_population = 0
 
-    # Build tiling graph
     max_layers = 6
     self.hyp_cells, self.hyp_adj = _build_tiling(p, q, max_layers)
     n = len(self.hyp_cells)
@@ -287,7 +269,7 @@ def _hyp_init(self, tiling_idx, rule_idx):
     self.hyp_view_cx = 0.0
     self.hyp_view_cy = 0.0
     self.hyp_speed_mult = 1
-    self._flash(f"Hyperbolic CA: {name} / {rname} — {n} cells, space=pause, q=quit")
+    self._flash(f"Hyperbolic CA: {name} / {rname} — {n} cells, Space=pause, q=exit")
 
 
 def _hyp_step(self):
@@ -394,11 +376,9 @@ def _handle_hyp_key(self, key):
         self._hyp_clear()
         return True
     if key == ord("s"):
-        # Single step
         self._hyp_step()
         return True
     if key == ord("n"):
-        # Cycle to next rule
         idx = 0
         for i, (rn, _, _, _) in enumerate(HYPERBOLIC_RULES):
             if rn == self.hyp_rule_name:
@@ -412,9 +392,8 @@ def _handle_hyp_key(self, key):
         self._flash(f"Rule: {rname}")
         return True
     if key == ord("t"):
-        # Cycle to next tiling (rebuild)
         idx = 0
-        for i, (tn, _, tp, tq) in enumerate(HYPERBOLIC_TILINGS):
+        for i, (tn, _, _, _) in enumerate(HYPERBOLIC_TILINGS):
             if tn == self.hyp_tiling_name:
                 idx = i
                 break
@@ -462,7 +441,7 @@ def _draw_hyp_menu(self, max_y, max_x):
                 pass
 
     if self.hyp_menu_phase == "tiling":
-        hdr = "Select Tiling (↑/↓, Enter):"
+        hdr = "Select a tiling:"
         r = cy - 5
         try:
             self.stdscr.addstr(r, cx - len(hdr) // 2, hdr,
@@ -480,7 +459,7 @@ def _draw_hyp_menu(self, max_y, max_x):
                           max_y, max_x)
 
     elif self.hyp_menu_phase == "rule":
-        hdr = "Select Rule (↑/↓, Enter):"
+        hdr = "Select a rule:"
         r = cy - 5
         try:
             self.stdscr.addstr(r, cx - len(hdr) // 2, hdr,
@@ -558,7 +537,6 @@ def _draw_mini_tiling(scr, cx, cy, p, q, max_y, max_x):
             frac = t / 8.0
             a = a1 + frac * (a2 - a1)
             # Vertex radius
-            cos_pp = math.cos(math.pi / p)
             r_v = r_nb * 0.6
             px = cx + int(round(r_v * radius * math.cos(a)))
             py = cy + int(round(r_v * radius * 0.5 * math.sin(a)))
@@ -616,7 +594,7 @@ def _draw_hyp(self, max_y, max_x):
         pass
 
     # Help bar
-    help_text = " [space]pause [r]andomize [c]lear [s]tep [n]ext rule [t]iling [q]uit"
+    help_text = " Space=pause  s=step  r=random  c=clear  n=rule  t=tiling  +/-=speed  q=exit"
     try:
         self.stdscr.addstr(max_y - 1, 0, help_text[:max_x - 1], curses.A_DIM)
     except curses.error:
