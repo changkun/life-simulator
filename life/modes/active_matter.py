@@ -1,5 +1,4 @@
-"""Mode: active_matter — self-propelled particle system exhibiting MIPS,
-active turbulence, and collective flocking transitions."""
+"""Active Matter — self-propelled particles that flock, cluster and form turbulent flows."""
 import curses
 import math
 import random
@@ -35,8 +34,6 @@ MAX_PARTICLES = 3000
 # ── Glyphs & colors ─────────────────────────────────────────────────────
 _DIR_ARROWS = ["→→", "↗↗", "↑↑", "↖↖", "←←", "↙↙", "↓↓", "↘↘"]
 _DENSITY_CHARS = ["  ", "· ", "░░", "▒▒", "▓▓", "██"]
-_TYPE_CHARS = ["●", "◆", "■", "▲", "★", "◉"]
-_TYPE_COLORS = [1, 2, 3, 4, 5, 6]
 
 
 def _angle_to_arrow(theta):
@@ -430,7 +427,7 @@ def _handle_active_matter_menu_key(self, key: int) -> bool:
 
 
 def _handle_active_matter_key(self, key: int) -> bool:
-    """Handle input in active Active Matter simulation."""
+    """Handle input in the running Active Matter simulation."""
     if key == ord(" "):
         self.active_matter_running = not self.active_matter_running
     elif key in (ord("n"), ord(".")):
@@ -478,12 +475,12 @@ def _handle_active_matter_key(self, key: int) -> bool:
         self._flash(f"Steps/frame: {self.active_matter_steps_per_frame}")
     elif key == ord("<") or key == ord(","):
         self.speed_idx = max(0, self.speed_idx - 1)
-    elif key == ord(">") or key == ord("."):
+    elif key == ord(">"):
         self.speed_idx = min(len(SPEEDS) - 1, self.speed_idx + 1)
     elif key == curses.KEY_MOUSE:
         try:
-            _, mx, my, _, bstate = curses.getmouse()
-            # Drop a cluster of particles at click location
+            _, mx, my, _, _ = curses.getmouse()
+            # Drop a cluster of particles at the click
             r_click = my - 1
             c_click = mx // 2
             if (0 <= r_click < self.active_matter_rows
@@ -502,8 +499,6 @@ def _handle_active_matter_key(self, key: int) -> bool:
             pass
     elif key in (ord("q"), 27):
         self._exit_active_matter_mode()
-    else:
-        return True
     return True
 
 
@@ -539,7 +534,7 @@ def _draw_active_matter_menu(self, max_y: int, max_x: int):
 
 
 def _draw_active_matter(self, max_y: int, max_x: int):
-    """Draw the active Active Matter simulation."""
+    """Draw the running Active Matter simulation."""
     self.stdscr.erase()
     particles = self.active_matter_particles
     rows = self.active_matter_rows
