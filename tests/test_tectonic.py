@@ -392,3 +392,19 @@ def test_all_plates_have_cells():
             plate_cell_counts[app.tectonic_plate_id[r][c]] += 1
     for i, count in enumerate(plate_cell_counts):
         assert count > 0, f"Plate {i} has no cells"
+
+
+def test_menu_key_q_cancels():
+    app = _make_app()
+    app._enter_tectonic_mode()
+    app._handle_tectonic_menu_key(ord('q'))
+    assert app.tectonic_menu is False
+    assert app.tectonic_mode is False
+
+
+def test_key_q_exits():
+    app = _make_app()
+    app._tectonic_init(5)
+    app._handle_tectonic_key(ord('q'))
+    assert app.tectonic_mode is False
+    assert app.tectonic_running is False

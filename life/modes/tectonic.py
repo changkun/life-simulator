@@ -777,12 +777,10 @@ def _handle_tectonic_menu_key(self, key):
         self.tectonic_menu_sel = (self.tectonic_menu_sel - 1) % n
     elif key in (10, 13, curses.KEY_ENTER):
         _tectonic_init(self, self.tectonic_menu_sel)
-    elif key == 27:
+    elif key == ord('q') or key == 27:
         self.tectonic_menu = False
         self.tectonic_mode = False
         self._flash("Plate Tectonics cancelled")
-    else:
-        return True
     return True
 
 
@@ -816,10 +814,8 @@ def _handle_tectonic_key(self, key):
         self.tectonic_menu = True
         self.tectonic_menu_sel = 0
         self.tectonic_running = False
-    elif key == 27:
+    elif key == ord('q') or key == 27:
         _exit_tectonic_mode(self)
-    else:
-        return True
     return True
 
 
@@ -844,7 +840,7 @@ def _draw_tectonic_menu(self, max_y, max_x):
             self.stdscr.addstr(y, 3, f"{marker}{name}", attr)
             self.stdscr.addstr(y + 1, 6, desc[:max_x - 8], curses.A_DIM)
         foot_y = min(5 + len(TECTONIC_PRESETS) * 2 + 1, max_y - 2)
-        self.stdscr.addstr(foot_y, 3, "Enter=Select  Esc=Cancel",
+        self.stdscr.addstr(foot_y, 3, "Enter=Select  q/Esc=Cancel",
                            curses.A_DIM | curses.color_pair(6))
     except curses.error:
         pass
@@ -968,7 +964,7 @@ def _draw_tectonic_map(self, max_y, max_x):
             " r      Restart",
             " m      Preset menu",
             " ?      Toggle help",
-            " Esc    Exit mode",
+            " q/Esc  Exit mode",
         ]
         hx = max(0, max_x - 22)
         hy = 1
