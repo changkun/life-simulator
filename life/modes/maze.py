@@ -1,7 +1,6 @@
-"""Mode: maze — simulation mode for the life package."""
+"""Maze Generation — animated maze carving (backtracker, Prim, Kruskal) followed by a pathfinding solve."""
 import curses
 import heapq
-import math
 import random
 import time
 
@@ -19,7 +18,7 @@ MAZE_PRESETS = [
 
 
 def _enter_maze_mode(self):
-    """Enter Maze mode — show preset menu."""
+    """Enter Maze Generation and show the preset menu."""
     self.maze_menu = True
     self.maze_menu_sel = 0
     self._flash("Maze Generation & Pathfinding — select a configuration")
@@ -27,7 +26,7 @@ def _enter_maze_mode(self):
 
 
 def _exit_maze_mode(self):
-    """Exit Maze mode."""
+    """Exit Maze Generation and release its state."""
     self.maze_mode = False
     self.maze_menu = False
     self.maze_running = False
@@ -45,7 +44,7 @@ def _exit_maze_mode(self):
 
 
 def _maze_init(self, preset_idx: int):
-    """Initialize maze simulation with the given preset."""
+    """Start the maze preset: empty grid, generator state, cleared solver."""
     name, _desc, gen_algo, solve_algo, _scale = self.MAZE_PRESETS[preset_idx]
     self.maze_preset_name = name
     self.maze_gen_algo = gen_algo
@@ -121,7 +120,7 @@ def _maze_init(self, preset_idx: int):
 
 
 def _maze_add_prim_edges(self, r: int, c: int):
-    """Add frontier edges from cell (r, c) for Prim's algorithm."""
+    """Add the frontier edges of cell (r, c) for Prim's algorithm."""
     rows, cols = self.maze_rows, self.maze_cols
     for dr, dc in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
         nr, nc = r + dr, c + dc
@@ -131,7 +130,7 @@ def _maze_add_prim_edges(self, r: int, c: int):
 
 
 def _maze_step(self):
-    """Advance maze simulation by one step."""
+    """Advance the maze by one generation or solver step."""
     if self.maze_phase == "generating":
         self._maze_gen_step()
     elif self.maze_phase == "solving":
@@ -141,7 +140,7 @@ def _maze_step(self):
 
 
 def _maze_gen_step(self):
-    """One step of maze generation."""
+    """Run one step of the preset's generator."""
     if self.maze_gen_algo == "backtracker":
         self._maze_gen_backtracker_step()
     elif self.maze_gen_algo == "prim":
@@ -152,7 +151,7 @@ def _maze_gen_step(self):
 
 
 def _maze_gen_backtracker_step(self):
-    """Recursive backtracker — one step."""
+    """Run one step of the recursive backtracker."""
     if not self.maze_gen_stack:
         self.maze_phase = "solving"
         self._maze_init_solver()
@@ -178,7 +177,7 @@ def _maze_gen_backtracker_step(self):
 
 
 def _maze_gen_prim_step(self):
-    """Prim's algorithm — one step."""
+    """Run one step of Prim's algorithm."""
     if not self.maze_gen_edges:
         self.maze_phase = "solving"
         self._maze_init_solver()
@@ -199,7 +198,7 @@ def _maze_gen_prim_step(self):
 
 
 def _maze_gen_kruskal_step(self):
-    """Kruskal's algorithm — one step."""
+    """Run one step of Kruskal's algorithm."""
     if not self.maze_gen_edges:
         self.maze_phase = "solving"
         self._maze_init_solver()
@@ -222,7 +221,7 @@ def _maze_gen_kruskal_step(self):
 
 
 def _maze_init_solver(self):
-    """Initialize the pathfinding solver after maze generation is complete."""
+    """Set up the solver once generation is complete."""
     self._flash("Maze generated! Now solving...")
     sr, sc = self.maze_start
     er, ec = self.maze_end
@@ -236,14 +235,12 @@ def _maze_init_solver(self):
     self.maze_solve_steps = 0
 
     if self.maze_solve_algo == "astar":
-        # Priority queue: (f_score, g_score, r, c)
-
+        # Heap entries are (f, g, r, c).
         g = 0
         h = abs(er - sr) + abs(ec - sc)
         self.maze_solve_queue = [(g + h, g, sr, sc)]
         self.maze_solve_visited.add((sr, sc))
     elif self.maze_solve_algo == "dijkstra":
-
         self.maze_solve_queue = [(0, sr, sc)]
         self.maze_solve_visited.add((sr, sc))
     elif self.maze_solve_algo == "bfs":
@@ -256,7 +253,7 @@ def _maze_init_solver(self):
 
 
 def _maze_solve_step(self):
-    """One step of pathfinding."""
+    """Run one step of the preset's solver."""
     if self.maze_solve_done or not self.maze_solve_queue:
         if not self.maze_solve_done:
             self.maze_solve_done = True
@@ -268,7 +265,6 @@ def _maze_solve_step(self):
     rows, cols = self.maze_rows, self.maze_cols
 
     if algo == "astar":
-
         _f, g, cr, cc = heapq.heappop(self.maze_solve_queue)
         if (cr, cc) == (er, ec):
             self._maze_reconstruct_path()
@@ -284,7 +280,6 @@ def _maze_solve_step(self):
         self.maze_solve_steps += 1
 
     elif algo == "dijkstra":
-
         dist, cr, cc = heapq.heappop(self.maze_solve_queue)
         if (cr, cc) == (er, ec):
             self._maze_reconstruct_path()
@@ -326,7 +321,7 @@ def _maze_solve_step(self):
 
 
 def _maze_reconstruct_path(self):
-    """Trace back from end to start to build the solution path."""
+    """Build the solution path by following parents from the end back to the start."""
     path = []
     cur = self.maze_end
     while cur != self.maze_start and cur in self.maze_solve_parent:
@@ -342,7 +337,7 @@ def _maze_reconstruct_path(self):
 
 
 def _handle_maze_menu_key(self, key: int) -> bool:
-    """Handle input in Maze preset menu."""
+    """Handle a key press in the preset menu."""
     n = len(self.MAZE_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.maze_menu_sel = (self.maze_menu_sel + 1) % n
@@ -358,7 +353,7 @@ def _handle_maze_menu_key(self, key: int) -> bool:
 
 
 def _handle_maze_key(self, key: int) -> bool:
-    """Handle input in active Maze simulation."""
+    """Handle a key press while the maze runs."""
     if key == ord(" "):
         self.maze_running = not self.maze_running
     elif key in (ord("n"), ord(".")):
@@ -387,7 +382,7 @@ def _handle_maze_key(self, key: int) -> bool:
 
 
 def _draw_maze_menu(self, max_y: int, max_x: int):
-    """Draw the Maze preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Maze Generation & Pathfinding — Select Preset ──"
     try:
@@ -416,7 +411,7 @@ def _draw_maze_menu(self, max_y: int, max_x: int):
 
 
 def _draw_maze(self, max_y: int, max_x: int):
-    """Draw the active Maze simulation."""
+    """Draw the maze, solver state and status lines."""
     self.stdscr.erase()
     rows, cols = self.maze_rows, self.maze_cols
     grid = self.maze_grid
@@ -539,7 +534,7 @@ def _draw_maze(self, max_y: int, max_x: int):
 
 
 def register(App):
-    """Register maze mode methods on the App class."""
+    """Register Maze Generation methods on the App class."""
     App.MAZE_PRESETS = MAZE_PRESETS
     App._enter_maze_mode = _enter_maze_mode
     App._exit_maze_mode = _exit_maze_mode
