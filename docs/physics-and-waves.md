@@ -302,7 +302,7 @@ Courant number: dt/dx = 0.5 (stable for 2D)
 State: [theta1, theta2, omega1, omega2]
 
 Equations of motion (Lagrangian mechanics):
-  d(omega1)/dt = [-g*M*sin(t1) - m2*g*sin(t1 - 2*t2)
+  d(omega1)/dt = [-g*(2*m1 + m2)*sin(t1) - m2*g*sin(t1 - 2*t2)
                   - 2*sin(delta)*m2*(omega2^2*l2 + omega1^2*l1*cos(delta))]
                  / [l1*(2*M - m2*(1 + cos(2*delta)))]
 
@@ -310,19 +310,19 @@ Equations of motion (Lagrangian mechanics):
                   + omega2^2*l2*m2*cos(delta))]
                  / [l2*(2*M - m2*(1 + cos(2*delta)))]
 
-  where: delta = t2 - t1,  M = m1 + m2
+  where: delta = t1 - t2,  M = m1 + m2
 
 Parameters:
   m1, m2  — bob masses (1.0 to 3.0)
   l1, l2  — arm lengths (0.8 to 1.5)
   g       — gravitational acceleration (1.0 to 30.0, default 9.81)
   dt      — integration time step (0.001 to 0.02, default 0.005)
-  perturb — angular offset between the two pendulums (1e-6 to 0.01 rad)
+  perturb — offset added to t1 of the second pendulum (1e-6 to 0.01 rad)
 
 Tip position: x = l1*sin(t1) + l2*sin(t2), y = l1*cos(t1) + l2*cos(t2)
 ```
 
-**What to look for** — The "Classic Chaos" preset starts both pendulums at 135 degrees with a 0.001-radian difference. Initially their trails overlap perfectly, but after a few seconds, the divergence becomes visible and then dramatic. The "Butterfly Effect" preset uses a perturbation of only 1e-6 radians. The "Max Chaos" preset starts near the unstable equilibrium (179 degrees) for the most violent behavior.
+**What to look for** — The "Classic Chaos" preset starts both arms at 135 degrees with a 0.001-radian difference between the two pendulums. At first the trails overlap; after a few seconds they diverge. The "Butterfly Effect" preset uses a perturbation of only 1e-6 radians. The "Maximum Chaos" preset starts both arms at 178 degrees, near the unstable upright position, with unequal masses and arm lengths. Press d to toggle the second pendulum.
 
 **References**
 - Shinbrot, T. et al. "Chaos in a double pendulum," *American Journal of Physics*, 1992. https://doi.org/10.1119/1.16860
