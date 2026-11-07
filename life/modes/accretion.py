@@ -453,13 +453,13 @@ def _accretion_step(self):
                     ratio = secondary["mass"] / max(primary["mass"], 0.01)
                     debris_mass = secondary["mass"] * _COLLISION_DEBRIS_FRAC * ratio
 
-                    primary["mass"] += secondary["mass"] - debris_mass
-                    # Eccentricity kick from impact
-                    primary["ecc"] = min(0.5, primary["ecc"] + ratio * 0.05)
-                    # Weighted average semi-major axis
+                    # Mass-weighted semi-major axis, using the masses before merging
                     total_m = primary["mass"] + secondary["mass"]
                     primary["a"] = (primary["a"] * primary["mass"] +
                                    secondary["a"] * secondary["mass"]) / total_m
+                    primary["mass"] += secondary["mass"] - debris_mass
+                    # Eccentricity kick from impact
+                    primary["ecc"] = min(0.5, primary["ecc"] + ratio * 0.05)
 
                     # Moon capture from giant impacts
                     if ratio > 0.1 and random.random() < _MOON_CAPTURE_PROB:
