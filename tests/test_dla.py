@@ -527,3 +527,54 @@ class TestDLAMaxRadius:
         for _ in range(100):
             app._dla_step()
         assert app.dla_max_radius >= initial_radius
+
+
+class TestDLACompletion:
+    def test_spawned_walkers_never_touch_crystal(self):
+        """Spawning must not place walkers adjacent to the crystal."""
+        random.seed(7)
+        app = _make_dla_app()
+        app._dla_init(0)
+        rows, cols = app.dla_rows, app.dla_cols
+        # Crystal fills the left half, so half the spawn ring is blocked and
+        # the cells along the crystal's edge are free but touching it.
+        for r in range(rows):
+            for c in range(cols // 2):
+                app.dla_grid[r][c] = 1
+        app.dla_walkers = []
+        app._dla_spawn_walkers()
+        assert app.dla_walkers
+        for wr, wc in app.dla_walkers:
+            for ar in range(max(0, wr - 1), min(rows, wr + 2)):
+                for ac in range(max(0, wc - 1), min(cols, wc + 2)):
+                    assert app.dla_grid[ar][ac] == 0
+
+    def test_spawn_terminates_when_grid_is_full(self):
+        """Spawning on a full grid gives up instead of looping forever."""
+        app = _make_dla_app()
+        app._dla_init(0)
+        for r in range(app.dla_rows):
+            for c in range(app.dla_cols):
+                app.dla_grid[r][c] = 1
+        app.dla_walkers = []
+        app._dla_spawn_walkers()
+        assert app.dla_walkers == []
+
+    def test_crystal_completes_and_pauses(self):
+        """Growth ends in a 'complete' state instead of stalling silently."""
+        random.seed(3)
+        app = _make_dla_app()
+        app._dla_init(0)
+        app.dla_running = True
+        for _ in range(4000):
+            app._dla_step()
+            if app.dla_complete:
+                break
+        assert app.dla_complete
+        assert app.dla_running is False
+        count = app.dla_crystal_count
+        gen = app.dla_generation
+        app._dla_step()
+        assert app.dla_crystal_count == count and app.dla_generation == gen
+        app._dla_init(0)
+        assert not app.dla_complete

@@ -24,6 +24,8 @@ DLA_PRESETS = [
 # Characters for crystal age visualization (oldest -> newest)
 DLA_CRYSTAL_CHARS = ["█", "▓", "▒", "░", "∙"]
 DLA_WALKER_CHAR = "·"
+# Steps without any attachment after which the crystal counts as complete.
+DLA_IDLE_LIMIT = 400
 
 def _enter_dla_mode(self):
     """Enter DLA mode — show preset menu."""
@@ -55,6 +57,8 @@ def _dla_init(self, preset_idx: int):
     self.dla_bias_c = 0.0
     self.dla_symmetry = 1
     self.dla_stickiness = 1.0
+    self.dla_complete = False
+    self.dla_idle_steps = 0
 
     max_y, max_x = self.stdscr.getmaxyx()
     self.dla_rows = max(20, max_y - 3)
@@ -149,8 +153,9 @@ def _dla_spawn_walkers(self):
     rows, cols = self.dla_rows, self.dla_cols
     cr, cc = rows // 2, cols // 2
     # Spawn radius is a bit beyond the max crystal radius
-    spawn_r = min(self.dla_max_radius + 10, min(rows, cols) // 2 - 2)
+    spawn_r = min(self.dla_max_radius + 10, min(rows, cols) // 2 - 1)
     self.dla_spawn_radius = spawn_r
+    grid = self.dla_grid
 
     # Bounded attempts: the spawn region may be (nearly) full of crystal.
     attempts = 0
@@ -176,13 +181,30 @@ def _dla_spawn_walkers(self):
         # Clamp to grid
         wr = max(0, min(rows - 1, wr))
         wc = max(0, min(cols - 1, wc))
-        if self.dla_grid[wr][wc] == 0:
+        if grid[wr][wc] != 0:
+            continue
+        # Never spawn a walker touching the crystal: it would attach on
+        # its first move, so once the crystal reaches the (grid-capped)
+        # spawn ring the spawn itself would grow the crystal along the
+        # ring instead of walkers diffusing in from outside.
+        touching = False
+        for ar in range(max(0, wr - 1), min(rows, wr + 2)):
+            row = grid[ar]
+            for ac in range(max(0, wc - 1), min(cols, wc + 2)):
+                if row[ac] > 0:
+                    touching = True
+                    break
+            if touching:
+                break
+        if not touching:
             self.dla_walkers.append([wr, wc])
 
 
 
 def _dla_step(self):
     """Advance DLA simulation by one step."""
+    if getattr(self, "dla_complete", False):
+        return
     rows, cols = self.dla_rows, self.dla_cols
     grid = self.dla_grid
     cr, cc = rows // 2, cols // 2
@@ -254,6 +276,17 @@ def _dla_step(self):
     if attached_any or len(self.dla_walkers) < self.dla_num_walkers:
         self._dla_spawn_walkers()
 
+    # Completion: the spawn ring is capped by the grid, so the crystal
+    # eventually fills the reachable space and nothing attaches any more.
+    if attached_any:
+        self.dla_idle_steps = 0
+    else:
+        self.dla_idle_steps = getattr(self, "dla_idle_steps", 0) + 1
+        if self.dla_idle_steps >= DLA_IDLE_LIMIT:
+            self.dla_complete = True
+            self.dla_running = False
+            self._flash("Crystal complete — r=restart, R=menu")
+
 
 
 def _dla_attach_symmetric(self, r: int, c: int, gen: int):
@@ -312,7 +345,10 @@ def _handle_dla_menu_key(self, key: int) -> bool:
 def _handle_dla_key(self, key: int) -> bool:
     """Handle input in active DLA simulation."""
     if key == ord(" "):
-        self.dla_running = not self.dla_running
+        if getattr(self, "dla_complete", False):
+            self._flash("Crystal complete — r=restart, R=menu")
+        else:
+            self.dla_running = not self.dla_running
     elif key in (ord("n"), ord(".")):
         for _ in range(self.dla_steps_per_frame):
             self._dla_step()
@@ -389,6 +425,8 @@ def _draw_dla(self, max_y: int, max_x: int):
     grid = self.dla_grid
     rows, cols = self.dla_rows, self.dla_cols
     state = "▶ RUNNING" if self.dla_running else "⏸ PAUSED"
+    if getattr(self, "dla_complete", False):
+        state = "■ COMPLETE"
     gen = self.dla_generation
 
     # Title bar
