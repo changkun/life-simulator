@@ -435,6 +435,8 @@ def _evoeco_init(self, preset_idx):
     self.evoeco_steps_per_frame = 1
     self.evoeco_settings = settings
     self.evoeco_view = "species"  # species / biome / fitness / foodweb
+    self.evoeco_show_log = False
+    self.evoeco_show_tree = True
 
     # Generate terrain
     biome, hmap = _evo_gen_terrain(rows, cols, settings)
@@ -953,11 +955,11 @@ def _handle_evoeco_key(self, key):
         self._flash(f"Speed: {self.evoeco_steps_per_frame}x")
         return True
     if key == ord("l"):
-        self.evoeco_show_log = not getattr(self, "evoeco_show_log", False)
+        self.evoeco_show_log = not self.evoeco_show_log
         return True
     if key == ord("t"):
         # Toggle phylogenetic tree panel
-        self.evoeco_show_tree = not getattr(self, "evoeco_show_tree", True)
+        self.evoeco_show_tree = not self.evoeco_show_tree
         self._flash(f"Phylo tree: {'ON' if self.evoeco_show_tree else 'OFF'}")
         return True
     if key == ord("r"):
@@ -1032,8 +1034,8 @@ def _draw_evoeco(self, max_y, max_x):
     species_list = self.evoeco_species
     rows, cols = self.evoeco_rows, self.evoeco_cols
     view = self.evoeco_view
-    show_log = getattr(self, "evoeco_show_log", False)
-    show_tree = getattr(self, "evoeco_show_tree", True)
+    show_log = self.evoeco_show_log
+    show_tree = self.evoeco_show_tree
 
     # Species lookup
     sp_by_id = {s["id"]: s for s in species_list}

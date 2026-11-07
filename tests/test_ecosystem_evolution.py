@@ -75,3 +75,13 @@ def test_single_producer_founder_spreads():
         app._evoeco_step()
     assert len(app.evoeco_pops) > 5
     assert sum(p["size"] for p in app.evoeco_pops) > 100
+
+
+def test_panel_toggles_reset_on_init():
+    app = _make_app()
+    app._evoeco_init(0)
+    app.evoeco_show_log = True
+    app.evoeco_show_tree = False
+    app._evoeco_init(0)
+    assert app.evoeco_show_log is False
+    assert app.evoeco_show_tree is True
