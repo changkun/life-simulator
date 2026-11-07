@@ -5251,7 +5251,7 @@ class App:
             self.recorded_frames = []
             self.recording_start_gen = self.grid.generation
             self._capture_recording_frame()
-            self._flash("Recording started (press G to stop & save GIF)")
+            self._flash("Recording started (press a to stop & save GIF)")
 
 
     def _capture_recording_frame(self):
