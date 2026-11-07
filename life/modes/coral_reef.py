@@ -111,6 +111,10 @@ REEF_PRESETS = [
       "sponge_density": 0.02, "anemone_density": 0.01}),
 ]
 
+# Bounds on the drifting environment so long runs stay physical.
+_MAX_TEMP = 35.0
+_MIN_PH = 7.0
+
 # ── Helpers ───────────────────────────────────────────────────────────
 _NBRS4 = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 _NBRS8 = [(-1, -1), (-1, 0), (-1, 1), (0, -1),
@@ -346,8 +350,8 @@ def _reef_step(self):
     nutrients = self.reef_nutrients
 
     # ── 0. Environmental drift ──────────────────────────────────
-    self.reef_temperature += settings["temp_trend"]
-    self.reef_acidity += settings["acid_trend"]
+    self.reef_temperature = min(_MAX_TEMP, self.reef_temperature + settings["temp_trend"])
+    self.reef_acidity = max(_MIN_PH, self.reef_acidity + settings["acid_trend"])
     temperature = self.reef_temperature
     acidity = self.reef_acidity
 
@@ -774,7 +778,7 @@ def _handle_reef_key(self, key: int) -> bool:
         return True
     # Heat wave
     if key == ord("h"):
-        self.reef_temperature += 1.5
+        self.reef_temperature = min(_MAX_TEMP, self.reef_temperature + 1.5)
         self._flash(f"Heat wave! Temp: {self.reef_temperature:.1f}C")
         return True
     # Cool down

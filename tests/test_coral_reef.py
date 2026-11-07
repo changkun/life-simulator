@@ -81,3 +81,15 @@ def test_entity_list_does_not_double_each_step():
         app._reef_step()
     assert len(app.reef_entities) <= start * 2
     assert len({id(e) for e in app.reef_entities}) == len(app.reef_entities)
+
+
+def test_environment_drift_is_bounded():
+    app = _make_app()
+    app.reef_mode = True
+    app._reef_init(1)
+    app.reef_settings["temp_trend"] = 1.0
+    app.reef_settings["acid_trend"] = -1.0
+    for _ in range(20):
+        app._reef_step()
+    assert app.reef_temperature <= 35.0
+    assert app.reef_acidity >= 7.0
