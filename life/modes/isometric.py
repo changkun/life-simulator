@@ -1,9 +1,6 @@
-"""Mode: iso — simulation mode for the life package."""
+"""3D Isometric View — draws the Game of Life grid as a cityscape whose column heights show cell age."""
 import curses
-import math
-import random
 import time
-
 
 from life.constants import SPEED_LABELS
 from life.rules import rule_string
@@ -14,7 +11,6 @@ def _iso_pillar(self, age: int) -> list[str]:
         if age <= max_age:
             return chars
     return self._ISO_ANCIENT[:self._ISO_MAX_HEIGHT]
-
 
 
 def _draw_iso(self, max_y: int, max_x: int):
@@ -168,8 +164,6 @@ def _draw_iso(self, max_y: int, max_x: int):
             pass
 
 # ── Comparison mode ──
-
-
 
 
 def register(App):
