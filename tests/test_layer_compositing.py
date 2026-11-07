@@ -109,3 +109,27 @@ def test_all_presets_init():
         app._comp_init(preset["layers"])
         assert app.comp_mode is True
         assert len(app.comp_layers) == len(preset["layers"])
+
+
+def test_menu_description_does_not_share_a_row_with_a_preset():
+    """The selected preset's description must not sit on another list row."""
+    rows = {}
+
+    class Rec:
+        def getmaxyx(self):
+            return 40, 120
+
+        def erase(self):
+            rows.clear()
+
+        def addstr(self, y, x, text, *a):
+            rows.setdefault(y, []).append((x, text))
+
+    app = _make_app()
+    app.stdscr = Rec()
+    app.comp_menu_sel = 0
+    app._draw_comp_menu(40, 120)
+    desc_rows = [y for y, parts in rows.items()
+                 if any(t == COMP_PRESETS[0]["desc"] for _, t in parts)]
+    assert len(desc_rows) == 1
+    assert len(rows[desc_rows[0]]) == 1

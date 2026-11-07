@@ -290,16 +290,19 @@ def _draw_comp_menu(self, max_y, max_x):
             except curses.error:
                 pass
             if sel:
-                try:
-                    self.stdscr.addstr(y + 1, 4,
-                                       preset["desc"][:max_x - 6],
-                                       curses.color_pair(6) | curses.A_DIM)
-                except curses.error:
-                    pass
+                # Fixed row below the list: a row under the preset would be
+                # overwritten by the next preset's name.
+                dy = 5 + len(COMP_PRESETS) + 2
+                if dy < max_y - 1:
+                    try:
+                        self.stdscr.addstr(dy, 4, preset["desc"][:max_x - 6],
+                                           curses.color_pair(6) | curses.A_DIM)
+                    except curses.error:
+                        pass
 
         # Custom option
         ci = len(COMP_PRESETS)
-        y = 5 + ci + 1  # +1 for description line of last selected
+        y = 5 + ci
         if y < max_y - 3:
             sel = self.comp_menu_sel == ci
             marker = "▸ " if sel else "  "
