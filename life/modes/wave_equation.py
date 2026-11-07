@@ -1,4 +1,4 @@
-"""Mode: wave — simulation mode for the life package."""
+"""Wave Equation — a 2D membrane of ripples that reflect, absorb or wrap at the edges."""
 import curses
 import math
 import random
@@ -8,7 +8,7 @@ from life.colors import colormap_addstr, colormap_rgb
 
 
 def _enter_wave_mode(self):
-    """Enter 2D Wave Equation mode — show preset menu."""
+    """Show the preset menu."""
     self.wave_menu = True
     self.wave_menu_sel = 0
     self._flash("2D Wave Equation — select a scenario")
@@ -16,7 +16,7 @@ def _enter_wave_mode(self):
 
 
 def _exit_wave_mode(self):
-    """Exit 2D Wave Equation mode."""
+    """Leave the mode and clear the membrane."""
     self.wave_mode = False
     self.wave_menu = False
     self.wave_running = False
@@ -27,7 +27,7 @@ def _exit_wave_mode(self):
 
 
 def _wave_init(self, preset_idx: int):
-    """Initialize the 2D Wave Equation simulation with the given preset."""
+    """Set up the membrane for the preset, paused with zero initial velocity."""
     name, _desc, c, damping, boundary, init_type = self.WAVE_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(20, max_y - 4)
@@ -42,14 +42,11 @@ def _wave_init(self, preset_idx: int):
     self.wave_steps_per_frame = 1
     self.wave_init_type = init_type
 
-    # Initialize flat membrane
     self.wave_u = [[0.0] * cols for _ in range(rows)]
     self.wave_u_prev = [[0.0] * cols for _ in range(rows)]
 
-    # Apply initial condition
     cr, cc = rows // 2, cols // 2
     if init_type == "center_drop":
-        # Gaussian drop in center
         for r in range(rows):
             for c2 in range(cols):
                 dx = (c2 - cc) / max(cols, 1) * 4
@@ -106,7 +103,7 @@ def _wave_init(self, preset_idx: int):
                 x = c2 / max(self.wave_slit_wall_col, 1)
                 self.wave_u[r][c2] = 0.5 * math.sin(x * math.pi)
 
-    # Copy u to u_prev for zero initial velocity
+    # Equal u and u_prev mean zero initial velocity.
     self.wave_u_prev = [row[:] for row in self.wave_u]
 
     self.wave_mode = True
@@ -164,11 +161,11 @@ def _wave_step(self):
             laplacian = up + dn + lt + rt - 4.0 * u[r][c]
             u_next[r][c] = damp * (2.0 * u[r][c] - u_prev[r][c] + c2 * laplacian)
 
-    # For double-slit: continuously drive plane wave at left edge
+    # Double slit: a plane-wave source keeps driving the left edge.
     if is_slit:
         t = self.wave_generation * 0.15
         for r in range(rows):
-            u_next[r][0] = 0.5 * math.sin(t + r * 0.0)
+            u_next[r][0] = 0.5 * math.sin(t)
             if cols > 1:
                 u_next[r][1] = 0.5 * math.sin(t - 0.1)
 
@@ -179,7 +176,7 @@ def _wave_step(self):
 
 
 def _handle_wave_menu_key(self, key: int) -> bool:
-    """Handle input in Wave Equation preset menu."""
+    """Handle keys in the preset menu."""
     presets = self.WAVE_PRESETS
     if key == curses.KEY_DOWN or key == ord("j"):
         self.wave_menu_sel = (self.wave_menu_sel + 1) % len(presets)
@@ -195,7 +192,7 @@ def _handle_wave_menu_key(self, key: int) -> bool:
 
 
 def _handle_wave_key(self, key: int) -> bool:
-    """Handle input in active Wave Equation simulation."""
+    """Handle keys while the simulation runs."""
     if key == ord("q") or key == 27:
         self._exit_wave_mode()
         return True
@@ -230,7 +227,6 @@ def _handle_wave_key(self, key: int) -> bool:
         self.wave_steps_per_frame = choices[max(idx - 1, 0)]
         self._flash(f"Speed: {self.wave_steps_per_frame} steps/frame")
         return True
-    # Wave speed controls: c/C
     if key == ord("c"):
         self.wave_c = max(0.05, self.wave_c - 0.05)
         self._flash(f"Wave speed (c): {self.wave_c:.2f}")
@@ -239,7 +235,6 @@ def _handle_wave_key(self, key: int) -> bool:
         self.wave_c = min(0.50, self.wave_c + 0.05)
         self._flash(f"Wave speed (c): {self.wave_c:.2f}")
         return True
-    # Damping controls: d/D
     if key == ord("d"):
         self.wave_damping = max(0.95, self.wave_damping - 0.001)
         self._flash(f"Damping: {self.wave_damping:.4f}")
@@ -248,14 +243,12 @@ def _handle_wave_key(self, key: int) -> bool:
         self.wave_damping = min(1.0, self.wave_damping + 0.001)
         self._flash(f"Damping: {self.wave_damping:.4f}")
         return True
-    # Boundary toggle: b
     if key == ord("b"):
         modes = ["reflect", "absorb", "wrap"]
         idx = modes.index(self.wave_boundary) if self.wave_boundary in modes else 0
         self.wave_boundary = modes[(idx + 1) % len(modes)]
         self._flash(f"Boundary: {self.wave_boundary}")
         return True
-    # Pluck: p — add a random drop
     if key == ord("p"):
         rows, cols = self.wave_rows, self.wave_cols
         dr = random.randint(3, rows - 4)
@@ -291,7 +284,7 @@ def _handle_wave_key(self, key: int) -> bool:
 
 
 def _draw_wave_menu(self, max_y: int, max_x: int):
-    """Draw the Wave Equation preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── 2D Wave Equation ── Select Scenario ──"
     try:
@@ -314,7 +307,7 @@ def _draw_wave_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 1
     if hint_y > 0:
-        hint = " [j/k]=navigate  [Enter]=select  [q/Esc]=cancel"
+        hint = " j/k=move  Enter=select  q/Esc=cancel"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
         except curses.error:
@@ -323,7 +316,7 @@ def _draw_wave_menu(self, max_y: int, max_x: int):
 
 
 def _draw_wave(self, max_y: int, max_x: int):
-    """Draw the active 2D Wave Equation simulation."""
+    """Draw the membrane, title bar and key hints."""
     self.stdscr.erase()
     u = self.wave_u
     rows, cols = self.wave_rows, self.wave_cols
@@ -341,8 +334,6 @@ def _draw_wave(self, max_y: int, max_x: int):
     view_rows = min(rows, max_y - 3)
     view_cols = min(cols, (max_x - 1) // 2)
 
-    # Height-to-character mapping for the membrane
-    # Use blue for troughs, cyan for flat, white/yellow for crests
     tc_buf = getattr(self, 'tc_buf', None)
     use_tc = tc_buf is not None and tc_buf.enabled
 
@@ -351,13 +342,12 @@ def _draw_wave(self, max_y: int, max_x: int):
             sy = 1 + r
             sx = c * 2
             v = u[r][c]
-            # Clamp display value
             av = abs(v)
 
             if av < 0.02:
                 continue
 
-            # Pick density glyph by amplitude
+            # Glyph density follows amplitude.
             if av < 0.1:
                 ch = "··"
             elif av < 0.3:
@@ -430,7 +420,7 @@ def _draw_wave(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [c/C]=speed+/- [d/D]=damp [b]=boundary [p]=pluck [+/-]=steps/f [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  c/C=wave speed  d/D=damping  b=boundary  p=pluck  +/-=steps/frame  r=reset  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -438,10 +428,7 @@ def _draw_wave(self, max_y: int, max_x: int):
             pass
 
 
-# ══════════════════════════════════════════════════════════════════════
-#  Kuramoto Coupled Oscillators — Mode (
-# ══════════════════════════════════════════════════════════════════════
-
+# Presets for Kuramoto Coupled Oscillators; life/modes/kuramoto.py imports them.
 KURAMOTO_PRESETS = [
     # (name, description, coupling, freq_spread, dt, noise, init_type)
     ("Gentle Sync", "Weak coupling — slow emergence of coherent islands",
