@@ -16,8 +16,10 @@ SNOWFALL_PRESETS = [
 
 def _enter_snowfall_mode(self):
     """Enter Snowfall & Blizzard mode — show preset menu."""
+    self.snowfall_mode = True
     self.snowfall_menu = True
     self.snowfall_menu_sel = 0
+    self.snowfall_running = False
 
 
 

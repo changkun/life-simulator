@@ -410,3 +410,11 @@ def test_presets_structure():
         assert isinstance(name, str) and len(name) > 0
         assert isinstance(desc, str)
         assert key in ("gentle", "steady", "blizzard", "whiteout", "wet", "squall")
+
+
+def test_enter_marks_mode_active():
+    """The menu counts as the active mode so a mode switch can exit it."""
+    app = _make_app()
+    app._enter_snowfall_mode()
+    assert app.snowfall_mode is True
+    assert app.snowfall_running is False
