@@ -32,3 +32,25 @@ def test_step_advances_one_tick_regardless_of_speed():
     app.biofilm_speed = 5
     app._biofilm_step()
     assert app.biofilm_generation == 1
+
+
+def test_spatial_view_draws_glyphs_with_addstr():
+    # addch(ord(ch)) truncates non-ASCII glyphs such as '▓' to one byte in
+    # real curses, so the field must be drawn with addstr.
+    from life.modes.biofilm import _draw_biofilm_spatial
+
+    class Screen:
+        def __init__(self):
+            self.drawn = []
+
+        def addstr(self, y, x, s, *a):
+            self.drawn.append(s)
+
+        def addch(self, *a):
+            raise AssertionError("addch used")
+
+    app = _make_app()
+    app._biofilm_init(5)
+    app.stdscr = Screen()
+    _draw_biofilm_spatial(app, 40, 120)
+    assert "░" in app.stdscr.drawn or "▓" in app.stdscr.drawn

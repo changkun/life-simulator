@@ -898,7 +898,7 @@ def _draw_biofilm_spatial(self, max_y: int, max_x: int):
                     pass
 
             try:
-                self.stdscr.addch(r + 1, c, ord(ch), attr)
+                self.stdscr.addstr(r + 1, c, ch, attr)
             except curses.error:
                 pass
 
