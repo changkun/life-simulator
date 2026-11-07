@@ -10,7 +10,6 @@ clustering coefficient, average path length).
 import curses
 import math
 import random
-import time
 
 # ── Network topology generators ──────────────────────────────────
 
@@ -337,16 +336,8 @@ def _degree_stats(n, adj):
 
 # ── Edge drawing helpers ──────────────────────────────────────────
 
-_EDGE_CHARS = {
-    (0, 1): "-", (0, -1): "-",
-    (1, 0): "|", (-1, 0): "|",
-    (1, 1): "\\", (-1, -1): "\\",
-    (1, -1): "/", (-1, 1): "/",
-}
-
-
 def _draw_edge_line(scr, r1, c1, r2, c2, max_y, max_x, attr):
-    """Draw an ASCII edge between two screen positions using Bresenham."""
+    """Draw a dotted edge between two screen positions."""
     dr = r2 - r1
     dc = c2 - c1
     steps = max(abs(dr), abs(dc))
@@ -674,7 +665,7 @@ def _draw_gca_menu(self, max_y, max_x):
             except curses.error:
                 pass
 
-    foot = "[ESC] back  [q] cancel"
+    foot = "Enter=select  Esc/q=back"
     try:
         self.stdscr.addstr(max_y - 1, cx - len(foot) // 2, foot[:max_x - 1],
                            curses.A_DIM)
@@ -851,7 +842,6 @@ def _draw_gca(self, max_y, max_x):
             mr += 1
             degrees = [len(self.gca_adj.get(i, [])) for i in range(n)]
             if degrees:
-                max_d = max(degrees)
                 bins = {}
                 for d in degrees:
                     bins[d] = bins.get(d, 0) + 1
@@ -884,7 +874,8 @@ def _draw_gca(self, max_y, max_x):
         pass
 
     # Help bar
-    help_text = " [space]pause [r]andom [c]lear [s]tep [n]rule [t]opology [e]dges [m]etrics [l]ayout [+/-]nodes [q]uit"
+    help_text = (" Space=play  s=step  n=rule  t=topology  r=random  c=clear"
+                 "  e=edges  m=metrics  l=layout  +/-=nodes  q=exit")
     try:
         self.stdscr.addstr(max_y - 1, 0, help_text[:max_x - 1], curses.A_DIM)
     except curses.error:
