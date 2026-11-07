@@ -455,14 +455,8 @@ def _handle_split_key(self, key):
     if key == ord("r"):
         pane = self.split_left if self.split_focus == 0 else self.split_right
         if pane:
-            max_y, max_x = self.stdscr.getmaxyx()
-            divider_x = max_x // 2
-            pane_w = max(10, divider_x - 1)
-            pane_h = max(5, max_y - 3)
-            sim_rows = max(4, pane_h - 2)
-            sim_cols = max(4, (pane_w - 1) // 2)
             init_fn, _, dens_fn = _ENGINES[pane["sim_id"]]
-            pane["state"] = init_fn(sim_rows, sim_cols)
+            pane["state"] = init_fn(pane["sim_rows"], pane["sim_cols"])
             pane["density"] = dens_fn(pane["state"])
             pane["generation"] = 0
             label = "Left" if self.split_focus == 0 else "Right"
