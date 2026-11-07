@@ -789,9 +789,9 @@ Seawater density (linear equation of state):
   alpha_S = +0.20    (saltier = heavier)
 
 Surface heat flux:
-  Q_in = S(lat) * sigma_heat * (1 - 0.8 * ice)
+  Q_in = S(lat) * sigma_heat * (1 - 0.8 * ice)    (sigma_heat = 0.03)
   S(lat) = cos(pi * (lat - 0.5))           (insolation, max at equator)
-  Q_out = 0.01 * T^2 * (1 - 0.6 * ice)    (radiative + ice insulation)
+  Q_out = 0.01 * T^2, times (1 - 0.6 * ice) where ice > 0.3  (radiative + ice insulation)
 
 Temperature evolution:
   dT/dt = Q_in - Q_out + D_T * laplacian(T) + advection + ENSO_forcing + deep_exchange
@@ -865,21 +865,21 @@ Parameters:
   History buffer  = 300 ticks
 ```
 
-**What to look for.** The Stable Modern Circulation preset produces a recognizable global ocean: warm tropical surface waters (red), cold polar waters (blue), subtropical gyres with western-intensified currents, equatorial upwelling (`^` glyphs along the equator), and polar downwelling (`v` glyphs near poles) driving the AMOC. Watch the AMOC strength metric stabilize near 1.0 as the density contrast between cold salty polar water and warm tropical water maintains the conveyor belt.
+**What to look for.** The Stable Modern Circulation preset produces a recognizable global ocean: warm tropical surface waters (red), cold polar waters (blue), subtropical gyres with western-intensified currents, equatorial upwelling (`^` glyphs along the equator), and polar downwelling (`v` glyphs near poles) driving the AMOC. The AMOC strength starts at 1.0 and relaxes toward a target set by the density contrast between polar and tropical water. In test runs it rose toward its 1.5 cap.
 
 The Gulf Stream Intensification preset starts with enhanced AMOC (1.4) and a warm anomaly along the western boundary. Arrows show fast northward flow along the western coast, carrying heat poleward. The western boundary intensification is visible as concentrated current arrows near the continent edge.
 
 The ENSO El Niño Event preset starts with a strong warm anomaly in the eastern equatorial Pacific. Watch the ENSO Index metric oscillate between positive (El Niño, warm east Pacific, suppressed upwelling) and negative (La Niña, enhanced upwelling, cool east Pacific). Nutrient levels in the eastern equatorial zone drop during El Niño as upwelling ceases.
 
-The Glacial Meltwater Hosing preset demonstrates AMOC shutdown — the most dramatic scenario. Freshwater input at high northern latitudes (hosing rate 0.015) reduces salinity, lowering polar water density, weakening the density contrast that drives the conveyor belt. Watch the AMOC Strength metric decline toward zero as the North Atlantic freshens. Increase hosing with `+` to accelerate the collapse; decrease with `-` to allow partial recovery. This reproduces the mechanism thought to trigger abrupt climate shifts during ice ages (Heinrich events, Younger Dryas cooling).
+The Glacial Meltwater Hosing preset demonstrates AMOC shutdown — the most dramatic scenario. Freshwater input at high northern latitudes (hosing rate 0.015) reduces salinity, lowering polar water density, weakening the density contrast that drives the conveyor belt. Watch the AMOC Strength metric fall as the North Atlantic freshens. It dropped from 0.8 to about 0.3 within 1200 ticks in a test run. Raise hosing with `+` to speed the collapse. Lower it with `-` to allow partial recovery. This reproduces the mechanism thought to trigger abrupt climate shifts during ice ages (Heinrich events, Younger Dryas cooling).
 
 The Anoxic Ocean Stratification preset starts with very weak AMOC (0.3) and strong vertical density stratification — warm salty surface over cold fresh deep water. Vertical mixing is suppressed, nutrient supply to the surface is minimal, and the deep ocean stagnates. This approximates conditions thought to produce oceanic anoxic events in Earth's past.
 
-The Snowball Earth Frozen Ocean preset starts with near-global ice coverage, minimal circulation, and geothermal-only deep heating. Brine rejection from ice formation creates dense sub-ice currents. Very slowly, geothermal heating warms the deep ocean from below.
+The Snowball Earth Frozen Ocean preset starts with near-global ice coverage (0.7 to 1.0), cold surface water, a weak AMOC (0.15), and deep layers that warm slightly with depth. Sea-surface heating gradually melts the ice from the low latitudes, and every 50 ticks a small geothermal term adds warmth.
 
 Switch views with `v`: global current map (temperature coloring + current arrows + upwelling/downwelling indicators + ice/land), ocean cross-section at adjustable latitude (depth profile with flow directions and density structure, move slice with up/down arrow keys), and 10-metric sparkline time series.
 
-**Controls:** Space (play/pause), v (cycle views), n (single step), +/- (adjust freshwater hosing rate), up/down (move cross-section latitude slice), r (reset), R/m (preset menu), q (quit).
+**Keys.** `Space` play/pause, `v` cycles views, `n` step, `+`/`-` raise/lower the freshwater hosing rate, up/down arrows move the cross-section latitude, `r` reset, `R` or `m` menu, `q` exit. The mode starts running.
 
 **Presets:** Stable Modern Circulation (balanced conveyor, AMOC=1.0), Gulf Stream Intensification (enhanced AMOC=1.4, warm western boundary), ENSO El Niño Event (strong 2× amplitude oscillation), Glacial Meltwater Hosing / AMOC Shutdown (freshwater pulse, conveyor collapse), Anoxic Ocean Stratification (weak AMOC=0.3, stagnant deep), Snowball Earth Frozen Ocean (global ice, sub-ice brine currents).
 
