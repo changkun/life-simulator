@@ -477,6 +477,9 @@ def _handle_archaeo_key(self, key):
         return True
 
     if key == ord('t'):
+        if "timeline" not in self.archaeo_revealed_clues:
+            self.archaeo_last_result = "Timeline is a clue: reveal it with c first"
+            return True
         self.archaeo_show_timeline = not self.archaeo_show_timeline
         self.archaeo_timeline_frame = 0
         return True
