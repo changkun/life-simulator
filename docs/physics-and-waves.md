@@ -756,14 +756,14 @@ Berendsen thermostat:  v *= 1 + 0.1*(sqrt(T_target/T) - 1)
 Pressure:  P = (N*T + virial/2) / Area,  virial = sum(F*r)
 
 Phase classification (heuristic):
-  T < 0.4 and high RDF order → SOLID
+  T < 0.4 and high RDF order (order measure > 5) → SOLID
   0.4 < T < 1.2             → LIQUID
   T > 1.2                   → GAS
 
 Reduced units: sigma = 1, epsilon = 1, mass = 1, dt = 0.005
 ```
 
-**What to look for** — "Crystal Growth" (T=0.1) shows particles freezing into a hexagonal lattice; the radial distribution function (RDF) displays sharp crystalline peaks. "Melting Point" (T=0.75) shows the lattice breaking apart. "Boiling" (T=1.5) demonstrates explosive evaporation as hot particles escape the liquid. Use the arrow keys to change temperature in real time and watch solid melt into liquid, then boil into gas. The RDF view reveals structural order through pair correlation peaks.
+**What to look for** — "Crystal Growth" (T=0.1) shows particles freezing into a hexagonal lattice; the radial distribution function (RDF) displays sharp crystalline peaks. "Melting Point" (T=0.75) shows the lattice breaking apart. "Boiling" (T=1.5) demonstrates explosive evaporation as hot particles escape the liquid. The "Supercooling / Nucleation", "Triple Point" and "Gas / Ideal Gas" presets start from random positions. Press the up and down arrow keys to change the target temperature (0.01 to 10) and watch solid melt into liquid, then boil into gas; press t to toggle the thermostat. The RDF view reveals structural order through pair correlation peaks.
 
 **References**
 - Lennard-Jones, J.E. "On the determination of molecular fields," *Proceedings of the Royal Society A*, 1924. https://doi.org/10.1098/rspa.1924.0082
