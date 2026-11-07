@@ -1,4 +1,4 @@
-"""Mode: ising — simulation mode for the life package."""
+"""Ising Model — Metropolis Monte Carlo of up/down spins on a periodic square lattice."""
 import curses
 import math
 import random
@@ -6,7 +6,7 @@ import time
 
 
 def _enter_ising_mode(self):
-    """Enter Ising Model mode — show preset menu."""
+    """Enter Ising Model mode and show the preset menu."""
     self.ising_menu = True
     self.ising_menu_sel = 0
     self._flash("Ising Model (magnetic spins) — select a scenario")
@@ -24,7 +24,7 @@ def _exit_ising_mode(self):
 
 
 def _ising_init(self, preset_idx: int):
-    """Initialize Ising Model with the given preset."""
+    """Start the Ising Model with the given preset."""
     name, _desc, temp, field, init_style = self.ISING_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(10, max_y - 4)
@@ -37,7 +37,6 @@ def _ising_init(self, preset_idx: int):
     self.ising_generation = 0
     self.ising_steps_per_frame = 1
 
-    # Initialize spin grid
     if init_style == "all_up":
         self.ising_grid = [[1] * cols for _ in range(rows)]
     elif init_style == "all_down":
@@ -62,7 +61,7 @@ def _ising_init(self, preset_idx: int):
 
 
 def _ising_compute_stats(self):
-    """Compute magnetization and energy per spin."""
+    """Compute the magnetization and energy per spin."""
     grid = self.ising_grid
     rows, cols = self.ising_rows, self.ising_cols
     total_spin = 0
@@ -84,9 +83,9 @@ def _ising_compute_stats(self):
 
 
 def _ising_step(self):
-    """Advance the Ising Model by one sweep (Metropolis algorithm).
+    """Advance the Ising Model by one Metropolis sweep.
 
-    One sweep = N random single-spin-flip attempts where N = rows * cols.
+    One sweep is rows * cols random single-spin flip attempts.
     """
     grid = self.ising_grid
     rows, cols = self.ising_rows, self.ising_cols
@@ -95,14 +94,7 @@ def _ising_step(self):
     n = rows * cols
     rand = random.random
     randint_r = random.randint
-    # Pre-compute Boltzmann factors for possible dE values
-    # dE = 2*s*(sum_neighbors) + 2*h*s
-    # sum_neighbors in {-4,-3,-2,-1,0,1,2,3,4} for 4 neighbors
-    # So dE in {-8-2h, ..., 8+2h} but we only need positive dE cases
-    if temp > 0:
-        inv_temp = 1.0 / temp
-    else:
-        inv_temp = 1e10  # effectively zero temperature
+    inv_temp = 1.0 / max(temp, 1e-10)
 
     for _ in range(n):
         r = randint_r(0, rows - 1)
@@ -113,7 +105,7 @@ def _ising_step(self):
                          grid[(r + 1) % rows][c] +
                          grid[r][(c - 1) % cols] +
                          grid[r][(c + 1) % cols])
-        # Energy change for flipping spin s -> -s
+        # Energy change for flipping s -> -s, with H = -J sum s_i s_j - h sum s_i.
         dE = 2 * s * (neighbors_sum + h)
         if dE <= 0 or rand() < math.exp(-dE * inv_temp):
             grid[r][c] = -s
@@ -124,7 +116,7 @@ def _ising_step(self):
 
 
 def _handle_ising_menu_key(self, key: int) -> bool:
-    """Handle input in Ising Model preset menu."""
+    """Handle keys in the Ising Model preset menu."""
     presets = self.ISING_PRESETS
     if key == curses.KEY_DOWN or key == ord("j"):
         self.ising_menu_sel = (self.ising_menu_sel + 1) % len(presets)
@@ -140,7 +132,7 @@ def _handle_ising_menu_key(self, key: int) -> bool:
 
 
 def _handle_ising_key(self, key: int) -> bool:
-    """Handle input in active Ising Model simulation."""
+    """Handle keys in the running Ising Model."""
     if key == ord("q") or key == 27:
         self._exit_ising_mode()
         return True
@@ -175,7 +167,6 @@ def _handle_ising_key(self, key: int) -> bool:
         self.ising_steps_per_frame = choices[max(idx - 1, 0)]
         self._flash(f"Speed: {self.ising_steps_per_frame} sweeps/frame")
         return True
-    # Temperature controls: t/T to decrease/increase
     if key == ord("t"):
         self.ising_temperature = max(0.01, self.ising_temperature - 0.1)
         self._flash(f"Temperature: {self.ising_temperature:.2f}")
@@ -184,7 +175,6 @@ def _handle_ising_key(self, key: int) -> bool:
         self.ising_temperature = min(10.0, self.ising_temperature + 0.1)
         self._flash(f"Temperature: {self.ising_temperature:.2f}")
         return True
-    # External field controls: f/F
     if key == ord("f"):
         self.ising_ext_field = max(-2.0, self.ising_ext_field - 0.1)
         self._flash(f"External field: {self.ising_ext_field:.2f}")
@@ -230,7 +220,7 @@ def _draw_ising_menu(self, max_y: int, max_x: int):
 
 
 def _draw_ising(self, max_y: int, max_x: int):
-    """Draw the active Ising Model simulation."""
+    """Draw the Ising Model lattice and status bars."""
     self.stdscr.erase()
     grid = self.ising_grid
     rows, cols = self.ising_rows, self.ising_cols
