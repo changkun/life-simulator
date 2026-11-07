@@ -713,7 +713,7 @@ class App:
         self.wolfram_width = 0           # width of the automaton row
         self.wolfram_menu = False        # rule selection menu
         self.wolfram_menu_sel = 0        # selected preset in menu
-        self.wolfram_seed_mode = "center"  # "center" or "gol_row"
+        self.wolfram_seed_mode = "center"  # "center", "gol_row" or "random"
         # Langton's Ant mode
         self.ant_mode = False
         self.ant_menu = False
