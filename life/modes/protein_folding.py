@@ -781,8 +781,7 @@ def _handle_protfold_menu_key(self, key):
     """Handle key input in the preset selection menu."""
     n = len(PROTEIN_FOLDING_PRESETS)
     if key == ord("q") or key == 27:
-        self.protfold_mode = False
-        self.protfold_menu = False
+        self._exit_protein_folding_mode()
         return True
     if key == curses.KEY_UP or key == ord("k"):
         self.protfold_menu_sel = (self.protfold_menu_sel - 1) % n
@@ -798,6 +797,10 @@ def _handle_protfold_menu_key(self, key):
 
 def _handle_protfold_key(self, key):
     """Handle key input during live simulation."""
+    if key == ord("q") or key == 27:
+        self._exit_protein_folding_mode()
+        return True
+
     if key == ord(" "):
         self.protfold_running = not self.protfold_running
         self._flash("Running" if self.protfold_running else "Paused")

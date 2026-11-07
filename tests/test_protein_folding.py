@@ -83,3 +83,22 @@ def test_chaperones_exist():
     app = _make_app()
     app._protfold_init(0)
     assert len(app.protfold_chaperones) > 0
+
+
+def test_q_and_esc_exit_simulation():
+    """q and Esc leave the running simulation."""
+    for key in (ord("q"), 27):
+        app = _make_app()
+        app.protfold_mode = True
+        app._protfold_init(0)
+        assert app._handle_protfold_key(key) is True
+        assert app.protfold_mode is False
+        assert app.protfold_running is False
+
+
+def test_menu_cancel_exits_mode():
+    app = _make_app()
+    app._enter_protein_folding_mode()
+    app._handle_protfold_menu_key(ord("q"))
+    assert app.protfold_mode is False
+    assert app.protfold_menu is False
