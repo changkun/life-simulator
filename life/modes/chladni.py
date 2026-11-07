@@ -1,4 +1,4 @@
-"""Mode: chladni — simulation mode for the life package."""
+"""Chladni Plate Vibrations — sand settling on the nodal lines of a driven plate."""
 import curses
 import math
 import random
@@ -23,7 +23,6 @@ def _enter_chladni_mode(self):
     self._flash("Chladni Plate Vibration Patterns — select a configuration")
 
 
-
 def _exit_chladni_mode(self):
     """Exit Chladni Plate Vibration Patterns mode."""
     self.chladni_mode = False
@@ -35,11 +34,8 @@ def _exit_chladni_mode(self):
     self._flash("Chladni Plate mode OFF")
 
 
-
 def _chladni_init(self, preset_idx: int):
     """Initialize Chladni plate simulation with the given preset."""
-    import math
-    import random
     name, _desc, preset_id = self.CHLADNI_PRESETS[preset_idx]
     self.chladni_preset_name = name
     self.chladni_generation = 0
@@ -90,7 +86,6 @@ def _chladni_init(self, preset_idx: int):
     self._flash(f"Chladni Plate: {name} — Space to start")
 
 
-
 def _chladni_step(self):
     """Advance the Chladni plate simulation by one timestep.
 
@@ -102,7 +97,6 @@ def _chladni_step(self):
 
     Sand particles migrate toward nodal lines (where displacement ≈ 0).
     """
-    import math
     rows = self.chladni_rows
     cols = self.chladni_cols
     dt = self.chladni_dt
@@ -139,7 +133,7 @@ def _chladni_step(self):
     # Apply driving force at center
     accel[cr][cc] += drive
 
-    # Velocity Verlet integration
+    # Semi-implicit Euler integration
     for r in range(2, rows - 2):
         for ci in range(2, cols - 2):
             vel[r][ci] += accel[r][ci] * dt
@@ -219,7 +213,6 @@ def _chladni_step(self):
     self.chladni_generation += 1
 
 
-
 def _handle_chladni_menu_key(self, key: int) -> bool:
     """Handle keys in the Chladni Plate preset menu."""
     if key == -1:
@@ -239,7 +232,6 @@ def _handle_chladni_menu_key(self, key: int) -> bool:
         self._chladni_init(self.chladni_menu_sel)
         return True
     return True
-
 
 
 def _handle_chladni_key(self, key: int) -> bool:
@@ -263,13 +255,11 @@ def _handle_chladni_key(self, key: int) -> bool:
         return True
     if key == ord("m"):
         self.chladni_m = self.chladni_m % 9 + 1
-        import math
         self.chladni_freq = math.sqrt(self.chladni_m ** 2 + self.chladni_n ** 2) * 0.3
         self._flash(f"Mode: m={self.chladni_m}, n={self.chladni_n}, f={self.chladni_freq:.2f}")
         return True
     if key == ord("N"):
         self.chladni_n = self.chladni_n % 9 + 1
-        import math
         self.chladni_freq = math.sqrt(self.chladni_m ** 2 + self.chladni_n ** 2) * 0.3
         self._flash(f"Mode: m={self.chladni_m}, n={self.chladni_n}, f={self.chladni_freq:.2f}")
         return True
@@ -323,7 +313,6 @@ def _handle_chladni_key(self, key: int) -> bool:
         self.chladni_menu_sel = 0
         return True
     return True
-
 
 
 def _draw_chladni_menu(self, max_y: int, max_x: int):
@@ -388,10 +377,8 @@ def _draw_chladni_menu(self, max_y: int, max_x: int):
         pass
 
 
-
 def _draw_chladni(self, max_y: int, max_x: int):
     """Draw the Chladni Plate Vibration Patterns simulation."""
-    import math
     self.stdscr.erase()
     rows = self.chladni_rows
     cols = self.chladni_cols
