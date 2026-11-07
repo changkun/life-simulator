@@ -42,3 +42,12 @@ class TestTidePool:
             app._tpool_step()
         limpets = sum(1 for m in app.tpool_mobile if m.kind == SP_LIMPET)
         assert limpets <= cap
+
+    @pytest.mark.parametrize("key", [ord("q"), 27])
+    def test_quit_key_exits_mode(self, key):
+        app = _app()
+        app._enter_tpool_mode()
+        app._tpool_init(0)
+        assert app.tpool_mode is True
+        app._handle_tpool_key(key)
+        assert app.tpool_mode is False

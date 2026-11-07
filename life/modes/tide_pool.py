@@ -650,6 +650,10 @@ def _handle_tpool_menu_key(self, key: int) -> bool:
 
 def _handle_tpool_key(self, key: int) -> bool:
     """Handle key input during simulation."""
+    if key == ord("q") or key == 27:
+        self._exit_tpool_mode()
+        return True
+
     if key == ord(" "):
         self.tpool_running = not self.tpool_running
         self._flash("Running" if self.tpool_running else "Paused")
