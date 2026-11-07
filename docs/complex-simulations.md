@@ -312,7 +312,7 @@ Audio profiles per category (12 defined):
 
 ## Music Visualizer
 
-**Background.** This mode generates synthetic audio waveforms from musical tone sequences and visualizes them through six rendering modes: spectrum analyzer, oscilloscope waveform, beat-reactive particles, a combined view, a bass-driven tunnel effect, and frequency rain. The audio pipeline synthesizes additive harmonics, simulates an FFT spectrum, and implements a simple beat detection algorithm based on energy thresholds.
+**Background.** This mode synthesizes a stream of musical tones and shows it in six views: spectrum analyzer, oscilloscope waveform, beat-reactive particles, a combined view, a bass-driven tunnel, and frequency rain. It does not read a microphone or play audio. The pipeline adds harmonics, builds a simulated FFT spectrum, and detects beats with an energy threshold.
 
 **Formulation.** Audio synthesis and analysis are performed each frame:
 
@@ -325,14 +325,16 @@ Waveform synthesis (additive harmonics):
             + noise ~ N(0, 0.05)
   Amplitude modulation: sample *= 0.7 + 0.3 * sin(2*pi * 0.5 * t)
 
-  where f = base frequency from tone pattern, cycling at 4 notes/sec
-  Tone patterns rotate every 2 seconds
+  where f = base frequency from the tone pattern, cycling at 4 notes/sec
+  Tone patterns (4 of them, one with silent notes) rotate every 2 seconds
 
 Simulated FFT (spectrum bins):
   For each harmonic h with amplitude a:
     bin = floor(f * h / max_freq * N_bars)
     spectrum[bin +/- 1] += a * falloff   (falloff: 1.0 center, 0.4 adjacent)
-  Bass rumble: spectrum[0..3] += 0.3 * (0.5 + 0.5 * sin(2*pi * 2 * t)) * sens
+  Bass rumble: spectrum[i] += 0.3 * (0.5 + 0.5 * sin(2*pi * 2 * t)) * sens * (1 - i/4)
+               for the first four bins (i = 0..3)
+  Noise floor: spectrum[i] += U(0, 0.05) * sens, then clamp to [0, 1]
 
 Peak decay:
   peak[i] = max(spectrum[i], peak[i] * 0.95)
@@ -347,7 +349,7 @@ Band energies:
   mid  = mean(spectrum[N/3 : 2N/3])
   high = mean(spectrum[2N/3 : N])
 
-Tunnel effect (view mode 4):
+Bass Tunnel view:
   For each pixel at (dx, dy) from center:
     angle = atan2(dy, dx)
     depth = 1.0 / distance
@@ -357,7 +359,11 @@ Tunnel effect (view mode 4):
     brightness = min(1, 2 / (distance + 0.5))
 ```
 
-**What to look for.** The spectrum view shows FFT bars colored by frequency band (bass/mid/high) with floating peak indicators that decay slowly. Beat detection triggers particle bursts and border flashes on the waveform view. The tunnel view warps with bass energy, creating a zoom-in effect on heavy beats. Four color schemes (Spectrum, Fire, Ocean, Neon) map intensity to different palettes. Sensitivity control scales all amplitudes linearly.
+**Presets (6):** Spectrum Bars, Waveform, Particles, Combined, Bass Tunnel, Frequency Rain. Each preset only picks the starting view.
+
+**Controls:** `Space`=play/pause, `v`=next view, `c`=color scheme, `+/-`=sensitivity (0.1-3.0), `b/B`=more/fewer bars (8-64), `n/N`=next/previous preset, `r`=reset, `R` or `m`=menu, `q`=exit.
+
+**What to look for.** The spectrum view shows bars colored by frequency band (bass/mid/high) with peak markers that decay slowly. A detected beat spawns particles and flashes the waveform view. The tunnel scrolls faster with bass energy. Four color schemes (spectrum, fire, ocean, neon) map intensity to different palettes. Sensitivity scales the synthesized amplitudes before clamping.
 
 **References.**
 - Smith, J.O. "Spectral Audio Signal Processing." W3K Publishing, 2011. https://ccrma.stanford.edu/~jos/sasp/
