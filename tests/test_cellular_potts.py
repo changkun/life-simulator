@@ -515,3 +515,10 @@ def test_chem_field_diffuses_every_2000_steps_at_any_speed():
         app._cpm_step()
     assert calls == [0, 2000, 4000]
 
+
+def test_reset_restarts_the_current_preset():
+    app = _make_app()
+    app._cpm_init(3)
+    app.cpm_menu_sel = 0
+    app._handle_cpm_key(ord("r"))
+    assert app.cpm_preset_name == CPM_PRESETS[3][0]

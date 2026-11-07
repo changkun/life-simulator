@@ -485,7 +485,9 @@ def _handle_cpm_key(self, key: int) -> bool:
         self._flash(f"Steps/frame: {self.cpm_steps_per_frame}")
         return True
     if key == ord("r"):
-        self._cpm_init(self.cpm_menu_sel)
+        idx = next((i for i, p in enumerate(self.CPM_PRESETS)
+                    if p[0] == self.cpm_preset_name), 0)
+        self._cpm_init(idx)
         self._flash("Reset")
         return True
     if key == ord("R"):
