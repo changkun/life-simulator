@@ -1,12 +1,8 @@
-"""Emergent Computation Detector — information-theoretic overlay.
+"""Emergent Computation Detector — an overlay that finds channels, gates and oscillators in any simulation.
 
-Instruments any running simulation to discover and visualize hidden
-computational structures — signal channels, logic gates, memory cells,
-oscillators — using transfer entropy, integrated information, and causal
-density.
-
-Works as a universal overlay across all 150+ modes via _get_minimap_data().
-Toggle with Ctrl+I.  Pure Python — no external dependencies.
+It measures transfer entropy, causal density and an integration score on
+the grid sampled through _get_minimap_data().
+Toggle with I.  Pure Python — no external dependencies.
 
 Key features:
   - Transfer entropy heatmap: color cells by outgoing information flow
@@ -42,9 +38,6 @@ _STRUCTURE_ICONS = {
     "source": "◉",
     "sink": "◎",
 }
-
-# Block characters for density rendering
-_DENSITY_CHARS = " ░▒▓█"
 
 
 # ── Information-theoretic computations ──────────────────────────────────
@@ -703,11 +696,7 @@ def _compdet_draw(self):
 
 def _compdet_handle_key(self, key):
     """Handle computation detector key bindings.  Returns True if consumed."""
-    # Ctrl+I — toggle on/off
-    if key == 9:  # Ctrl+I = TAB = 9, use Ctrl+Shift+I check below
-        pass  # TAB is too common, use different binding
-
-    # Use 'I' (capital i) to toggle
+    # 'I' toggles; Ctrl+I is Tab, which cycles the view instead.
     if key == ord("I"):
         self.compdet_active = not self.compdet_active
         if not self.compdet_active:
