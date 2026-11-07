@@ -244,6 +244,8 @@ Field configurations:
 Particles reflect off the grid edges.
 ```
 
+**Controls**: `Space` play/pause, `n`/`.` step, `b`/`B` raise/lower the magnetic field, `e` toggle the E field, `f` toggle field lines, `v` cycle trails/velocity color/energy color, `c` clear trails, `+`/`-` change dt, `>`/`<` steps per frame, `[`/`]` trail length, `p` add a particle, `r` reset, `R` return to the menu, `q` exit mode.
+
 **What to look for** — In "Cyclotron Motion," particles trace circular orbits whose radius depends on velocity. The "ExB Drift" preset shows how crossed electric and magnetic fields cause particles to drift perpendicular to both. In the "Magnetic Bottle," the field is strongest at the top and bottom, so particles are turned back before they reach those ends (magnetic mirror trapping). The "Hall Effect" preset adds a sideways E field to B. The "Mixed Charges" preset shows opposite-charge particles gyrating in opposite directions.
 
 **References**
