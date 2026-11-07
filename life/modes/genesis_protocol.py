@@ -1,15 +1,7 @@
-"""Mode: genesis_protocol — Autonomous Open-Ended Evolution Engine.
+"""Genesis Protocol — evolves random CA rules, scores them for complexity, and keeps a Hall of Fame.
 
-Seeds random rule combinations, runs them forward, scores them for emergent
-complexity using information-theoretic metrics (Shannon entropy, transfer
-entropy, causal density, symmetry, periodicity), and curates a persistent
-ranked gallery of the most interesting discovered universes.
-
-The system autonomously explores the CA rule-space, discovering gliders,
-oscillators, self-replicating structures, and phase transitions — building
-a hall-of-fame that persists across sessions.
-
-Launch it and watch the simulator explore on its own.
+Scores use Shannon entropy, transfer entropy, symmetry, spatial complexity
+and periodicity. The Hall of Fame persists across sessions.
 """
 import curses
 import json
@@ -22,15 +14,13 @@ from life.analytics import (
     PeriodicityDetector,
     shannon_entropy,
     symmetry_score,
-    classify_stability,
 )
 from life.constants import SAVE_DIR, SPEEDS
 from life.grid import Grid
-from life.rules import rule_string, parse_rule_string
+from life.rules import rule_string
 
 # ── Constants ────────────────────────────────────────────────────────
 
-_DENSITY = ["  ", "░░", "▒▒", "▓▓", "██"]
 _SPARKLINE = "▁▂▃▄▅▆▇█"
 
 _GALLERY_FILE = os.path.join(SAVE_DIR, "genesis_hall_of_fame.json")
@@ -41,7 +31,6 @@ _SEED_STYLES = ["random", "symmetric", "clustered", "sparse", "striped", "centra
 _EVAL_GENERATIONS = 120       # run each universe this many gens
 _TRANSFER_ENTROPY_WINDOW = 8  # history frames for TE computation
 _TE_SAMPLE_SIZE = 16          # NxN sample resolution for TE
-_MIN_POP_FRAC = 0.005
 _MAX_POP_FRAC = 0.85
 
 # Score tier thresholds and color pairs
@@ -544,48 +533,6 @@ def _exit_genesis_mode(self):
     self._flash("Genesis Protocol OFF")
 
 
-def _genesis_init_state(self):
-    """Initialize state variables."""
-    self.genesis_mode = False
-    self.genesis_menu = False
-    self.genesis_menu_sel = 0
-    self.genesis_running = False
-    # Population of universes
-    self.genesis_sims = []        # list of Grid objects
-    self.genesis_genomes = []     # corresponding genomes
-    self.genesis_pop_histories = []
-    self.genesis_period_dets = []
-    self.genesis_te_histories = []  # TE sample history per sim
-    self.genesis_prev_cells = []    # for motion detection
-    self.genesis_fitness = []       # score dicts
-    self.genesis_classifications = []
-    # Layout
-    self.genesis_grid_rows = 2
-    self.genesis_grid_cols = 4
-    self.genesis_tile_h = 10
-    self.genesis_tile_w = 10
-    # Config
-    self.genesis_batch_size = 8
-    self.genesis_eval_steps = _EVAL_GENERATIONS
-    self.genesis_mutation_rate = 0.15
-    self.genesis_hall_max = 50
-    # State
-    self.genesis_round = 0
-    self.genesis_sim_step = 0
-    self.genesis_phase = "idle"   # idle, simulating, scored
-    self.genesis_cursor = 0
-    self.genesis_auto_continue = True
-    self.genesis_hall = []
-    self.genesis_hall_view = False
-    self.genesis_hall_sel = 0
-    self.genesis_hall_scroll = 0
-    self.genesis_history = []      # per-round summary
-    self.genesis_total_universes = 0
-    self.genesis_best_ever_score = 0.0
-    self.genesis_best_ever_rule = ""
-    self.genesis_hall_threshold = 80.0
-
-
 def _genesis_start_round(self, seed_genomes=None):
     """Spawn a batch of universe candidates and start simulating."""
     max_y, max_x = self.stdscr.getmaxyx()
@@ -855,8 +802,6 @@ def _genesis_breed_next(self):
             "seed_style": self.genesis_genomes[i]["seed_style"],
         })
 
-    # Inject some random genomes for diversity (exploration)
-    n_random = max(1, self.genesis_batch_size // 4)
     parents_or_none = parents if len(parents) >= 2 else None
 
     self.genesis_sim_step = 0
