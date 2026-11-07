@@ -5085,7 +5085,7 @@ class App:
             self.cursor_r = (self.cursor_r + 1) % self.grid.rows
             self._apply_draw_mode()
             return True
-        if key in (curses.KEY_LEFT, ord("l") - 4):  # 'h' already used for help
+        if key == curses.KEY_LEFT:
             self.cursor_c = (self.cursor_c - 1) % self.grid.cols
             self._apply_draw_mode()
             return True
