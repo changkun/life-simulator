@@ -562,40 +562,60 @@ Diffusion-Limited Aggregation (DLA) was introduced by Witten and Sander in 1981 
 
 ### Formulation
 
-A grid stores crystal cells (positive integer = generation attached) and empty cells (0). Walkers perform random walks until they adhere to the crystal aggregate:
+A grid stores crystal cells (positive integer = the step at which the cell attached) and empty cells (0). Walkers perform random walks until they stick to the crystal:
 
 ```
 Walker step:
-    1. Random displacement: dr, dc in {-1, 0, 1} (8-connected)
-       Optional bias: if |bias_r| > 0, force dr toward bias with P = |bias_r|
-    2. Move: (r, c) += (dr, dc), reject if target is crystal
-    3. Adjacency check (8-connected neighborhood):
+    1. Random displacement: dr, dc each in {-1, 0, 1} (8-connected, may stay put).
+       Six-fold preset: one of the 6 neighbors of a hexagonal lattice instead.
+       Optional bias: with P = |bias_r| (or |bias_c|), force dr (dc) to the sign of the bias.
+    2. Move: (r, c) += (dr, dc). If the target is off the grid or crystal, stay put.
+    3. Adjacency check (8-neighbors, or 6 on the hex lattice):
        if any neighbor is crystal AND rand() < stickiness:
-           attach walker to crystal (grid[r][c] = generation)
+           attach walker to crystal (grid[r][c] = step)
            update max_radius
-    4. Kill walker if dist(walker, center) > spawn_radius + 20
+    4. Otherwise kill the walker if dist(walker, center) > spawn_radius + 20.
 
-Walker spawning:
-    Walkers spawn on a ring at radius = max_crystal_radius + 10
-    Maintained at constant population (default 300-500)
+Walker spawning (replenished after any attachment or when below the target count):
+    Walkers spawn on a ring (an ellipse on a non-square grid) around the grid centre,
+    at radius about max_crystal_radius + 10, scaled by a random 0.8-1.2 and capped to the grid.
+    A walker never spawns within 2 cells of the crystal.
+    If the ring is nearly full, walkers spawn at random free cells instead.
+    Electrodeposition spawns walkers in the top third of the grid.
+    Target population by preset: 300 (Crystal Growth), 400 (Multi-Seed, Line Seed,
+    Ring Seed), 30 (Snowflake), 500 (Electrodeposition); adjustable with w/W.
 
-Symmetry (snowflake mode, k-fold):
-    On attachment at offset (dr, dc) from center:
-    for angle = 0, 2*pi/k, ..., 2*pi*(k-1)/k:
-        (rr, rc) = center + rotate(dr, dc, angle)
-        attach crystal at (rr, rc)
-    For k=6: additional mirror reflections for full hexagonal symmetry
+Cleanup:
+    Every 20 steps, walkers sealed inside crystal pockets are removed (flood fill from the edge).
+    A walker that has not attached after max(1000, 2 * rows * cols) moves is respawned.
+    After 400 steps with no attachment the crystal counts as complete and the run stops.
+
+Symmetry (Snowflake preset, 6-fold):
+    On attachment, the cell is also copied to its 11 other images on the hexagonal
+    lattice (6 rotations and their mirrors). An image is placed only if it touches
+    the existing crystal.
 
 Stickiness: P(attach | adjacent) = stickiness parameter (default 1.0)
-    Lower stickiness (e.g., 0.7) allows walkers to penetrate deeper,
+    Lower stickiness (e.g., 0.7) lets walkers penetrate deeper,
     producing more branching.
 ```
 
-Presets: Crystal Growth (single seed), Multi-Seed (5 seeds), Snowflake (6-fold symmetry, stickiness 0.7), Electrodeposition (bottom-edge cathode with upward bias -0.15), Line Seed, Ring Seed.
+### Presets
+
+- **Crystal Growth**: Single centre seed. Stickiness 1.0.
+- **Multi-Seed**: Five seeds (four quarter points and the centre) that grow and merge.
+- **Snowflake**: Centre seed, 6-fold symmetry, stickiness 0.7, only 30 walkers.
+- **Electrodeposition**: The whole bottom row is the cathode. A downward bias of 0.15 (toward increasing row) pulls walkers to it.
+- **Line Seed**: Horizontal line seed across the middle half of the grid.
+- **Ring Seed**: Circular ring seed of radius min(rows, cols) / 5. Walkers attach on both sides.
+
+### Controls
+
+`s`/`S` change stickiness (0.1 to 1.0) and `w`/`W` change the target walker count. `+`/`-` change steps per frame. Crystal colors show age.
 
 ### What to look for
 
-The fundamental DLA branching pattern arises because outer tips of the crystal are more accessible to random walkers than inner fjords, creating a screening effect that produces fractal branching. Reducing stickiness below 1.0 allows walkers to diffuse past tips into concavities, producing denser, more compact structures. The electrodeposition preset adds a downward drift, creating vertically aligned dendritic structures reminiscent of metal deposition on electrodes. The snowflake preset applies 6-fold rotational symmetry with mirror reflections, generating structures remarkably similar to real ice crystals.
+The branching arises because the outer tips of the crystal are more accessible to random walkers than the inner fjords, a screening effect that gives fractal structure. Lowering stickiness below 1.0 lets walkers diffuse past tips into concavities, giving denser, more compact structures. Electrodeposition adds a downward drift and grows vertical dendrites from the cathode. The Snowflake preset repeats each attachment on the hexagonal lattice, so the crystal keeps six-fold and mirror symmetry as it grows.
 
 ### References
 
