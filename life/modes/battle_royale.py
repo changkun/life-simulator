@@ -1,12 +1,9 @@
-"""Mode: battle_royale — 4 cellular automata factions compete for territory on a shared grid."""
+"""Battle Royale — four cellular automata factions fight for territory on a shared grid."""
 import curses
 import random
 import time
 
 from life.constants import SPEEDS
-
-# Density visualization characters
-_DENSITY = " ░▒▓█"
 
 # ── Faction definitions ─────────────────────────────────────────────
 # Each faction is a CA rule set defined by birth/survival in B/S notation.
@@ -32,7 +29,7 @@ FACTIONS = [
 
 FACTION_BY_ID = {f["id"]: f for f in FACTIONS}
 
-# Preset combinations (4 factions each)
+# Preset matchups: (name, faction ids, description).
 PRESETS = [
     ("Classic Showdown", ["life", "highlife", "daynight", "seeds"],
      "The four most iconic CA rules battle it out"),
@@ -44,8 +41,7 @@ PRESETS = [
      "Diverse survival strategies clash"),
 ]
 
-# Color pairs for each faction (we use 4 factions, pairs 140-155)
-# Faction 0: blue, 1: red, 2: green, 3: yellow
+# Four age shades per faction slot (pairs 140-155): blue, red, green, yellow.
 _FACTION_256_COLORS = [
     [33, 39, 27, 21],      # Faction 0: blues
     [196, 209, 160, 124],   # Faction 1: reds
@@ -61,7 +57,7 @@ _FACTION_8_COLORS = [
 
 
 def _init_br_colors():
-    """Initialize color pairs 140-155 for battle royale factions."""
+    """Define color pairs 140-155 for the faction slots and 156 for neutral."""
     if curses.COLORS >= 256:
         for fi in range(4):
             for ai in range(4):
@@ -70,12 +66,11 @@ def _init_br_colors():
         for fi in range(4):
             for ai in range(4):
                 curses.init_pair(140 + fi * 4 + ai, _FACTION_8_COLORS[fi], -1)
-    # Neutral/empty pair
     curses.init_pair(156, curses.COLOR_WHITE, -1)
 
 
 def _faction_color(faction_idx, age):
-    """Return curses color pair for a faction cell based on age."""
+    """Return the color pair for a faction cell; older cells get a different shade."""
     if age <= 1:
         ai = 0
     elif age <= 4:
@@ -95,11 +90,11 @@ def _faction_color(faction_idx, age):
 # ════════════════════════════════════════════════════════════════════
 
 def _br_init_grid(rows, cols, faction_ids):
-    """Create initial grid with 4 factions in corners."""
+    """Place the factions in the four corners, each filled at 45% density."""
     owner = [[-1] * cols for _ in range(rows)]
     age = [[0] * cols for _ in range(rows)]
 
-    # Each faction gets a corner block, ~1/8 of each dimension
+    # Each corner block spans about a sixth of each dimension.
     spawn_h = max(3, rows // 6)
     spawn_w = max(3, cols // 6)
 
@@ -139,7 +134,7 @@ def _br_step(owner, age, rows, cols, factions):
 
     for r in range(rows):
         for c in range(cols):
-            # Count neighbors by faction
+            # Count neighbours by faction.
             counts = [0, 0, 0, 0]
             total = 0
             for dr in (-1, 0, 1):
@@ -156,7 +151,7 @@ def _br_step(owner, age, rows, cols, factions):
             cur_owner = owner[r][c]
 
             if cur_owner < 0:
-                # Empty cell — check birth from each faction
+                # Empty cell: the faction with the most neighbours among those that can birth wins.
                 best_faction = -1
                 best_count = 0
                 for fi in range(4):
@@ -165,24 +160,21 @@ def _br_step(owner, age, rows, cols, factions):
                             best_count = counts[fi]
                             best_faction = fi
                         elif counts[fi] == best_count and best_faction >= 0:
-                            # Tie — randomly pick
+                            # Tie: coin flip.
                             if random.random() < 0.5:
                                 best_faction = fi
                 if best_faction >= 0:
                     new_owner[r][c] = best_faction
                     new_age[r][c] = 1
             else:
-                # Alive cell — check survival
                 own_count = counts[cur_owner]
                 enemy_count = total - own_count
 
-                # Survival check using faction's rules
                 survives = own_count in factions[cur_owner]["survival"]
 
-                # Combat: if enemy density around this cell is much higher,
-                # the cell gets overwritten by the dominant enemy faction
+                # Conquest: a surviving cell still falls to the dominant enemy
+                # when enemies outnumber its own neighbours by 2 or more.
                 if survives and enemy_count > own_count + 1:
-                    # Find dominant enemy
                     max_enemy = -1
                     max_enemy_count = 0
                     for fi in range(4):
@@ -190,7 +182,6 @@ def _br_step(owner, age, rows, cols, factions):
                             max_enemy_count = counts[fi]
                             max_enemy = fi
                     if max_enemy >= 0 and max_enemy_count >= 3:
-                        # Conquered!
                         new_owner[r][c] = max_enemy
                         new_age[r][c] = 1
                         survives = False
@@ -219,7 +210,7 @@ def _br_scores(owner, rows, cols, num_factions=4):
 # ════════════════════════════════════════════════════════════════════
 
 def _enter_battle_royale(self):
-    """Enter Battle Royale mode — show faction selection menu."""
+    """Enter Battle Royale and show the faction menu."""
     self.br_menu = True
     self.br_menu_sel = 0
     self.br_menu_phase = 0  # 0=presets, 1=pick factions
@@ -228,7 +219,7 @@ def _enter_battle_royale(self):
 
 
 def _exit_battle_royale(self):
-    """Exit Battle Royale mode."""
+    """Leave Battle Royale."""
     self.br_mode = False
     self.br_menu = False
     self.br_running = False
@@ -240,7 +231,7 @@ def _exit_battle_royale(self):
 # ════════════════════════════════════════════════════════════════════
 
 def _br_init(self, faction_ids):
-    """Set up a fresh battle royale with chosen factions."""
+    """Start a new battle between the chosen factions."""
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(20, max_y - 6)
     cols = max(20, (max_x - 1) // 2)
@@ -269,17 +260,16 @@ def _br_init(self, faction_ids):
 # ════════════════════════════════════════════════════════════════════
 
 def _br_do_step(self):
-    """Advance battle royale by one generation."""
+    """Advance one generation and check for a winner or a draw."""
     if self.br_winner >= 0:
-        return  # game over
+        return  # the battle is over
 
     self.br_owner, self.br_age = _br_step(
         self.br_owner, self.br_age, self.br_rows, self.br_cols, self.br_factions
     )
     self.br_generation += 1
 
-    # Update scores and check eliminations
-    self.br_scores, total = _br_scores(self.br_owner, self.br_rows, self.br_cols)
+    self.br_scores, _ = _br_scores(self.br_owner, self.br_rows, self.br_cols)
     alive_factions = []
     for fi in range(4):
         if self.br_scores[fi] == 0 and not self.br_eliminated[fi]:
@@ -287,13 +277,11 @@ def _br_do_step(self):
         if self.br_scores[fi] > 0:
             alive_factions.append(fi)
 
-    # Check for winner
     if len(alive_factions) == 1:
         self.br_winner = alive_factions[0]
         self.br_running = False
         self._flash(f"{self.br_factions[self.br_winner]['name']} WINS the Battle Royale!")
     elif len(alive_factions) == 0:
-        # Everyone died simultaneously
         self.br_winner = -2  # draw
         self.br_running = False
         self._flash("DRAW — all factions eliminated simultaneously!")
@@ -304,7 +292,7 @@ def _br_do_step(self):
 # ════════════════════════════════════════════════════════════════════
 
 def _draw_br_menu(self, max_y, max_x):
-    """Draw the battle royale faction selection menu."""
+    """Draw the faction menu."""
     self.stdscr.erase()
 
     title = "═══ BATTLE ROYALE ═══"
@@ -324,7 +312,6 @@ def _draw_br_menu(self, max_y, max_x):
     phase = self.br_menu_phase
 
     if phase == 0:
-        # Preset selection
         label = "Choose a preset or build custom:"
         try:
             self.stdscr.addstr(4, 2, label, curses.color_pair(6))
@@ -351,7 +338,6 @@ def _draw_br_menu(self, max_y, max_x):
                 except curses.error:
                     pass
 
-        # Custom option
         ci = len(PRESETS)
         y = 6 + ci + 1
         if y < max_y - 3:
@@ -363,7 +349,7 @@ def _draw_br_menu(self, max_y, max_x):
             except curses.error:
                 pass
 
-        hint = " [↑/↓]=select [Enter]=start [q]=exit"
+        hint = " Up/Down=select  Enter=start  q=exit"
         try:
             self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -371,7 +357,6 @@ def _draw_br_menu(self, max_y, max_x):
             pass
 
     elif phase == 1:
-        # Custom faction picking
         picked = len(self.br_custom_picks)
         label = f"Pick faction {picked + 1} of 4:"
         try:
@@ -379,7 +364,6 @@ def _draw_br_menu(self, max_y, max_x):
         except curses.error:
             pass
 
-        # Show already picked
         if self.br_custom_picks:
             picked_names = ", ".join(FACTION_BY_ID[fid]["name"] for fid in self.br_custom_picks)
             try:
@@ -408,7 +392,7 @@ def _draw_br_menu(self, max_y, max_x):
             except curses.error:
                 pass
 
-        hint = " [↑/↓]=select [Enter]=pick [q]=back"
+        hint = " Up/Down=select  Enter=pick  q=back"
         try:
             self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -421,16 +405,15 @@ def _draw_br_menu(self, max_y, max_x):
 # ════════════════════════════════════════════════════════════════════
 
 def _draw_battle_royale(self, max_y, max_x):
-    """Render the battle royale grid with scoreboard."""
+    """Draw the battle grid, scoreboard, territory bar and hints."""
     self.stdscr.erase()
     rows = self.br_rows
     cols = self.br_cols
 
-    # Reserve bottom rows for scoreboard + hints
+    # The bottom six rows hold the scoreboard and hints.
     grid_h = max(5, max_y - 6)
     grid_w = max(5, (max_x - 1) // 2)
 
-    # Draw grid
     for y in range(min(grid_h, rows)):
         for x in range(min(grid_w, cols)):
             o = self.br_owner[y][x]
@@ -450,7 +433,6 @@ def _draw_battle_royale(self, max_y, max_x):
     score_y = max_y - 5
     total = self.br_rows * self.br_cols
     if score_y > 0 and score_y < max_y:
-        # Title line
         gen_str = f" Gen {self.br_generation}"
         if self.br_winner >= 0:
             gen_str += f"  ★ {self.br_factions[self.br_winner]['name']} WINS! ★"
@@ -462,7 +444,6 @@ def _draw_battle_royale(self, max_y, max_x):
         except curses.error:
             pass
 
-    # Faction scores line
     score_y2 = max_y - 4
     if score_y2 > 0 and score_y2 < max_y:
         parts = []
@@ -506,7 +487,6 @@ def _draw_battle_royale(self, max_y, max_x):
     legend_y = max_y - 2
     if legend_y > 0 and legend_y < max_y:
         parts = []
-        colors_8 = [curses.COLOR_BLUE, curses.COLOR_RED, curses.COLOR_GREEN, curses.COLOR_YELLOW]
         for fi in range(min(4, len(self.br_factions))):
             f = self.br_factions[fi]
             parts.append(f"{f['char']}={f['name']}")
@@ -521,13 +501,13 @@ def _draw_battle_royale(self, max_y, max_x):
     hint_y = max_y - 1
     if hint_y > 0:
         now = time.monotonic()
-        if hasattr(self, 'message') and self.message and now - self.message_time < 3.0:
+        if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
             if self.br_winner >= 0 or self.br_winner == -2:
-                hint = " [r]=rematch [R]=menu [q]=exit"
+                hint = " r=rematch  R=menu  q=exit"
             else:
-                hint = " [Space]=play [n]=step [r]=restart [R]=menu [</>=speed [q]=exit"
+                hint = " Space=play  n=step  r=restart  R=menu  </>=speed  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -540,12 +520,11 @@ def _draw_battle_royale(self, max_y, max_x):
 # ════════════════════════════════════════════════════════════════════
 
 def _handle_br_menu_key(self, key):
-    """Handle input during battle royale menu."""
+    """Handle keys in the faction menu."""
     if key == -1:
         return True
     if key == ord("q") or key == 27:
         if self.br_menu_phase == 1:
-            # Go back to presets
             self.br_menu_phase = 0
             self.br_menu_sel = 0
             self.br_custom_picks = []
@@ -567,7 +546,6 @@ def _handle_br_menu_key(self, key):
                 _, ids, _ = PRESETS[self.br_menu_sel]
                 self._br_init(ids)
             else:
-                # Custom
                 self.br_menu_phase = 1
                 self.br_menu_sel = 0
                 self.br_custom_picks = []
@@ -595,7 +573,7 @@ def _handle_br_menu_key(self, key):
 # ════════════════════════════════════════════════════════════════════
 
 def _handle_br_key(self, key):
-    """Handle input during active battle royale."""
+    """Handle keys during a battle."""
     if key == -1:
         return True
     if key == ord("q") or key == 27:
@@ -612,12 +590,10 @@ def _handle_br_key(self, key):
             self._br_do_step()
         return True
     if key == ord("r"):
-        # Restart with same factions
         self._br_init(self.br_faction_ids)
         self._flash("Rematch!")
         return True
     if key == ord("R"):
-        # Back to menu
         self.br_mode = False
         self.br_running = False
         self.br_menu = True
@@ -640,7 +616,7 @@ def _handle_br_key(self, key):
 # ════════════════════════════════════════════════════════════════════
 
 def register(App):
-    """Register battle royale mode methods on the App class."""
+    """Register Battle Royale methods on the App class."""
     App._enter_battle_royale = _enter_battle_royale
     App._exit_battle_royale = _exit_battle_royale
     App._br_init = _br_init
