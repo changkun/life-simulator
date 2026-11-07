@@ -1,18 +1,8 @@
-"""Mode: tmound — Termite Mound Construction & Stigmergy Simulation.
+"""Termite Mound Construction & Stigmergy — termites build a mound by following pheromones.
 
-Thousands of simple termite agents build complex mound architecture through
-pheromone-guided material placement (stigmergy).  Each termite follows purely
-local rules — pick up soil if nearby, deposit where pheromone concentration is
-high — yet the colony produces emergent ventilation shafts, brood chambers,
-fungus gardens, and royal chambers.
-
-Emergent phenomena:
-  - Self-organized construction from local rules only
-  - Ventilation shaft networks (chimney effect)
-  - Chamber specialization (brood, fungus, royal)
-  - Compass-aligned mound walls (magnetic termites)
-  - Underground tunnel networks
-  - Defensive fortification walls
+Each termite follows local rules: pick up soil, deposit it where build
+pheromone is strong, dig where dig pheromone is strong. Walls, chambers,
+fungus gardens, ventilation shafts and tunnels emerge without a plan.
 """
 import curses
 import math
@@ -60,11 +50,6 @@ MAT_ROYAL = 5      # royal chamber
 MAT_TUNNEL = 6     # underground tunnel
 MAT_SURFACE = 7    # ground surface level
 
-# Pheromone types
-PH_BUILD = 0       # "build here" pheromone
-PH_DIG = 1         # "dig here" pheromone
-PH_TRAIL = 2       # general trail pheromone
-
 # Termite roles
 ROLE_WORKER = 0
 ROLE_BUILDER = 1
@@ -80,17 +65,13 @@ ROLE_FUNGUS = 5    # fungus tender
 
 class _Termite:
     """A single termite agent."""
-    __slots__ = ("r", "c", "role", "carrying", "energy", "heading",
-                 "task_timer", "home_r", "home_c")
+    __slots__ = ("r", "c", "role", "carrying", "home_r", "home_c")
 
     def __init__(self, r, c, role=ROLE_WORKER):
         self.r = r
         self.c = c
         self.role = role
         self.carrying = False   # carrying soil/material
-        self.energy = 1.0
-        self.heading = random.random() * 2 * math.pi
-        self.task_timer = 0
         self.home_r = r
         self.home_c = c
 
@@ -402,7 +383,7 @@ _NEIGHBORS_4 = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
 
 def _tmound_step(self):
-    """Advance termite mound simulation by one tick."""
+    """Advance the simulation by one tick."""
     rows = self.tmound_rows
     cols = self.tmound_cols
     mat = self.tmound_material
@@ -714,7 +695,7 @@ def _tmound_step(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _enter_tmound_mode(self):
-    """Enter Termite Mound mode — show preset menu."""
+    """Enter Termite Mound mode and show the preset menu."""
     self.tmound_menu = True
     self.tmound_menu_sel = 0
     self._flash("Termite Mound Construction & Stigmergy — select a scenario")
@@ -927,7 +908,7 @@ def _draw_tmound_menu(self, max_y: int, max_x: int):
 
     hint_y = max_y - 3
     hints = [
-        " [↑/↓] Navigate   [Enter] Select   [q/Esc] Back",
+        " Up/Down=select  Enter=start  q/Esc=back",
         " Emergent mound architecture from stigmergic construction",
     ]
     for i, h in enumerate(hints):
@@ -989,7 +970,7 @@ def _draw_tmound(self, max_y: int, max_x: int):
         if hasattr(self, 'message') and self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [v]=view [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  v=view  +/-=speed  r=reset  R=menu  q=exit"
         try:
             self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -1203,7 +1184,7 @@ def _draw_tmound_structure(self, max_y: int, max_x: int):
 # ══════════════════════════════════════════════════════════════════════
 
 def register(App):
-    """Register termite mound mode methods on the App class."""
+    """Register Termite Mound Construction & Stigmergy methods on the App class."""
     App.TMOUND_PRESETS = TMOUND_PRESETS
     App._enter_tmound_mode = _enter_tmound_mode
     App._exit_tmound_mode = _exit_tmound_mode
