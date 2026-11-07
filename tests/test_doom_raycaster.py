@@ -363,3 +363,41 @@ def test_strafe_perpendicular_to_facing():
     # Dot product with forward should be ~0
     dot = left_dx * cos_a + left_dy * sin_a
     assert abs(dot) < 0.001
+
+
+# ── Minimap and hint bar ────────────────────────────────────────────────────
+
+class _RecordingScreen:
+    def __init__(self):
+        self.calls = []
+
+    def erase(self):
+        pass
+
+    def addstr(self, y, x, text, *attr):
+        self.calls.append((y, x, text))
+
+
+def _drawn_app(show_map, show_help):
+    app = _make_app()
+    app._doomrc_init(0)
+    app.doomrc_show_map = show_map
+    app.doomrc_show_help = show_help
+    app.stdscr = _RecordingScreen()
+    app._draw_doomrc(24, 80)
+    return app
+
+
+def test_draw_minimap_shows_player():
+    app = _drawn_app(True, False)
+    cells = {(y, x): t for y, x, t in app.stdscr.calls if y < app.doomrc_map_h and x < app.doomrc_map_w}
+    assert cells[(int(app.doomrc_py), int(app.doomrc_px))] == ">"
+    assert cells[(0, 0)] == "#"
+
+
+def test_draw_omits_minimap_and_hint_when_off():
+    app = _drawn_app(False, False)
+    assert not any(t == ">" for _y, _x, t in app.stdscr.calls)
+    assert not any(y == 23 for y, _x, _t in app.stdscr.calls)
+    app = _drawn_app(True, True)
+    assert any(y == 23 and "Esc=exit" in t for y, _x, t in app.stdscr.calls)

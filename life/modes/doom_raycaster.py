@@ -396,6 +396,33 @@ def _draw_doomrc(self, max_y: int, max_x: int):
             except curses.error:
                 pass
 
+    if self.doomrc_show_map:
+        _draw_doomrc_minimap(self, max_y, max_x)
+    if self.doomrc_show_help:
+        hint = " WASD/arrows=move  Q/E=turn  m=map  ?=hide hints  Esc=exit"
+        try:
+            self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1], curses.A_DIM)
+        except curses.error:
+            pass
+
+
+def _draw_doomrc_minimap(self, max_y: int, max_x: int):
+    """Overlay a top-down map with the player's position and heading."""
+    if self.doomrc_map_h >= max_y - 1 or self.doomrc_map_w >= max_x - 1:
+        return
+    px, py = int(self.doomrc_px), int(self.doomrc_py)
+    heading = ">v<^"[int((self.doomrc_pa % (2 * math.pi)) / (math.pi / 2) + 0.5) % 4]
+    for r, row in enumerate(self.doomrc_map):
+        for c, tile in enumerate(row):
+            if (c, r) == (px, py):
+                ch, attr = heading, curses.A_BOLD | curses.color_pair(4)
+            else:
+                ch, attr = tile, curses.A_DIM
+            try:
+                self.stdscr.addstr(r, c, ch, attr)
+            except curses.error:
+                pass
+
 
 def register(App):
     """Register doomrc mode methods and constants on the App class."""
