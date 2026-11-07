@@ -63,6 +63,7 @@ _MOISTURE_PRECIP = 0.3    # fraction of excess moisture that precipitates
 _MOISTURE_DIFF = 0.03     # moisture diffusion
 _TEMP_DIFF = 0.04         # temperature diffusion (atmospheric mixing)
 _STORM_SPIN_THRESHOLD = 0.12  # vorticity threshold for storm genesis
+_STORM_PRESSURE_MAX = 0.99  # storms form only where pressure is below this
 _STORM_DISSIPATE = 0.003  # storm weakening rate per tick
 _STORM_SST_BOOST = 1.5    # warm SST intensification factor
 _ICE_FORM_TEMP = 0.15     # temperature below which ice forms
@@ -579,7 +580,7 @@ def _update_storms(self, rows, cols):
                 dudy = (u[r + 1][c] - u[r - 1][c]) * 0.5
             vort = abs(dvdx - dudy)
 
-            if vort > _STORM_SPIN_THRESHOLD and pres[r][c] < 0.95:
+            if vort > _STORM_SPIN_THRESHOLD and pres[r][c] < _STORM_PRESSURE_MAX:
                 # Tropical cyclone if near equator over warm ocean
                 if eq_dist < 0.2 and not land[r][c] and sst[r][c] > 0.45:
                     storm_type = "tropical"

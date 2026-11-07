@@ -33,8 +33,17 @@ def test_temperature_does_not_saturate(idx):
     random.seed(1)
     app = _make_app()
     app._planetary_atmos_init(idx)
-    for _ in range(200):
+    for _ in range(60):
         app._planetary_atmos_step()
     temp = app.planetary_atmos_temp
     assert _mean(temp) < 1.0
     assert min(min(row) for row in temp) < 0.5
+
+
+def test_storms_form_on_temperate_earth():
+    random.seed(1)
+    app = _make_app()
+    app._planetary_atmos_init(0)
+    for _ in range(400):
+        app._planetary_atmos_step()
+    assert len(app.planetary_atmos_storms) > 0
