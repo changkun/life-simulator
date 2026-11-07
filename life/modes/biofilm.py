@@ -633,8 +633,7 @@ def _handle_biofilm_menu_key(self, key: int) -> bool:
     """Handle key input in the preset selection menu."""
     n = len(BIOFILM_PRESETS)
     if key == ord("q") or key == 27:
-        self.biofilm_mode = False
-        self.biofilm_menu = False
+        self._exit_biofilm_mode()
         return True
     if key == curses.KEY_UP or key == ord("k"):
         self.biofilm_menu_sel = (self.biofilm_menu_sel - 1) % n
@@ -650,6 +649,10 @@ def _handle_biofilm_menu_key(self, key: int) -> bool:
 
 def _handle_biofilm_key(self, key: int) -> bool:
     """Handle key input during live simulation."""
+    if key == ord("q") or key == 27:
+        self._exit_biofilm_mode()
+        return True
+
     if key == ord(" "):
         self.biofilm_running = not self.biofilm_running
         self._flash("Running" if self.biofilm_running else "Paused")
@@ -686,10 +689,6 @@ def _handle_biofilm_key(self, key: int) -> bool:
                     self.biofilm_antibiotic[r][c] = 0.0
         self._flash(f"Antibiotic: {'ON' if self.biofilm_antibiotic_active else 'OFF'}")
         return True
-
-    if key == ord("q") and not self.biofilm_menu:
-        # Back to menu on 'q' during sim if desired, but let's use 'Q'
-        pass
 
     if key == ord("Q"):
         # Toggle quorum quenching
@@ -802,7 +801,7 @@ def _draw_biofilm(self, max_y: int, max_x: int):
         pass
 
     # Controls hint
-    hint = "SP:⏯  v:view  a:antibiotic  Q:quorum-quench  +/-:speed  r:reset  m:menu"
+    hint = "Space=play  v=view  a=antibiotic  Q=quench  +/-=speed  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(0, 0, hint[:max_x - 1], curses.A_DIM)
     except curses.error:

@@ -54,3 +54,21 @@ def test_spatial_view_draws_glyphs_with_addstr():
     app.stdscr = Screen()
     _draw_biofilm_spatial(app, 40, 120)
     assert "░" in app.stdscr.drawn or "▓" in app.stdscr.drawn
+
+
+def test_q_exits_from_simulation_and_menu():
+    app = _make_app()
+    app._enter_biofilm_mode()
+    app._handle_biofilm_menu_key(10)
+    assert app.biofilm_mode and not app.biofilm_menu
+    app._handle_biofilm_key(ord("q"))
+    assert app.biofilm_mode is False
+    assert "biofilm_bacteria" not in vars(app)
+
+    app._enter_biofilm_mode()
+    app._handle_biofilm_menu_key(10)
+    app._handle_biofilm_key(ord("R"))
+    assert app.biofilm_menu is True
+    app._handle_biofilm_menu_key(27)
+    assert app.biofilm_mode is False
+    assert "biofilm_bacteria" not in vars(app)
