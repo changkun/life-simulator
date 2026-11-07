@@ -412,6 +412,17 @@ def test_step_via_n_key():
 
 # --- Regressions ---
 
+def test_e_toggle_does_not_leak_between_presets():
+    """The saved E-field of one preset must not return in another."""
+    app = _make_app()
+    app._magfield_init(1)  # E x B drift: Ey = -1.5
+    app._handle_magfield_key(ord("e"))  # off, saves (0, -1.5)
+    assert app.magfield_Ey == 0.0
+    app._magfield_init(0)  # cyclotron: no E-field
+    app._handle_magfield_key(ord("e"))  # on: default field, not the old one
+    assert (app.magfield_Ex, app.magfield_Ey) == (0.0, -1.0)
+
+
 def test_menu_lists_every_preset_on_24_rows():
     app = _make_app()
     app.magfield_menu_sel = 0

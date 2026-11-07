@@ -57,6 +57,7 @@ def _magfield_init(self, preset_idx: int):
     self.magfield_show_field = True
     self.magfield_viz_mode = 0
     self.magfield_steps_per_frame = 3
+    self._magfield_saved_E = None
 
     cx = self.magfield_cols / 2.0
     cy = self.magfield_rows / 2.0
@@ -359,8 +360,9 @@ def _handle_magfield_key(self, key: int) -> bool:
             self.magfield_Ey = 0.0
             self._flash("E-field OFF")
         else:
-            if hasattr(self, '_magfield_saved_E'):
-                self.magfield_Ex, self.magfield_Ey = self._magfield_saved_E
+            saved = getattr(self, '_magfield_saved_E', None)
+            if saved:
+                self.magfield_Ex, self.magfield_Ey = saved
             else:
                 self.magfield_Ey = -1.0
             self._flash(f"E-field ON: ({self.magfield_Ex:.1f}, {self.magfield_Ey:.1f})")
