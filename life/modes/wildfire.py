@@ -120,6 +120,12 @@ def _wfire_make_terrain(self):
                 h += ph * math.exp(-dist * dist / (2 * sigma * sigma))
             elev[r][c] = h
 
+    # Overlapping peaks add up; rescale so the range is max_elevation.
+    top = max(max(row) for row in elev)
+    if top > self.wfire_max_elevation > 0.0:
+        k = self.wfire_max_elevation / top
+        elev = [[h * k for h in row] for row in elev]
+
     # Canyon preset: create a valley
     if preset_id == "canyon":
         mid_c = cols // 2

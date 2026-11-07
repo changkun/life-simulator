@@ -80,3 +80,12 @@ def test_canyon_fire_runs_down_the_canyon():
     rows = [r for r in range(app.wfire_rows)
             for c in range(app.wfire_cols) if app.wfire_burned[r][c]]
     assert max(rows) - min(rows) > app.wfire_rows // 2
+
+
+def test_elevation_stays_within_max_elevation():
+    app = _app(2)
+    app._wfire_init(1)  # Mountain Wildfire
+    top = max(max(row) for row in app.wfire_elevation)
+    assert top <= app.wfire_max_elevation * 1.5 + 1e-9
+    rock = sum(row.count(5) for row in app.wfire_fuel)
+    assert rock < 0.5 * app.wfire_rows * app.wfire_cols
