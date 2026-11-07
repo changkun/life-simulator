@@ -425,8 +425,10 @@ def _handle_screensaver_key(self, key):
 
     # p / Left = go to previous mode
     if key == ord("p") or key == curses.KEY_LEFT:
-        self.screensaver_playlist_idx = max(0, self.screensaver_playlist_idx - 2)
-        _screensaver_advance(self)
+        if self.screensaver_playlist:
+            self.screensaver_playlist_idx = (
+                (self.screensaver_playlist_idx - 1) % len(self.screensaver_playlist))
+            _screensaver_launch_current(self)
         return True
 
     # +/- adjust interval

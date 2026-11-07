@@ -106,3 +106,17 @@ def test_screensaver_step_advances_generation():
     assert app.screensaver_generation == 1
     # Transition phase should have decreased
     assert app.screensaver_transition_phase < 0.5
+
+
+def test_previous_key_steps_back_and_wraps():
+    """p goes to the previous playlist entry and wraps to the last."""
+    from unittest.mock import patch
+    app = _make_app()
+    app.screensaver_playlist = [{"name": str(i)} for i in range(3)]
+    app.screensaver_playlist_idx = 1
+    with patch("life.modes.screensaver._screensaver_launch_current") as launch:
+        app._handle_screensaver_key(ord("p"))
+        assert app.screensaver_playlist_idx == 0
+        app._handle_screensaver_key(ord("p"))
+        assert app.screensaver_playlist_idx == 2
+    assert launch.call_count == 2
