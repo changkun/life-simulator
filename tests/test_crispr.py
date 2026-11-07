@@ -63,3 +63,15 @@ def test_exit_cleanup_and_reentry():
     assert "crispr_pop" not in vars(app)
     app._crispr_init(0)
     assert app.crispr_generation == 0
+
+
+def test_history_and_edits_stay_bounded():
+    random.seed(1)
+    app = _make_app()
+    app._crispr_init(0)
+    for _ in range(crispr._HISTORY_MAX + 50):
+        app._crispr_step()
+    assert all(len(v) <= crispr._HISTORY_MAX
+               for v in app.crispr_history.values())
+    assert len(app.crispr_edits) <= crispr._EDITS_MAX
+

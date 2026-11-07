@@ -79,6 +79,10 @@ _HDR_SUCCESS_PROB = 0.80   # probability HDR succeeds (vs aborted)
 _OFF_TARGET_CUT_PROB = 0.4 # reduced efficiency at off-target sites
 _SCAN_SPEED = 3            # bases per tick scanned
 
+# Keep this many history samples and edit records (the views draw fewer)
+_HISTORY_MAX = 1000
+_EDITS_MAX = 100
+
 # Gene drive
 _DRIVE_CONVERSION_PROB = 0.95  # probability heterozygote converts WT allele
 _BREEDING_PROB = 0.06          # per organism per tick
@@ -799,6 +803,13 @@ def _crispr_step(self):
         h['drive_freq'].append(0)
         h['wt_freq'].append(1.0)
         h['fitness_avg'].append(1.0)
+
+    # Only the newest samples and edits are drawn; keep memory bounded.
+    for series in h.values():
+        if len(series) > _HISTORY_MAX:
+            del series[:-_HISTORY_MAX]
+    if len(self.crispr_edits) > _EDITS_MAX:
+        del self.crispr_edits[:-_EDITS_MAX]
 
     self.crispr_generation += 1
 
