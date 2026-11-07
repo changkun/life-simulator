@@ -1,12 +1,10 @@
-"""Mode: physarum — simulation mode for the life package."""
+"""Physarum Slime Mold — agents that follow and reinforce chemical trails, forming transport networks."""
 import curses
 import math
 import random
 import time
 
-
 from life.constants import SPEEDS
-from life.grid import Grid
 from life.colors import colormap_addstr
 
 PHYSARUM_PRESETS = [
@@ -15,7 +13,7 @@ PHYSARUM_PRESETS = [
     ("Dense Web", "Thick interconnected veins", 0.3, 5.0, 0.4, 1.0, 0.8, 0.01, 0.30),
     ("Tendrils", "Thin branching filaments", 0.6, 12.0, 0.2, 1.5, 0.3, 0.03, 0.10),
     ("Pulsing", "Rhythmic contraction patterns", 0.35, 7.0, 0.5, 0.8, 1.0, 0.04, 0.20),
-    ("Maze Solver", "Finds shortest paths between food", 0.25, 8.0, 0.6, 1.0, 0.6, 0.015, 0.25),
+    ("Maze Solver", "Fast turning — tight, direct trails", 0.25, 8.0, 0.6, 1.0, 0.6, 0.015, 0.25),
     ("Galaxy", "Spiral arm formation", 0.8, 10.0, 0.15, 1.2, 0.4, 0.025, 0.12),
 ]
 
@@ -23,7 +21,7 @@ PHYSARUM_DENSITY = ["  ", "░░", "▒▒", "▓▓", "██"]
 
 
 def _enter_physarum_mode(self):
-    """Enter Physarum mode — show preset menu."""
+    """Enter Physarum mode and show the preset menu."""
     self.physarum_menu = True
     self.physarum_menu_sel = 0
     self._flash("Physarum — select a configuration")
@@ -31,7 +29,7 @@ def _enter_physarum_mode(self):
 
 
 def _exit_physarum_mode(self):
-    """Exit Physarum mode."""
+    """Leave Physarum mode and clear its state."""
     self.physarum_mode = False
     self.physarum_menu = False
     self.physarum_running = False
@@ -42,7 +40,7 @@ def _exit_physarum_mode(self):
 
 
 def _physarum_init(self, preset_idx: int):
-    """Initialize Physarum simulation with the given preset."""
+    """Start a Physarum simulation from the given preset."""
     name, _desc, sa, sd, ts, ms, dep, dec, ratio = self.PHYSARUM_PRESETS[preset_idx]
     self.physarum_preset_name = name
     self.physarum_sensor_angle = sa
@@ -81,7 +79,7 @@ def _physarum_init(self, preset_idx: int):
 
 
 def _physarum_sense(self, ar: float, ac: float, heading: float, offset: float) -> float:
-    """Sense trail concentration at sensor position."""
+    """Return the trail value under a sensor at the given angle offset."""
     rows, cols = self.physarum_rows, self.physarum_cols
     angle = heading + offset
     sr = ar + math.sin(angle) * self.physarum_sensor_dist
@@ -93,7 +91,7 @@ def _physarum_sense(self, ar: float, ac: float, heading: float, offset: float) -
 
 
 def _physarum_step(self):
-    """Advance Physarum simulation by one step."""
+    """Advance the simulation by one step."""
     rows, cols = self.physarum_rows, self.physarum_cols
     trail = self.physarum_trail
     sa = self.physarum_sensor_angle
@@ -112,7 +110,7 @@ def _physarum_step(self):
 
         # Steer towards strongest signal
         if fc > fl and fc > fr:
-            pass  # go straight
+            pass  # keep heading
         elif fc < fl and fc < fr:
             # random turn
             heading += ts if random.random() < 0.5 else -ts
@@ -155,7 +153,7 @@ def _physarum_step(self):
 
 
 def _handle_physarum_menu_key(self, key: int) -> bool:
-    """Handle input in Physarum preset menu."""
+    """Handle keys in the preset menu."""
     n = len(self.PHYSARUM_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.physarum_menu_sel = (self.physarum_menu_sel + 1) % n
@@ -171,14 +169,13 @@ def _handle_physarum_menu_key(self, key: int) -> bool:
 
 
 def _handle_physarum_key(self, key: int) -> bool:
-    """Handle input in active Physarum simulation."""
+    """Handle keys in the running simulation."""
     if key == ord(" "):
         self.physarum_running = not self.physarum_running
     elif key in (ord("n"), ord(".")):
         for _ in range(self.physarum_steps_per_frame):
             self._physarum_step()
     elif key == ord("r"):
-        # Reseed with current parameters
         idx = next((i for i, p in enumerate(self.PHYSARUM_PRESETS)
                     if p[0] == self.physarum_preset_name), 0)
         self._physarum_init(idx)
@@ -189,22 +186,18 @@ def _handle_physarum_key(self, key: int) -> bool:
         self.physarum_menu = True
         self.physarum_menu_sel = 0
     elif key == ord("a") or key == ord("A"):
-        # Adjust sensor angle
         delta = 0.05 if key == ord("a") else -0.05
         self.physarum_sensor_angle = max(0.05, min(1.5, self.physarum_sensor_angle + delta))
         self._flash(f"Sensor angle: {self.physarum_sensor_angle:.2f}")
     elif key == ord("s") or key == ord("S"):
-        # Adjust sensor distance
         delta = 1.0 if key == ord("s") else -1.0
         self.physarum_sensor_dist = max(1.0, min(30.0, self.physarum_sensor_dist + delta))
         self._flash(f"Sensor dist: {self.physarum_sensor_dist:.1f}")
     elif key == ord("t") or key == ord("T"):
-        # Adjust turn speed
         delta = 0.05 if key == ord("t") else -0.05
         self.physarum_turn_speed = max(0.05, min(1.5, self.physarum_turn_speed + delta))
         self._flash(f"Turn speed: {self.physarum_turn_speed:.2f}")
     elif key == ord("d") or key == ord("D"):
-        # Adjust decay
         delta = 0.005 if key == ord("d") else -0.005
         self.physarum_decay = max(0.001, min(0.1, self.physarum_decay + delta))
         self._flash(f"Decay: {self.physarum_decay:.3f}")
@@ -227,7 +220,7 @@ def _handle_physarum_key(self, key: int) -> bool:
 
 
 def _draw_physarum_menu(self, max_y: int, max_x: int):
-    """Draw the Physarum preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Physarum Slime Mold ── Select Configuration ──"
     try:
@@ -260,7 +253,7 @@ def _draw_physarum_menu(self, max_y: int, max_x: int):
 
 
 def _draw_physarum(self, max_y: int, max_x: int):
-    """Draw the active Physarum simulation."""
+    """Draw the trail map, status line and hint bar."""
     self.stdscr.erase()
     trail = self.physarum_trail
     rows, cols = self.physarum_rows, self.physarum_cols
