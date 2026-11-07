@@ -1,8 +1,7 @@
-"""Mode: orrery — simulation mode for the life package."""
+"""Solar System Orrery — Keplerian orbits of the eight planets, an asteroid belt and comets."""
 import curses
 import math
 import random
-import time
 
 _ORRERY_PLANETS = [
     {"name": "Mercury", "sym": "☿", "a": 0.387, "e": 0.2056, "T": 0.241, "color": 7, "char": "m"},
@@ -48,7 +47,6 @@ def _exit_orrery_mode(self):
 
 def _orrery_solve_kepler(M, e, tol=1e-6):
     """Solve Kepler's equation M = E - e*sin(E) for eccentric anomaly E."""
-    import math
     E = M
     for _ in range(50):
         dE = (M - E + e * math.sin(E)) / (1.0 - e * math.cos(E))
@@ -61,10 +59,7 @@ def _orrery_solve_kepler(M, e, tol=1e-6):
 
 
 def _orrery_init(self, preset: str):
-    """Initialize orrery simulation from preset."""
-    import math
-    import random as rng
-
+    """Initialize the orrery from a preset."""
     rows, cols = self.grid.rows, self.grid.cols
     self.orrery_rows = rows
     self.orrery_cols = cols
@@ -103,9 +98,9 @@ def _orrery_init(self, preset: str):
         pdata = _ORRERY_PLANETS[idx]
         # Random initial mean anomaly (unless alignment preset)
         if preset == "alignment":
-            M0 = rng.uniform(-0.15, 0.15)  # near-aligned
+            M0 = random.uniform(-0.15, 0.15)  # near-aligned
         else:
-            M0 = rng.uniform(0, 2 * math.pi)
+            M0 = random.uniform(0, 2 * math.pi)
         planet = {
             "name": pdata["name"],
             "sym": pdata["sym"],
@@ -123,10 +118,10 @@ def _orrery_init(self, preset: str):
     self.orrery_asteroids = []
     if preset not in ("inner", "neighbors"):
         for _ in range(min(120, cols)):
-            a = rng.uniform(2.1, 3.3)
-            e = rng.uniform(0.0, 0.25)
+            a = random.uniform(2.1, 3.3)
+            e = random.uniform(0.0, 0.25)
             T = a ** 1.5  # Kepler's third law
-            M0 = rng.uniform(0, 2 * math.pi)
+            M0 = random.uniform(0, 2 * math.pi)
             self.orrery_asteroids.append({"a": a, "e": e, "T": T, "M0": M0})
 
     # Initialize comets
@@ -141,17 +136,17 @@ def _orrery_init(self, preset: str):
     elif preset == "full":
         # A couple of short-period comets
         for _ in range(2):
-            a = rng.uniform(5.0, 15.0)
-            e = rng.uniform(0.85, 0.97)
+            a = random.uniform(5.0, 15.0)
+            e = random.uniform(0.85, 0.97)
             T = a ** 1.5
-            M0 = rng.uniform(0, 2 * math.pi)
+            M0 = random.uniform(0, 2 * math.pi)
             self.orrery_comets.append({"a": a, "e": e, "T": T, "M0": M0, "trail": []})
 
     # Background stars
     self.orrery_bg_stars = []
     for _ in range(min(80, rows * cols // 30)):
-        sr = rng.randint(0, rows - 1)
-        sc = rng.randint(0, cols - 1)
+        sr = random.randint(0, rows - 1)
+        sc = random.randint(0, cols - 1)
         self.orrery_bg_stars.append((sr, sc))
 
     self.orrery_running = True
@@ -165,12 +160,7 @@ def _orrery_get_scale(self):
     cx = cols / 2.0
     cy = rows / 2.0
     half = min(rows / 2.0 - 2, cols / 4.0 - 2)  # cols/4 because chars are ~2x tall
-    if self.orrery_zoom == "inner":
-        max_au = 2.0   # show out to ~2 AU
-    elif self.orrery_zoom == "outer":
-        max_au = 35.0   # show out to Neptune
-    else:
-        max_au = 35.0   # full system
+    max_au = 2.0 if self.orrery_zoom == "inner" else 35.0  # inner ~Mars; else Neptune
     scale = half / max_au  # screen units per AU
     return cx, cy, scale
 
@@ -178,8 +168,7 @@ def _orrery_get_scale(self):
 
 
 def _orrery_body_pos(self, body, t):
-    """Compute screen position (col, row) for an orbiting body at time t."""
-    import math
+    """Return (col, row, radius in AU, true anomaly) for an orbiting body at time t."""
     a = body["a"]
     e = body["e"]
     T = body["T"]
@@ -370,8 +359,6 @@ def _draw_orrery_menu(self, max_y: int, max_x: int):
 
 def _draw_orrery(self, max_y: int, max_x: int):
     """Draw the Solar System Orrery simulation."""
-    import math
-
     self.stdscr.erase()
     rows = min(self.orrery_rows, max_y - 2)
     cols = min(self.orrery_cols, max_x)
