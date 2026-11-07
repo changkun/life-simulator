@@ -1281,12 +1281,12 @@ STDP plasticity (every 5 ticks, sampled every 3rd cell):
 
 Seizure wavefront propagation:
     Cell with E > 0.7 and I < 0.3 → seizure state
-    Neighbors recruited with P = 0.008 per tick: w_IE × 0.7, w_EE × 1.15
+    In the Focal Seizure Onset and Drug Intervention presets, each neighbor is recruited
+    with P = 0.008 per tick: w_IE × 0.7, w_EE × 1.15
 
 Spreading cortical depression:
     CSD wave propagation: dW/dt = 0.04 × Laplacian(W)
-    When W crosses 0.5: cell enters suppression for 60 ticks
-    Full recovery: 120 ticks
+    When W crosses 0.5: cell enters suppression for 60 ticks, then recovers
 
 GABAergic drug field:
     Diffusion D = 0.08, decay 0.005/tick
@@ -1308,7 +1308,7 @@ EEG derivation (8-channel local field potential):
 | Spreading Depression | CSD wave seeded at left edge, normal E/I | Slow depolarization wave crosses cortex left→right — bright wavefront (~) followed by dark suppressed zone (.) trailing behind |
 | Drug Intervention | Focal seizure in progress, press 'g' to apply drug | Watch seizure spreading, then apply GABAergic anticonvulsant — green drug field diffuses outward, restoring inhibition and suppressing seizure |
 
-**What to look for** — In the Cortical Activation Map, excitatory-dominant regions show as red (#/E/!), balanced activity as yellow (+), inhibitory-dominant as blue (I), and resting cortex as dim dots. EEG electrode positions are marked with 'o'. In the EEG view, 8 channels show scrolling LFP traces with frequency band power bars at the bottom — watch alpha power dominate in resting state vs gamma in the working memory preset. During seizure presets, observe the transition from organized oscillation to hypersynchronous high-amplitude discharge. The drug intervention preset is particularly dramatic: let the seizure spread for ~100 ticks, then press 'g' to inject the GABAergic drug and watch the green wave chase down and suppress the red seizure zone. The Spreading Depression preset shows CSD's distinctive slow march — a phenomenon invisible on standard EEG but central to migraine pathophysiology.
+**What to look for** — In the Cortical Activation Map, excitatory-dominant regions show as red (#/E/!), balanced activity as yellow (+), inhibitory-dominant as blue (I), and resting cortex as dim dots. EEG electrode positions are marked with 'o'. In the EEG view, 8 channels show scrolling LFP traces with frequency band power bars at the bottom — watch alpha power dominate in resting state vs gamma in the working memory preset. During seizure presets, observe the transition from organized oscillation to hypersynchronous high-amplitude discharge. The drug intervention preset is particularly dramatic: let the seizure spread for ~100 ticks, then press 'g' to inject the GABAergic drug and watch the green wave chase down and suppress the red seizure zone. Keys: `v` cycles the views, `g` applies the drug, `Space` pauses, `n` steps, `+`/`-` set the speed, `r` restarts the preset, and `q` or Esc exits. The Spreading Depression preset shows CSD's distinctive slow march — a phenomenon invisible on standard EEG but central to migraine pathophysiology.
 
 **References**
 - Wilson, H. R. and Cowan, J. D. "Excitatory and inhibitory interactions in localized populations of model neurons." *Biophysical Journal* 12 (1972): 1-24. https://doi.org/10.1016/S0006-3495(72)86068-5
