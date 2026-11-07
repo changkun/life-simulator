@@ -1,8 +1,6 @@
-"""Mode: matrix — simulation mode for the life package."""
+"""Matrix Digital Rain — falling character streams with bright heads and fading tails."""
 import curses
-import math
 import random
-import time
 
 MATRIX_PRESETS = [
     ("Classic Green", "The iconic green Matrix rain with mixed characters", "classic"),
@@ -20,13 +18,11 @@ _MATRIX_SYMBOLS = "+-*/<>=$#@&!?~^%"
 
 
 def _enter_matrix_mode(self):
-    """Enter Matrix Digital Rain mode — show preset menu."""
+    """Enter Matrix Digital Rain mode and show the preset menu."""
     self.matrix_mode = True
     self.matrix_menu = True
     self.matrix_menu_sel = 0
     self.matrix_running = False
-
-
 
 
 def _exit_matrix_mode(self):
@@ -37,10 +33,8 @@ def _exit_matrix_mode(self):
     self.matrix_columns = []
 
 
-
-
 def _matrix_init(self, preset: str):
-    """Initialize Matrix rain simulation from preset."""
+    """Initialize the rain from the selected preset."""
     rows, cols = self.grid.rows, self.grid.cols
     self.matrix_rows = rows
     self.matrix_cols = cols
@@ -88,8 +82,6 @@ def _matrix_init(self, preset: str):
             self._matrix_spawn_stream(c, initial=True)
 
 
-
-
 def _matrix_spawn_stream(self, col: int, initial: bool = False):
     """Spawn a new falling stream in the given column."""
     rows = self.matrix_rows
@@ -108,10 +100,8 @@ def _matrix_spawn_stream(self, col: int, initial: bool = False):
     self.matrix_columns[col].append(stream)
 
 
-
-
 def _matrix_step(self):
-    """Advance the Matrix rain by one step."""
+    """Advance every stream by one step."""
     self.matrix_generation += 1
     self.matrix_time += 0.033
     rows = self.matrix_rows
@@ -140,10 +130,8 @@ def _matrix_step(self):
             self._matrix_spawn_stream(c)
 
 
-
-
 def _handle_matrix_menu_key(self, key: int) -> bool:
-    """Handle keys in the Matrix preset menu."""
+    """Handle keys in the preset menu."""
     n = len(MATRIX_PRESETS)
     if key in (curses.KEY_DOWN, ord('j')):
         self.matrix_menu_sel = (self.matrix_menu_sel + 1) % n
@@ -160,15 +148,11 @@ def _handle_matrix_menu_key(self, key: int) -> bool:
         self.matrix_menu = False
         self.matrix_mode = True
         self.matrix_running = True
-    else:
-        return True
     return True
 
 
-
-
 def _handle_matrix_key(self, key: int) -> bool:
-    """Handle keys during Matrix simulation."""
+    """Handle keys while the rain runs."""
     if key in (27, ord('q')):
         self._exit_matrix_mode()
         return True
@@ -198,15 +182,11 @@ def _handle_matrix_key(self, key: int) -> bool:
         modes = ["green", "blue", "rainbow"]
         idx = modes.index(self.matrix_color_mode) if self.matrix_color_mode in modes else 0
         self.matrix_color_mode = modes[(idx + 1) % len(modes)]
-    else:
-        return True
     return True
 
 
-
-
 def _draw_matrix_menu(self, max_y: int, max_x: int):
-    """Draw the Matrix preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Matrix Digital Rain ──"
     if max_x > len(title) + 2:
@@ -264,10 +244,8 @@ def _draw_matrix_menu(self, max_y: int, max_x: int):
         pass
 
 
-
-
 def _draw_matrix(self, max_y: int, max_x: int):
-    """Draw the Matrix Digital Rain simulation."""
+    """Draw the rain, info overlay and status bar."""
     self.stdscr.erase()
     rows = min(max_y - 1, self.matrix_rows)
     cols = min(max_x, self.matrix_cols)
@@ -380,16 +358,13 @@ def _draw_matrix(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    # Hint
-    hint_y = max_y - 1
-    now = time.monotonic()
-    if self.message and now - self.message_time < 3.0:
-        pass  # message already shown in status
-    else:
-        hint = " [Space]=play [n]=step [s/S]=speed [d/D]=density [c]=color [r]=reset [R]=menu [i]=info [q]=exit"
-        hint_start = len(status) + 1
-        if hint_start + len(hint) < max_x:
-            pass  # status bar already covers the line
+    # Show the key hints after the status when the terminal is wide enough.
+    hint = "  Space=play  n=step  s/S=speed  d/D=density  c=color  r=reset  R=menu  i=info  q=exit"
+    if len(status) + len(hint) < max_x:
+        try:
+            self.stdscr.addstr(status_y, len(status), hint, curses.color_pair(1) | curses.A_REVERSE)
+        except curses.error:
+            pass
 
 
 def register(App):
