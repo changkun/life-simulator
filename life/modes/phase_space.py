@@ -496,10 +496,12 @@ def _phasespace_teleport(self):
     x_val = x_lo + (x_hi - x_lo) * self.phasespace_cx / max(1, self.phasespace_grid_w - 1)
     y_val = y_lo + (y_hi - y_lo) * self.phasespace_cy / max(1, self.phasespace_grid_h - 1)
 
-    birth, survival, density = _make_rule_for_point(
+    # Reuse the scanned rule: Lambda vs Mu draws rules at random.
+    _, _, density = _make_rule_for_point(
         x_val, y_val, self.phasespace_axis_mode,
         self.phasespace_range_width,
     )
+    birth, survival = set(src.birth), set(src.survival)
 
     # Create a larger simulation with the same rule
     max_y, max_x = self.stdscr.getmaxyx()
@@ -526,20 +528,11 @@ def _phasespace_adopt(self):
     if key not in self.phasespace_sims:
         return
 
-    axis = _AXIS_MODES[self.phasespace_axis_mode]
-    x_lo, x_hi = axis["x_range"]
-    y_lo, y_hi = axis["y_range"]
-    x_val = x_lo + (x_hi - x_lo) * self.phasespace_cx / max(1, self.phasespace_grid_w - 1)
-    y_val = y_lo + (y_hi - y_lo) * self.phasespace_cy / max(1, self.phasespace_grid_h - 1)
-
-    birth, survival, density = _make_rule_for_point(
-        x_val, y_val, self.phasespace_axis_mode,
-        self.phasespace_range_width,
-    )
-
-    self.grid.birth = set(birth)
-    self.grid.survival = set(survival)
-    rs = rule_string(birth, survival)
+    # Use the scanned rule: Lambda vs Mu draws rules at random.
+    src = self.phasespace_sims[key]
+    self.grid.birth = set(src.birth)
+    self.grid.survival = set(src.survival)
+    rs = rule_string(src.birth, src.survival)
     _exit_phasespace_mode(self)
     self._flash(f"Adopted rule: {rs}")
 

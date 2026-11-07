@@ -21,3 +21,18 @@ def test_cursor_stays_on_drawn_columns(size):
     phase_space._phasespace_start_scan(app)
     last_px = 5 + (app.phasespace_grid_w - 1) * 2
     assert last_px + 1 < cols - 40
+
+
+def test_teleport_and_adopt_use_scanned_rule():
+    """Lambda vs Mu picks rules at random, so the scanned rule must be reused."""
+    app = _make_app()
+    app.phasespace_axis_mode = 3
+    phase_space._phasespace_start_scan(app)
+    key = (app.phasespace_cx, app.phasespace_cy)
+    src = app.phasespace_sims[key]
+    for _ in range(5):
+        phase_space._phasespace_teleport(app)
+        g = app.phasespace_preview_grid
+        assert (g.birth, g.survival) == (src.birth, src.survival)
+    phase_space._phasespace_adopt(app)
+    assert (app.grid.birth, app.grid.survival) == (src.birth, src.survival)
