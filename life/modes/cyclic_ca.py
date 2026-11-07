@@ -1,12 +1,11 @@
-"""Mode: cyclic — simulation mode for the life package."""
+"""Cyclic CA — cells advance through a cycle of states when enough neighbors are one step ahead."""
 import curses
-import math
 import random
 import time
 
 
 def _enter_cyclic_mode(self):
-    """Enter Cyclic CA mode — show preset menu."""
+    """Enter Cyclic CA mode and show the preset menu."""
     self.cyclic_menu = True
     self.cyclic_menu_sel = 0
     self._flash("Cyclic Cellular Automaton — select a scenario")
@@ -24,7 +23,7 @@ def _exit_cyclic_mode(self):
 
 
 def _cyclic_init(self, preset_idx: int):
-    """Initialize Cyclic CA with the given preset."""
+    """Start Cyclic CA with the given preset on a random grid."""
     (name, _desc, n_states, threshold, neighborhood) = self.CYCLIC_PRESETS[preset_idx]
     self.cyclic_preset_name = name
     self.cyclic_generation = 0
@@ -38,7 +37,6 @@ def _cyclic_init(self, preset_idx: int):
     self.cyclic_cols = max(10, (max_x - 1) // 2)
     rows, cols = self.cyclic_rows, self.cyclic_cols
 
-    # Random initial state
     self.cyclic_grid = [
         [random.randint(0, n_states - 1) for _ in range(cols)]
         for _ in range(rows)
@@ -94,7 +92,7 @@ def _cyclic_step(self):
 
 
 def _handle_cyclic_menu_key(self, key: int) -> bool:
-    """Handle input in Cyclic CA preset menu."""
+    """Handle keys in the Cyclic CA preset menu."""
     n = len(self.CYCLIC_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.cyclic_menu_sel = (self.cyclic_menu_sel + 1) % n
@@ -110,7 +108,7 @@ def _handle_cyclic_menu_key(self, key: int) -> bool:
 
 
 def _handle_cyclic_key(self, key: int) -> bool:
-    """Handle input in active Cyclic CA simulation."""
+    """Handle keys in the running Cyclic CA."""
     if key == ord(" "):
         self.cyclic_running = not self.cyclic_running
     elif key in (ord("n"), ord(".")):
@@ -146,14 +144,12 @@ def _handle_cyclic_key(self, key: int) -> bool:
         self.cyclic_steps_per_frame = max(1, self.cyclic_steps_per_frame - 1)
     elif key in (ord("q"), 27):
         self._exit_cyclic_mode()
-    else:
-        return True
     return True
 
 
 
 def _draw_cyclic_menu(self, max_y: int, max_x: int):
-    """Draw the Cyclic CA preset selection menu."""
+    """Draw the Cyclic CA preset menu."""
     self.stdscr.erase()
     title = "── Cyclic Cellular Automaton ── Select Scenario ──"
     try:
@@ -177,7 +173,7 @@ def _draw_cyclic_menu(self, max_y: int, max_x: int):
     foot_y = min(3 + len(self.CYCLIC_PRESETS) + 1, max_y - 1)
     if foot_y < max_y:
         try:
-            self.stdscr.addstr(foot_y, 2, "[j/k]=navigate  [Enter]=select  [q]=cancel",
+            self.stdscr.addstr(foot_y, 2, "j/k=move  Enter=select  q=cancel",
                                curses.color_pair(6) | curses.A_DIM)
         except curses.error:
             pass
@@ -185,7 +181,7 @@ def _draw_cyclic_menu(self, max_y: int, max_x: int):
 
 
 def _draw_cyclic(self, max_y: int, max_x: int):
-    """Draw the active Cyclic CA simulation."""
+    """Draw the Cyclic CA grid and status bars."""
     self.stdscr.erase()
     grid = self.cyclic_grid
     rows, cols = self.cyclic_rows, self.cyclic_cols
@@ -236,7 +232,7 @@ def _draw_cyclic(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [t/T]=thresh+/- [s/S]=states+/- [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  t/T=threshold  s/S=states  +/-=steps/frame  r=reset  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -259,7 +255,7 @@ CYCLIC_PRESETS = [
     ("Crystalline", "6 states, threshold 2, VN — geometric crystal growth", 6, 2, "von_neumann"),
 ]
 
-# Color cycling: map state index to (color_pair, character) for visual variety
+# State index -> (color pair, glyph); states past the last entry wrap around.
 CYCLIC_COLORS = [
     (1, "██"),  # Red
     (3, "██"),  # Yellow
@@ -278,36 +274,6 @@ CYCLIC_COLORS = [
     (2, "░░"),  # Green light
     (6, "░░"),  # Cyan light
 ]
-
-# ══════════════════════════════════════════════════════════════════════
-#  Hodgepodge Machine (Belousov-Zhabotinsky reaction) — Mode ~
-#  (Constants kept here for backward-compatible import by hodgepodge.py)
-# ══════════════════════════════════════════════════════════════════════
-
-HODGE_PRESETS = [
-    # (name, description, n_states, k1, k2, g)
-    ("Classic Spirals", "Smooth spirals — the iconic BZ pattern", 100, 2, 3, 28),
-    ("Tight Spirals", "Dense tightly-wound spiral waves", 200, 1, 2, 45),
-    ("Target Waves", "Concentric expanding rings", 100, 3, 3, 18),
-    ("Chaotic Mix", "Turbulent interacting wavefronts", 50, 2, 3, 10),
-    ("Slow Waves", "Large slow-moving spirals", 150, 1, 1, 55),
-    ("Fast Reaction", "Rapid small-scale spiral activity", 60, 3, 4, 8),
-    ("Crystal Growth", "Angular geometric wave patterns", 80, 1, 4, 35),
-    ("Thin Filaments", "Delicate thin spiral arms", 255, 2, 3, 80),
-]
-
-# Color gradient: map state fraction to (color_pair, character) for visual variety
-HODGE_COLORS = [
-    (1, "██"),  # Red       — low infection
-    (3, "██"),  # Yellow
-    (2, "██"),  # Green
-    (6, "██"),  # Cyan
-    (4, "██"),  # Blue
-    (5, "██"),  # Magenta   — high infection
-    (7, "██"),  # White     — near ill
-    (1, "░░"),  # Red dim   — wrapping back
-]
-
 
 def register(App):
     """Register cyclic mode methods on the App class."""

@@ -1,12 +1,11 @@
-"""Mode: hodge — simulation mode for the life package."""
+"""Hodgepodge Machine — Belousov-Zhabotinsky reaction as a cellular automaton with spiral waves."""
 import curses
-import math
 import random
 import time
 
 
 def _enter_hodge_mode(self):
-    """Enter Hodgepodge Machine mode — show preset menu."""
+    """Enter Hodgepodge Machine mode and show the preset menu."""
     self.hodge_menu = True
     self.hodge_menu_sel = 0
     self._flash("Hodgepodge Machine (BZ reaction) — select a scenario")
@@ -24,7 +23,7 @@ def _exit_hodge_mode(self):
 
 
 def _hodge_init(self, preset_idx: int):
-    """Initialize Hodgepodge Machine with the given preset."""
+    """Start the Hodgepodge Machine with the given preset on a random grid."""
     (name, _desc, n_states, k1, k2, g) = self.HODGE_PRESETS[preset_idx]
     self.hodge_preset_name = name
     self.hodge_generation = 0
@@ -40,7 +39,6 @@ def _hodge_init(self, preset_idx: int):
     self.hodge_cols = max(10, (max_x - 1) // 2)
     rows, cols = self.hodge_rows, self.hodge_cols
 
-    # Random initial state
     self.hodge_grid = [
         [random.randint(0, n_states - 1) for _ in range(cols)]
         for _ in range(rows)
@@ -120,7 +118,7 @@ def _hodge_step(self):
 
 
 def _handle_hodge_menu_key(self, key: int) -> bool:
-    """Handle input in Hodgepodge Machine preset menu."""
+    """Handle keys in the Hodgepodge Machine preset menu."""
     n = len(self.HODGE_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.hodge_menu_sel = (self.hodge_menu_sel + 1) % n
@@ -136,7 +134,7 @@ def _handle_hodge_menu_key(self, key: int) -> bool:
 
 
 def _handle_hodge_key(self, key: int) -> bool:
-    """Handle input in active Hodgepodge Machine simulation."""
+    """Handle keys in the running Hodgepodge Machine."""
     if key == ord(" "):
         self.hodge_running = not self.hodge_running
     elif key in (ord("n"), ord(".")):
@@ -172,14 +170,12 @@ def _handle_hodge_key(self, key: int) -> bool:
         self.hodge_steps_per_frame = max(1, self.hodge_steps_per_frame - 1)
     elif key in (ord("q"), 27):
         self._exit_hodge_mode()
-    else:
-        return True
     return True
 
 
 
 def _draw_hodge_menu(self, max_y: int, max_x: int):
-    """Draw the Hodgepodge Machine preset selection menu."""
+    """Draw the Hodgepodge Machine preset menu."""
     self.stdscr.erase()
     title = "── Hodgepodge Machine (BZ Reaction) ── Select Scenario ──"
     try:
@@ -203,7 +199,7 @@ def _draw_hodge_menu(self, max_y: int, max_x: int):
     foot_y = min(3 + len(self.HODGE_PRESETS) + 1, max_y - 1)
     if foot_y < max_y:
         try:
-            self.stdscr.addstr(foot_y, 2, "[j/k]=navigate  [Enter]=select  [q]=cancel",
+            self.stdscr.addstr(foot_y, 2, "j/k=move  Enter=select  q=cancel",
                                curses.color_pair(6) | curses.A_DIM)
         except curses.error:
             pass
@@ -211,7 +207,7 @@ def _draw_hodge_menu(self, max_y: int, max_x: int):
 
 
 def _draw_hodge(self, max_y: int, max_x: int):
-    """Draw the active Hodgepodge Machine simulation."""
+    """Draw the Hodgepodge Machine grid and status bars."""
     self.stdscr.erase()
     grid = self.hodge_grid
     rows, cols = self.hodge_rows, self.hodge_cols
@@ -237,9 +233,7 @@ def _draw_hodge(self, max_y: int, max_x: int):
             sx = c * 2
             sy = 1 + r
             if val == 0:
-                # Healthy: leave blank (black)
-                continue
-            # Map state to color index based on fraction through states
+                continue  # healthy cells stay blank
             ci = (val * n_colors) // n_states
             ci = min(ci, n_colors - 1)
             pair, ch = self.HODGE_COLORS[ci]
@@ -266,16 +260,40 @@ def _draw_hodge(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " [Space]=play [n]=step [g/G]=g+/- [s/S]=states+/- [+/-]=speed [r]=reset [R]=menu [q]=exit"
+            hint = " Space=play  n=step  g/G=g  s/S=states  +/-=steps/frame  r=reset  R=menu  q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
         except curses.error:
             pass
 
+HODGE_PRESETS = [
+    # (name, description, n_states, k1, k2, g)
+    ("Classic Spirals", "Smooth spirals — the iconic BZ pattern", 100, 2, 3, 28),
+    ("Tight Spirals", "Dense tightly-wound spiral waves", 200, 1, 2, 45),
+    ("Target Waves", "Concentric expanding rings", 100, 3, 3, 18),
+    ("Chaotic Mix", "Turbulent interacting wavefronts", 50, 2, 3, 10),
+    ("Slow Waves", "Large slow-moving spirals", 150, 1, 1, 55),
+    ("Fast Reaction", "Rapid small-scale spiral activity", 60, 3, 4, 8),
+    ("Crystal Growth", "Angular geometric wave patterns", 80, 1, 4, 35),
+    ("Thin Filaments", "Delicate thin spiral arms", 255, 2, 3, 80),
+]
+
+# Fraction of the state range -> (color pair, glyph).
+HODGE_COLORS = [
+    (1, "██"),  # Red       — low infection
+    (3, "██"),  # Yellow
+    (2, "██"),  # Green
+    (6, "██"),  # Cyan
+    (4, "██"),  # Blue
+    (5, "██"),  # Magenta   — high infection
+    (7, "██"),  # White     — near ill
+    (1, "░░"),  # Red dim   — wrapping back
+]
+
+
 def register(App):
     """Register hodge mode methods on the App class."""
-    from life.modes.cyclic_ca import HODGE_PRESETS, HODGE_COLORS
     App.HODGE_PRESETS = HODGE_PRESETS
     App.HODGE_COLORS = HODGE_COLORS
     App._enter_hodge_mode = _enter_hodge_mode
