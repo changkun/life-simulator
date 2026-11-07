@@ -675,12 +675,14 @@ Trophic levels: Producer(0), Herbivore(1), Predator(2), Apex(3)
   Rare trophic level shifts through extreme trait mutation
 
 Events:
-  Continental drift: landscape shifts mid-simulation
-  Mass extinction: kill fraction of all populations at specified generation
-  Climate shift: gradual temperature change affecting biome suitability
+  Continental drift: at generation 80, an ocean strip splits the map down the middle
+  Mass extinction: at the preset's generation (150), each population dies with probability 0.70,
+    and the mutation rate is multiplied by 2.5 (capped at 0.15)
+  Climate shift: every 50 generations, each cell's temperature changes by a random amount
+    (only in Random Landscape)
 ```
 
-**What to look for** — "Island Archipelago" produces Darwin's-finches-like radiation: one founder species diversifies into specialists on each island. "Continental Drift" splits a population and shows divergent evolution on separated landmasses. "Mass Extinction & Recovery" at generation 150 wipes out most species, then survivors radiate into empty niches. The phylogenetic tree (when displayed) shows branching patterns: long branches indicate evolutionary stasis, rapid branching signals adaptive radiation. Species counts and extinction events reveal punctuated equilibrium dynamics.
+**What to look for** — "Island Archipelago" starts four founder species on scattered islands, so lineages can diversify in isolation, as Darwin's finches did. "Continental Drift" splits a population and shows divergent evolution on separated landmasses. "Mass Extinction & Recovery" kills most populations at generation 150, then survivors radiate into empty niches. "Adaptive Radiation" starts from a single founder. The six presets are Continental Drift, Island Archipelago, Adaptive Radiation, Mass Extinction & Recovery, Pangaea Supercontinent and Random Landscape. Press `t` to toggle the phylogenetic tree, `l` the event log and `v` to cycle the species, biome, fitness and food web views. The tree shows branching patterns: long branches indicate evolutionary stasis, rapid branching signals adaptive radiation. Species counts and extinction events reveal punctuated equilibrium dynamics.
 
 **References**
 - Mayr, E. *Systematics and the Origin of Species.* Columbia University Press, 1942. https://doi.org/10.4159/harvard.9780674431430
