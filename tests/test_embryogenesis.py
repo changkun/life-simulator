@@ -21,6 +21,15 @@ class TestEmbryogenesis:
                 self.app._embryo_step()
             assert len(self.app.embryo_cells) > 1
 
+    def test_cells_never_overlap(self):
+        """Movement and sorting must keep one cell per grid position."""
+        for i in range(len(EMBRYO_PRESETS)):
+            self.app._embryo_init(i)
+            for _ in range(300):
+                self.app._embryo_step()
+            cells = self.app.embryo_cells
+            assert len({(c.r, c.c) for c in cells}) == len(cells)
+
     def test_exit_keeps_app_flags(self):
         self.app._enter_embryo_mode()
         self.app._embryo_init(0)

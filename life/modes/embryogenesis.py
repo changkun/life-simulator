@@ -672,7 +672,7 @@ def _gastrulation_movements(self, cells, grid, cavity, rows, cols, params, gen):
     inv_str = params["invagination_strength"]
     ce_str = params["convergent_extension"]
 
-    for cell in cells:
+    for i, cell in enumerate(cells):
         # Endoderm/mesoderm cells involute: move toward and through blastopore
         if cell.fate in (FATE_ENDODERM, FATE_MESODERM):
             dr = bp_r - cell.r
@@ -692,6 +692,7 @@ def _gastrulation_movements(self, cells, grid, cavity, rows, cols, params, gen):
                         grid[cell.r][cell.c] = -1
                         cell.r = nr
                         cell.c = nc
+                        grid[nr][nc] = i
 
         # Convergent extension: mesoderm cells intercalate mediolaterally
         if cell.fate == FATE_MESODERM and random.random() < ce_str * 0.3:
@@ -702,6 +703,7 @@ def _gastrulation_movements(self, cells, grid, cavity, rows, cols, params, gen):
             if 0 <= nc < cols and grid[cell.r][nc] == -1:
                 grid[cell.r][cell.c] = -1
                 cell.c = nc
+                grid[cell.r][nc] = i
 
         # Epiboly: ectoderm spreads to cover embryo
         if cell.fate == FATE_ECTODERM and random.random() < 0.15:
@@ -719,6 +721,7 @@ def _gastrulation_movements(self, cells, grid, cavity, rows, cols, params, gen):
                     grid[cell.r][cell.c] = -1
                     cell.r = nr
                     cell.c = nc
+                    grid[nr][nc] = i
 
 
 # ── Neurulation ──
@@ -726,7 +729,7 @@ def _gastrulation_movements(self, cells, grid, cavity, rows, cols, params, gen):
 def _neurulation(self, cells, grid, rows, cols, params):
     # Neural cells move toward dorsal midline and fold inward
     mid_c = cols // 2
-    for cell in cells:
+    for i, cell in enumerate(cells):
         if cell.fate != FATE_NEURAL:
             continue
         # Move toward midline
@@ -736,12 +739,14 @@ def _neurulation(self, cells, grid, rows, cols, params):
             if 0 <= nc < cols and grid[cell.r][nc] == -1:
                 grid[cell.r][cell.c] = -1
                 cell.c = nc
+                grid[cell.r][nc] = i
         # Fold inward (upward in cross-section view) once near midline
         if abs(cell.c - mid_c) <= 2 and random.random() < 0.1:
             nr = cell.r - 1
             if 0 <= nr < rows and grid[nr][cell.c] == -1:
                 grid[cell.r][cell.c] = -1
                 cell.r = nr
+                grid[nr][cell.c] = i
 
 
 # ── Differential adhesion sorting ──
@@ -752,13 +757,11 @@ def _adhesion_sorting(cells, grid, rows, cols, params):
     same_adh = params["adhesion_same"]
     diff_adh = params["adhesion_diff"]
 
-    sample = random.sample(cells, min(40, len(cells)))
-    for cell in sample:
+    sample = random.sample(range(len(cells)), min(40, len(cells)))
+    for ci in sample:
+        cell = cells[ci]
         if random.random() > 0.25:
             continue
-
-        # Calculate current adhesion score
-        curr_score = _adhesion_score(cell, cells, grid, rows, cols, same_adh, diff_adh)
 
         # Try swapping with a random neighbor
         nbrs = []
@@ -767,26 +770,33 @@ def _adhesion_sorting(cells, grid, rows, cols, params):
             if 0 <= nr < rows and 0 <= nc < cols:
                 idx = grid[nr][nc]
                 if idx >= 0 and idx < len(cells):
-                    nbrs.append(cells[idx])
+                    nbrs.append(idx)
 
         if not nbrs:
             continue
 
-        other = random.choice(nbrs)
+        oi = random.choice(nbrs)
+        other = cells[oi]
         if other.fate == cell.fate:
             continue  # no benefit swapping same type
 
-        # Score if swapped
+        old_score = (_adhesion_score(cell, cells, grid, rows, cols, same_adh, diff_adh) +
+                     _adhesion_score(other, cells, grid, rows, cols, same_adh, diff_adh))
+
+        # Swap positions and keep the occupancy grid in step.
         cell.r, other.r = other.r, cell.r
         cell.c, other.c = other.c, cell.c
+        grid[cell.r][cell.c] = ci
+        grid[other.r][other.c] = oi
         new_score = (_adhesion_score(cell, cells, grid, rows, cols, same_adh, diff_adh) +
                      _adhesion_score(other, cells, grid, rows, cols, same_adh, diff_adh))
-        old_score = curr_score + _adhesion_score(other, cells, grid, rows, cols, same_adh, diff_adh)
 
         if new_score <= old_score:
             # Revert swap
             cell.r, other.r = other.r, cell.r
             cell.c, other.c = other.c, cell.c
+            grid[cell.r][cell.c] = ci
+            grid[other.r][other.c] = oi
 
 
 def _adhesion_score(cell, cells, grid, rows, cols, same_adh, diff_adh):
