@@ -16,6 +16,7 @@ OCEAN_PRESETS = [
 OCEAN_CHARS = ' ·~≈≋∿⌇█'
 CURRENT_ARROWS = '·←↙↓↘→↗↑↖'
 PLANKTON_CHARS = ' .,:;+*#@'
+SEAWATER_FREEZING_C = -2.0
 
 
 def _enter_ocean_mode(self):
@@ -444,6 +445,8 @@ def _ocean_step(self):
         eq_temp = -2.0 + 30.0 * lat_factor
         for c in range(cols):
             self.ocean_temperature[r][c] += (eq_temp - self.ocean_temperature[r][c]) * 0.005 * speed
+            # Sea water freezes near -2 C; deep-water formation would otherwise cool it without limit.
+            self.ocean_temperature[r][c] = max(SEAWATER_FREEZING_C, self.ocean_temperature[r][c])
             # Salinity: evaporation in warm subtropics, freshening at poles
             eq_sal = 33.0 + 4.0 * lat_factor
             self.ocean_salinity[r][c] += (eq_sal - self.ocean_salinity[r][c]) * 0.003 * speed

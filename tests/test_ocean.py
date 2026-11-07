@@ -3,6 +3,7 @@ import math
 from tests.conftest import make_mock_app
 from life.modes.ocean import (
     register, OCEAN_PRESETS, OCEAN_CHARS, CURRENT_ARROWS, PLANKTON_CHARS,
+    SEAWATER_FREEZING_C,
     _ocean_apply_gyres, _ocean_compute_density, _ocean_compute_upwelling,
 )
 
@@ -515,3 +516,14 @@ def test_step_on_short_terminal():
         app._ocean_init(0)
         for _ in range(500):
             app._ocean_step()
+
+
+def test_temperature_stays_above_freezing_point():
+    """Deep-water formation must not cool the ocean below the freezing point of sea water."""
+    import random
+    random.seed(0)
+    app = _make_app()
+    app._ocean_init(4)  # Thermohaline Conveyor
+    for _ in range(300):
+        app._ocean_step()
+    assert min(min(row) for row in app.ocean_temperature) >= SEAWATER_FREEZING_C - 1e-9
