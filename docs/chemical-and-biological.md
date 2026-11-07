@@ -967,12 +967,14 @@ Tip cell migration (chemotaxis):
     Δc = cos(heading) × speed
     Branch probability: 0.03 if VEGF > 0.15  (±60° bifurcation)
     Max lifetime: 150 ticks
+    At most 60 active tips: branching and new sprouts stop at the cap
 
 Anastomosis:
-    If tip cell within 2.5 distance of non-parent vessel node → merge
+    If tip cell within 2.5 distance of a vessel node → merge,
+    except nodes within 4 segments of the tip's own stalk
 
 New sprout probability:
-    0.08/tick from non-source, non-tip nodes where VEGF > 0.15
+    0.08 × drug_factor per tick from a random non-source, non-tip node where VEGF > 0.15
 
 Murray's law remodeling:
     optimal_radius = min(3.0, |flow|^(1/3) × 2.0)
@@ -982,7 +984,7 @@ Murray's law remodeling:
     Collapse: edges with radius < 0.05 removed, indices rebuilt
 
 Tumor growth:
-    If avg O₂ over tumor cells > 0.2:
+    If avg O₂ over tumor cells > 0.1:
         tumor.radius += growth_rate × avg_o2
     Cells = integer points within Euclidean radius of center
 ```
@@ -1000,7 +1002,7 @@ The vascular network is a graph of `VesselNode` junctions (with pressure, oxygen
 | Retinal Vasculature | 8-spoke radial tree from central optic disc | Symmetric radial growth across retinal surface |
 | Exercise-Induced Capillarization | Dense beds, 2× O₂ consumption | Capillary bed densification driven by metabolic demand |
 
-**What to look for** — In the Vessel Network view, watch the ♥/♡ heartbeat indicator pulse as pressure waves propagate through arteries (bright red during systole). Red ● particles represent flowing RBCs — their speed visually reflects local flow rate. Sprouting ⌁ tip cells chase VEGF gradients into hypoxic zones, occasionally merging with existing vessels (anastomosis) to form perfusable loops. In Tumor Angiogenesis, the ▓ tumor mass grows and floods VEGF, recruiting a chaotic, tortuous vasculature — toggle the drug with `d` (only while a tumor exists) to see vessel normalization. `t` adds or removes a tumor in any preset, and `v` cycles the views. The O₂/VEGF Heatmap view reveals the interplay between oxygen delivery (blue→white gradient) and VEGF signaling (dim→red) — hypoxic zones glow bright in the VEGF panel while remaining dark in the O₂ panel. The sparkline graphs track 10 metrics in real time: perfusion efficiency, vessel density, mean flow, O₂ coverage, VEGF levels, tumor size, tip count, heart pressure, vessel count, and regression events.
+**What to look for** — In the Vessel Network view, watch the ♥/♡ heartbeat indicator pulse as pressure waves propagate through arteries (bright red during systole). Red ● particles represent flowing RBCs — their speed visually reflects local flow rate. Sprouting ⌁ tip cells chase VEGF gradients into hypoxic zones, occasionally merging with existing vessels (anastomosis) to form perfusable loops. In Tumor Angiogenesis, the ▓ tumor mass grows and floods VEGF, recruiting a chaotic, tortuous vasculature — toggle the drug with `d` (only while a tumor exists) to see vessel normalization. `t` adds or removes a tumor in any preset, `v` cycles the views, `+`/`-` set the speed, and `q` or Esc exits. The O₂/VEGF Heatmap view reveals the interplay between oxygen delivery (blue→white gradient) and VEGF signaling (dim→red) — hypoxic zones glow bright in the VEGF panel while remaining dark in the O₂ panel. The sparkline graphs track 10 metrics in real time: perfusion efficiency, vessel density, mean flow, O₂ coverage, VEGF levels, tumor size, tip count, heart pressure, vessel count, and regression events.
 
 **References**
 - Folkman, J. "Angiogenesis in cancer, vascular, rheumatoid and other disease." *Nature Medicine* 1 (1995): 27-31. https://doi.org/10.1038/nm0195-27
