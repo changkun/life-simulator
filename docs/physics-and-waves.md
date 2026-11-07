@@ -1277,14 +1277,13 @@ Thin lens deflection:
   θ_deflection = -atan(h / f)     [f = focal length]
   d_new = normalize(d + sign · sin(θ) · n̂)
 
-Diffraction grating (1st order):
-  Δθ = asin(λ / (d_slit × 1000))
-  Splits ray into ±1st order beams with wavelength-dependent angles
+Diffraction grating (element type exists; no preset places one):
+  sin(Δθ) = (λ_nm / 1000) / d_slit, clamped to ±0.8
+  The ray is reflected, then turned by Δθ (one beam, not split into orders)
 
 Parameters:
   n_air   = 1.00   (refractive index of air)
   n_glass = 1.52   (crown glass)
-  n_fiber = 1.48   (fiber optic core)
   max_bounces = 200
   ray_step    = 0.3 cells
 ```
@@ -1293,16 +1292,16 @@ Parameters:
 
 | Preset | Configuration | What it demonstrates |
 |--------|--------------|---------------------|
-| **Rainbow Prism** | Single glass prism (n=1.52), white light source (7 spectral rays) | Chromatic dispersion — white light splits into rainbow spectrum |
-| **Telescope** | Two convex lenses (f=15, f=8) aligned on optical axis | Refracting telescope — parallel rays converge to eyepiece focus |
-| **Microscope** | Objective (f=6) + eyepiece (f=12), nearby point source | Compound magnification from diverging source through two lens stages |
-| **Fiber Optic Cable** | 12 mirror segments forming curved waveguide | Total internal reflection guiding light through bends |
-| **Hall of Mirrors** | 6 flat mirrors at various angles, omnidirectional source | Multiple specular reflections creating complex ray patterns |
+| **Rainbow Prism** | Single glass prism (n=1.52), white light source (5 rays, each traced in 7 colors) | Chromatic dispersion — white light splits into rainbow spectrum |
+| **Telescope** | Two convex lenses (f = 0.2 and 0.1 of the grid width) aligned on optical axis | Refracting telescope — parallel rays converge to eyepiece focus |
+| **Microscope** | Objective (f = 0.08 of the grid width) + eyepiece (f = 0.15), nearby point source | Compound magnification from diverging source through two lens stages |
+| **Fiber Optic Cable** | Two sinusoidal walls of 10 mirror segments each, white light | Mirror walls guide light through bends, standing in for total internal reflection |
+| **Hall of Mirrors** | 6 flat mirrors at various angles, omnidirectional white source (16 rays) | Multiple specular reflections creating complex ray patterns |
 | **Solar Concentrator** | 14-segment parabolic mirror, parallel downward rays | Caustic focusing — all rays converge to a single focal point |
 
 **Controls**: `Tab`/`e` cycle element selection, `WASD`/arrows move selected element, `[`/`]` rotate, `f`/`F` adjust focal length, `h` toggle caustic heatmap, `Space` animate source wobble, `+`/`-` adjust speed, `r` reset current preset, `R` return to preset menu, `q` exit mode.
 
-**What to look for** — Start with Rainbow Prism and watch white light enter the prism as a single beam, then emerge as seven distinct spectral colors fanned out by wavelength-dependent refraction — violet bends most, red least. Rotate the prism with `[`/`]` to see total internal reflection kick in at steep angles. The Telescope preset shows how two properly spaced lenses can collimate diverging light. In Fiber Optic Cable, rays bounce off the waveguide walls via total internal reflection, demonstrating the principle behind optical fibers. The Solar Concentrator is best viewed with the caustic heatmap (`h`): the parabolic mirror focuses parallel rays to a bright focal point, with the heatmap revealing the intensity distribution. Hall of Mirrors produces the most complex ray patterns — move mirrors with arrow keys to create kaleidoscopic interference paths.
+**What to look for** — Start with Rainbow Prism and watch white light enter the prism as a single beam, then emerge as seven distinct spectral colors fanned out by wavelength-dependent refraction — violet bends most, red least. Rotate the prism with `[`/`]` to see total internal reflection kick in at steep angles. The Telescope preset shows how two properly spaced lenses can collimate diverging light. In Fiber Optic Cable, rays bounce between the curved mirror walls, which models how a fiber guides light. The Solar Concentrator is best viewed with the caustic heatmap (`h`): the parabolic mirror focuses parallel rays to a bright focal point, with the heatmap revealing the intensity distribution. Hall of Mirrors produces the most complex ray patterns — move mirrors with arrow keys to create kaleidoscopic interference paths.
 
 **References**
 - Hecht, E. *Optics*, 5th ed., Pearson, 2017. ISBN 978-0133977226
