@@ -422,6 +422,7 @@ def _nuclear_reactor_step(self):
     new_flux = [[0.0] * cols for _ in range(rows)]
     total_fission = 0.0
     total_flux = 0.0
+    n_fuel = 0
 
     for r in range(rows):
         for c in range(cols):
@@ -452,6 +453,7 @@ def _nuclear_reactor_step(self):
             diffused = phi + _NEUTRON_DIFFUSION * laplacian
 
             if cell == _CELL_FUEL:
+                n_fuel += 1
                 # Fission source
                 enrichment = params["fuel_enrichment"]
                 sigma_f = _SIGMA_FISSION * enrichment
@@ -594,14 +596,15 @@ def _nuclear_reactor_step(self):
 
     # --- Decay heat update ---
     if total_fission > 0:
+        # Decay heat tracks the mean flux per fuel cell so it scales with power.
         self.nuclear_reactor_decay_heat = max(self.nuclear_reactor_decay_heat,
-                                              _DECAY_HEAT_FRAC * total_fission / max(1.0, total_flux + 1.0))
+                                              _DECAY_HEAT_FRAC * total_flux / max(1, n_fuel))
     else:
         self.nuclear_reactor_decay_heat *= (1.0 - 1.0 / _DECAY_HEAT_HALFLIFE)
 
     # --- Auto-SCRAM ---
     if params["scram_enabled"] and not self.nuclear_reactor_scram:
-        avg_flux = total_flux / max(1, sum(1 for r in range(rows) for c in range(cols) if grid[r][c] == _CELL_FUEL))
+        avg_flux = total_flux / max(1, n_fuel)
         if avg_flux > 1.5 or self.nuclear_reactor_meltdown:
             self.nuclear_reactor_scram = True
 
