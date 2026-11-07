@@ -186,8 +186,8 @@ The simulation processes cells bottom-to-top with randomized column order to avo
 ```
 Element behaviors (per tick):
 
-SAND:   Try move to (r+1, c). If blocked, try diagonal (r+1, c +/- 1).
-        Swaps with water or oil below (density sorting).
+SAND:   Try move to (r+1, c). If blocked by water or oil, swap with it (sand sinks).
+        Otherwise try diagonal (r+1, c +/- 1).
 
 WATER:  Try fall (r+1, c), then diagonal, then flow sideways (r, c +/- 1).
         Sinks below oil (density: water > oil).
@@ -198,21 +198,36 @@ FIRE:   Rises upward with P(move_up) = 0.7, lateral drift in {-1, 0, 0, 1}.
         Evaporates adjacent water to steam (P = 0.08).
         Dying fire produces steam with P = 0.2.
 
-PLANT:  Grows into empty neighbor cells when adjacent to water (P = 0.05).
+PLANT:  Grows into an empty cell when a 4-neighbor is water (P = 0.05).
         Growth directions: up, diagonal-up, sideways.
 
 OIL:    Liquid behavior (fall, diagonal, sideways). Floats above water.
         Highly flammable (fire ignition P = 0.5).
 
-STEAM:  Rises with lateral drift. Condenses to water after 15 + rand(0..10) ticks
-        with P(condense) = 0.4, otherwise vanishes.
+STEAM:  Rises with lateral drift. After 15 + rand(0..10) ticks it condenses to water
+        with P = 0.4, otherwise vanishes.
 
 STONE:  Static. Immovable barrier.
 ```
 
+### Presets
+
+- **Hourglass**: Sand falling through a narrow gap.
+- **Rainfall**: Water drops falling on stone platforms.
+- **Bonfire**: Fire burning through a plant forest.
+- **Sandbox**: Empty grid for free drawing.
+- **Lava Lamp**: Water and sand mixing.
+- **Forest Fire**: Dense forest with fire ignition points.
+- **Oil Refinery**: Oil floating on water with fire hazards.
+- **Waterfall**: Water cascading over stone ledges.
+
+### Controls
+
+Move the cursor with the arrow keys or `h`/`j`/`k`/`l`. Press `Enter` (or `d`) to paint with the current brush. `1`-`7` select sand, water, fire, stone, plant, oil or steam; `0` erases. `+`/`-` change the brush size (1 to 5). `r` clears the grid.
+
 ### What to look for
 
-Watch sand pile into natural-looking heaps and slide along diagonal slopes. Water finds its own level and flows around obstacles, while oil floats on top forming a visible density interface. Fire propagates through plant matter in realistic wavefronts, and the steam-condensation cycle creates a simple water cycle. The "hourglass" preset demonstrates granular flow through a narrow aperture, a classic problem in granular physics.
+Sand piles into heaps and slides down diagonal slopes. Water flows around obstacles and levels out, while oil floats on top of it. Fire spreads through plants and oil, and the steam-condensation cycle forms a simple water cycle. The Hourglass preset shows granular flow through a narrow aperture.
 
 ### References
 
