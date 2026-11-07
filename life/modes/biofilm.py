@@ -324,274 +324,273 @@ def _biofilm_step(self):
     rows = self.biofilm_rows
     cols = self.biofilm_cols
 
-    for _ in range(self.biofilm_speed):
-        self.biofilm_generation += 1
-        bacteria = self.biofilm_bacteria
+    self.biofilm_generation += 1
+    bacteria = self.biofilm_bacteria
 
-        # ── 1. Nutrient & oxygen replenishment from bulk fluid (top) ──
+    # ── 1. Nutrient & oxygen replenishment from bulk fluid (top) ──
+    for c in range(cols):
+        self.biofilm_nutrients[0][c] = min(1.0,
+            self.biofilm_nutrients[0][c] + _NUTRIENT_REPLENISH)
+        self.biofilm_oxygen[0][c] = min(1.0,
+            self.biofilm_oxygen[0][c] + _NUTRIENT_REPLENISH * 1.5)
+
+    # ── 2. Diffuse nutrients, oxygen, autoinducer, antibiotic ──
+    _diffuse_field(self.biofilm_nutrients, rows, cols, _NUTRIENT_DIFFUSE,
+                   self.biofilm_channels, _NUTRIENT_CHANNEL_BOOST)
+    _diffuse_field(self.biofilm_oxygen, rows, cols, _O2_DIFFUSE,
+                   self.biofilm_channels, _NUTRIENT_CHANNEL_BOOST)
+    _diffuse_field(self.biofilm_ai, rows, cols, _AI_DIFFUSE, None, 0)
+    if self.biofilm_antibiotic_active:
+        _diffuse_field_with_eps(self.biofilm_antibiotic, self.biofilm_eps,
+                                rows, cols, _ANTIBIOTIC_PENETRATE)
+
+    # ── 3. AI decay (and quorum quenching) ──
+    qq_active = self.biofilm_qq_active
+    for r in range(rows):
         for c in range(cols):
-            self.biofilm_nutrients[0][c] = min(1.0,
-                self.biofilm_nutrients[0][c] + _NUTRIENT_REPLENISH)
-            self.biofilm_oxygen[0][c] = min(1.0,
-                self.biofilm_oxygen[0][c] + _NUTRIENT_REPLENISH * 1.5)
+            self.biofilm_ai[r][c] -= _AI_DECAY
+            if qq_active:
+                self.biofilm_ai[r][c] -= _QQ_DEGRADE_RATE
+            if self.biofilm_ai[r][c] < 0:
+                self.biofilm_ai[r][c] = 0.0
 
-        # ── 2. Diffuse nutrients, oxygen, autoinducer, antibiotic ──
-        _diffuse_field(self.biofilm_nutrients, rows, cols, _NUTRIENT_DIFFUSE,
-                       self.biofilm_channels, _NUTRIENT_CHANNEL_BOOST)
-        _diffuse_field(self.biofilm_oxygen, rows, cols, _O2_DIFFUSE,
-                       self.biofilm_channels, _NUTRIENT_CHANNEL_BOOST)
-        _diffuse_field(self.biofilm_ai, rows, cols, _AI_DIFFUSE, None, 0)
-        if self.biofilm_antibiotic_active:
-            _diffuse_field_with_eps(self.biofilm_antibiotic, self.biofilm_eps,
-                                    rows, cols, _ANTIBIOTIC_PENETRATE)
-
-        # ── 3. AI decay (and quorum quenching) ──
-        qq_active = self.biofilm_qq_active
+    # ── 4. Antibiotic source & decay ──
+    if self.biofilm_antibiotic_active:
+        for c in range(cols):
+            self.biofilm_antibiotic[0][c] = min(1.0,
+                self.biofilm_antibiotic[0][c] + 0.03)
         for r in range(rows):
             for c in range(cols):
-                self.biofilm_ai[r][c] -= _AI_DECAY
-                if qq_active:
-                    self.biofilm_ai[r][c] -= _QQ_DEGRADE_RATE
-                if self.biofilm_ai[r][c] < 0:
-                    self.biofilm_ai[r][c] = 0.0
+                self.biofilm_antibiotic[r][c] = max(0.0,
+                    self.biofilm_antibiotic[r][c] - _ANTIBIOTIC_DECAY)
 
-        # ── 4. Antibiotic source & decay ──
-        if self.biofilm_antibiotic_active:
-            for c in range(cols):
-                self.biofilm_antibiotic[0][c] = min(1.0,
-                    self.biofilm_antibiotic[0][c] + 0.03)
-            for r in range(rows):
-                for c in range(cols):
-                    self.biofilm_antibiotic[r][c] = max(0.0,
-                        self.biofilm_antibiotic[r][c] - _ANTIBIOTIC_DECAY)
+    # ── 5. EPS diffusion (slow spread) ──
+    _diffuse_field(self.biofilm_eps, rows, cols, _EPS_DIFFUSE, None, 0)
 
-        # ── 5. EPS diffusion (slow spread) ──
-        _diffuse_field(self.biofilm_eps, rows, cols, _EPS_DIFFUSE, None, 0)
+    # ── 6. Bacterial behavior ──
+    new_bacteria = []
+    dead_count = 0
 
-        # ── 6. Bacterial behavior ──
-        new_bacteria = []
-        dead_count = 0
+    for b in bacteria:
+        b.age += 1
+        ri, ci = int(b.r), int(b.c)
+        ri = max(0, min(rows - 1, ri))
+        ci = max(0, min(cols - 1, ci))
 
-        for b in bacteria:
-            b.age += 1
-            ri, ci = int(b.r), int(b.c)
-            ri = max(0, min(rows - 1, ri))
-            ci = max(0, min(cols - 1, ci))
+        # Local environment
+        local_nutrient = self.biofilm_nutrients[ri][ci]
+        local_o2 = self.biofilm_oxygen[ri][ci]
+        local_ai = self.biofilm_ai[ri][ci]
+        local_abx = self.biofilm_antibiotic[ri][ci]
+        local_eps = self.biofilm_eps[ri][ci]
 
-            # Local environment
-            local_nutrient = self.biofilm_nutrients[ri][ci]
-            local_o2 = self.biofilm_oxygen[ri][ci]
-            local_ai = self.biofilm_ai[ri][ci]
-            local_abx = self.biofilm_antibiotic[ri][ci]
-            local_eps = self.biofilm_eps[ri][ci]
+        # Consume nutrients and oxygen
+        if b.phenotype == 'planktonic':
+            consume = _NUTRIENT_CONSUME_PLANK
+        else:
+            consume = _NUTRIENT_CONSUME_BIOFILM
+        self.biofilm_nutrients[ri][ci] = max(0.0,
+            local_nutrient - consume)
+        self.biofilm_oxygen[ri][ci] = max(0.0, local_o2 - _O2_CONSUME)
 
-            # Consume nutrients and oxygen
-            if b.phenotype == 'planktonic':
-                consume = _NUTRIENT_CONSUME_PLANK
+        # Energy from nutrients
+        b.energy += local_nutrient * 0.02
+        b.energy = min(1.5, b.energy)
+        b.energy -= 0.005  # basal metabolism
+
+        # Secrete autoinducer
+        self.biofilm_ai[ri][ci] = min(1.0,
+            self.biofilm_ai[ri][ci] + _AI_SECRETE_RATE)
+
+        # Uptake AI into intracellular pool
+        b.ai_internal += _AI_UPTAKE * local_ai
+        b.ai_internal *= 0.98  # intracellular decay
+
+        # ── Phenotype switching ──
+        if b.phenotype == 'planktonic':
+            # Check quorum sensing threshold
+            if b.ai_internal >= _AI_THRESHOLD and not qq_active:
+                # Switch to biofilm phenotype — attach!
+                b.phenotype = 'biofilm'
+                b.vr = 0.0
+                b.vc = 0.0
+
+            # Chemotaxis toward nutrients
+            best_n = local_nutrient
+            best_dr, best_dc = 0.0, 0.0
+            for dr, dc in _NEIGHBORS_8:
+                nr, nc = ri + dr, ci + dc
+                if 0 <= nr < rows and 0 <= nc < cols:
+                    n_val = self.biofilm_nutrients[nr][nc]
+                    if n_val > best_n:
+                        best_n = n_val
+                        best_dr, best_dc = dr, dc
+
+            if best_dr != 0 or best_dc != 0:
+                b.vr = b.vr * (1 - _CHEMOTAXIS_STRENGTH) + best_dr * _CHEMOTAXIS_STRENGTH
+                b.vc = b.vc * (1 - _CHEMOTAXIS_STRENGTH) + best_dc * _CHEMOTAXIS_STRENGTH
             else:
-                consume = _NUTRIENT_CONSUME_BIOFILM
-            self.biofilm_nutrients[ri][ci] = max(0.0,
-                local_nutrient - consume)
-            self.biofilm_oxygen[ri][ci] = max(0.0, local_o2 - _O2_CONSUME)
+                b.vr += random.uniform(-0.3, 0.3)
+                b.vc += random.uniform(-0.3, 0.3)
 
-            # Energy from nutrients
-            b.energy += local_nutrient * 0.02
-            b.energy = min(1.5, b.energy)
-            b.energy -= 0.005  # basal metabolism
+            # Normalize speed
+            spd = math.hypot(b.vr, b.vc)
+            if spd > _SWIM_SPEED:
+                b.vr = b.vr / spd * _SWIM_SPEED
+                b.vc = b.vc / spd * _SWIM_SPEED
 
-            # Secrete autoinducer
-            self.biofilm_ai[ri][ci] = min(1.0,
-                self.biofilm_ai[ri][ci] + _AI_SECRETE_RATE)
+            # Move
+            b.r += b.vr
+            b.c += b.vc
+            b.r = max(0, min(rows - 1, b.r))
+            b.c = max(0, min(cols - 1, b.c))
 
-            # Uptake AI into intracellular pool
-            b.ai_internal += _AI_UPTAKE * local_ai
-            b.ai_internal *= 0.98  # intracellular decay
+        elif b.phenotype == 'biofilm':
+            # Secrete EPS
+            self.biofilm_eps[ri][ci] = min(_EPS_MAX,
+                self.biofilm_eps[ri][ci] + _EPS_SECRETE_RATE)
+            b.eps_produced += _EPS_SECRETE_RATE
 
-            # ── Phenotype switching ──
-            if b.phenotype == 'planktonic':
-                # Check quorum sensing threshold
-                if b.ai_internal >= _AI_THRESHOLD and not qq_active:
-                    # Switch to biofilm phenotype — attach!
+            # Check for persister transition (low O2 / nutrients)
+            if (local_o2 < _PERSISTER_O2_THRESH or
+                    local_nutrient < _PERSISTER_NUTRIENT_THRESH):
+                if random.random() < _PERSISTER_PROB:
+                    b.phenotype = 'persister'
+
+            # Rare detachment back to planktonic
+            if random.random() < _DETACH_PROB:
+                b.phenotype = 'planktonic'
+                b.vr = random.uniform(-0.5, 0.5)
+                b.vc = random.uniform(-0.5, -0.1)  # drift upward
+
+        elif b.phenotype == 'persister':
+            # Dormant — minimal metabolism
+            b.energy -= 0.001  # very low
+            # Can revert if conditions improve
+            if local_o2 > 0.4 and local_nutrient > 0.4:
+                if random.random() < 0.01:
                     b.phenotype = 'biofilm'
-                    b.vr = 0.0
-                    b.vc = 0.0
 
-                # Chemotaxis toward nutrients
-                best_n = local_nutrient
-                best_dr, best_dc = 0.0, 0.0
-                for dr, dc in _NEIGHBORS_8:
-                    nr, nc = ri + dr, ci + dc
-                    if 0 <= nr < rows and 0 <= nc < cols:
-                        n_val = self.biofilm_nutrients[nr][nc]
-                        if n_val > best_n:
-                            best_n = n_val
-                            best_dr, best_dc = dr, dc
-
-                if best_dr != 0 or best_dc != 0:
-                    b.vr = b.vr * (1 - _CHEMOTAXIS_STRENGTH) + best_dr * _CHEMOTAXIS_STRENGTH
-                    b.vc = b.vc * (1 - _CHEMOTAXIS_STRENGTH) + best_dc * _CHEMOTAXIS_STRENGTH
-                else:
-                    b.vr += random.uniform(-0.3, 0.3)
-                    b.vc += random.uniform(-0.3, 0.3)
-
-                # Normalize speed
-                spd = math.hypot(b.vr, b.vc)
-                if spd > _SWIM_SPEED:
-                    b.vr = b.vr / spd * _SWIM_SPEED
-                    b.vc = b.vc / spd * _SWIM_SPEED
-
-                # Move
-                b.r += b.vr
-                b.c += b.vc
-                b.r = max(0, min(rows - 1, b.r))
-                b.c = max(0, min(cols - 1, b.c))
-
+        # ── Antibiotic killing ──
+        if local_abx > 0.05:
+            kill_prob = 0.0
+            if b.phenotype == 'planktonic':
+                kill_prob = _ANTIBIOTIC_KILL_PLANK * local_abx
             elif b.phenotype == 'biofilm':
-                # Secrete EPS
-                self.biofilm_eps[ri][ci] = min(_EPS_MAX,
-                    self.biofilm_eps[ri][ci] + _EPS_SECRETE_RATE)
-                b.eps_produced += _EPS_SECRETE_RATE
-
-                # Check for persister transition (low O2 / nutrients)
-                if (local_o2 < _PERSISTER_O2_THRESH or
-                        local_nutrient < _PERSISTER_NUTRIENT_THRESH):
-                    if random.random() < _PERSISTER_PROB:
-                        b.phenotype = 'persister'
-
-                # Rare detachment back to planktonic
-                if random.random() < _DETACH_PROB:
-                    b.phenotype = 'planktonic'
-                    b.vr = random.uniform(-0.5, 0.5)
-                    b.vc = random.uniform(-0.5, -0.1)  # drift upward
-
+                # EPS shields
+                shield = min(0.9, local_eps * 0.8)
+                kill_prob = _ANTIBIOTIC_KILL_BIOFILM * local_abx * (1 - shield)
             elif b.phenotype == 'persister':
-                # Dormant — minimal metabolism
-                b.energy -= 0.001  # very low
-                # Can revert if conditions improve
-                if local_o2 > 0.4 and local_nutrient > 0.4:
-                    if random.random() < 0.01:
-                        b.phenotype = 'biofilm'
+                kill_prob = _ANTIBIOTIC_KILL_PERSISTER * local_abx
+            if random.random() < kill_prob:
+                b.energy = -1  # mark dead
 
-            # ── Antibiotic killing ──
-            if local_abx > 0.05:
-                kill_prob = 0.0
-                if b.phenotype == 'planktonic':
-                    kill_prob = _ANTIBIOTIC_KILL_PLANK * local_abx
-                elif b.phenotype == 'biofilm':
-                    # EPS shields
-                    shield = min(0.9, local_eps * 0.8)
-                    kill_prob = _ANTIBIOTIC_KILL_BIOFILM * local_abx * (1 - shield)
-                elif b.phenotype == 'persister':
-                    kill_prob = _ANTIBIOTIC_KILL_PERSISTER * local_abx
-                if random.random() < kill_prob:
-                    b.energy = -1  # mark dead
+        # ── Death from starvation ──
+        if b.energy <= 0:
+            dead_count += 1
+            continue
 
-            # ── Death from starvation ──
-            if b.energy <= 0:
-                dead_count += 1
-                continue
+        # ── Division ──
+        if (b.energy > 0.8 and local_nutrient > _DIVIDE_NUTRIENT_THRESH
+                and random.random() < _DIVIDE_PROB
+                and len(bacteria) + len(new_bacteria) < _MAX_BACTERIA):
+            # Daughter cell
+            dr = random.uniform(-1, 1)
+            dc = random.uniform(-1, 1)
+            daughter = _Bacterium(
+                max(0, min(rows - 1, b.r + dr)),
+                max(0, min(cols - 1, b.c + dc)),
+                phenotype=b.phenotype
+            )
+            daughter.ai_internal = b.ai_internal * 0.5
+            daughter.energy = b.energy * 0.5
+            b.energy *= 0.5
+            b.ai_internal *= 0.5
+            new_bacteria.append(daughter)
 
-            # ── Division ──
-            if (b.energy > 0.8 and local_nutrient > _DIVIDE_NUTRIENT_THRESH
-                    and random.random() < _DIVIDE_PROB
-                    and len(bacteria) + len(new_bacteria) < _MAX_BACTERIA):
-                # Daughter cell
-                dr = random.uniform(-1, 1)
-                dc = random.uniform(-1, 1)
-                daughter = _Bacterium(
-                    max(0, min(rows - 1, b.r + dr)),
-                    max(0, min(cols - 1, b.c + dc)),
-                    phenotype=b.phenotype
+        new_bacteria.append(b)
+
+    self.biofilm_bacteria = new_bacteria
+
+    # ── 7. Water channel formation ──
+    # Channels form in gaps within biofilm where EPS is low
+    for r in range(2, rows - 2):
+        for c in range(2, cols - 2):
+            if self.biofilm_eps[r][c] < 0.05:
+                # Check if surrounded by biofilm
+                eps_neighbors = sum(
+                    1 for dr, dc in _NEIGHBORS_4
+                    if 0 <= r + dr < rows and 0 <= c + dc < cols
+                    and self.biofilm_eps[r + dr][c + dc] > 0.2
                 )
-                daughter.ai_internal = b.ai_internal * 0.5
-                daughter.energy = b.energy * 0.5
-                b.energy *= 0.5
-                b.ai_internal *= 0.5
-                new_bacteria.append(daughter)
+                if eps_neighbors >= 3 and random.random() < _CHANNEL_PROB:
+                    self.biofilm_channels[r][c] = True
 
-            new_bacteria.append(b)
+    # ── 8. Mushroom tower growth ──
+    # Biofilm cells at the top of biofilm clusters can grow upward
+    for b in self.biofilm_bacteria:
+        if b.phenotype != 'biofilm':
+            continue
+        ri, ci = int(b.r), int(b.c)
+        if ri <= 0:
+            continue
+        # Check if cell is at top of a column of EPS
+        if (self.biofilm_eps[ri][ci] > 0.3 and
+                ri > 0 and self.biofilm_eps[ri - 1][ci] < 0.1):
+            if random.random() < _TOWER_GROW_PROB:
+                # Push cell upward slightly
+                b.r = max(0, b.r - 0.5)
 
-        self.biofilm_bacteria = new_bacteria
+    # ── 9. Record history ──
+    hist = self.biofilm_history
+    n_plank = sum(1 for b in self.biofilm_bacteria
+                  if b.phenotype == 'planktonic')
+    n_biofilm = sum(1 for b in self.biofilm_bacteria
+                    if b.phenotype == 'biofilm')
+    n_persister = sum(1 for b in self.biofilm_bacteria
+                      if b.phenotype == 'persister')
+    total_cells = rows * cols
 
-        # ── 7. Water channel formation ──
-        # Channels form in gaps within biofilm where EPS is low
-        for r in range(2, rows - 2):
-            for c in range(2, cols - 2):
-                if self.biofilm_eps[r][c] < 0.05:
-                    # Check if surrounded by biofilm
-                    eps_neighbors = sum(
-                        1 for dr, dc in _NEIGHBORS_4
-                        if 0 <= r + dr < rows and 0 <= c + dc < cols
-                        and self.biofilm_eps[r + dr][c + dc] > 0.2
-                    )
-                    if eps_neighbors >= 3 and random.random() < _CHANNEL_PROB:
-                        self.biofilm_channels[r][c] = True
+    hist['population'].append(len(self.biofilm_bacteria))
+    hist['planktonic'].append(n_plank)
+    hist['biofilm_cells'].append(n_biofilm)
+    hist['persister'].append(n_persister)
 
-        # ── 8. Mushroom tower growth ──
-        # Biofilm cells at the top of biofilm clusters can grow upward
-        for b in self.biofilm_bacteria:
-            if b.phenotype != 'biofilm':
-                continue
-            ri, ci = int(b.r), int(b.c)
-            if ri <= 0:
-                continue
-            # Check if cell is at top of a column of EPS
-            if (self.biofilm_eps[ri][ci] > 0.3 and
-                    ri > 0 and self.biofilm_eps[ri - 1][ci] < 0.1):
-                if random.random() < _TOWER_GROW_PROB:
-                    # Push cell upward slightly
-                    b.r = max(0, b.r - 0.5)
+    ai_sum = sum(self.biofilm_ai[r][c]
+                 for r in range(rows) for c in range(cols))
+    hist['avg_ai'].append(ai_sum / total_cells)
 
-        # ── 9. Record history ──
-        hist = self.biofilm_history
-        n_plank = sum(1 for b in self.biofilm_bacteria
-                      if b.phenotype == 'planktonic')
-        n_biofilm = sum(1 for b in self.biofilm_bacteria
-                        if b.phenotype == 'biofilm')
-        n_persister = sum(1 for b in self.biofilm_bacteria
-                          if b.phenotype == 'persister')
-        total_cells = rows * cols
+    eps_count = sum(1 for r in range(rows) for c in range(cols)
+                    if self.biofilm_eps[r][c] > 0.1)
+    hist['eps_coverage'].append(eps_count / total_cells)
 
-        hist['population'].append(len(self.biofilm_bacteria))
-        hist['planktonic'].append(n_plank)
-        hist['biofilm_cells'].append(n_biofilm)
-        hist['persister'].append(n_persister)
+    nut_sum = sum(self.biofilm_nutrients[r][c]
+                  for r in range(rows) for c in range(cols))
+    hist['nutrient_avg'].append(nut_sum / total_cells)
 
-        ai_sum = sum(self.biofilm_ai[r][c]
-                     for r in range(rows) for c in range(cols))
-        hist['avg_ai'].append(ai_sum / total_cells)
+    o2_sum = sum(self.biofilm_oxygen[r][c]
+                 for r in range(rows) for c in range(cols))
+    hist['o2_avg'].append(o2_sum / total_cells)
 
-        eps_count = sum(1 for r in range(rows) for c in range(cols)
-                        if self.biofilm_eps[r][c] > 0.1)
-        hist['eps_coverage'].append(eps_count / total_cells)
+    abx_sum = sum(self.biofilm_antibiotic[r][c]
+                  for r in range(rows) for c in range(cols))
+    hist['antibiotic_avg'].append(abx_sum / total_cells)
 
-        nut_sum = sum(self.biofilm_nutrients[r][c]
-                      for r in range(rows) for c in range(cols))
-        hist['nutrient_avg'].append(nut_sum / total_cells)
-
-        o2_sum = sum(self.biofilm_oxygen[r][c]
-                     for r in range(rows) for c in range(cols))
-        hist['o2_avg'].append(o2_sum / total_cells)
-
-        abx_sum = sum(self.biofilm_antibiotic[r][c]
-                      for r in range(rows) for c in range(cols))
-        hist['antibiotic_avg'].append(abx_sum / total_cells)
-
-        # Biofilm height: topmost row with EPS > 0.1
-        max_height = 0
-        for r in range(rows):
-            for c in range(cols):
-                if self.biofilm_eps[r][c] > 0.1:
-                    max_height = max(max_height, rows - r)
-                    break
-            if max_height > 0:
+    # Biofilm height: topmost row with EPS > 0.1
+    max_height = 0
+    for r in range(rows):
+        for c in range(cols):
+            if self.biofilm_eps[r][c] > 0.1:
+                max_height = max(max_height, rows - r)
                 break
-        hist['biofilm_height'].append(max_height)
+        if max_height > 0:
+            break
+    hist['biofilm_height'].append(max_height)
 
-        # Cap history
-        for k in hist:
-            if len(hist[k]) > 200:
-                hist[k] = hist[k][-200:]
+    # Cap history
+    for k in hist:
+        if len(hist[k]) > 200:
+            hist[k] = hist[k][-200:]
 
 
 # ── Field diffusion helpers ──
