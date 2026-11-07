@@ -160,56 +160,145 @@ def _screensaver_launch_current(self):
     self.screensaver_overlay_alpha = 1.0
 
 
+_GUESSED_PRESETS = ("classic", "default", "gentle", "standard", "basic",
+                    "normal", "simple", "small", "medium", "earth")
+
+
+# Settings-style menus whose Enter on the first item does not start anything.
+# Value is the menu index of the item that starts the simulation without
+# destroying user data (genesis: "start_from_hall", which falls back to a fresh
+# start when no hall of fame is saved; "start_fresh" would drop the in-memory
+# hall and later overwrite the saved one, "browse_hall" only opens a viewer).
+_MENU_START_ITEM = {
+    "genesis": 6,
+    "phasespace": 4,
+}
+
+
+# Modes whose preset menu is a phase of the running mode instead of a separate
+# menu flag (their MODE_DISPATCH menu_attr is a placeholder that is never set):
+# prefix -> (attribute, value while the menu is showing).
+_MENU_PHASE = {
+    "anc": ("anc_phase", "menu"),
+}
+
+
+def _screensaver_dispatch_entry(entry):
+    """Return the MODE_DISPATCH row for a playlist entry (or None)."""
+    for md in MODE_DISPATCH:
+        if md["attr"] == entry["attr"]:
+            return md
+    return None
+
+
 def _screensaver_auto_select_preset(self, entry):
-    """Auto-select first preset for a mode's menu to skip manual selection."""
-    attr_base = entry["attr"]
-    if attr_base is None:
+    """Get a freshly entered mode out of its menu and running.
+
+    Tries an ordered list of start strategies; after each one, success means
+    "mode flag True and menu flag False" (flags taken from MODE_DISPATCH, the
+    same table the main loop draws from).  A strategy that fails or leaves the
+    mode half-started is undone by re-entering the mode, so the next strategy
+    starts from the menu again.  If nothing works the mode is left in its menu.
+    """
+    if entry["attr"] is None:
         return
-    # Most modes use PREFIX_menu and have a _PREFIX_init method
-    # The prefix is the attr without the _mode suffix
-    prefix = attr_base.replace("_mode", "")
+    md = _screensaver_dispatch_entry(entry)
+    if md is None:
+        return
+    mode_attr = md["attr"]
+    menu_attr = md["menu_attr"]
+    prefix = md["prefix"]
 
-    menu_attr = f"{prefix}_menu"
-    init_method = f"_{prefix}_init"
+    def in_menu():
+        if getattr(self, menu_attr, False):
+            return True
+        phase = _MENU_PHASE.get(prefix)
+        return phase is not None and getattr(self, phase[0], None) == phase[1]
 
-    # Check if we landed in a menu state
-    if getattr(self, menu_attr, False):
-        init_fn = getattr(self, init_method, None)
-        if init_fn:
-            # Try to call init with first preset
-            # Different modes use different preset names — try common ones
-            for preset_name in ["classic", "default", "gentle", "standard", "basic",
-                                "normal", "simple", "small", "medium", "earth"]:
-                try:
-                    init_fn(preset_name)
-                    setattr(self, menu_attr, False)
-                    return
-                except Exception:
-                    continue
-            # If none worked, try calling with index-based approaches
-            # or just simulate pressing Enter on first item
-            try:
-                # Many modes have a PRESETS list — try to get first entry
-                import importlib
-                # Simulate pressing Enter (key 10) on the menu
-                handler = getattr(self, f"_handle_{prefix}_menu_key", None)
-                if handler:
-                    # The screensaver is unattended: a menu item that asks
-                    # for text input must not block waiting for keystrokes.
-                    self._prompt_text = lambda prompt: None
-                    try:
-                        handler(10)  # Enter key
-                    finally:
-                        del self._prompt_text
-                # Enter landed on a settings item: start with defaults if the
-                # init helper starts the mode, else fall back to its menu.
-                if getattr(self, menu_attr, False):
-                    init_fn()
-                    if not getattr(self, attr_base, False):
-                        getattr(self, entry["enter"])()
+    def started():
+        return bool(getattr(self, mode_attr, False)) and not in_menu()
+
+    def menu_handler():
+        # Phase-based menus have no separate handler on App; the mode's key
+        # handler routes to the menu by phase.
+        return getattr(self, md["menu_keys"], None) or getattr(self, md["keys"], None)
+
+    def enter_key(count):
+        def strategy():
+            handler = menu_handler()
+            if handler is None:
                 return
+            for _ in range(count):
+                handler(10)
+                if started() or not in_menu():
+                    break
+        return strategy
+
+    def hinted_item_enter():
+        handler = menu_handler()
+        sel_attr = f"{prefix}_menu_sel"
+        if handler is None or prefix not in _MENU_START_ITEM or not hasattr(self, sel_attr):
+            return
+        setattr(self, sel_attr, _MENU_START_ITEM[prefix])
+        handler(10)
+
+    def bare_init():
+        init_fn = getattr(self, f"_{prefix}_init", None)
+        if init_fn is not None:
+            init_fn()
+
+    def guessed_presets():
+        init_fn = getattr(self, f"_{prefix}_init", None)
+        if init_fn is None:
+            return
+        for name in _GUESSED_PRESETS:
+            try:
+                init_fn(name)
             except Exception:
-                pass
+                continue
+            if started():
+                return
+
+    # Pressing Enter on arbitrary menu items is deliberately not a strategy:
+    # an unattended screensaver must not trigger saves, deletes or exits. A
+    # mode none of these start stays in its menu; add it to _MENU_START_ITEM.
+    strategies = (enter_key(1), enter_key(2), bare_init, guessed_presets,
+                  hinted_item_enter)
+
+    if not started():
+        # The screensaver is unattended: a menu item that asks for text input
+        # must not block waiting for keystrokes.
+        had_prompt = "_prompt_text" in vars(self)
+        old_prompt = vars(self).get("_prompt_text")
+        self._prompt_text = lambda *a, **k: None
+        try:
+            for strategy in strategies:
+                try:
+                    strategy()
+                except Exception:
+                    pass
+                if started():
+                    break
+                # Undo whatever the failed strategy did and show the menu again.
+                try:
+                    exit_fn = getattr(self, entry["exit"], None)
+                    if exit_fn:
+                        exit_fn()
+                    getattr(self, entry["enter"])()
+                except Exception:
+                    pass
+        finally:
+            if had_prompt:
+                self._prompt_text = old_prompt
+            else:
+                vars(self).pop("_prompt_text", None)
+
+    # Many modes start paused (the user presses space); the screensaver only
+    # steps modes whose running flag is set.
+    if started():
+        running_attr = md.get("running_attr")
+        if running_attr and hasattr(self, running_attr):
+            setattr(self, running_attr, True)
 
 
 def _screensaver_advance(self):
