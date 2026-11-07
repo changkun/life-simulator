@@ -1,4 +1,4 @@
-"""Mode: fdtd — simulation mode for the life package."""
+"""FDTD Electromagnetic Waves — 2D TM-mode Maxwell solver on a Yee grid with absorbing edges."""
 import curses
 import math
 import random
@@ -20,7 +20,7 @@ FDTD_PRESETS = [
 
 
 def _enter_fdtd_mode(self):
-    """Enter FDTD EM Wave mode — show preset menu."""
+    """Enter FDTD Electromagnetic Waves mode and show the preset menu."""
     self.fdtd_menu = True
     self.fdtd_menu_sel = 0
     self._flash("FDTD EM Wave Propagation — select a scenario")
@@ -28,7 +28,7 @@ def _enter_fdtd_mode(self):
 
 
 def _exit_fdtd_mode(self):
-    """Exit FDTD EM Wave mode."""
+    """Exit FDTD Electromagnetic Waves mode."""
     self.fdtd_mode = False
     self.fdtd_menu = False
     self.fdtd_running = False
@@ -43,7 +43,7 @@ def _exit_fdtd_mode(self):
 
 
 def _fdtd_init(self, preset_idx: int):
-    """Initialize FDTD simulation with the given preset."""
+    """Start the FDTD simulation with the given preset."""
     name, _desc, preset_id = self.FDTD_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(30, max_y - 4)
@@ -58,20 +58,18 @@ def _fdtd_init(self, preset_idx: int):
     self.fdtd_courant = 0.5
     self.fdtd_pml_width = max(6, min(rows, cols) // 12)
 
-    # Initialize fields to zero
     self.fdtd_Ez = [[0.0] * cols for _ in range(rows)]
     self.fdtd_Hx = [[0.0] * cols for _ in range(rows)]
     self.fdtd_Hy = [[0.0] * cols for _ in range(rows)]
 
-    # Default: free space (eps=1, sigma=0)
+    # Free space by default: eps=1, sigma=0.
     self.fdtd_eps = [[1.0] * cols for _ in range(rows)]
     self.fdtd_sigma = [[0.0] * cols for _ in range(rows)]
 
-    # Set up PML absorbing boundaries (graded conductivity)
+    # PML: conductivity grows quadratically toward the edges.
     pml = self.fdtd_pml_width
     for r in range(rows):
         for c in range(cols):
-            # Distance from each edge
             d = min(r, rows - 1 - r, c, cols - 1 - c)
             if d < pml:
                 depth = (pml - d) / pml
@@ -89,7 +87,7 @@ def _fdtd_init(self, preset_idx: int):
         wall_c = cols // 3
         slit_gap = max(4, rows // 8)
         slit_w = max(2, rows // 25)
-        # Build wall
+        # Wall with two slits
         for r in range(rows):
             is_slit = False
             for sc in (cr - slit_gap, cr + slit_gap):
@@ -97,9 +95,7 @@ def _fdtd_init(self, preset_idx: int):
                     is_slit = True
             if not is_slit:
                 self.fdtd_sigma[r][wall_c] = 100.0
-                self.fdtd_eps[r][wall_c] = 1.0
-        # Plane wave source line on the left
-        src_c = pml + 3
+        src_c = pml + 3  # a column of sources acts as a plane wave
         for r in range(pml, rows - pml):
             self.fdtd_sources.append({"r": r, "c": src_c, "freq": 0.12, "phase": 0.0, "amp": 0.5})
 
@@ -139,7 +135,6 @@ def _fdtd_init(self, preset_idx: int):
                     lc = lens_c + dc
                     if 0 <= lc < cols:
                         self.fdtd_eps[r][lc] = 4.0  # glass-like dielectric
-        # Plane wave source
         src_c = pml + 3
         for r in range(pml, rows - pml):
             self.fdtd_sources.append({"r": r, "c": src_c, "freq": 0.12, "phase": 0.0, "amp": 0.5})
@@ -225,7 +220,7 @@ def _fdtd_init(self, preset_idx: int):
 
 
 def _fdtd_step(self):
-    """Advance FDTD simulation by one time step using Yee algorithm.
+    """Advance the simulation by one Yee time step.
 
     2D TM mode (Ez, Hx, Hy):
         Hx(n+1/2) = Hx(n-1/2) - (dt/mu0) * dEz/dy
@@ -241,7 +236,7 @@ def _fdtd_step(self):
     rows, cols = self.fdtd_rows, self.fdtd_cols
     dt = self.fdtd_courant  # dt/dx = courant, dx=1
 
-    # Update H fields (half step)
+    # H update
     for r in range(rows - 1):
         Hx_row = Hx[r]
         Ez_row = Ez[r]
@@ -255,7 +250,7 @@ def _fdtd_step(self):
         for c in range(cols - 1):
             Hy_row[c] += dt * (Ez_row[c + 1] - Ez_row[c])
 
-    # Update E field
+    # E update
     for r in range(1, rows - 1):
         Ez_row = Ez[r]
         Hx_row = Hx[r]
@@ -276,13 +271,13 @@ def _fdtd_step(self):
             curl_h = (Hy_row[c] - Hy_row[c - 1]) - (Hx_row[c] - Hx_prev[c])
             Ez_row[c] = c1 * Ez_row[c] + c2 * curl_h
 
-    # Inject sources (soft sources: add to Ez)
+    # Soft sources add to Ez instead of overwriting it.
     t = self.fdtd_generation
     for src in self.fdtd_sources:
         sr, sc = src["r"], src["c"]
         if 0 < sr < rows - 1 and 0 < sc < cols - 1:
             val = src["amp"] * math.sin(2.0 * math.pi * src["freq"] * t + src["phase"])
-            # Gaussian envelope ramp-up for smooth start
+            # Ramp up smoothly to avoid a broadband start-up pulse.
             if t < 30:
                 val *= (1.0 - math.exp(-((t / 10.0) ** 2)))
             Ez[sr][sc] += val
@@ -292,7 +287,7 @@ def _fdtd_step(self):
 
 
 def _handle_fdtd_menu_key(self, key: int) -> bool:
-    """Handle input in FDTD preset menu."""
+    """Handle keys in the FDTD preset menu."""
     presets = self.FDTD_PRESETS
     n = len(presets)
     if key == curses.KEY_UP or key == ord("k"):
@@ -309,7 +304,7 @@ def _handle_fdtd_menu_key(self, key: int) -> bool:
 
 
 def _handle_fdtd_key(self, key: int) -> bool:
-    """Handle input in active FDTD simulation."""
+    """Handle keys in the running FDTD simulation."""
     if key == ord("q") or key == 27:
         self._exit_fdtd_mode()
         return True
@@ -361,7 +356,7 @@ def _handle_fdtd_key(self, key: int) -> bool:
             src["freq"] = self.fdtd_freq
         self._flash(f"Frequency: {self.fdtd_freq:.2f}")
         return True
-    # Mouse click to add a point source
+    # A mouse click adds a point source.
     if key == curses.KEY_MOUSE:
         try:
             _, mx, my, _, _ = curses.getmouse()
@@ -377,7 +372,6 @@ def _handle_fdtd_key(self, key: int) -> bool:
             pass
         return True
     if key == ord("p"):
-        # Add a random point source
         r = random.randint(self.fdtd_pml_width + 2, self.fdtd_rows - self.fdtd_pml_width - 3)
         c = random.randint(self.fdtd_pml_width + 2, self.fdtd_cols - self.fdtd_pml_width - 3)
         self.fdtd_sources.append({
@@ -387,7 +381,7 @@ def _handle_fdtd_key(self, key: int) -> bool:
         self._flash("Random source added")
         return True
     if key == ord("c"):
-        # Clear all fields (keep sources and geometry)
+        # Zero the fields; sources and geometry stay.
         rows, cols = self.fdtd_rows, self.fdtd_cols
         self.fdtd_Ez = [[0.0] * cols for _ in range(rows)]
         self.fdtd_Hx = [[0.0] * cols for _ in range(rows)]
@@ -432,7 +426,7 @@ def _draw_fdtd_menu(self, max_y: int, max_x: int):
 
 
 def _draw_fdtd(self, max_y: int, max_x: int):
-    """Draw the active FDTD simulation."""
+    """Draw the field, conductors, dielectrics and sources."""
     self.stdscr.erase()
     Ez = self.fdtd_Ez
     Hx = self.fdtd_Hx
@@ -455,13 +449,11 @@ def _draw_fdtd(self, max_y: int, max_x: int):
     view_rows = min(rows, max_y - 3)
     view_cols = min(cols, (max_x - 1) // 2)
 
-    # Render fields
     for r in range(view_rows):
         for c in range(view_cols):
             sy = 1 + r
             sx = c * 2
 
-            # Check for conductor/barrier
             if sigma[r][c] >= 50.0:
                 try:
                     self.stdscr.addstr(sy, sx, "██", curses.color_pair(7))
@@ -469,27 +461,23 @@ def _draw_fdtd(self, max_y: int, max_x: int):
                     pass
                 continue
 
-            # Check for dielectric material
             is_dielectric = eps[r][c] > 1.5
 
             if self.fdtd_viz_mode == 0:
-                # Ez field — signed, show positive/negative
+                # Signed Ez: negative values use a second color.
                 v = Ez[r][c]
                 av = abs(v)
             elif self.fdtd_viz_mode == 1:
-                # |E| intensity
                 v = Ez[r][c]
                 av = abs(v)
-                v = av  # always positive for intensity
+                v = av
             else:
-                # |H| magnitude
-                hx = Hx[r][c] if r < rows else 0.0
-                hy = Hy[r][c] if c < cols else 0.0
+                hx = Hx[r][c]
+                hy = Hy[r][c]
                 av = math.sqrt(hx * hx + hy * hy)
                 v = av
 
             if av < 0.01:
-                # Show dielectric background if present
                 if is_dielectric:
                     try:
                         self.stdscr.addstr(sy, sx, "░░", curses.color_pair(4) | curses.A_DIM)
@@ -497,7 +485,6 @@ def _draw_fdtd(self, max_y: int, max_x: int):
                         pass
                 continue
 
-            # Map value to character and color
             if av < 0.05:
                 ch = "··"
                 if self.fdtd_viz_mode == 0 and v < 0:
@@ -534,12 +521,11 @@ def _draw_fdtd(self, max_y: int, max_x: int):
             except curses.error:
                 pass
 
-    # Draw source positions
     for src in self.fdtd_sources:
         sr, sc = src["r"], src["c"]
         if 0 <= sr < view_rows and 0 <= sc < view_cols:
             try:
-                self.stdscr.addstr(1 + sr, sc * 2, "◉ "[:2], curses.color_pair(1) | curses.A_BOLD)
+                self.stdscr.addstr(1 + sr, sc * 2, "◉ ", curses.color_pair(1) | curses.A_BOLD)
             except curses.error:
                 try:
                     self.stdscr.addstr(1 + sr, sc * 2, "* ", curses.color_pair(1) | curses.A_BOLD)
