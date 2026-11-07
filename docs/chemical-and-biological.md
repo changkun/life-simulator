@@ -58,7 +58,7 @@ Values are capped at 1 after each step, and there is no time step. A value below
 
 Every preset starts from random noise in [0, 0.3] in all three fields, then adds its seed on top: a broken wavefront, a center blob, scattered patches, four half-ring seeds, or nothing more. The eight presets are Classic Spirals, Dense Spirals, Slow Waves, Turbulent, Target Waves, Multi-Spiral, Gentle Ripples and Fast Chaos. Their rates lie between 0.9 and 1.1.
 
-**What to look for** — Bands of the three species chase each other across the grid and keep moving instead of fading to one level. The preset names describe the starting seed: the bands curve and break up, but closed spirals are not guaranteed. On a 24x80 terminal the noise presets (Turbulent, Gentle Ripples) can fall into a grid-wide pulse, where the whole field changes color together; `p` breaks it up.
+**What to look for** — Bands of the three species chase each other across the grid and keep moving instead of fading to one level. The preset names describe the starting seed: the bands curve and break up, but closed spirals are not guaranteed. On a 24x80 terminal the noise presets (Turbulent, Gentle Ripples) can fall into a grid-wide pulse, where the whole field changes color together; `p` breaks it up for a while.
 
 The color follows a, and c picks the shade: bright yellow where a is above 0.7, then green or white, red or cyan, and dim magenta or green as a falls. Cells where a and c are both under 0.05 stay dark. `a`/`A` lower or raise alpha, `g`/`G` gamma and `d`/`D` the diffusion; `+`/`-` set the steps per frame. `p` or a mouse click adds a patch of a.
 
