@@ -1,9 +1,5 @@
-"""Mode: layer_compositing — stack 2-4 independent simulations as transparent layers
-with configurable blend modes (add, XOR, mask, multiply), each running at its own
-tick rate, composited into a single viewport in real-time."""
+"""Layer Compositing — stack 2-4 simulations as layers with blend modes, each at its own tick rate."""
 import curses
-import math
-import random
 import time
 
 from life.constants import SPEEDS
@@ -39,7 +35,7 @@ def _blend_screen(a, b):
 BLEND_MODES = [
     ("add",      "Add",      _blend_add,      "Sum intensities (bright overlaps)"),
     ("xor",      "XOR",      _blend_xor,      "Difference — high where only one active"),
-    ("mask",     "Mask",     _blend_mask,      "Lower layers visible only where top > 0"),
+    ("mask",     "Mask",     _blend_mask,      "Lower layers visible only where the top layer exceeds 0.15"),
     ("multiply", "Multiply", _blend_multiply,  "Darken — both must be active"),
     ("screen",   "Screen",   _blend_screen,    "Lighten — inverse multiply"),
 ]
@@ -184,8 +180,7 @@ def _comp_init(self, layer_defs):
 # ════════════════════════════════════════════════════════════════════
 
 def _comp_step(self):
-    """Advance all layers. Each layer runs independently (no coupling)
-    at its own tick rate."""
+    """Advance all layers, each at its own tick rate and with no coupling."""
     gen = self.comp_generation
     for layer in self.comp_layers:
         # Only step this layer if generation aligns with its tick multiplier
