@@ -1,9 +1,6 @@
-"""Mode: race — simulation mode for the life package."""
+"""Multi-Rule Race — run 2-4 cellular automaton rules side by side from the same start."""
 import curses
-import math
-import random
 import time
-
 
 from life.colors import color_for_age
 from life.constants import CELL_CHAR
@@ -52,7 +49,6 @@ def _handle_race_rule_menu_key(self, key: int) -> bool:
     if key == ord(" "):  # Space to toggle selection
         name = self.rule_preset_list[self.race_rule_sel]
         preset = RULE_PRESETS[name]
-        # Check if already selected — toggle off
         existing = [i for i, (n, b, s) in enumerate(self.race_selected_rules) if n == name]
         if existing:
             self.race_selected_rules.pop(existing[0])
@@ -97,7 +93,7 @@ def _handle_race_rule_menu_key(self, key: int) -> bool:
 
 def _draw_race_rule_menu(self, max_y: int, max_x: int):
     """Draw the multi-select rule menu for race mode."""
-    title = "── Race Mode: Select 2-4 Rules (Space=toggle, Enter=start, /=custom, g=gens, q=cancel) ──"
+    title = "── Race Mode: Select 2-4 Rules ──"
     try:
         self.stdscr.addstr(1, max(0, (max_x - len(title)) // 2), title,
                            curses.color_pair(7) | curses.A_BOLD)
@@ -129,7 +125,7 @@ def _draw_race_rule_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    # Show custom rules if any
+    # Custom rules are not in the preset list, so list them below it.
     custom_y = 5 + len(self.rule_preset_list) + 1
     for i, (name, birth, survival) in enumerate(self.race_selected_rules):
         if name not in RULE_PRESETS:
@@ -145,7 +141,7 @@ def _draw_race_rule_menu(self, max_y: int, max_x: int):
 
     tip_y = max_y - 1
     if tip_y > 0:
-        tip = " Space=toggle selection │ /=custom rule │ g=set duration │ Enter=start race │ q/Esc=cancel"
+        tip = " Space=toggle  /=custom rule  g=duration  Enter=start  q/Esc=cancel"
         try:
             self.stdscr.addstr(tip_y, 0, tip[:max_x - 1],
                                curses.color_pair(6) | curses.A_DIM)
@@ -160,8 +156,7 @@ def _draw_race(self, max_y: int, max_x: int):
     if n == 0:
         return
 
-    # Layout: 2 columns, 1-2 rows depending on count
-    # n=2: 1 row, 2 cols  |  n=3: 2 rows (2+1)  |  n=4: 2 rows, 2 cols
+    # n=2: 1 row of 2 tiles; n=3: 2+1; n=4: 2x2.
     if n <= 2:
         tile_rows, tile_cols = 1, n
     else:
@@ -178,7 +173,6 @@ def _draw_race(self, max_y: int, max_x: int):
             pass
         return
 
-    # Each tile dimensions (in screen coords)
     tile_h = grid_area_h // tile_rows
     tile_w = grid_area_w // tile_cols
 
@@ -195,7 +189,6 @@ def _draw_race(self, max_y: int, max_x: int):
         name, birth, survival = self.race_selected_rules[idx]
         rs = rule_string(birth, survival)
 
-        # Draw label bar at top of tile
         stats = self.race_stats[idx]
         label = f" {name} ({rs}) Pop:{g.population}"
         if stats.get("extinction_gen") is not None:
@@ -203,7 +196,6 @@ def _draw_race(self, max_y: int, max_x: int):
         elif stats.get("osc_period") is not None:
             label += f" Osc:{stats['osc_period']}"
         label = label[:tile_w - 1]
-        # Color the label: winner gets special highlight
         label_attr = curses.color_pair(7) | curses.A_BOLD
         if self.race_finished and self.race_winner == f"{name} ({rs})":
             label_attr = curses.color_pair(3) | curses.A_BOLD
@@ -212,7 +204,6 @@ def _draw_race(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-        # Draw cells
         view_r = self.cursor_r - cell_vis_rows // 2
         view_c = self.cursor_c - cell_vis_cols // 2
         for sy in range(min(cell_vis_rows, g.rows)):
@@ -232,7 +223,6 @@ def _draw_race(self, max_y: int, max_x: int):
                     except curses.error:
                         pass
 
-        # Draw tile border (right edge) if not last column
         if tc < tile_cols - 1:
             border_x = origin_x + tile_w - 1
             if border_x < max_x:
@@ -245,7 +235,6 @@ def _draw_race(self, max_y: int, max_x: int):
                         except curses.error:
                             pass
 
-        # Draw tile border (bottom edge) if not last row
         if tr < tile_rows - 1:
             border_y = origin_y + tile_h - 1
             if border_y < grid_area_h:
@@ -258,11 +247,9 @@ def _draw_race(self, max_y: int, max_x: int):
                         except curses.error:
                             pass
 
-    # Draw scoreboard at bottom
     sb_y = grid_area_h
     gens_elapsed = max(g.generation for g in self.race_grids) - self.race_start_gen
 
-    # Progress bar
     progress = min(1.0, gens_elapsed / max(1, self.race_max_gens))
     bar_w = max_x - 30
     if bar_w > 5:
@@ -276,7 +263,6 @@ def _draw_race(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    # Scoreboard header
     sb_y += 1
     header = f" {'#':<3s} {'Rule':<25s} {'Pop':>7s} {'Peak':>7s} {'Osc':>6s} {'Extinct':>8s} {'Score':>7s}"
     header = header[:max_x - 1]
@@ -287,13 +273,12 @@ def _draw_race(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    # Scoreboard entries (sorted by score if finished, else by population)
+    # Sort by score once finished, by live population before that.
     entries = []
     for i, (name, birth, survival) in enumerate(self.race_selected_rules):
         stats = self.race_stats[i]
         g = self.race_grids[i]
         rs = rule_string(birth, survival)
-        score = stats.get("final_score", 0)
         entries.append((i, name, rs, g.population, stats))
 
     if self.race_finished:
@@ -331,9 +316,9 @@ def _draw_race(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         elif self.race_finished:
-            hint = " Race complete! [Space]=restart [Z]=exit race [q]=quit"
+            hint = " Race complete!  Z=exit race  q=quit"
         else:
-            hint = " [Space]=play/pause [n]=step [+/-]=speed [Z]=exit race [Arrows]=scroll [q]=quit"
+            hint = " Space=play/pause  n=step  </>=speed  arrows=scroll  Z=exit race  q=quit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)
@@ -379,7 +364,6 @@ def _step_race(self):
         return
     for i, g in enumerate(self.race_grids):
         if self.race_stats[i]["extinction_gen"] is not None:
-            # Already extinct — keep stepping but population stays 0
             self.race_pop_histories[i].append(0)
             continue
         g.step()
@@ -388,10 +372,9 @@ def _step_race(self):
         stats = self.race_stats[i]
         if pop > stats["peak_pop"]:
             stats["peak_pop"] = pop
-        # Check extinction
         if pop == 0 and stats["extinction_gen"] is None:
             stats["extinction_gen"] = g.generation
-        # Check oscillation via cycle detection
+        # A repeated state hash means the grid has entered a cycle.
         if stats["osc_period"] is None:
             h = g.state_hash()
             hashes = self.race_state_hashes[i]
@@ -408,7 +391,10 @@ def _step_race(self):
 
 
 def _finish_race(self):
-    """Determine winner based on scoring: population + survival + oscillation bonus."""
+    """Score every grid and pick the winner.
+
+    Score = final population + survival time + peak/2, plus 50 for a cycle of period > 1.
+    """
     self.race_finished = True
     self.running = False
     best_score = -1
@@ -416,13 +402,11 @@ def _finish_race(self):
     for i, (name, birth, survival) in enumerate(self.race_selected_rules):
         stats = self.race_stats[i]
         g = self.race_grids[i]
-        # Scoring: weighted combination
         pop_score = g.population
-        # Survival bonus: full marks if never went extinct
+        # Full marks for never going extinct.
         survival_bonus = self.race_max_gens if stats["extinction_gen"] is None else stats["extinction_gen"] - self.race_start_gen
-        # Oscillation bonus: detecting a cycle is interesting
+        # Reward oscillators, not still lifes.
         osc_bonus = 50 if stats["osc_period"] is not None and stats["osc_period"] > 1 else 0
-        # Peak population bonus
         peak_bonus = stats["peak_pop"] // 2
         score = pop_score + survival_bonus + osc_bonus + peak_bonus
         stats["final_score"] = score
