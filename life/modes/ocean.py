@@ -502,7 +502,7 @@ def _ocean_step(self):
     if _rand.random() < 0.008 * speed and len(self.ocean_gyres) < 10:
         self.ocean_gyres.append({
             "r": _rand.randint(3, rows - 4), "c": _rand.randint(3, cols - 4),
-            "radius": _rand.randint(3, min(rows, cols) // 6),
+            "radius": _rand.randint(3, max(3, min(rows, cols) // 6)),
             "strength": _rand.uniform(0.3, 1.2),
             "direction": _rand.choice([-1, 1]),
             "vr": _rand.uniform(-0.08, 0.08), "vc": _rand.uniform(-0.05, 0.1),

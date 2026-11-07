@@ -500,3 +500,18 @@ def test_deep_water_formation_cools():
         app._ocean_step()
     # Temperature should have decreased near the formation zone
     # (though advection may complicate things)
+
+
+# ── Small terminals ─────────────────────────────────────────────────────────
+
+def test_step_on_short_terminal():
+    """Eddy spawning must not draw from an empty range on small grids."""
+    import random
+    app = make_mock_app(rows=20, cols=60)
+    type(app.stdscr).addch = _addch
+    register(type(app))
+    for seed in range(3):
+        random.seed(seed)
+        app._ocean_init(0)
+        for _ in range(500):
+            app._ocean_step()
