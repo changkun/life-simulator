@@ -1,4 +1,4 @@
-"""Mode: spinice — Spin Ice & Emergent Magnetic Monopoles simulation."""
+"""Spin Ice & Emergent Monopoles — square-ice arrows that obey 2-in/2-out rules, with monopoles where the rule breaks."""
 import curses
 import math
 import random
@@ -51,7 +51,7 @@ SPINICE_PRESETS = [
 
 
 def _vertex_charge(self, r, c):
-    """Compute vertex charge at (r, c). 0 = ice rule satisfied."""
+    """Return the charge (out minus in arrows) at vertex (r, c). Zero means the ice rule holds."""
     rows = self.spinice_vrows
     cols = self.spinice_vcols
     hedge = self.spinice_hedge
@@ -122,7 +122,7 @@ def _spinice_ice_fraction(self):
 
 
 def _spinice_total_energy(self):
-    """Compute total energy: J * sum over edges + Coulomb between monopoles + field coupling."""
+    """Return J * sum of squared vertex charges minus the field coupling."""
     J = self.spinice_J
     h_field = self.spinice_field
     rows = self.spinice_vrows
@@ -148,14 +148,14 @@ def _spinice_total_energy(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _enter_spinice_mode(self):
-    """Enter Spin Ice mode — show preset menu."""
+    """Enter Spin Ice & Emergent Monopoles mode and show the preset menu."""
     self.spinice_menu = True
     self.spinice_menu_sel = 0
     self._flash("Spin Ice & Emergent Monopoles — select a scenario")
 
 
 def _exit_spinice_mode(self):
-    """Exit Spin Ice mode."""
+    """Exit Spin Ice & Emergent Monopoles mode."""
     self.spinice_mode = False
     self.spinice_menu = False
     self.spinice_running = False
@@ -163,10 +163,10 @@ def _exit_spinice_mode(self):
 
 
 def _spinice_init(self, preset_idx: int):
-    """Initialize Spin Ice simulation with the given preset."""
+    """Initialize the lattice and parameters for a preset."""
     name, _desc, preset_id = self.SPINICE_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
-    # Each vertex takes ~3 cols and ~2 rows for display
+    # Each vertex takes a 4x2 cell on screen.
     vcols = max(4, (max_x - 2) // 4)
     vrows = max(4, (max_y - 4) // 2)
     self.spinice_vrows = vrows
@@ -184,7 +184,6 @@ def _spinice_init(self, preset_idx: int):
     self.spinice_field = 0.0   # applied field
     self.spinice_temperature = 1.0
 
-    # Kagome variant flag
     self.spinice_kagome = (preset_id == "kagome")
 
     if preset_id == "equilibrium":
@@ -197,12 +196,11 @@ def _spinice_init(self, preset_idx: int):
         self.spinice_temperature = 1.0
         self.spinice_field = 0.0
         self._spinice_init_ice_state()
-        # After a few steps, field will be applied via key or auto
+        # The step turns the field on at this sweep.
         self.spinice_quench_step = 20
     elif preset_id == "dirac_strings":
         self.spinice_temperature = 1.5
         self._spinice_init_ice_state()
-        # Inject a few monopole pairs
         self._spinice_inject_pairs(3)
     elif preset_id == "kagome":
         self.spinice_temperature = 1.0
@@ -214,7 +212,6 @@ def _spinice_init(self, preset_idx: int):
         self.spinice_temperature = 1.0
         self._spinice_init_random()
 
-    # Compute initial stats
     self._spinice_compute_stats()
 
     self.spinice_mode = True
@@ -223,7 +220,7 @@ def _spinice_init(self, preset_idx: int):
 
 
 def _spinice_init_random(self):
-    """Initialize with random arrow orientations."""
+    """Point every arrow in a random direction."""
     rows = self.spinice_vrows
     cols = self.spinice_vcols
     self.spinice_hedge = [
@@ -255,7 +252,7 @@ def _spinice_init_ice_state(self):
 
 
 def _spinice_inject_pairs(self, n_pairs):
-    """Inject monopole-antimonopole pairs by flipping short edge chains."""
+    """Create monopole pairs by flipping random interior horizontal edges."""
     rows = self.spinice_vrows
     cols = self.spinice_vcols
     for _ in range(n_pairs):
@@ -270,7 +267,7 @@ def _spinice_inject_pairs(self, n_pairs):
 # ══════════════════════════════════════════════════════════════════════
 
 def _spinice_compute_stats(self):
-    """Compute summary statistics."""
+    """Update monopole counts, ice fraction and energy."""
     pos, neg = self._spinice_count_monopoles()
     self.spinice_n_positive = pos
     self.spinice_n_negative = neg
@@ -279,7 +276,7 @@ def _spinice_compute_stats(self):
 
 
 def _spinice_step(self):
-    """Advance by one Monte Carlo sweep — attempt to flip each edge once."""
+    """Advance by one Metropolis sweep, attempting as many edge flips as there are edges."""
     rows = self.spinice_vrows
     cols = self.spinice_vcols
     T = self.spinice_temperature
@@ -294,14 +291,14 @@ def _spinice_step(self):
     else:
         inv_T = 1e10
 
-    # Field quench: apply field after quench_step
+    # Field Quench: switch the field on at the quench sweep.
     if self.spinice_preset_id == "field_quench":
         if self.spinice_generation == getattr(self, 'spinice_quench_step', 20):
             self.spinice_field = 3.0
             h_field = 3.0
             self._flash("Field quench applied! h=3.0")
 
-    # Attempt to flip each horizontal edge
+    # Each attempt flips a random horizontal or vertical edge, chosen in proportion to their counts.
     n_hedge = rows * max(0, cols - 1)
     n_vedge = max(0, rows - 1) * cols
     n_total = n_hedge + n_vedge
@@ -351,7 +348,7 @@ def _spinice_step(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _handle_spinice_menu_key(self, key: int) -> bool:
-    """Handle input in Spin Ice preset menu."""
+    """Handle input in the preset menu."""
     presets = self.SPINICE_PRESETS
     if key == curses.KEY_DOWN or key == ord("j"):
         self.spinice_menu_sel = (self.spinice_menu_sel + 1) % len(presets)
@@ -366,7 +363,7 @@ def _handle_spinice_menu_key(self, key: int) -> bool:
 
 
 def _handle_spinice_key(self, key: int) -> bool:
-    """Handle input in active Spin Ice simulation."""
+    """Handle input in the running simulation."""
     if key == ord("q") or key == 27:
         self._exit_spinice_mode()
         return True
@@ -437,7 +434,7 @@ def _handle_spinice_key(self, key: int) -> bool:
 # ══════════════════════════════════════════════════════════════════════
 
 def _draw_spinice_menu(self, max_y: int, max_x: int):
-    """Draw the Spin Ice preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Spin Ice & Emergent Magnetic Monopoles ── Select Scenario ──"
     try:
@@ -489,7 +486,7 @@ def _draw_spinice_menu(self, max_y: int, max_x: int):
 
 
 def _draw_spinice(self, max_y: int, max_x: int):
-    """Draw the active Spin Ice simulation."""
+    """Draw the active simulation."""
     self.stdscr.erase()
     rows = self.spinice_vrows
     cols = self.spinice_vcols
@@ -497,7 +494,6 @@ def _draw_spinice(self, max_y: int, max_x: int):
     vedge = self.spinice_vedge
     state = "▶ RUNNING" if self.spinice_running else "⏸ PAUSED"
 
-    # Title bar
     title = (f" Spin Ice: {self.spinice_preset_name}  |  sweep {self.spinice_generation}"
              f"  |  T={self.spinice_temperature:.2f}  h={self.spinice_field:.2f}"
              f"  |  +mono={self.spinice_n_positive} −mono={self.spinice_n_negative}"
@@ -583,7 +579,6 @@ def _draw_spinice(self, max_y: int, max_x: int):
     if self.spinice_show_strings:
         _draw_spinice_strings(self, max_y, max_x, view_rows, view_cols)
 
-    # Info bar
     info_y = max_y - 2
     if info_y > 1:
         pauling = math.log(1.5)  # Pauling entropy per vertex, in units of kB
@@ -601,7 +596,6 @@ def _draw_spinice(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    # Hint bar
     hint_y = max_y - 1
     if hint_y > 0:
         now = time.monotonic()
@@ -649,7 +643,7 @@ def _draw_spinice_strings(self, max_y, max_x, view_rows, view_cols):
 
 
 def _draw_string_line(self, r1, c1, r2, c2, max_y, max_x):
-    """Draw a dotted line between two vertex positions to represent a Dirac string."""
+    """Draw a dotted line between two vertices as a Dirac string."""
     steps = max(abs(r2 - r1), abs(c2 - c1))
     if steps == 0:
         return
@@ -672,7 +666,7 @@ def _draw_string_line(self, r1, c1, r2, c2, max_y, max_x):
 # ══════════════════════════════════════════════════════════════════════
 
 def register(App):
-    """Register spin_ice mode methods on the App class."""
+    """Register Spin Ice & Emergent Monopoles methods on the App class."""
     App.SPINICE_PRESETS = SPINICE_PRESETS
     App._enter_spinice_mode = _enter_spinice_mode
     App._exit_spinice_mode = _exit_spinice_mode
