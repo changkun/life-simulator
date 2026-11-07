@@ -524,11 +524,28 @@ Orbital velocity (circular orbit):
     v = sqrt(G * M_central / r)
 ```
 
-Parameters: G (gravitational constant, default 1.0), dt (timestep, default 0.02), epsilon (softening, default 0.5). Presets include solar system, binary star, galaxy collision, random cluster, Chenciner-Montgomery figure-eight three-body orbit, and Lagrange point configurations.
+Parameters: G (gravitational constant), dt (timestep), epsilon (softening). Each preset sets its own values.
+
+### Presets
+
+| Preset | G | dt | epsilon | Setup |
+|---|---|---|---|---|
+| Solar System | 1.0 | 0.02 | 0.5 | Star of mass 500 and six planets on circular orbits at random angles |
+| Binary Star | 1.0 | 0.02 | 0.5 | Two stars of mass 200 in mutual orbit, plus 20 light debris bodies |
+| Galaxy Collision | 0.5 | 0.03 | 1.0 | Two disks of 40 light bodies around a mass-100 centre, on a collision course |
+| Random Cluster | 0.8 | 0.03 | 0.8 | 60 bodies of random mass in a small cloud |
+| Figure-Eight | 1.0 | 0.01 | 0.1 | Three equal masses started from the Chenciner-Montgomery initial conditions |
+| Lagrange Points | 1.0 | 0.02 | 0.5 | Central mass 400, one planet, two light trojans at L4/L5, and 15 debris bodies |
+
+### Controls
+
+`g`/`G` change G, `d`/`D` the timestep, and `s`/`S` the softening. `t` toggles trails and `c` toggles centring the view on the centre of mass. `+`/`-` set steps per frame.
 
 ### What to look for
 
-The solar system preset demonstrates stable Keplerian orbits with inner planets moving faster than outer ones. The binary star preset shows mutual orbital motion. Galaxy collision produces dramatic tidal tails and merging structures. The figure-eight preset showcases the remarkable Chenciner-Montgomery solution (2000) where three equal masses trace a figure-8 — watch how sensitive it is to perturbation. The Lagrange preset places test particles at the L4/L5 triangular equilibrium points, 60 degrees ahead of and behind a planet.
+The Solar System preset shows Keplerian orbits, with inner planets moving faster than outer ones. Binary Star shows mutual orbital motion. Galaxy Collision produces tidal tails and merging structures. Bodies that come closer than the merge distance combine, so counts fall over time. In Lagrange Points, the trojans start 60 degrees ahead of and behind the planet.
+
+In the current code, the Figure-Eight velocities are scaled differently from its masses and lengths, so the three bodies do not follow the figure-8 and merge into one early in the run.
 
 ### References
 
