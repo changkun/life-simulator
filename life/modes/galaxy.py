@@ -529,7 +529,7 @@ def _draw_galaxy_menu(self, max_y: int, max_x: int):
     n = len(self.GALAXY_PRESETS)
     for i, (name, desc, _pid) in enumerate(self.GALAXY_PRESETS):
         y = 5 + i
-        if y >= max_y - 12:
+        if y >= max_y - 2:
             break
         line = f"  {name:<18s} {desc}"
         attr = curses.color_pair(6)

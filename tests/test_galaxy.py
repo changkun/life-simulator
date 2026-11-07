@@ -435,3 +435,16 @@ class TestGalaxyBuildParticles:
                 tangential_count += 1
         # Most disk stars should be tangential
         assert tangential_count > len(app.galaxy_particles[50:250]) * 0.5
+
+
+class TestGalaxyMenuDraw:
+    def test_all_presets_listed_on_24_rows(self):
+        app = make_mock_app(rows=24, cols=80)
+        register(type(app))
+        drawn = []
+        app.stdscr.addstr = lambda *a, **k: drawn.append(a[2] if len(a) > 2 else "")
+        app._enter_galaxy_mode()
+        app._draw_galaxy_menu(24, 80)
+        text = "\n".join(str(s) for s in drawn)
+        for name, _desc, _pid in GALAXY_PRESETS:
+            assert name in text
