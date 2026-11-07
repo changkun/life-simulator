@@ -275,9 +275,7 @@ def _lsystem_init(self, preset: str) -> None:
     self.lsystem_mutation = 0.0
     self.lsystem_seed_queue = []  # seeds waiting to sprout
     self.lsystem_fallen_leaves = []  # (x, y, char, color, ttl)
-    # Light direction (degrees) — used by _lsystem_interpret for phototropism
-    if not hasattr(self, 'lsystem_light_dir'):
-        self.lsystem_light_dir = 0
+    self.lsystem_light_dir = 0
     self._lsystem_build_preset(preset)
 
 

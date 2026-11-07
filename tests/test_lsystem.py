@@ -189,6 +189,12 @@ class TestLSystemInit:
         assert app.lsystem_mutation == 0.3
         assert len(app.lsystem_plants) == 3
 
+    def test_init_resets_light_direction(self):
+        app = _make_lsystem_app()
+        app.lsystem_light_dir = 90.0
+        app._lsystem_init("binary_tree")
+        assert app.lsystem_light_dir == 0
+
     def test_init_rebuilds_segments(self):
         random.seed(42)
         app = _make_lsystem_app()
