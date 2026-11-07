@@ -1,15 +1,7 @@
-"""Neural Network Training Visualizer — watch a small neural network learn in real time.
+"""Neural Network Training Visualizer — a small network learns a 2D task, shown live.
 
-ASCII visualization of forward pass, backprop, weight updates, decision boundary,
-and loss landscape navigation.  Tasks: XOR, spiral, circle, two-moons.
-
-Presets:
-  1. XOR Gate              — 2-2-1 network learns exclusive-or
-  2. Spiral Classification — 2-8-8-3 separates interleaved spirals
-  3. Circle Decision       — 2-4-1 inside vs outside circle
-  4. Two Moons             — 2-6-4-1 separates crescent-shaped clusters
-  5. Sine Curve Regression — 2-8-4-1 learns sin(x) function fitting
-  6. Gaussian Clusters     — 2-8-4-3 multi-class Gaussian blobs
+Shows the network with weights and gradient flow, the decision boundary, and
+the loss and accuracy curves. Training is plain per-sample gradient descent.
 """
 import curses
 import math
@@ -285,14 +277,11 @@ def _exit_nntrain_mode(self):
 
 def _nntrain_init(self, preset_idx: int):
     name, _desc, cfg = NNTRAIN_PRESETS[preset_idx]
-    max_y, max_x = self.stdscr.getmaxyx()
     self.nntrain_menu = False
     self.nntrain_running = True
     self.nntrain_preset_name = name
     self.nntrain_generation = 0
     self.nntrain_epoch = 0
-    self.nntrain_max_y = max_y
-    self.nntrain_max_x = max_x
     self.nntrain_cfg = dict(cfg)
     self.nntrain_epochs_per_step = cfg["epochs_per_step"]
     self.nntrain_view = 0  # 0=all, 1=network, 2=boundary, 3=loss
@@ -422,20 +411,6 @@ def _weight_char(mag):
     if mag < 1.0:
         return '═'
     return '█'
-
-
-def _gradient_char(grad_mag, phase):
-    """Gradient flow animation character."""
-    pulse = (math.sin(phase + grad_mag * 10) + 1) / 2
-    if grad_mag < 0.001:
-        return ' '
-    if pulse > 0.7 and grad_mag > 0.01:
-        return '»'
-    if grad_mag < 0.01:
-        return '·'
-    if grad_mag < 0.05:
-        return '~'
-    return '≈'
 
 
 def _draw_network(scr, net, y0, x0, h, w, phase):
@@ -714,7 +689,7 @@ def _draw_nntrain_menu(self, max_y, max_x):
                 pass
         y += 1
 
-    hint = "↑↓ select  Enter confirm  q quit"
+    hint = "↑/↓=select  Enter=start  q=quit"
     try:
         scr.addstr(max_y - 1, 2, hint, curses.color_pair(6) | curses.A_DIM)
     except curses.error:
@@ -728,7 +703,7 @@ def _draw_nntrain(self, max_y, max_x):
     if not net:
         return
 
-    # Run a forward pass on a sample point for display
+    # Forward one sample so the network panel shows live activations.
     if self.nntrain_data:
         sample = self.nntrain_data[self.nntrain_generation % len(self.nntrain_data)]
         net.forward([sample[0], sample[1]])
@@ -776,7 +751,7 @@ def _draw_nntrain(self, max_y, max_x):
     except curses.error:
         pass
 
-    hint = " Space:pause  n:step  v:view  +/-:speed  [/]:LR  r:reset  R:menu  q:exit "
+    hint = " Space=pause  n=step  v=view  +/-=speed  [/]=LR  r=reset  R=menu  q=exit "
     try:
         scr.addstr(max_y - 1, 0, hint[:max_x - 1],
                    curses.color_pair(6) | curses.A_DIM)
