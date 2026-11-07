@@ -1,20 +1,4 @@
-"""Mode: myco — Mycorrhizal Network & Wood Wide Web.
-
-Underground fungal highway connecting forest trees.  Mycorrhizal hyphae branch
-through soil linking root systems into a shared communication and resource-
-trading network.  Mother trees detect stressed seedlings and route carbon /
-phosphorus through the fungal mesh; pest-attacked trees broadcast chemical
-alarm signals that propagate through the network triggering defensive responses
-in neighbors; fungi take a carbon "tax" for brokering transfers.
-
-Emergent phenomena:
-  - Hub-and-spoke network topology around mother trees
-  - Carbon/phosphorus flow from surplus to deficit
-  - Alarm signal propagation (pest cascade)
-  - Fungal carbon tax economics
-  - Seasonal nutrient cycling (spring flush, autumn senescence)
-  - Clear-cut fragmentation and network collapse
-"""
+"""Mycorrhizal Network & Wood Wide Web — trees trade carbon, phosphorus and alarm signals through a fungal network."""
 import curses
 import math
 import random
@@ -59,23 +43,11 @@ SP_FIR = 3
 SP_MAPLE = 4
 SP_SEEDLING = 5
 
-_SP_NAMES = ["Oak", "Birch", "Pine", "Fir", "Maple", "Seedling"]
 _SP_GLYPHS = ['O', 'B', 'P', 'F', 'M', '.']
 _SP_COLORS = [2, 3, 2, 2, 1, 2]  # color pair indices
 
-# Soil nutrients
-SOIL_CARBON = 0
-SOIL_PHOSPHORUS = 1
-SOIL_NITROGEN = 2
-
 # Signal types
 SIG_ALARM = 0      # pest warning
-SIG_CARBON = 1     # carbon transfer
-SIG_PHOSPHORUS = 2 # phosphorus transfer
-SIG_WATER = 3      # water transfer
-
-_NEIGHBORS_8 = [(-1, -1), (-1, 0), (-1, 1), (0, -1),
-                (0, 1), (1, -1), (1, 0), (1, 1)]
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -146,14 +118,14 @@ class _Particle:
 # ══════════════════════════════════════════════════════════════════════
 
 def _enter_myco_mode(self):
-    """Enter mycorrhizal network mode — show preset menu."""
+    """Enter Mycorrhizal Network and show the preset menu."""
     self.myco_mode = True
     self.myco_menu = True
     self.myco_menu_sel = 0
 
 
 def _exit_myco_mode(self):
-    """Exit mycorrhizal network mode."""
+    """Exit Mycorrhizal Network and drop its state."""
     self.myco_mode = False
     self.myco_menu = False
     self.myco_running = False
@@ -170,7 +142,7 @@ def _exit_myco_mode(self):
 # ══════════════════════════════════════════════════════════════════════
 
 def _myco_init(self, preset_idx: int):
-    """Initialize mycorrhizal network simulation for the chosen preset."""
+    """Start the chosen preset."""
     name, _desc, pid = MYCO_PRESETS[preset_idx]
     max_y, max_x = self.stdscr.getmaxyx()
     rows = max(10, max_y - 4)
@@ -190,8 +162,7 @@ def _myco_init(self, preset_idx: int):
     self.myco_season = 0 if pid == "seasonal" else 1
     self.myco_season_tick = 0
     self.myco_season_length = 120  # ticks per season
-    _SEASON_NAMES = ["Spring", "Summer", "Autumn", "Winter"]
-    self.myco_season_names = _SEASON_NAMES
+    self.myco_season_names = ["Spring", "Summer", "Autumn", "Winter"]
 
     # Environmental state
     self.myco_soil_moisture = [[0.5 + random.random() * 0.3
@@ -217,7 +188,6 @@ def _myco_init(self, preset_idx: int):
         'avg_defense': [],
         'connected_components': [],
     }
-    self.myco_history_keys = list(self.myco_history.keys())
 
     # Drought
     self.myco_drought = pid == "drought"
@@ -225,7 +195,6 @@ def _myco_init(self, preset_idx: int):
 
     # Pest state
     self.myco_pest_active = pid == "pest"
-    self.myco_pest_origin_col = cols - 5 if pid == "pest" else -1
 
     # Fungal tax accumulator
     self.myco_fungal_carbon_pool = 0.0
@@ -434,11 +403,9 @@ def _compute_hypha_path(ta, tb):
 # ══════════════════════════════════════════════════════════════════════
 
 def _myco_step(self):
-    """Advance mycorrhizal network simulation by one tick."""
-    gen = self.myco_generation
+    """Advance the simulation by one step."""
     trees = self.myco_trees
     hyphae = self.myco_hyphae
-    pid = self.myco_preset_id
 
     # ── 1. Season update ──
     self.myco_season_tick += 1
@@ -863,7 +830,7 @@ def _count_components(trees, hyphae):
 # ══════════════════════════════════════════════════════════════════════
 
 def _handle_myco_menu_key(self, key: int) -> bool:
-    """Handle key input in the preset selection menu."""
+    """Handle keys in the preset menu."""
     n = len(MYCO_PRESETS)
     if key == ord("q") or key == 27:
         self.myco_mode = False
@@ -882,7 +849,7 @@ def _handle_myco_menu_key(self, key: int) -> bool:
 
 
 def _handle_myco_key(self, key: int) -> bool:
-    """Handle key input during simulation."""
+    """Handle keys while the simulation is running."""
     if key == ord("q") or key == 27:
         self._exit_myco_mode()
         return True
@@ -933,7 +900,7 @@ def _handle_myco_key(self, key: int) -> bool:
 # ══════════════════════════════════════════════════════════════════════
 
 def _draw_myco_menu(self, max_y: int, max_x: int):
-    """Draw the preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
 
     title = "── Mycorrhizal Network & Wood Wide Web ── Select Scenario ──"
@@ -962,7 +929,7 @@ def _draw_myco_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hints = " [Up/Down] Navigate   [Enter] Select   [q/Esc] Back"
+    hints = " Up/Down=select  Enter=start  q=back"
     hy = max_y - 2
     if 0 < hy < max_y:
         try:
@@ -977,7 +944,7 @@ def _draw_myco_menu(self, max_y: int, max_x: int):
 # ══════════════════════════════════════════════════════════════════════
 
 def _draw_myco(self, max_y: int, max_x: int):
-    """Draw the active mycorrhizal network simulation."""
+    """Draw the active view."""
     self.stdscr.erase()
 
     # Title bar
@@ -1008,7 +975,7 @@ def _draw_myco(self, max_y: int, max_x: int):
     if hasattr(self, 'message') and self.message and now - self.message_time < 3.0:
         hint = f" {self.message}"
     else:
-        hint = " [Space]=play [n]=step [v]=view [+/-]=speed [r]=reset [R]=menu [q]=exit"
+        hint = " Space=play  n=step  v=view  +/-=speed  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(hint_y, 0, hint[:max_x - 1],
                            curses.color_pair(6) | curses.A_DIM)
@@ -1034,7 +1001,6 @@ def _draw_myco_forest(self, max_y: int, max_x: int):
     split_y = max(3, int(view_h * 0.4))
     ground_y = split_y + 1  # row index in screen coords
 
-    r_scale = max(1.0, rows / (view_h - split_y - 2))
     c_scale = max(1.0, cols / view_w)
 
     season = self.myco_season
@@ -1133,7 +1099,6 @@ def _draw_myco_forest(self, max_y: int, max_x: int):
     # Draw soil background
     for yr in range(underground_start, min(max_y - 2, underground_start + underground_h)):
         for xc in range(1, min(max_x - 1, view_w + 1)):
-            depth = (yr - underground_start) / max(1, underground_h)
             if random.random() < 0.03:
                 try:
                     self.stdscr.addstr(yr, xc, '.',
@@ -1145,8 +1110,6 @@ def _draw_myco_forest(self, max_y: int, max_x: int):
     for hi, h in enumerate(hyphae):
         if h.tree_a >= len(trees) or h.tree_b >= len(trees):
             continue
-        ta = trees[h.tree_a]
-        tb = trees[h.tree_b]
 
         # Compute path in screen coords (underground)
         for node_r, node_c in h.nodes:
@@ -1250,7 +1213,6 @@ def _draw_myco_network(self, max_y: int, max_x: int):
     hyphae = self.myco_hyphae
     rows = self.myco_rows
     cols = self.myco_cols
-    gen = self.myco_generation
 
     view_h = max_y - 4
     view_w = max_x - 4
@@ -1259,7 +1221,7 @@ def _draw_myco_network(self, max_y: int, max_x: int):
     c_scale = max(1.0, cols / (view_w - 2))
 
     # Draw edges first (underneath nodes)
-    for hi, h in enumerate(hyphae):
+    for h in hyphae:
         if h.tree_a >= len(trees) or h.tree_b >= len(trees):
             continue
         ta = trees[h.tree_a]
@@ -1301,7 +1263,7 @@ def _draw_myco_network(self, max_y: int, max_x: int):
                     pass
 
     # Draw nodes (trees)
-    for ti, t in enumerate(trees):
+    for t in trees:
         sy = int(t.r / r_scale) + 2
         sx = int(t.c / c_scale) + 2
         if sy < 2 or sy >= max_y - 2 or sx < 2 or sx >= max_x - 2:
@@ -1371,7 +1333,6 @@ def _draw_myco_network(self, max_y: int, max_x: int):
 def _draw_myco_graphs(self, max_y: int, max_x: int):
     """Time-series sparkline graphs for key metrics."""
     hist = self.myco_history
-    view_h = max_y - 3
     view_w = max_x - 4
     graph_w = min(200, view_w - 25)
 
@@ -1433,7 +1394,7 @@ def _draw_myco_graphs(self, max_y: int, max_x: int):
 # ══════════════════════════════════════════════════════════════════════
 
 def register(App):
-    """Register mycorrhizal network mode methods on the App class."""
+    """Register Mycorrhizal Network methods on the App class."""
     App.MYCO_PRESETS = MYCO_PRESETS
     App._enter_myco_mode = _enter_myco_mode
     App._exit_myco_mode = _exit_myco_mode
