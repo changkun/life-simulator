@@ -102,3 +102,21 @@ def test_menu_cancel_exits_mode():
     app._handle_protfold_menu_key(ord("q"))
     assert app.protfold_mode is False
     assert app.protfold_menu is False
+
+
+def test_crankshaft_flips_u_shape():
+    """A U-shaped bend flips to the other side of its two end residues."""
+    import random
+    from life.modes.protein_folding import _Residue, _crankshaft_move, _is_valid_chain
+    chain = [_Residue(0, 0, 'P'), _Residue(1, 0, 'P'),
+             _Residue(1, 1, 'P'), _Residue(0, 1, 'P')]
+    random.seed(1)
+    out = _crankshaft_move(chain, 1.0)
+    assert [(r.r, r.c) for r in out] == [(0, 0), (-1, 0), (-1, 1), (0, 1)]
+    assert _is_valid_chain(out)
+
+
+def test_crankshaft_ignores_non_u_shape():
+    from life.modes.protein_folding import _Residue, _crankshaft_move
+    chain = [_Residue(0, c, 'P') for c in range(4)]
+    assert _crankshaft_move(chain, 1.0) is chain

@@ -267,22 +267,19 @@ def _crankshaft_move(residues, temperature):
     i = random.randint(1, n - 3)
     j = i + 1
 
-    # Check if i-1 and j+1 are adjacent (forming a U-shape)
+    # The move needs a U-shape: i-1 and j+1 adjacent, with i and j on the
+    # same side of them.  Flipping the U moves i and j to the other side.
     r0, c0 = residues[i - 1].r, residues[i - 1].c
     r3, c3 = residues[j + 1].r, residues[j + 1].c
-    if abs(r0 - r3) + abs(c0 - c3) != 2:
+    if abs(r0 - r3) + abs(c0 - c3) != 1:
+        return residues
+    dr, dc = residues[i].r - r0, residues[i].c - c0
+    if (residues[j].r - r3, residues[j].c - c3) != (dr, dc):
         return residues
 
-    # Flip the two middle residues
     new_residues = [_Residue(r.r, r.c, r.kind) for r in residues]
-    # Reflect across the line connecting i-1 and j+1
-    mid_r = (r0 + r3) / 2.0
-    mid_c = (c0 + c3) / 2.0
-
-    for idx in (i, j):
-        new_r = int(2 * mid_r - residues[idx].r)
-        new_c = int(2 * mid_c - residues[idx].c)
-        new_residues[idx] = _Residue(new_r, new_c, residues[idx].kind)
+    new_residues[i] = _Residue(r0 - dr, c0 - dc, residues[i].kind)
+    new_residues[j] = _Residue(r3 - dr, c3 - dc, residues[j].kind)
 
     if not _is_valid_chain(new_residues):
         return residues
