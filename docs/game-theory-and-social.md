@@ -417,23 +417,26 @@ Speed is clamped to `desired_speed * (2.0 + panic * 2.0)`.
 
 ### Presets
 
-| Preset | Geometry | Agents | Init Panic | Speed | Key Phenomenon |
-|--------|----------|--------|------------|-------|----------------|
-| Normal Evacuation | Rectangular room, 1 exit | ~15% fill | 0.1 | 1.2 | Arch formation at doorway |
-| Panic Stampede | Rectangular room, 1 exit | ~15% fill | 0.8 | 2.0 | Faster-is-slower, crushing |
-| Concert Venue | Room + stage obstacle, 2 exits | ~12% fill | 0.2–0.5 | 1.3 | Obstacle-mediated flow split |
-| Stadium Exit | Elliptical boundary, 4 vomitoria | ~10% fill | 0.15–0.35 | 1.2 | Merging flows at narrow exits |
-| Counterflow Corridors | Long corridor, open ends | 2 × ~6% fill | 0.0 | 1.0 | Spontaneous lane formation |
-| Black Friday Rush | Open area, entrance at top | ~10% fill | 0.5–0.9 | 1.8 | Inward competitive pushing |
+| Preset | Geometry | Agents (max) | Init Panic | Desired Speed | Key Phenomenon |
+|--------|----------|--------------|------------|---------------|----------------|
+| Normal Evacuation | Rectangular room, 1 exit | 15% of cells (200) | 0.1–0.4 | 0.96–1.44 | Arch formation at doorway |
+| Panic Stampede | Rectangular room, 1 exit | 15% of cells (200) | 0.8–1.0 | 1.6–2.4 | Faster-is-slower, crushing |
+| Concert Venue | Room + stage obstacle, 2 exits | 12% of cells (250) | 0.2–0.5 | 1.04–1.56 | Obstacle-mediated flow split |
+| Stadium Exit | Elliptical boundary, 4 vomitoria | 10% of cells (300) | 0.15–0.35 | 0.96–1.44 | Merging flows at narrow exits |
+| Counterflow Corridors | Long corridor, open ends | 2 × 6% of cells (2 × 80) | 0.0 | 1.0–1.3 | Spontaneous lane formation |
+| Black Friday Rush | Open area, entrance at top | 10% of cells (200) | 0.5–0.9 | 1.44–2.16 | Inward competitive pushing |
+
+Agent counts scale with the terminal size up to the cap shown. Each agent's desired speed is randomized within the range shown, and the agent's initial panic is its preset value plus a random offset.
 
 ### What to look for
 
-- **Arch formation**: In Normal Evacuation, watch agents self-organize into a semicircular arch around the exit. This is the same mechanism that causes grain hopper clogging — the arch is a force chain analog.
-- **Faster-is-slower effect**: In Panic Stampede, high panic increases desired speed but also increases repulsive forces and noise, paradoxically *decreasing* flow rate through the exit compared to calm evacuation. Press `p`/`P` to raise/lower panic and observe this directly.
-- **Lane formation**: In Counterflow Corridors, two opposing streams spontaneously segregate into parallel lanes (group 0 = blue/cyan, group 1 = green). This minimizes head-on collisions and emerges purely from the repulsive forces — no explicit lane preference exists in the model.
-- **Panic contagion waves**: Watch panic (red coloring) spread radially from initially panicked agents. In Black Friday Rush, panic waves propagate through the dense crowd from the competitive front.
-- **Density crushing**: Monitor the "density" statistic — values above 6–8 in a 3×3 region represent dangerous crowd crush conditions. Compare Normal vs Panic presets to see how panic drives density spikes near exits.
-- **Flow rate dynamics**: The flow rate (escapes/step) shows non-monotonic behavior: it ramps up as agents reach exits, may plateau due to clogging, and eventually drops as the crowd thins.
+- **Arch formation**: In Normal Evacuation, look for agents crowding into a semicircular arch around the exit. This is the clogging pattern seen at grain hopper outlets.
+- **Faster-is-slower effect**: In Panic Stampede, high panic raises each agent's desired speed (by up to 2.5 times the base) and adds random jitter, while agents still push against each other and the walls. Compare the "flow" statistic with Normal Evacuation, and press `p`/`P` to raise or lower panic mid-run.
+- **Lane formation**: In Counterflow Corridors, two opposing streams spontaneously segregate into parallel lanes (the two groups start at opposite ends and head for the far end). This minimizes head-on collisions and emerges purely from the repulsive forces — no explicit lane preference exists in the model.
+- **Panic contagion waves**: Watch panic spread (agents change color above 0.3 and 0.6 panic) from initially panicked agents. Panic spreads between agents within 2.5 cells and decays by 0.002 per step. In Black Friday Rush, every agent starts with panic 0.5--0.9.
+- **Density**: The "density" statistic is the largest number of agents in any 3×3 block of cells. Compare Normal Evacuation with Panic Stampede near the exit.
+- **Flow rate**: The "flow" statistic is the number of escapes in the last 50 steps divided by 50.
+- **Keys**: `Space` play/pause, `n` step, `p`/`P` raise/lower every agent's panic by 0.1, `+`/`-` time step dt (x1.3 or /1.3, between 0.01 and 0.5), `r` restart, `R` menu, `q` or `Esc` exit.
 
 ### References
 
