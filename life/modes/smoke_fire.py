@@ -1,6 +1,5 @@
-"""Mode: smokefire — simulation mode for the life package."""
+"""Smoke & Fire — buoyant fire and smoke on a grid, with interactive fire sources and fuel."""
 import curses
-import math
 import random
 import time
 
@@ -15,7 +14,7 @@ SMOKEFIRE_PRESETS = [
 
 
 def _smokefire_build_preset(self, name: str):
-    """Set up a smoke-fire preset scene."""
+    """Set up a Smoke & Fire preset scene."""
     rows, cols = self.smokefire_rows, self.smokefire_cols
     self.smokefire_temp = [[0.0] * cols for _ in range(rows)]
     self.smokefire_smoke = [[0.0] * cols for _ in range(rows)]
@@ -32,12 +31,10 @@ def _smokefire_build_preset(self, name: str):
         self.smokefire_wind = 0.0
         mid = cols // 2
         base_r = rows - 3
-        # fuel logs
         for c in range(mid - 4, mid + 5):
             for r in range(base_r - 1, base_r + 1):
                 if 0 <= r < rows and 0 <= c < cols:
                     self.smokefire_fuel[r][c] = 0.9
-        # fire sources
         for c in range(mid - 3, mid + 4):
             self.smokefire_sources.append((base_r - 2, c, 0.7 + random.random() * 0.3))
 
@@ -47,12 +44,10 @@ def _smokefire_build_preset(self, name: str):
         self.smokefire_cooling = 0.008
         self.smokefire_smoke_rate = 0.4
         self.smokefire_wind = 0.02
-        # scatter fuel across the ground
         for r in range(rows * 2 // 3, rows - 1):
             for c in range(cols):
                 if random.random() < 0.7:
                     self.smokefire_fuel[r][c] = 0.3 + random.random() * 0.7
-        # ignition points on the left
         for r in range(rows * 2 // 3, rows - 1, 3):
             self.smokefire_sources.append((r, 2, 0.9))
             self.smokefire_temp[r][2] = 1.0
@@ -64,7 +59,6 @@ def _smokefire_build_preset(self, name: str):
         self.smokefire_smoke_rate = 0.6
         self.smokefire_wind = 0.0
         mid_r, mid_c = rows * 2 // 3, cols // 2
-        # central blast zone
         for dr in range(-5, 6):
             for dc in range(-5, 6):
                 r, c = mid_r + dr, mid_c + dc
@@ -74,7 +68,6 @@ def _smokefire_build_preset(self, name: str):
                         intensity = max(0.0, 1.0 - dist / 6.0)
                         self.smokefire_temp[r][c] = intensity
                         self.smokefire_fuel[r][c] = intensity * 0.5
-                        # radial velocity
                         if dist > 0:
                             self.smokefire_vx[r][c] = dc / dist * 0.3
                             self.smokefire_vy[r][c] = dr / dist * 0.3 - 0.2
@@ -131,7 +124,7 @@ def _smokefire_build_preset(self, name: str):
 
 
 def _smokefire_init(self, preset: str):
-    """Initialize the smoke-fire grid."""
+    """Initialize the Smoke & Fire grid and build the preset."""
     max_y, max_x = self.stdscr.getmaxyx()
     self.smokefire_rows = max_y - 3
     self.smokefire_cols = (max_x - 1) // 2
@@ -147,7 +140,7 @@ def _smokefire_init(self, preset: str):
 
 
 def _smokefire_step(self):
-    """Advance the smoke-fire simulation by one tick."""
+    """Advance the simulation by one step."""
     rows = self.smokefire_rows
     cols = self.smokefire_cols
     temp = self.smokefire_temp
@@ -156,7 +149,6 @@ def _smokefire_step(self):
     vx = self.smokefire_vx
     vy = self.smokefire_vy
 
-    # New grids
     nt = [[0.0] * cols for _ in range(rows)]
     ns = [[0.0] * cols for _ in range(rows)]
     nf = [[fuel[r][c] for c in range(cols)] for r in range(rows)]
@@ -266,12 +258,12 @@ def _smokefire_step(self):
             nvx[r][c] = cur_vx
             nvy[r][c] = cur_vy
 
-    # Apply fire sources
+    # Fire sources are re-applied after the field update so they keep burning.
     for (sr, sc, intensity) in self.smokefire_sources:
         if 0 <= sr < rows and 0 <= sc < cols:
             flicker = 0.7 + random.random() * 0.3
             nt[sr][sc] = min(1.0, nt[sr][sc] + intensity * flicker)
-            # Also add slight heat to neighbors for wider flames
+            # Heat the sides and top too, so the flame is wider than one cell.
             for dr, dc in [(-1, 0), (0, -1), (0, 1)]:
                 nr, nc = sr + dr, sc + dc
                 if 0 <= nr < rows and 0 <= nc < cols:
@@ -287,7 +279,7 @@ def _smokefire_step(self):
 
 
 def _enter_smokefire_mode(self):
-    """Enter smoke-fire mode — show preset menu."""
+    """Enter Smoke & Fire and show the preset menu."""
     self.smokefire_menu = True
     self.smokefire_menu_sel = 0
     self._flash("Smoke & Fire — select a scene")
@@ -295,7 +287,7 @@ def _enter_smokefire_mode(self):
 
 
 def _exit_smokefire_mode(self):
-    """Exit smoke-fire mode."""
+    """Exit Smoke & Fire and release its grids."""
     self.smokefire_mode = False
     self.smokefire_menu = False
     self.smokefire_running = False
@@ -310,7 +302,7 @@ def _exit_smokefire_mode(self):
 
 
 def _handle_smokefire_menu_key(self, key: int) -> bool:
-    """Handle keys in the smoke-fire preset menu."""
+    """Handle keys in the preset menu."""
     if key == -1:
         return True
     n = len(self.SMOKEFIRE_PRESETS)
@@ -338,7 +330,7 @@ def _handle_smokefire_menu_key(self, key: int) -> bool:
 
 
 def _handle_smokefire_key(self, key: int) -> bool:
-    """Handle keys while in smoke-fire mode."""
+    """Handle keys while the simulation is running."""
     if key == -1:
         return True
     if key == ord("q") or key == 27:
@@ -357,7 +349,6 @@ def _handle_smokefire_key(self, key: int) -> bool:
         self.smokefire_menu_sel = 0
         self._flash("Smoke & Fire — select a scene")
         return True
-    # Cursor movement
     if key == curses.KEY_UP or key == ord("k"):
         self.smokefire_cursor_r = max(0, self.smokefire_cursor_r - 1)
         return True
@@ -370,10 +361,8 @@ def _handle_smokefire_key(self, key: int) -> bool:
     if key == curses.KEY_RIGHT or key == ord("l"):
         self.smokefire_cursor_c = min(self.smokefire_cols - 1, self.smokefire_cursor_c + 1)
         return True
-    # Add/remove fire source at cursor
     if key == ord("f") or key in (10, 13, curses.KEY_ENTER):
         r, c = self.smokefire_cursor_r, self.smokefire_cursor_c
-        # Check if source already exists nearby
         removed = False
         for i, (sr, sc, _si) in enumerate(self.smokefire_sources):
             if abs(sr - r) <= 1 and abs(sc - c) <= 1:
@@ -385,7 +374,6 @@ def _handle_smokefire_key(self, key: int) -> bool:
             self.smokefire_sources.append((r, c, 0.8))
             self._flash("Fire source added")
         return True
-    # Add fuel at cursor
     if key == ord("F"):
         r, c = self.smokefire_cursor_r, self.smokefire_cursor_c
         for dr in range(-2, 3):
@@ -395,7 +383,6 @@ def _handle_smokefire_key(self, key: int) -> bool:
                     self.smokefire_fuel[nr][nc] = min(1.0, self.smokefire_fuel[nr][nc] + 0.5)
         self._flash("Fuel added")
         return True
-    # Adjust parameters
     if key == ord("b"):
         self.smokefire_buoyancy = min(0.5, self.smokefire_buoyancy + 0.02)
         self._flash(f"Buoyancy: {self.smokefire_buoyancy:.2f}")
@@ -428,7 +415,6 @@ def _handle_smokefire_key(self, key: int) -> bool:
         self.smokefire_cooling = max(0.0, self.smokefire_cooling - 0.002)
         self._flash(f"Cooling: {self.smokefire_cooling:.3f}")
         return True
-    # Speed
     if key == ord(">"):
         self.smokefire_steps_per_frame = min(10, self.smokefire_steps_per_frame + 1)
         self._flash(f"Steps/frame: {self.smokefire_steps_per_frame}")
@@ -442,7 +428,7 @@ def _handle_smokefire_key(self, key: int) -> bool:
 
 
 def _draw_smokefire_menu(self, max_y: int, max_x: int):
-    """Draw the smoke-fire preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── Smoke & Fire ──"
     try:
@@ -451,7 +437,7 @@ def _draw_smokefire_menu(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    subtitle = "Particle-based fire and smoke simulation with buoyant flow"
+    subtitle = "Grid-based fire and smoke simulation with buoyant flow"
     try:
         self.stdscr.addstr(3, max(0, (max_x - len(subtitle)) // 2), subtitle,
                            curses.color_pair(6))
@@ -501,7 +487,7 @@ def _draw_smokefire_menu(self, max_y: int, max_x: int):
 
 
 def _draw_smokefire(self, max_y: int, max_x: int):
-    """Draw the smoke-fire simulation."""
+    """Draw the simulation."""
     self.stdscr.erase()
     rows = self.smokefire_rows
     cols = self.smokefire_cols
@@ -527,7 +513,6 @@ def _draw_smokefire(self, max_y: int, max_x: int):
 
             sx = c * 2
 
-            # Determine what to draw
             if t > 0.7:
                 # White-hot / bright yellow
                 ch = fire_chars[4] * 2
@@ -568,7 +553,6 @@ def _draw_smokefire(self, max_y: int, max_x: int):
             else:
                 continue  # empty, skip
 
-            # Cursor highlight
             if r == self.smokefire_cursor_r and c == self.smokefire_cursor_c:
                 attr = attr | curses.A_REVERSE
 
@@ -577,7 +561,7 @@ def _draw_smokefire(self, max_y: int, max_x: int):
             except curses.error:
                 pass
 
-    # Draw cursor if on empty cell
+    # Show the cursor on empty cells, which the loop above skips.
     cr, cc = self.smokefire_cursor_r, self.smokefire_cursor_c
     t_cur = temp[cr][cc] if 0 <= cr < rows and 0 <= cc < cols else 0.0
     s_cur = smoke_grid[cr][cc] if 0 <= cr < rows and 0 <= cc < cols else 0.0
@@ -603,7 +587,7 @@ def _draw_smokefire(self, max_y: int, max_x: int):
     if self.message and time.monotonic() - self.message_time < 3.0:
         hint = f" {self.message}"
     else:
-        hint = " [Space]=play [n]=step [f]=fire [F]=fuel [b/B]=buoy [t/T]=turb [w/W]=wind [c/C]=cool [R]=menu [q]=exit"
+        hint = " Space=play  n=step  f=fire  F=fuel  b/B=buoy  t/T=turb  w/W=wind  c/C=cool  >/<=speed  R=menu  q=exit"
     try:
         self.stdscr.addstr(hint_y, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:
