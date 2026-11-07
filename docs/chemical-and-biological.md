@@ -220,7 +220,7 @@ Parameters (preset ranges):
 
 Presets: Classic Oscillation, Predator Boom, Prey Paradise, Fast Dynamics, Sparse Savanna, Dense Jungle, Extinction Edge and Stable Coexistence.
 
-**What to look for** — A stacked bar shows the current share of grass, prey and predators; the counts in the title bar show the prey peak leading the predator peak. "Predator Boom" crashes the prey, then the predators; "Stable Coexistence" is tuned for long-lived oscillations. Watch spatial patterns: predators cluster around prey herds, creating traveling waves of predation. If predators overshoot, they crash and prey explode, and the cycle restarts. Press `g`/`G` to change grass regrowth (bottom-up control) and `p`/`P` to change the predator breeding threshold (top-down control); `b`/`B` change the prey breeding threshold.
+**What to look for** — A stacked bar shows the current share of grass, prey and predators, and the title bar shows the counts. With the current presets both animal populations die out within a few dozen steps, so the classic cycles do not appear yet. The preset menu describes the intent: "Predator Boom" is meant to crash the prey and then the predators, and "Stable Coexistence" to hold long oscillations. Press `g`/`G` to change the grass regrowth time and `p`/`P` the predator breeding threshold; `b`/`B` change the prey breeding threshold. `+`/`-` set the steps per frame and `<`/`>` the speed.
 
 **References**
 - Lotka, A. J. *Elements of Physical Biology.* Williams & Wilkins, 1925. https://archive.org/details/elementsofphysic017171mbp
