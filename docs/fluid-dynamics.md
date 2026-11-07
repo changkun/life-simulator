@@ -693,7 +693,7 @@ Radiative cooling:
 Temperature evolution:
   dT/dt = Q_abs - Q_out + D_T * laplacian(T) + advection
   D_T = 0.04 (atmospheric thermal diffusion)
-  Advection: semi-Lagrangian upwind from wind field
+  Advection: upwind from the nearest source cell, weight 0.15
 
 Pressure (diagnostic from temperature):
   P_thermal = 1.0 - 0.12 * (T - 0.5)
@@ -706,12 +706,13 @@ Wind (from pressure gradient + Coriolis):
   du/dt = -3.0 * dP/dx + f * v - 0.02 * u + jet_boost
   dv/dt = -3.0 * dP/dy - f * u - 0.02 * v
 
-  Jet stream: enhanced zonal wind at lat = jet_lat (default 0.45 from pole)
+  Jet stream: enhanced zonal wind at lat = jet_lat (default 0.45 from the north pole)
+    and at the mirrored latitude 1 - jet_lat, with opposite sign
     boost = 0.3 * (1 - |lat - jet_lat| / 0.08) when within 0.08 of jet
 
 Moisture cycle:
   Evaporation: E = 0.004 * SST * (1 - moisture)   (ocean cells only, ice < 0.5)
-  Advection: semi-Lagrangian from wind field
+  Advection: upwind from the nearest source cell, weight 0.12
   Diffusion: D_m = 0.03
   Precipitation: when moisture > 0.85 (saturation threshold),
     rain = 0.3 * (moisture - 0.85)
@@ -748,15 +749,17 @@ Parameters:
   Temp clamp  = [0.0, 1.5]
 ```
 
-**What to look for.** The Stable Temperate Earth preset produces a recognizable planetary climate: warm equatorial belt with active tropical convection, mid-latitude cyclones forming along the jet stream, and polar ice caps stabilized by the ice-albedo feedback. Increase CO2 with `+` to watch global temperature rise, ice retreat, and storm intensity grow — a simplified demonstration of greenhouse warming. Decrease CO2 with `-` to trigger ice advance and cooling.
+**What to look for.** The Stable Temperate Earth preset (CO2=0.5) starts from the latitude-dependent heating profile with random continents. Raise CO2 with `+` to increase the greenhouse term, or lower it with `-`, and watch the temperature and ice-area graphs respond. Because the radiative cooling term is weak, temperatures in a long run climb toward the 1.5 clamp.
 
-The Tropical Cyclone Season preset starts with elevated tropical SST. Watch `@` tropical cyclone glyphs spawn in the tropics, intensify over warm water, drift poleward, and weaken on landfall or over cold water — reproducing the lifecycle described by Emanuel's potential intensity theory.
+The Tropical Cyclone Season preset starts with elevated tropical SST. Watch `@` glyphs mark tropical storms that form near the equator over warm ocean, drift poleward, and weaken over land.
 
-The Ice Age Glaciation preset (CO2=0.2) demonstrates ice-albedo positive feedback: low greenhouse forcing allows ice to expand, which raises albedo, which further cools, which expands more ice. The jet stream is pushed equatorward (jet_lat=0.35).
+The Ice Age Glaciation preset (CO2=0.2) starts with ice out to 35% of the distance from each pole and the jet stream moved equatorward (jet_lat=0.35). Ice melts wherever temperature exceeds 0.22 and forms where it falls below 0.15, so ice reflects more light only while it lasts.
 
-The Runaway Greenhouse Venus preset pushes CO2 to 1.0, producing surface temperatures above 0.85 everywhere with no ice. The Tidally Locked Exoplanet has a permanent hot substellar point and frozen antistellar hemisphere, with powerful terminator jet streams at the day-night boundary. The Snowball Earth Deglaciation starts fully frozen (ice=0.8+) with CO2=0.15 that slowly rises (volcanic outgassing), eventually breaking the ice-albedo lock.
+The Runaway Greenhouse Venus preset sets CO2 to 1.0 with a uniform start near 0.85 and no ice, on a mostly land surface. The Tidally Locked Exoplanet has a permanent hot substellar point and a cold, partly iced night side. Winds come from the day-night temperature contrast. The Snowball Earth Deglaciation preset starts fully frozen (ice 0.8 and above) with CO2=0.15 that rises by 0.0003 per tick, a stand-in for volcanic outgassing.
 
-Switch views with `v`: pressure/wind map (isobar shading + wind arrows + storm glyphs + precipitation), temperature/moisture heatmap (5-band color coding + ice extent + SST hints), and 10-metric sparkline time series.
+Switch views with `v`: pressure/wind map (isobar shading, wind arrows, storm glyphs, precipitation), temperature/moisture heatmap (5-band color coding, ice extent, SST hints), and a 10-metric sparkline time series.
+
+**Keys.** `Space` play/pause, `n` step, `v` cycles views, `+`/`-` raise/lower CO2, `r` reset, `R` or `m` menu, `q` exit. The mode starts running.
 
 **Presets:** Stable Temperate Earth (CO2=0.5, balanced climate), Tropical Cyclone Season (CO2=0.55, warm tropics), Ice Age Glaciation (CO2=0.2, expanded ice), Runaway Greenhouse Venus (CO2=1.0, mostly land), Tidally Locked Exoplanet (CO2=0.45, permanent day/night), Snowball Earth Deglaciation (CO2=0.15→1.0, volcanic thaw).
 
@@ -793,7 +796,7 @@ Surface heat flux:
 Temperature evolution:
   dT/dt = Q_in - Q_out + D_T * laplacian(T) + advection + ENSO_forcing + deep_exchange
   D_T = 0.04          (thermal diffusion)
-  advection: semi-Lagrangian upwind, coupling = 0.12
+  advection: upwind from the nearest source cell, coupling = 0.12
   ENSO: +enso_idx * 0.02 in eastern equatorial zone
 
 Salinity evolution:
@@ -850,7 +853,7 @@ Ice dynamics:
 Nutrient cycling:
   Upwelling supply: +0.04 * w * 10 (when w > 0)
   Biological consumption: -0.005 * nutrient (surface biological pump)
-  Advection: semi-Lagrangian, coupling = 0.05
+  Advection: upwind from the nearest source cell, coupling = 0.05
 
 Parameters:
   dt            = 0.2    (integration timestep)
