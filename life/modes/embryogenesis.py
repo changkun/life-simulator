@@ -192,12 +192,17 @@ def _enter_embryo_mode(self):
     self.embryo_menu_sel = 0
 
 
+# Flags App.__init__ defines and the main loop reads directly; exiting
+# frees the mode's simulation state but must keep these.
+_KEEP_ON_EXIT = frozenset({"embryo_mode", "embryo_menu", "embryo_running"})
+
+
 def _exit_embryo_mode(self):
     self.embryo_mode = False
     self.embryo_menu = False
     self.embryo_running = False
     for attr in list(vars(self)):
-        if attr.startswith("embryo_") and attr != "embryo_mode":
+        if attr.startswith("embryo_") and attr not in _KEEP_ON_EXIT:
             try:
                 delattr(self, attr)
             except AttributeError:
