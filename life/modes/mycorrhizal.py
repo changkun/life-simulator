@@ -156,8 +156,9 @@ def _exit_myco_mode(self):
     """Exit mycorrhizal network mode."""
     self.myco_mode = False
     self.myco_menu = False
+    self.myco_running = False
     for attr in list(vars(self)):
-        if attr.startswith('myco_') and attr not in ('myco_mode',):
+        if attr.startswith('myco_') and attr not in ('myco_mode', 'myco_menu', 'myco_running'):
             try:
                 delattr(self, attr)
             except AttributeError:
