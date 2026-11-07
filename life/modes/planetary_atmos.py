@@ -53,7 +53,7 @@ PLANETARY_ATMOS_PRESETS = [
 
 _DT = 0.2                # integration timestep
 _SOLAR_CONST = 1.0        # normalized solar flux at equator
-_STEFAN_BOLTZ = 0.02      # simplified radiative cooling coefficient
+_STEFAN_BOLTZ = 4.0       # simplified radiative cooling coefficient
 _CORIOLIS_SCALE = 0.15    # Coriolis parameter scaling
 _PRESSURE_SMOOTH = 0.08   # pressure field diffusion rate
 _WIND_DRAG = 0.02         # surface drag on wind
