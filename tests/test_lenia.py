@@ -602,3 +602,16 @@ class TestLeniaKeyHandlers:
         self.app._lenia_init(0)
         assert self.app._handle_lenia_key(-1) is True
         assert self.app._handle_lenia_menu_key(-1) is True
+
+
+def test_pentadecathlon_preset_survives():
+    """The Pentadecathlon preset must not die out from its random seed."""
+    random.seed(1)
+    app = make_mock_app()
+    register(type(app))
+    app.lenia_steps_per_frame = 1
+    app._lenia_init(4)
+    assert app.lenia_preset_name == "Pentadecathlon"
+    for _ in range(100):
+        app._lenia_step()
+    assert sum(sum(row) for row in app.lenia_grid) > 10.0

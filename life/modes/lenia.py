@@ -448,7 +448,7 @@ LENIA_PRESETS = [
     ("Geminium", "Self-replicating twin organism", 10, 0.14, 0.014, 0.1),
     ("Scutium", "Shield-shaped stationary life", 12, 0.16, 0.016, 0.1),
     ("Hydrogeminium", "Fluid replicator with organic motion", 15, 0.15, 0.017, 0.05),
-    ("Pentadecathlon", "Pulsating ring oscillator", 8, 0.12, 0.012, 0.1),
+    ("Pentadecathlon", "Pulsating ring oscillator", 8, 0.12, 0.020, 0.1),
     ("Wanderer", "Erratic slow-moving blob", 10, 0.13, 0.020, 0.08),
 ]
 
