@@ -314,7 +314,6 @@ def _crispr_init(self, preset_idx: int):
     self.crispr_dna_len = dna_len
     self.crispr_dna = _random_seq(dna_len)
     self.crispr_dna_comp = _complement_seq(self.crispr_dna)
-    self.crispr_dna_original = list(self.crispr_dna)
 
     # Find all PAM sites
     all_pams = _find_pam_sites(self.crispr_dna)
@@ -353,26 +352,29 @@ def _crispr_init(self, preset_idx: int):
     self.crispr_off_targets.sort(key=lambda x: x[1], reverse=True)
     self.crispr_off_targets = self.crispr_off_targets[:n_off]
 
-    # Ensure we have enough off-target sites for the preset
-    while len(self.crispr_off_targets) < n_off:
-        # Create an off-target site by placing a PAM with partial match
+    # Seed extra off-target sites. Keep them clear of the target window so
+    # copying the guide cannot overwrite the on-target match, and bound the
+    # attempts because short sequences may have no room for all of them.
+    target = self.crispr_target_pam
+    attempts = 0
+    while len(self.crispr_off_targets) < n_off and attempts < 200:
+        attempts += 1
         pos = random.randint(_GUIDE_LEN + 3, dna_len - 5)
-        if pos == self.crispr_target_pam:
+        if abs(pos - target) < _GUIDE_LEN + 3:
             continue
         if any(abs(pos - ot[0]) < 5 for ot in self.crispr_off_targets):
             continue
         self.crispr_dna[pos + 1] = "G"
         self.crispr_dna[pos + 2] = "G"
-        # Copy some of the guide upstream with mismatches
         start = pos - _GUIDE_LEN
-        if start >= 0:
-            for i in range(_GUIDE_LEN):
-                if start + i < dna_len:
-                    if random.random() < 0.75:  # 75% match = ~15/20
-                        self.crispr_dna[start + i] = self.crispr_guide[i]
-            self.crispr_dna_comp = _complement_seq(self.crispr_dna)
-            score = _match_score(self.crispr_guide, self.crispr_dna, pos)
-            self.crispr_off_targets.append((pos, score))
+        for i in range(_GUIDE_LEN):
+            if random.random() < 0.75:  # ~15/20 matches
+                self.crispr_dna[start + i] = self.crispr_guide[i]
+        score = _match_score(self.crispr_guide, self.crispr_dna, pos)
+        self.crispr_off_targets.append((pos, score))
+    self.crispr_dna_comp = _complement_seq(self.crispr_dna)
+    # Baseline for highlighting edits, taken after all setup changes.
+    self.crispr_dna_original = list(self.crispr_dna)
 
     # ── Cas9 complexes ──
     self.crispr_cas9_list = []
