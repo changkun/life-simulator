@@ -348,6 +348,26 @@ class TestGalaxySimKeys:
         app._handle_galaxy_key(ord("w"))
         assert app.galaxy_rotation_speed > old_rot
 
+    def test_w_and_W_scale_orbital_speed(self):
+        import math
+        app = self._init_sim()
+        cx, cy = app.galaxy_cols / 2.0, app.galaxy_rows / 2.0
+
+        def spin():
+            total = 0.0
+            for x, y, vx, vy, *_ in app.galaxy_particles:
+                dx, dy = x - cx, y - cy
+                r = math.hypot(dx, dy)
+                if r > 1e-6:
+                    total += (vx * -dy + vy * dx) / r
+            return total
+
+        before = spin()
+        app._handle_galaxy_key(ord("w"))
+        assert spin() == pytest.approx(before * 1.1)
+        app._handle_galaxy_key(ord("W"))
+        assert spin() == pytest.approx(before)
+
     def test_h_toggles_halo(self):
         app = self._init_sim()
         assert app.galaxy_show_halo is False

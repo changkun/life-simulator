@@ -56,7 +56,6 @@ def _galaxy_build_particles(self, preset: str):
             y = cy + r * math.sin(angle)
             # Circular orbital velocity
             v_circ = math.sqrt(self.galaxy_grav_const * self.galaxy_halo_mass * r / (r + self.galaxy_halo_radius) ** 2 + 0.1)
-            v_circ *= self.galaxy_rotation_speed
             va = angle + math.pi / 2
             vx = v_circ * math.cos(va) + random.gauss(0, 0.2)
             vy = v_circ * math.sin(va) + random.gauss(0, 0.2)
@@ -71,7 +70,6 @@ def _galaxy_build_particles(self, preset: str):
             x = cx + r * math.cos(angle)
             y = cy + r * math.sin(angle)
             v_circ = math.sqrt(self.galaxy_grav_const * self.galaxy_halo_mass * r / (r + self.galaxy_halo_radius) ** 2 + 0.1)
-            v_circ *= self.galaxy_rotation_speed
             va = angle + math.pi / 2
             vx = v_circ * math.cos(va) + random.gauss(0, 0.1)
             vy = v_circ * math.sin(va) + random.gauss(0, 0.1)
@@ -409,6 +407,23 @@ def _galaxy_step(self):
 
 
 
+def _galaxy_set_rotation(self, speed: float):
+    """Set the rotation factor, scaling each particle's orbital speed to match."""
+    speed = min(3.0, max(0.1, speed))
+    factor = speed / self.galaxy_rotation_speed - 1.0
+    cx, cy = self.galaxy_cols / 2.0, self.galaxy_rows / 2.0
+    for p in self.galaxy_particles:
+        dx, dy = p[0] - cx, p[1] - cy
+        r = math.hypot(dx, dy)
+        if r > 1e-6:
+            tx, ty = -dy / r, dx / r
+            vt = p[2] * tx + p[3] * ty
+            p[2] += factor * vt * tx
+            p[3] += factor * vt * ty
+    self.galaxy_rotation_speed = speed
+    self._flash(f"Rotation: {speed:.1f}")
+
+
 def _enter_galaxy_mode(self):
     """Enter Galaxy Formation and show the preset menu."""
     self.galaxy_menu = True
@@ -486,11 +501,9 @@ def _handle_galaxy_key(self, key: int) -> bool:
         self.galaxy_dt = max(0.005, self.galaxy_dt - 0.005)
         self._flash(f"dt: {self.galaxy_dt:.3f}")
     elif key == ord("w"):
-        self.galaxy_rotation_speed = min(3.0, self.galaxy_rotation_speed + 0.1)
-        self._flash(f"Rotation: {self.galaxy_rotation_speed:.1f}")
+        self._galaxy_set_rotation(self.galaxy_rotation_speed + 0.1)
     elif key == ord("W"):
-        self.galaxy_rotation_speed = max(0.1, self.galaxy_rotation_speed - 0.1)
-        self._flash(f"Rotation: {self.galaxy_rotation_speed:.1f}")
+        self._galaxy_set_rotation(self.galaxy_rotation_speed - 0.1)
     elif key == ord("f"):
         self.galaxy_gas_density = min(1.0, self.galaxy_gas_density + 0.05)
         self._flash(f"Gas pressure: {self.galaxy_gas_density:.2f}")
@@ -727,6 +740,7 @@ def register(App):
     App._galaxy_build_particles = _galaxy_build_particles
     App._galaxy_init = _galaxy_init
     App._galaxy_step = _galaxy_step
+    App._galaxy_set_rotation = _galaxy_set_rotation
     App._enter_galaxy_mode = _enter_galaxy_mode
     App._exit_galaxy_mode = _exit_galaxy_mode
     App._handle_galaxy_menu_key = _handle_galaxy_menu_key
