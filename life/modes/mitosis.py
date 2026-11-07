@@ -1,22 +1,9 @@
-"""Mode: mitosis — Mitosis & Cell Division Cycle simulation.
+"""Mitosis & Cell Division Cycle — a tissue of cells running the G1-S-G2-M cycle.
 
-Models the eukaryotic cell cycle (G1→S→G2→M phases) across a 2D tissue grid.
-Each cell maintains phase, cyclin/CDK levels, DNA replication progress,
-chromosome condensation, spindle assembly, metaphase alignment, anaphase
-separation, and cytokinesis.  Includes spindle assembly checkpoint (SAC)
-enforcement, cyclin/CDK oscillator dynamics, contact inhibition, apoptosis
-signaling, and pathological failure modes (checkpoint bypass → aneuploidy,
-uncontrolled proliferation mimicking tumor growth).
+Each cell has its own cyclin/CDK levels, checkpoints (G1/S and spindle assembly),
+contact inhibition and apoptosis. Checkpoint loss gives aneuploidy and tumor-like growth.
 
-Three views:
-  1) Tissue grid — cell phase coloring with mitotic figure glyphs
-  2) Single-cell detail — cyclin/CDK oscillator waveforms + chromosome diagram
-  3) Time-series sparkline graphs — 10 population-level metrics
-
-Six presets:
-  Normal Tissue Homeostasis, Rapid Proliferation (Embryonic),
-  Checkpoint Bypass (Tumor), Contact Inhibition Loss,
-  Apoptosis Cascade, Spindle Poison (Drug Treatment)
+Views (v cycles): tissue grid, single-cell detail, time-series graphs.
 """
 import curses
 import math
@@ -99,7 +86,6 @@ _CYCLIN_D_RATE = 0.025       # G1 cyclin accumulation
 _CYCLIN_E_RATE = 0.04        # S-phase cyclin
 _CYCLIN_A_RATE = 0.03        # S/G2 cyclin
 _CYCLIN_B_RATE = 0.035       # mitotic cyclin
-_CYCLIN_DEGRADE = 0.02       # base degradation rate
 
 # Spindle assembly checkpoint
 _SAC_ATTACHMENT_RATE = 0.12  # per-tick prob of kinetochore attachment
@@ -119,10 +105,6 @@ _APOPTOSIS_SIGNAL_DIFFUSION = 0.10
 _APOPTOSIS_SIGNAL_DECAY = 0.012
 _APOPTOSIS_BASE_RATE = 0.001  # spontaneous apoptosis per tick
 _APOPTOSIS_SIGNAL_RATE = 0.04  # death ligand induced
-
-# Aneuploidy
-_PLOIDY_NORMAL = 2
-_PLOIDY_ERROR_THRESHOLD = 3  # aneuploidy above this
 
 # Spindle poison
 _POISON_DIFFUSION = 0.07
@@ -335,7 +317,7 @@ def _mitosis_apply_preset(self, pid, rows, cols):
 # ======================================================================
 
 def _mitosis_step(self):
-    """One tick of mitosis & cell division simulation."""
+    """Advance the simulation by one tick."""
     rows = self.mitosis_rows
     cols = self.mitosis_cols
     cells = self.mitosis_cells
@@ -751,7 +733,7 @@ def _handle_mitosis_key(self, key: int) -> bool:
 
 
 def _mitosis_trigger_apoptosis(self):
-    """Trigger apoptosis at selected cell position."""
+    """Trigger apoptosis in the selected cell."""
     r, c = self.mitosis_sel_r, self.mitosis_sel_c
     cell = self.mitosis_cells[r][c]
     if cell is not None and cell['phase'] != _PHASE_APOPTOTIC:
@@ -796,7 +778,7 @@ def _draw_mitosis_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hint = "[up/dn] select  [Enter] start  [q] back"
+    hint = "j/k=select  Enter=start  q=exit"
     try:
         self.stdscr.addstr(max_y - 2, max(0, (max_x - len(hint)) // 2), hint,
                            curses.color_pair(7))
@@ -809,7 +791,7 @@ def _draw_mitosis_menu(self, max_y: int, max_x: int):
 # ======================================================================
 
 def _draw_mitosis(self, max_y: int, max_x: int):
-    """Dispatch to appropriate view drawer."""
+    """Draw the current view."""
     if self.mitosis_view == "tissue":
         _draw_mitosis_tissue(self, max_y, max_x)
     elif self.mitosis_view == "detail":
@@ -819,7 +801,7 @@ def _draw_mitosis(self, max_y: int, max_x: int):
 
 
 def _draw_mitosis_tissue(self, max_y: int, max_x: int):
-    """Render tissue grid with cell phase coloring and mitotic glyphs."""
+    """Draw the tissue grid with phase-colored cell glyphs."""
     self.stdscr.erase()
     rows = self.mitosis_rows
     cols = self.mitosis_cols
@@ -840,7 +822,6 @@ def _draw_mitosis_tissue(self, max_y: int, max_x: int):
                 else:
                     continue
             else:
-                phase = cell['phase']
                 ch, cp = _cell_glyph(cell, self.mitosis_poison[r][c])
 
             # Selected cell highlight
@@ -860,7 +841,7 @@ def _draw_mitosis_tissue(self, max_y: int, max_x: int):
 
     status = (f" {self.mitosis_preset_name} | tick {self.mitosis_generation} | "
               f"cells:{total} | dividing:{div} | aneupl:{aneu:.1f}% | "
-              f"[v]iew [a]popt [space]pause [r]estart [q]uit")
+              f"Space=play  n=step  v=view  a=apoptosis  +/-=speed  r=reset  R=menu  q=exit")
     try:
         self.stdscr.addstr(max_y - 2, 0, status[:max_x - 1],
                            curses.color_pair(7) | curses.A_BOLD)
@@ -926,7 +907,7 @@ def _cell_glyph(cell, poison_level=0.0):
 # ======================================================================
 
 def _draw_mitosis_detail(self, max_y: int, max_x: int):
-    """Render detail view of selected cell: cyclin oscillator + chromosome diagram."""
+    """Draw the selected cell: cyclin/CDK bars and a chromosome diagram."""
     self.stdscr.erase()
     sr, sc = self.mitosis_sel_r, self.mitosis_sel_c
     cell = self.mitosis_cells[sr][sc]
@@ -1098,7 +1079,7 @@ def _draw_chromosome_diagram(self, y, x, cell, max_x, max_y):
 
 def _draw_detail_status(self, max_y, max_x):
     """Status bar for detail view."""
-    status = "[v]iew [arrows]select [a]popt [space]pause [r]estart [q]uit"
+    status = "Space=play  n=step  v=view  arrows=select  a=apoptosis  +/-=speed  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(max_y - 1, 2, status[:max_x - 3], curses.color_pair(7))
     except curses.error:
@@ -1171,7 +1152,7 @@ def _draw_mitosis_graphs(self, max_y: int, max_x: int):
                 except curses.error:
                     pass
 
-    status = "[v]iew [a]popt [space]pause [r]estart [q]uit"
+    status = "Space=play  n=step  v=view  a=apoptosis  +/-=speed  r=reset  R=menu  q=exit"
     try:
         self.stdscr.addstr(max_y - 1, 2, status[:max_x - 3], curses.color_pair(7))
     except curses.error:
