@@ -125,3 +125,39 @@ def test_param_count():
     """Parameter count matches expected formula."""
     expected = 9 * 8 + 8 + 8 * 3 + 3  # PERCEPTION_DIM*HIDDEN + HIDDEN + HIDDEN*UPDATE + UPDATE
     assert _param_count() == expected
+
+
+class _Recorder:
+    def __init__(self, rows, cols):
+        self.size = (rows, cols)
+        self.calls = []
+
+    def getmaxyx(self):
+        return self.size
+
+    def addstr(self, y, x, text, *attr):
+        self.calls.append((y, x, text))
+
+    def erase(self):
+        pass
+
+
+def test_side_by_side_grids_do_not_overlap():
+    """At 80 columns the default 24-wide grid is 48 columns wide at two per cell."""
+    app = _make_app()
+    app.nca_grid_h = 20
+    app.nca_grid_w = 24
+    app.stdscr = _Recorder(24, 80)
+    app._nca_init()
+    app.nca_view = 2
+    app._draw_nca(24, 80)
+    half_w = 80 // 2
+    # Grid rows start below the header and the labels (y >= 2) and end above the info bar.
+    cells = [(y, x, t) for y, x, t in app.stdscr.calls if 2 <= y < 2 + app.nca_grid_h_actual
+             and set(t) <= set("░▒▓█ ")]
+    assert cells
+    left = [x for _, x, _ in cells if x < half_w]
+    right = [x for _, x, _ in cells if x >= half_w]
+    assert right, "target grid must be drawn in the right half"
+    assert max(left) + 1 <= half_w
+    assert max(x + len(t) for _, x, t in cells) <= 80

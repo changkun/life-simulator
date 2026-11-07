@@ -646,20 +646,21 @@ def _handle_nca_key(self, key):
 
 # ── Drawing / Rendering ─────────────────────────────────────────────
 
-def _render_grid_2d(stdscr, data, h, w, y_off, x_off, max_y, max_x, color_pair_fn=None):
-    """Render a 2D float list [0,1] as density blocks."""
+def _render_grid_2d(stdscr, data, h, w, y_off, x_off, max_y, max_x, color_pair_fn=None,
+                    cell_w=2):
+    """Render a 2D float list [0,1] as density blocks, cell_w screen columns per cell."""
     for r in range(h):
         sy = y_off + r
         if sy < 0 or sy >= max_y - 1:
             continue
         for c in range(w):
-            sx = x_off + c * 2
-            if sx < 0 or sx + 1 >= max_x:
+            sx = x_off + c * cell_w
+            if sx < 0 or sx + cell_w - 1 >= max_x:
                 continue
             v = data[r][c]
             di = int(v * (len(_DENSITY) - 1))
             di = max(0, min(len(_DENSITY) - 1, di))
-            ch = _DENSITY[di]
+            ch = _DENSITY[di][:cell_w]
             try:
                 if color_pair_fn and di > 0:
                     stdscr.addstr(sy, sx, ch, color_pair_fn(v))
@@ -818,7 +819,7 @@ def _draw_nca(self, max_y, max_x):
         tw = len(target[0]) if th > 0 else 0
         _render_grid_2d(self.stdscr, target, th, tw, y_off, 0, max_y, max_x, target_color_fn)
     else:
-        # Side by side
+        # Side by side: one column per cell so both grids fit in half the screen.
         half_w = max_x // 2
         label_nca = "NCA State"
         label_tgt = "Target"
@@ -829,11 +830,12 @@ def _draw_nca(self, max_y, max_x):
                                label_tgt, curses.A_BOLD)
         except curses.error:
             pass
-        _render_grid_2d(self.stdscr, alive, gh, gw, y_off + 1, 0, max_y, max_x, color_fn)
+        _render_grid_2d(self.stdscr, alive, gh, gw, y_off + 1, 0, max_y, max_x, color_fn,
+                        cell_w=1)
         th = len(target)
         tw = len(target[0]) if th > 0 else 0
         _render_grid_2d(self.stdscr, target, th, tw, y_off + 1, half_w,
-                        max_y, max_x, target_color_fn)
+                        max_y, max_x, target_color_fn, cell_w=1)
 
     # Loss & training info bar
     info_y = min(y_off + gh + 1, max_y - 3)
