@@ -426,7 +426,8 @@ def _draw_bz(self, max_y: int, max_x: int):
         if self.message and now - self.message_time < 3.0:
             hint = f" {self.message}"
         else:
-            hint = " Space=play  n=step  a/A=alpha  g/G=gamma  d/D=diffusion  p=perturb  +/-=speed  r=reset  R=menu  q=exit"
+            # Single spaces keep every key within 79 columns; the title bar shows α, γ and D.
+            hint = " Space=play n=step a/A=α g/G=γ d/D=D p=perturb +/-=speed r=reset R=menu q=exit"
         hint = hint[:max_x - 1]
         try:
             self.stdscr.addstr(hint_y, 0, hint, curses.color_pair(6) | curses.A_DIM)

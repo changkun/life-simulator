@@ -306,3 +306,14 @@ class TestBZReaction:
         for _ in range(30):
             self.app._handle_bz_key(ord("D"))
         assert self.app.bz_diffusion == 0.25
+
+    def test_hint_bar_fits_80_columns(self):
+        """Every key in the hint bar, q=exit included, fits a 24x80 terminal."""
+        self.app._bz_init(0)
+        self.app.message = ""
+        lines = []
+        self.app.stdscr.addstr = lambda y, x, s, *a: lines.append(s)
+        self.app._draw_bz(24, 80)
+        hint = [s for s in lines if "q=exit" in s][-1]
+        assert len(hint) <= 79
+        assert hint.rstrip().endswith("q=exit")
