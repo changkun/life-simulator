@@ -867,7 +867,7 @@ Phylogenetic tracking:
 
 ## Firefly Synchronization & Bioluminescence
 
-**Background** — In the mangrove forests of Southeast Asia, thousands of male fireflies (*Pteroptyx malaccae*) flash in perfect unison — a phenomenon so striking that early Western observers refused to believe it was real. The mathematical explanation came from Peskin (1975), who modeled cardiac pacemaker cells as integrate-and-fire oscillators that advance each other's phase upon firing, and from Mirollo & Strogatz (1990), who proved that a population of such oscillators will *always* synchronize regardless of initial conditions, given sufficient coupling. The simulation implements this model with ecological grounding: species-specific flash patterns, spatial coupling with line-of-sight occlusion, predator-prey dynamics via *Photuris* femme fatale mimicry, and the Kuramoto order parameter as a real-time measure of collective coherence.
+**Background** — In the mangrove forests of Southeast Asia, thousands of male fireflies (*Pteroptyx malaccae*) flash in perfect unison — a phenomenon so striking that early Western observers refused to believe it was real. The mathematical explanation came from Peskin (1975), who modeled cardiac pacemaker cells as integrate-and-fire oscillators that advance each other's phase upon firing, and from Mirollo & Strogatz (1990), who proved that a population of such oscillators will *always* synchronize regardless of initial conditions, given sufficient coupling. The simulation implements this model with ecological grounding: species-specific flash frequencies, spatial coupling with line-of-sight occlusion, *Photuris* predators that hunt by the prey's flashes, and the Kuramoto order parameter as a real-time measure of collective coherence.
 
 **Formulation** — Each firefly carries a phase variable φ ∈ [0, 1] that increments at its natural frequency ω each tick:
 
@@ -889,10 +889,10 @@ Where:
   d_ij   = Euclidean distance between fireflies i and j
   Coupling requires: d_ij ≤ perception_radius, line-of-sight not blocked by trees, and a receiver that is not cooling down
 
-Species flash patterns (on/off fractions within one cycle):
-  P. carolinus:  single pulse     [(0.00, 0.12)]
-  P. pyralis:    double blink     [(0.00, 0.08), (0.15, 0.23)]
-  P. consimilis: rhythmic triplet [(0.00, 0.06), (0.12, 0.18), (0.24, 0.30)]
+Species (differ in natural frequency and flash glyph color; every flash is a single pulse):
+  P. carolinus:  ω = 0.020 (σ 0.003)
+  P. pyralis:    ω = 0.018 (σ 0.002)
+  P. consimilis: ω = 0.015 (σ 0.002)
 
 Kuramoto order parameter (global sync measure):
   R(t) = (1/N) |Σ_i exp(i·2π·φ_i)|     (prey only; predators are excluded)
@@ -900,16 +900,17 @@ Kuramoto order parameter (global sync measure):
   R = 1: perfectly synchronized (all phases identical)
 
 Predator (Photuris femme fatale):
-  - Does not couple (ε = 0)
-  - Mimics flash pattern of a randomly chosen prey species
-  - Moves toward attracted prey at speed 0.5/tick
+  - Does not couple (ε = 0) and flashes at ω = 0.02
+  - A prey flash that reaches it (within the prey's perception radius of 8,
+    line of sight clear, predator not cooling down) makes that prey its target
+  - Its own flashes reach prey within its perception radius of 12
+  - Moves toward its target at speed 0.5/tick
   - Kills on contact (distance < 1.5)
-  - Switches mimic species with probability 0.01/tick
 ```
 
 Spatial efficiency is achieved via grid-based hashing (4×4 cell buckets) for O(n·k) neighbor lookup. Line-of-sight is approximated by checking the midpoint between flasher and observer for tree occlusion (for distances > 3).
 
-**What to look for** — In "Southeast Asian Mangrove," watch the Kuramoto order parameter R climb from ~0.2 (random phases) toward 0.9+ (near-perfect synchrony) over 100–200 generations. The Sync Graph view shows this as a rising curve with a phase-distribution histogram narrowing from uniform to a sharp peak. Switch to Nightscape view to see synchronization waves spreading outward from initial clusters — first local neighborhoods lock in, then adjacent groups merge, until the entire field pulses as one. In "Appalachian Meadow," three species synchronize independently at different frequencies, producing a polyphonic light show. "Femme Fatale Hunting" adds red predator glyphs stalking through the meadow — watch the kill counter rise as *Photuris* mimics successfully lure prey. "Desynchronization Shock" starts fully synced, gives a random phase to about 40% of the fireflies at generation 80, and lets you observe recovery dynamics — how quickly does R return to 1.0? The other two presets are "Sync Emergence" (single species, random phases) and "Competitive Signaling" (two species, weak coupling). Press `v` to cycle the Nightscape, Phase Map and Sync Graph views, `Space` to pause and `r` to return to the preset menu.
+**What to look for** — In "Southeast Asian Mangrove," the Kuramoto order parameter R starts near 0 (random phases) and climbs within the first tens of generations as the strongest coupling (0.08) pulls phases together. In headless runs it then fluctuates well below 1 instead of settling at perfect synchrony. The Sync Graph view plots R over time beside a phase-distribution histogram. Switch to Nightscape view to see flashes spread between nearby fireflies. In "Appalachian Meadow," three species with different natural frequencies share the field and R stays low. "Femme Fatale Hunting" adds red predator glyphs stalking through the meadow — watch the kill counter rise as predators reach the prey they see flashing. "Desynchronization Shock" starts with phases clustered near 0.5, gives a random phase to about 40% of the fireflies at generation 80, and lets you watch how R changes. The other two presets are "Sync Emergence" (single species, random phases) and "Competitive Signaling" (two species, weak coupling 0.03). In the menu, Enter or Space starts a preset. Press `v` to cycle the Nightscape, Phase Map and Sync Graph views, `Space` to pause, `r` to return to the preset menu and `q` or `Esc` to exit.
 
 **References**
 - Mirollo, R. E. & Strogatz, S. H. "Synchronization of pulse-coupled biological oscillators." *SIAM Journal on Applied Mathematics* 50 (1990): 1645-1662. https://doi.org/10.1137/0150098
