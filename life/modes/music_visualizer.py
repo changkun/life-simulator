@@ -375,8 +375,8 @@ def _draw_musvis(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    help_text = (" space=pause  v=view  c=color  +/-=sensitivity"
-                 "  b/B=bars  n/N=next/prev  r=reset  m=menu  q=quit")
+    help_text = (" q=quit  m=menu  space=pause  v=view  c=color  +/-=sens"
+                 "  b/B=bars  n/N=next/prev  r=reset")
     try:
         self.stdscr.addstr(max_y - 1, 0, help_text[:max_x - 1],
                            curses.color_pair(6) | curses.A_DIM)

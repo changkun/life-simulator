@@ -441,3 +441,15 @@ def test_waveform_spans_full_width():
     app.stdscr.addstr = lambda y, x, *a, **k: xs.add(x)
     app._draw_musvis_waveform(30, 120)
     assert max(xs) >= 110
+
+
+def test_running_hint_fits_80_columns_with_exit_keys():
+    app = _make_app()
+    app._musvis_init(0)
+    lines = []
+    app.stdscr.addstr = lambda y, x, s, *a: lines.append((y, s))
+    app._draw_musvis(24, 80)
+    hint = [s for y, s in lines if y == 23][-1]
+    assert len(hint) <= 79
+    assert hint.startswith(" q=quit  m=menu")
+    assert "m=menu" in hint and "q=quit" in hint
