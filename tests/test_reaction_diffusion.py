@@ -533,3 +533,18 @@ class TestMenuKeys:
     def test_esc_cancels(self):
         self.app._handle_rd_menu_key(27)
         assert self.app.rd_menu is False
+
+
+class TestMenuScroll:
+    def test_selected_preset_drawn_on_small_screen(self):
+        """The menu scrolls so the selected preset stays visible at 24 rows."""
+        app = _make_rd_app()
+        presets = [(f"P{i}", "d", 0.03, 0.06) for i in range(15)]
+        type(app).RD_PRESETS = presets
+        drawn = []
+        app.stdscr.addstr = lambda y, x, text, *a: drawn.append(text)
+        for sel in (0, 7, 14):
+            drawn.clear()
+            app.rd_menu_sel = sel
+            app._draw_rd_menu(24, 80)
+            assert any(t.startswith(f" > P{sel} ") for t in drawn)

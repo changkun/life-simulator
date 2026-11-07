@@ -330,31 +330,28 @@ def _draw_rd_menu(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    n = len(self.RD_PRESETS)
-    # Show category headers
-    last_category = None
-    y = 5
-    for i, (name, desc, f_val, k_val) in enumerate(self.RD_PRESETS):
-        if y >= max_y - 8:
-            break
-        # Category dividers at preset indices
-        cat = None
-        if i == 0:
-            cat = "Classic Patterns"
-        elif i == 5:
-            cat = "Exotic Patterns"
-        elif i == 10:
-            cat = "Biological Analogues"
-        if cat and cat != last_category:
-            last_category = cat
+    # Flatten category headers and presets into rows so a window can scroll
+    # to keep the selected preset visible on small terminals.
+    categories = {0: "Classic Patterns", 5: "Exotic Patterns", 10: "Biological Analogues"}
+    rows = []
+    for i, preset in enumerate(self.RD_PRESETS):
+        if i in categories:
+            rows.append((None, categories[i]))
+        rows.append((i, preset))
+    list_top = 5
+    visible = max(1, max_y - 8 - list_top)
+    sel_row = next(j for j, (i, _) in enumerate(rows) if i == self.rd_menu_sel)
+    start = max(0, min(sel_row - visible // 2, len(rows) - visible))
+    y = list_top
+    for i, item in rows[start:start + visible]:
+        if i is None:
             try:
-                self.stdscr.addstr(y, 2, f"  {cat}", curses.color_pair(3) | curses.A_BOLD)
+                self.stdscr.addstr(y, 2, f"  {item}", curses.color_pair(3) | curses.A_BOLD)
             except curses.error:
                 pass
             y += 1
-            if y >= max_y - 8:
-                break
-
+            continue
+        name, desc, f_val, k_val = item
         marker = ">" if i == self.rd_menu_sel else " "
         attr = curses.color_pair(7) | curses.A_BOLD if i == self.rd_menu_sel else curses.color_pair(6)
         line = f" {marker} {name:<16s} f={f_val:.4f} k={k_val:.4f}  {desc}"
