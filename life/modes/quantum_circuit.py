@@ -239,22 +239,29 @@ def _measure_probabilities(state_vec, n_qubits):
     return result
 
 
-def _bloch_angles(amp0, amp1):
-    """Compute Bloch sphere theta, phi from qubit amplitudes α|0⟩ + β|1⟩."""
-    a, b = abs(amp0), abs(amp1)
-    theta = 2.0 * math.acos(min(1.0, a))
-    if b > 1e-10:
-        phi = cmath.phase(amp1) - cmath.phase(amp0)
-    else:
-        phi = 0.0
-    return theta, phi
+def _bloch_vector(state_vec, n_qubits, qubit):
+    """Return the Bloch vector (x, y, z) of one qubit's reduced state.
+
+    The vector has length 1 for a pure qubit and shrinks toward 0 as the
+    qubit becomes entangled with the rest of the register.
+    """
+    shift = n_qubits - 1 - qubit
+    p0 = p1 = 0.0
+    coh = complex(0)  # off-diagonal element rho_01 of the reduced density matrix
+    for i, amp in enumerate(state_vec):
+        if (i >> shift) & 1:
+            p1 += abs(amp) ** 2
+        else:
+            p0 += abs(amp) ** 2
+            coh += amp * state_vec[i | (1 << shift)].conjugate()
+    return (2.0 * coh.real, -2.0 * coh.imag, p0 - p1)
 
 
-def _mini_bloch(theta, phi, size=3):
-    """Return a list of strings representing a tiny Bloch sphere projection."""
-    # Project onto XZ plane: x = sin(theta)*cos(phi), z = cos(theta)
-    x = math.sin(theta) * math.cos(phi)
-    z = math.cos(theta)
+def _mini_bloch(x, z, size=3):
+    """Return a list of strings representing a tiny Bloch sphere projection.
+
+    (x, z) is the Bloch vector projected onto the XZ plane.
+    """
     lines = []
     for row in range(size * 2 + 1):
         chars = []
@@ -276,48 +283,16 @@ def _mini_bloch(theta, phi, size=3):
     return lines
 
 
-def _reduced_density(state_vec, n_qubits, qubit):
-    """Get reduced density matrix diagonal for single qubit (amp0, amp1)."""
-    n = len(state_vec)
-    a0 = complex(0)
-    a1 = complex(0)
-    p0 = 0.0
-    p1 = 0.0
-    for i in range(n):
-        bit = (i >> (n_qubits - 1 - qubit)) & 1
-        if bit == 0:
-            p0 += abs(state_vec[i]) ** 2
-            a0 += state_vec[i]
-        else:
-            p1 += abs(state_vec[i]) ** 2
-            a1 += state_vec[i]
-    # Normalize
-    norm0 = math.sqrt(p0) if p0 > 1e-12 else 0
-    norm1 = math.sqrt(p1) if p1 > 1e-12 else 0
-    return (norm0, norm1 * cmath.exp(1j * (cmath.phase(a1) - cmath.phase(a0) if abs(a0) > 1e-12 else 0)))
-
-
 def _entanglement_pairs(state_vec, n_qubits):
-    """Detect entangled pairs by checking if reduced state is mixed."""
-    pairs = []
+    """Return index pairs of qubits whose reduced state is mixed (entangled)."""
+    mixed = []
     for q in range(n_qubits):
-        # Check purity of reduced density matrix
-        p0 = 0.0
-        p1 = 0.0
-        n = len(state_vec)
-        for i in range(n):
-            if (i >> (n_qubits - 1 - q)) & 1:
-                p1 += abs(state_vec[i]) ** 2
-            else:
-                p0 += abs(state_vec[i]) ** 2
-        purity = p0 * p0 + p1 * p1
-        if purity < 0.99:  # not a pure single-qubit state → entangled
-            pairs.append(q)
-    # Return pairs of entangled qubits
-    if len(pairs) >= 2:
-        return [(pairs[i], pairs[j]) for i in range(len(pairs))
-                for j in range(i + 1, len(pairs))]
-    return []
+        x, y, z = _bloch_vector(state_vec, n_qubits, q)
+        purity = (1.0 + x * x + y * y + z * z) / 2.0
+        if purity < 0.99:
+            mixed.append(q)
+    return [(mixed[i], mixed[j]) for i in range(len(mixed))
+            for j in range(i + 1, len(mixed))]
 
 
 # ── Color pairs for entanglement links ─────────────────────────────────
@@ -717,9 +692,8 @@ def _draw_qcirc(self, max_y, max_x):
     if bloch_x > 20 and bloch_x + 10 < max_x:
         bloch_y = circuit_start_y + 1
         for q in range(min(nq, 4)):
-            amp0, amp1 = _reduced_density(sv, nq, q)
-            theta, phi = _bloch_angles(amp0, amp1)
-            lines = _mini_bloch(theta, phi, size=2)
+            bx_v, _by_v, bz_v = _bloch_vector(sv, nq, q)
+            lines = _mini_bloch(bx_v, bz_v, size=2)
             bx = bloch_x + q * 12
             try:
                 self.stdscr.addstr(bloch_y, bx + 1, f"q{q}",

@@ -3,6 +3,7 @@ import math
 from tests.conftest import make_mock_app
 from life.modes.quantum_circuit import (
     register, QCIRC_PRESETS, _apply_gate, _measure_probabilities,
+    _bloch_vector, _entanglement_pairs,
 )
 
 
@@ -95,3 +96,22 @@ def test_measure_shots_accumulates():
     app._qcirc_measure_shots(50)
     assert app.qcirc_total_shots == 50
     assert sum(app.qcirc_histogram.values()) == 50
+
+
+def test_bloch_vector_product_state_with_cancelling_partner():
+    """|-> on q0 must stay |-> even when q1 is also |->."""
+    sv = [0.5, -0.5, -0.5, 0.5]
+    x, y, z = _bloch_vector(sv, 2, 0)
+    assert abs(x + 1.0) < 1e-9 and abs(y) < 1e-9 and abs(z) < 1e-9
+
+
+def test_bloch_vector_entangled_is_short():
+    sv = [1 / math.sqrt(2), 0, 0, 1 / math.sqrt(2)]
+    x, y, z = _bloch_vector(sv, 2, 0)
+    assert x * x + y * y + z * z < 1e-9
+
+
+def test_entanglement_pairs_ignores_product_states():
+    assert _entanglement_pairs([0.5, 0.5, 0.5, 0.5], 2) == []
+    bell = [1 / math.sqrt(2), 0, 0, 1 / math.sqrt(2)]
+    assert _entanglement_pairs(bell, 2) == [(0, 1)]
