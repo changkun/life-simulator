@@ -1396,7 +1396,7 @@ Flash map decay: ×0.7 per tick
 2. **Depth-Pressure Cross-Section** — 4 depth zone bands with pressure/depth labels, creature distribution bar charts per zone showing population counts by species, plankton density bars per zone
 3. **Time-Series Graphs** — 10 sparkline graphs (Unicode block elements `▁▂▃▄▅▆▇█`) tracking flash events, cascade events, predation, plankton population, creature population, anglerfish count, giant squid count, jellyfish count, average energy, and marine snow count over last 200 ticks
 
-**Controls:** `Space`=play/pause, `v`=cycle views, `r`=reset (return to preset menu), `q`=exit mode.
+**Controls:** `Space`=play/pause, `v`=cycle views, `r`=back to the preset menu, `q`=exit. In the menu, `Enter` or `Space` starts a preset.
 
 **What to look for.** In Midnight Zone Ecosystem, the screen is nearly black — watch for scattered dim glows from jellyfish pulses and the rhythmic pulsing of anglerfish lures. When a lanternfish school drifts near an anglerfish, the lure brightens and prey are drawn in; capture triggers a bright flash. Switch to Bioluminescent Storm to see the most dramatic visual: with 1200 plankton, any creature movement sets off cascading chain-reaction light bursts that ripple outward in waves — like underwater lightning illuminating the darkness. Giant Squid Territory shows squid chromatophore behavior: squid darken as they descend and brighten near the surface. When threatened by dragonfish, they release ink clouds (dark patches) and flee with a startling flash. In Anglerfish Hunting Ground, 12 anglerfish lures create a deadly field of pulsing lights; lanternfish and hatchetfish are drawn toward them and captured. Marine Snow Blizzard shows a gentle white rain of organic particles drifting downward with sinusoidal wobble, feeding plankton and supporting a dense shrimp/tubeworm community. Abyssal Vent Oasis concentrates life around hydrothermal vents — tubeworms cluster at the bottom, shrimp swarm near vent plumes for chemosynthetic energy.
 
@@ -1431,7 +1431,7 @@ Seasons (120 ticks each):
   Winter:  photo_mult = 0.1, growth ×0.1, deciduous trees go dormant
            (Pine and Fir remain active — evergreen species)
 
-Network construction:
+Network construction (once, at the start; later growth and decay only change hyphae):
   Trees connect when distance ≤ root_radius_A + root_radius_B
   Connection probability = 1.0 − (d / max_reach) × 0.6
     +0.30 if either tree is a mother tree
@@ -1475,20 +1475,20 @@ Hypha lifecycle:
 | Preset | Character | Configuration |
 |--------|-----------|--------------|
 | Old-Growth Cooperation | Dense diverse old-growth | 4–6 mother trees (size 0.8–1.0), 35 mature trees, 20 seedlings — watch mother trees fund seedlings through dense fungal mesh |
-| Drought Triage | Progressive water stress | Soil moisture starts at 30%, intensity rises +0.001/tick — network reroutes water to weakest trees, mother trees prioritize carbon sharing |
-| Pest Cascade | Bark beetle outbreak | Trees on east edge pre-infected (pest 0.3–0.7) — alarm signals cascade through network, defense levels rise in waves across the forest |
-| Clear-Cut Fragmentation | Logging removes hub trees | Left: intact old-growth, middle: transition zone, right: only seedlings — network fragments into disconnected islands |
-| Monoculture vs. Biodiversity | Side-by-side comparison | Left: pine monoculture (25 trees), right: mixed old-growth with mother trees — compare network density and resilience |
-| Seasonal Nutrient Cycling | Four-season cycle | Starts in spring — watch carbon flush, summer peak, autumn senescence (deciduous dormancy), winter survival on stored reserves |
+| Drought Triage | Progressive water stress | Soil moisture starts at 30% of the normal level and keeps drying; drought intensity starts at 0.7 and rises +0.001/tick. Mother trees share water as well as carbon |
+| Pest Cascade | Bark beetle outbreak | Trees in the last 10 columns start infected (pest 0.3–0.7); alarm signals spread through the network and defense levels rise |
+| Clear-Cut Fragmentation | Logging removes hub trees | Left third: 4 large trees and 20 mature trees. Middle: 6 small trees. Right third: 8 seedlings. The network ends up as separate islands |
+| Monoculture vs. Biodiversity | Side-by-side comparison | Left half: 25 pines. Right half: 3 large trees, 20 mixed trees, and 10 seedlings. Compare network density |
+| Seasonal Nutrient Cycling | Four-season cycle | Starts in spring (the other presets start in summer). Winter makes deciduous trees dormant while Pine and Fir stay active |
 
 **View modes (3, cycle with `v`):**
 1. **Forest** — split display: above-ground canopy with seasonal-colored tree glyphs (green/gold/bare), mother tree markers (`M`), pest indicators; below-ground hyphal network with pulsing connections (thickness-scaled `·∙•─═`), flowing nutrient particles (C=green, P=magenta, W=blue, !=red alarm), root system circles
 2. **Network Topology** — graph diagram showing trees as labeled nodes (species glyph + health bar) and hyphae as edges, colored by current activity: red=alarm signal, green=carbon flow, magenta=phosphorus flow, dim=idle
 3. **Time-Series Graphs** — 10 sparkline metrics (Unicode block elements `▁▂▃▄▅▆▇█`): total carbon flow, total phosphorus flow, alarm signals, network edges, average tree health, mother tree count, seedling count, fungal tax collected, average defense level, connected components
 
-**Controls:** `Space`=play/pause, `n`=step, `v`=cycle views, `+/-`=simulation speed, `r`=reset (return to preset menu), `q`=exit mode.
+**Controls:** `Space`=play/pause, `n` or `.`=step, `v`=cycle views, `+/-`=steps per frame (1-20), `r`=reset, `R` or `m`=menu, `q`=exit.
 
-**What to look for.** In Old-Growth Cooperation, the mother trees form bright hub nodes with thick radiating hyphae — green carbon particles flow outward from mothers toward dim seedlings. Switch to Drought Triage and watch the soil moisture gradient darken; mother trees begin sharing water (blue particles) and the network reorganizes around the remaining moisture. In Pest Cascade, red alarm particles burst from the east edge and cascade through the network in waves; trees receiving alarms raise defense levels (visible as brightening nodes) before the pest front arrives — trees with high defense resist infection. Clear-Cut Fragmentation shows the network literally breaking apart: the right side has only isolated seedlings with no connections, while the intact left-side forest maintains a dense web. Monoculture vs. Biodiversity reveals that the mixed forest develops a richer, more interconnected network (same-species bonus + mother tree hubs) compared to the uniform but less-connected monoculture. Seasonal Nutrient Cycling shows the annual rhythm: spring carbon flush (green particles surge), summer stability, autumn carbon flow reversal as deciduous trees shed resources, and winter dormancy where only evergreens (Pine, Fir) remain active on the network.
+**What to look for.** In Old-Growth Cooperation, the mother trees form bright hub nodes with thick radiating hyphae — green carbon particles flow outward from mothers toward dim seedlings. In Drought Triage, the soil dries over time and mother trees send water (blue particles) to dry neighbors. In Pest Cascade, red alarm particles spread from the east edge through the network. Trees that receive an alarm raise their defense level, which lowers their chance of infection. Clear-Cut Fragmentation leaves the right side with few or no connections, while the left side keeps a dense web. Monoculture vs. Biodiversity compares network density on the two halves. Seasonal Nutrient Cycling shows the annual rhythm: photosynthesis rises in spring, peaks in summer, falls in autumn, and nearly stops in winter, when only Pine and Fir stay active.
 
 **References.**
 - Simard, S. W. et al. "Net transfer of carbon between ectomycorrhizal tree species in the field." *Nature*, 388, 579–582, 1997. https://doi.org/10.1038/41557
