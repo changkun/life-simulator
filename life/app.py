@@ -4250,7 +4250,7 @@ class App:
             if self.terrarium_mode and not self._any_menu_open():
                 _my, _mx = self.stdscr.getmaxyx()
                 if self.terrarium_show_summary:
-                    if hasattr(self, '_terrarium_chronicle_view') and self._terrarium_chronicle_view:
+                    if self._terrarium_chronicle_view:
                         self._draw_terrarium_chronicle_view(_my, _mx)
                     else:
                         self._draw_terrarium_summary(_my, _mx)
