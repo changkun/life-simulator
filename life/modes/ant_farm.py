@@ -1,8 +1,6 @@
-"""Mode: antfarm — simulation mode for the life package."""
+"""Ant Farm Simulation — a side-view ant colony that digs tunnels, forages and leaves pheromone trails."""
 import curses
-import math
 import random
-import time
 
 ANTFARM_PRESETS = [
     ("Classic Colony", "Standard ant colony with balanced terrain", "classic"),
@@ -12,7 +10,6 @@ ANTFARM_PRESETS = [
     ("Rainy Day", "Colony with rain that brings surface food and moisture", "rainy"),
 ]
 
-# Cell type constants
 _AF_AIR = 0
 _AF_DIRT = 1
 _AF_ROCK = 2
@@ -23,11 +20,9 @@ _AF_QUEEN_CELL = 6
 
 
 def _enter_antfarm_mode(self):
-    """Enter Ant Farm Simulation mode — show preset menu."""
+    """Show the Ant Farm Simulation preset menu."""
     self.antfarm_menu = True
     self.antfarm_menu_sel = 0
-
-
 
 
 def _exit_antfarm_mode(self):
@@ -43,10 +38,8 @@ def _exit_antfarm_mode(self):
     self.antfarm_rain_drops = []
 
 
-
-
 def _antfarm_init(self, preset: str):
-    """Initialize ant farm from a preset."""
+    """Start a new colony from the preset key."""
     self.antfarm_menu = False
     self.antfarm_mode = True
     self.antfarm_running = True
@@ -69,7 +62,7 @@ def _antfarm_init(self, preset: str):
 
     sr = self.antfarm_surface_row
 
-    # Initialize grid — sky is AIR, underground is DIRT with layers
+    # Sky is air; underground is dirt with scattered clay and rock.
     grid = []
     for r in range(rows):
         row = []
@@ -91,7 +84,6 @@ def _antfarm_init(self, preset: str):
         grid.append(row)
     self.antfarm_grid = grid
 
-    # Pheromone grids
     self.antfarm_pheromone_food = [[0.0] * cols for _ in range(rows)]
     self.antfarm_pheromone_home = [[0.0] * cols for _ in range(rows)]
 
@@ -116,7 +108,6 @@ def _antfarm_init(self, preset: str):
         fx = random.randint(1, cols - 2)
         self.antfarm_food_surface.append(fx)
 
-    # Create initial ants
     num_ants = 15 if preset in ("classic", "rainy") else (20 if preset == "deep" else 12)
     self.antfarm_ants = []
     for i in range(num_ants):
@@ -125,23 +116,17 @@ def _antfarm_init(self, preset: str):
             "c": qc + random.randint(-1, 1),
             "has_food": False,
             "state": "explore",  # explore, forage, return_food, dig
-            "target_r": 0,
-            "target_c": 0,
             "dig_strength": 2 if preset == "sandy" else 1,
             "age": 0,
-            "energy": 100,
         }
         self.antfarm_ants.append(ant)
 
     self.antfarm_rain_drops = []
 
-    # Preset-specific name
     for name, _desc, key in ANTFARM_PRESETS:
         if key == preset:
             self.antfarm_preset_name = name
             break
-
-
 
 
 def _antfarm_step(self):
@@ -155,7 +140,6 @@ def _antfarm_step(self):
     sr = self.antfarm_surface_row
     qr, qc = self.antfarm_queen_pos
 
-    # Decay pheromones
     for r in range(rows):
         for c in range(cols):
             p_food[r][c] *= 0.995
@@ -182,7 +166,6 @@ def _antfarm_step(self):
                 self.antfarm_food_surface.append(drop[1])
         self.antfarm_rain_drops = new_drops
 
-    # Move ants
     for ant in self.antfarm_ants:
         ant["age"] += 1
         r, c = ant["r"], ant["c"]
@@ -207,7 +190,6 @@ def _antfarm_step(self):
                             neighbors.append((nr, nc, 0.3))
 
             if neighbors:
-                # Weighted random choice
                 total = sum(w for _, _, w in neighbors)
                 pick = random.random() * total
                 cum = 0
@@ -290,8 +272,7 @@ def _antfarm_step(self):
                     self.antfarm_ants.append({
                         "r": qr, "c": qc,
                         "has_food": False, "state": "explore",
-                        "target_r": 0, "target_c": 0,
-                        "dig_strength": 1, "age": 0, "energy": 100,
+                        "dig_strength": 1, "age": 0,
                     })
 
         elif ant["state"] == "dig":
@@ -335,8 +316,6 @@ def _antfarm_step(self):
         self.antfarm_food_surface.append(random.randint(1, cols - 2))
 
 
-
-
 def _handle_antfarm_menu_key(self, key: int) -> bool:
     """Handle key presses in the ant farm preset selection menu."""
     if key == 27:  # Escape
@@ -356,8 +335,6 @@ def _handle_antfarm_menu_key(self, key: int) -> bool:
     return True
 
 
-
-
 def _handle_antfarm_key(self, key: int) -> bool:
     """Handle key presses during ant farm simulation."""
     if key == 27:  # Escape
@@ -370,14 +347,12 @@ def _handle_antfarm_key(self, key: int) -> bool:
         self._antfarm_step()
         return True
     elif key == ord("r"):
-        # Reset with same preset
         for _name, _desc, k in ANTFARM_PRESETS:
             if _name == self.antfarm_preset_name:
                 self._antfarm_init(k)
                 break
         return True
     elif key == ord("R") or key == ord("m"):
-        # Return to preset menu
         self.antfarm_mode = False
         self.antfarm_menu = True
         self.antfarm_menu_sel = 0
@@ -392,11 +367,9 @@ def _handle_antfarm_key(self, key: int) -> bool:
         self.antfarm_show_info = not self.antfarm_show_info
         return True
     elif key == ord("f"):
-        # Drop food at cursor position
         self.antfarm_food_surface.append(self.antfarm_cursor_x)
         return True
     elif key == ord("w"):
-        # Toggle rain
         self.antfarm_rain_active = not self.antfarm_rain_active
         if not self.antfarm_rain_active:
             self.antfarm_rain_drops = []
@@ -420,8 +393,6 @@ def _handle_antfarm_key(self, key: int) -> bool:
         self.antfarm_cursor_x = min(self.antfarm_cols - 1, self.antfarm_cursor_x + 1)
         return True
     return True
-
-
 
 
 def _draw_antfarm_menu(self, max_y: int, max_x: int):
@@ -471,8 +442,6 @@ def _draw_antfarm_menu(self, max_y: int, max_x: int):
         pass
 
 
-
-
 def _draw_antfarm(self, max_y: int, max_x: int):
     """Draw the ant farm simulation."""
     self.stdscr.erase()
@@ -486,7 +455,6 @@ def _draw_antfarm(self, max_y: int, max_x: int):
     draw_rows = min(rows, max_y - 2)
     draw_cols = min(cols, max_x - 1)
 
-    # Build character buffer
     buf = []
     attr_buf = []
     for r in range(draw_rows):
@@ -554,25 +522,21 @@ def _draw_antfarm(self, max_y: int, max_x: int):
         buf.append(row_chars)
         attr_buf.append(row_attrs)
 
-    # Draw surface food
     for fx in self.antfarm_food_surface:
         if 0 <= fx < draw_cols and sr > 0 and sr - 1 < draw_rows:
             buf[sr - 1][fx] = "*"
             attr_buf[sr - 1][fx] = curses.A_BOLD
 
-    # Draw rain
     for drop in self.antfarm_rain_drops:
         dr, dc = drop
         if 0 <= dr < draw_rows and 0 <= dc < draw_cols:
             buf[dr][dc] = "|"
             attr_buf[dr][dc] = curses.A_DIM
 
-    # Draw queen
     if 0 <= qr < draw_rows and 0 <= qc < draw_cols:
         buf[qr][qc] = "Q"
         attr_buf[qr][qc] = curses.A_BOLD
 
-    # Draw ants
     for ant in self.antfarm_ants:
         ar, ac = ant["r"], ant["c"]
         if 0 <= ar < draw_rows and 0 <= ac < draw_cols:
@@ -591,7 +555,6 @@ def _draw_antfarm(self, max_y: int, max_x: int):
             buf[cursor_r][cx] = "V"
             attr_buf[cursor_r][cx] = curses.A_BOLD
 
-    # Render buffer
     try:
         for r in range(draw_rows):
             for c in range(draw_cols):
