@@ -1,8 +1,7 @@
-"""Mode: gol3d — simulation mode for the life package."""
+"""3D Game of Life — a cellular automaton on a 3D grid, drawn by ASCII ray casting."""
 import curses
 import math
 import random
-import time
 
 GOL3D_PRESETS = [
     ("Classic 3D (B5/S45)", "Stable structures with gradual growth", {5}, {4, 5}, 0.12),
@@ -36,7 +35,7 @@ def _exit_gol3d_mode(self):
 
 
 def _gol3d_init(self, preset_idx: int):
-    """Initialize 3D Game of Life with chosen preset."""
+    """Start 3D Game of Life with the given preset."""
     name, _desc, birth, survive, density = self.GOL3D_PRESETS[preset_idx]
     self.gol3d_preset_name = name
     self.gol3d_birth = birth
@@ -50,8 +49,7 @@ def _gol3d_init(self, preset_idx: int):
     self.gol3d_auto_rotate = True
     self.gol3d_rotate_speed = 0.02
 
-    # Initialize 3D grid with random seed
-    import random as _rng
+    # Seed random cells inside a central sphere.
     sz = self.gol3d_size
     grid = []
     pop = 0
@@ -60,12 +58,11 @@ def _gol3d_init(self, preset_idx: int):
         for y in range(sz):
             row = []
             for z in range(sz):
-                # Seed more densely near center
                 dx = x - sz / 2
                 dy = y - sz / 2
                 dz = z - sz / 2
                 dist = math.sqrt(dx * dx + dy * dy + dz * dz)
-                if dist < sz * 0.4 and _rng.random() < density:
+                if dist < sz * 0.4 and random.random() < density:
                     row.append(1)
                     pop += 1
                 else:
@@ -82,7 +79,7 @@ def _gol3d_init(self, preset_idx: int):
 
 
 def _gol3d_step(self):
-    """Advance one generation of 3D cellular automaton."""
+    """Advance the simulation by one generation."""
     sz = self.gol3d_size
     grid = self.gol3d_grid
     birth = self.gol3d_birth
@@ -134,7 +131,7 @@ def _gol3d_step(self):
 
 
 def _handle_gol3d_menu_key(self, key: int) -> bool:
-    """Handle input in 3D GoL preset menu."""
+    """Handle keys in the preset menu."""
     n = len(self.GOL3D_PRESETS)
     if key in (ord("j"), curses.KEY_DOWN):
         self.gol3d_menu_sel = (self.gol3d_menu_sel + 1) % n
@@ -150,7 +147,7 @@ def _handle_gol3d_menu_key(self, key: int) -> bool:
 
 
 def _handle_gol3d_key(self, key: int) -> bool:
-    """Handle input in active 3D GoL simulation."""
+    """Handle keys in the running simulation."""
     orbit_step = 0.1
 
     if key == ord(" "):
@@ -173,10 +170,8 @@ def _handle_gol3d_key(self, key: int) -> bool:
         self.gol3d_cam_dist = min(5.0, self.gol3d_cam_dist + 0.2)
         self._flash(f"Zoom: {self.gol3d_cam_dist:.1f}")
     elif key == ord("n"):
-        # Single step
         self._gol3d_step()
     elif key == ord("r"):
-        # Reset with same preset
         idx = next((i for i, p in enumerate(self.GOL3D_PRESETS)
                     if p[0] == self.gol3d_preset_name), 0)
         self._gol3d_init(idx)
@@ -194,7 +189,7 @@ def _handle_gol3d_key(self, key: int) -> bool:
 
 
 def _draw_gol3d_menu(self, max_y: int, max_x: int):
-    """Draw the 3D GoL preset selection menu."""
+    """Draw the preset menu."""
     self.stdscr.erase()
     title = "── 3D Game of Life ── Select Ruleset ──"
     try:
@@ -223,7 +218,7 @@ def _draw_gol3d_menu(self, max_y: int, max_x: int):
         except curses.error:
             pass
 
-    hint = " [j/k]=navigate  [Enter]=select  [q]=cancel"
+    hint = " j/k=move  Enter=select  q=cancel"
     try:
         self.stdscr.addstr(max_y - 1, 0, hint[:max_x - 1], curses.color_pair(6) | curses.A_DIM)
     except curses.error:
@@ -490,8 +485,8 @@ def _draw_gol3d(self, max_y: int, max_x: int):
     except curses.error:
         pass
 
-    help_text = (" ←→↑↓=orbit  +/-=zoom  a=auto-rotate"
-                 "  n=step  r=reset  m=menu  space=pause  q=quit")
+    help_text = (" Space=play  n=step  Arrows=orbit  +/-=zoom  a=auto-rotate"
+                 "  r=reset  R=menu  q=exit")
     try:
         self.stdscr.addstr(max_y - 1, 0, help_text[:max_x - 1],
                            curses.color_pair(6) | curses.A_DIM)
