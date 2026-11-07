@@ -14,7 +14,7 @@ Two landmark theoretical frameworks define the field. The Vicsek model (1995) sh
 
 ### Formulation
 
-Each particle has position (r, c) on a toroidal domain, heading angle θ, velocity (vr, vc), and fuel level f. The simulation uses spatial hashing for O(N) neighbor lookup.
+Each particle has position (r, c) on a toroidal domain, heading angle θ, velocity (vr, vc), and a fuel level f that scales propulsion. Fuel regenerates to 1 and never drops, so it has no effect. A spatial hash gives O(N) neighbor lookup.
 
 ```
 Per-timestep update for particle i:
@@ -25,7 +25,7 @@ Per-timestep update for particle i:
      dc = c_j - c_i
      dist = sqrt(dr² + dc²)
 
-2. ALIGNMENT TORQUE (if dist < align_r):
+2. ALIGNMENT TORQUE (if dist < align_r and align_w > 0):
    Polar:    accumulate sin(θ_j), cos(θ_j)
    Nematic:  accumulate sin(2θ_j), cos(2θ_j)  (double-angle trick)
    target = atan2(sin_sum, cos_sum)  [÷2 for nematic]
@@ -47,8 +47,8 @@ Per-timestep update for particle i:
 
 7. ANGULAR NOISE: θ_new += N(0, η)
 
-8. MIPS SLOWDOWN (when τ > 0 and neighbors present):
-   local_density = n_neighbors / (π * align_r²)
+8. CROWD SLOWDOWN (when τ > 0 and at least one aligning neighbor was counted in step 2):
+   local_density = n_align / (π * align_r²)
    prop_speed = v₀ / (1 + 5 * local_density)
 
 9. VELOCITY UPDATE:
@@ -61,20 +61,26 @@ Per-timestep update for particle i:
     c_new = (c + vc) mod cols
 ```
 
-The order parameter ψ quantifies collective alignment: ψ = |Σ exp(iθ)| / N for polar (Vicsek), ψ = |Σ exp(2iθ)| / N for nematic. ψ → 1 indicates long-range order; ψ → 0 indicates disorder.
+The order parameter ψ quantifies collective alignment: ψ = |Σ exp(iθ)| / N for polar (Vicsek), ψ = |Σ exp(2iθ)| / N for nematic. ψ → 1 indicates long-range order; ψ → 0 indicates disorder. The title bar shows ψ.
+
+The crowd slowdown counts only neighbors inside `align_r` while `align_w > 0`. The **Motility-Induced Clustering** preset has `align_r = 0`, so it never slows down in crowds; its clustering comes from repulsion and tumbling alone. In presets with `align_r > 0`, raising the tumble rate with `t` enables the slowdown.
 
 ### Presets
 
 - **Bacterial Turbulence**: Dense pushers (extensile dipoles, contract = −0.3) with nematic alignment. Produces chaotic vortex streets and jet-like flows characteristic of dense bacterial suspensions like *B. subtilis*.
 - **Active Nematics**: Rod-like extensile particles (contract = −0.5) with strong nematic alignment. Nucleates ±½ topological defect pairs that unbind and annihilate — the hallmark of active nematic turbulence observed in microtubule-kinesin mixtures.
-- **Motility-Induced Clustering**: Run-and-tumble particles (τ = 0.05) with no alignment interaction. Pure MIPS: particles slow down in crowds, accumulate, slow further — a positive feedback loop producing dense liquid drops in dilute gas.
-- **Vicsek Flocking**: Polar aligning particles with moderate noise. Demonstrates the Vicsek phase transition: below critical noise, the system orders into a coherent flock with giant number fluctuations.
-- **Active Spinner Gas**: Self-rotating disks (spin_w = 0.3) with odd-elastic collisions. Models systems with broken parity symmetry, producing chiral edge currents and odd-viscosity effects.
-- **Contractile Gel**: Puller particles (contract = +0.5) forming asters and contractile networks, modeling actomyosin gel dynamics where molecular motors pull filaments inward.
+- **Motility-Induced Clustering**: Run-and-tumble particles (τ = 0.05, v₀ = 1.0) with no alignment and strong repulsion. Particles tumble at random and push each other apart.
+- **Vicsek Flocking**: Polar aligning particles with moderate noise (η = 0.3). Demonstrates the Vicsek transition: below a critical noise the system orders into a coherent flock.
+- **Active Spinner Gas**: Self-rotating particles (spin_w = 0.3) that turn by a fixed angle each step, so they travel in circles. Collisions are plain repulsion; there is no odd-elastic force.
+- **Contractile Gel**: Puller particles (contract = +0.5) that tend to form asters and contractile networks, as in actomyosin gels where motors pull filaments inward.
+
+### Controls
+
+`v` cycles the view (Arrows, Density, Vorticity). `s`/`S` change v₀, `e`/`E` the noise η, `a`/`A` the alignment weight, `p`/`P` the repulsion weight, and `t`/`T` the tumble rate. `+`/`-` set steps per frame. A mouse click adds 15 particles.
 
 ### What to look for
 
-In **Bacterial Turbulence**, watch for turbulent vortex patterns with a characteristic length scale — switch to Vorticity view (v) to see the counter-rotating vortex pairs. **Active Nematics** produces pairs of comet-shaped (+½) and trefoil (−½) topological defects that self-propel and annihilate; the defect density reaches a statistical steady state. **MIPS** shows dramatic phase separation: initially uniform particles coarsen into a few large dense clusters via Ostwald ripening, with a sharp interface between dense and dilute phases visible in Density view. **Vicsek Flocking** exhibits a sharp order-disorder transition — use e/E to tune noise through the critical point and watch the order parameter ψ jump. In **Spinner Gas**, particles form rotating clusters with chiral symmetry breaking. **Contractile Gel** produces aster-like radial structures where particles converge.
+In **Bacterial Turbulence**, look for vortex patterns with a characteristic length scale. Switch to the Vorticity view (`v`) to see counter-rotating vortex pairs. **Active Nematics** is set up for ±½ topological defects (comet-shaped +½, trefoil −½) that move and annihilate. In **Motility-Induced Clustering**, use the Density view to see where particles pile up. **Vicsek Flocking** shows an order-disorder transition: use `e`/`E` to tune the noise through the critical point and watch ψ change. In **Active Spinner Gas**, watch the circling trajectories. **Contractile Gel** may produce aster-like structures where particles converge.
 
 ### References
 
