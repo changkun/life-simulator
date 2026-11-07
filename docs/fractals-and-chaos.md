@@ -40,12 +40,12 @@ Parameters by preset:
 | Random Rain      | random       | 1           | 0            | 1           |
 | Four Corners     | corners      | 1           | 0            | 1           |
 | Diamond Seed     | diamond      | 1           | 0            | 1           |
-| Checkerboard     | checkerboard | 0           | 0            | 5           |
+| Checkerboard     | checkerboard | 1           | 0            | 5           |
 | Max Stable       | max_stable   | 0           | 0            | 5           |
 | Identity Element | identity     | 0           | 0            | 10          |
 | Random Fill      | random_fill  | 0           | 0            | 5           |
 
-Diamond Seed, Checkerboard, Max Stable and Random Fill start from a pre-filled grid. Max Stable and Random Fill then add one grain at the center. Drop Amount is the grains added per step. Press `d` to cycle the drop mode through center, random and cursor.
+Diamond Seed, Checkerboard, Max Stable and Random Fill start from a pre-filled grid. Diamond Seed and Checkerboard are stable, so they drop a grain at the center each step to set off avalanches. Max Stable and Random Fill set the center cell to 4 grains. Drop Amount is the grains added per step. Press `d` to cycle the drop mode through center, random and cursor (it turns dropping on at 1 grain per step), `a`/`A` to add 100 or 1000 grains at the center, `hjkl` or the arrows to move the cursor, `e` to drop at the cursor, and `+`/`-` to change the steps per frame.
 
 ### What to look for
 
@@ -113,7 +113,7 @@ Default parameters:
 | Halvorsen — Symmetric         | a=1.89                                      |
 | Chen — Double Scroll          | a=35.0, b=3.0, c=28.0                       |
 
-Press `1`/`2` and `3`/`4` to lower or raise the first and second tunable parameter, and `d`/`D` to change dt.
+Press `1`/`2` and `3`/`4` to lower or raise the first and second tunable parameter, `d`/`D` to lower or raise dt, `z`/`Z` to zoom in or out, and `c` to clear the density.
 
 ### What to look for
 
@@ -173,7 +173,7 @@ Presets (Julia views are centered on 0 + 0i):
 
 ### What to look for
 
-Zoom into the boundary of the Mandelbrot set to discover miniature copies of the full set (minibrots) embedded at every scale. The Seahorse Valley preset reveals spiral structures where the main cardioid meets the period-2 bulb. Each Julia set preset shows a different topology determined by where c lies relative to the Mandelbrot set: connected sets (c inside) versus Cantor-dust disconnected sets (c outside). Press `a`/`A` to raise or lower the real part of the Julia c, `s`/`S` for the imaginary part, and `1`-`5` to jump to named values. Press `t` to switch between Mandelbrot and Julia, `z`/`x` to zoom and `i`/`I` to change the iteration limit.
+Zoom into the boundary of the Mandelbrot set to discover miniature copies of the full set (minibrots) embedded at every scale. The Seahorse Valley preset reveals spiral structures where the main cardioid meets the period-2 bulb. Each Julia set preset shows a different topology determined by where c lies relative to the Mandelbrot set: connected sets (c inside) versus Cantor-dust disconnected sets (c outside). Press `a`/`A` to raise or lower the real part of the Julia c, `s`/`S` for the imaginary part, and `1`-`5` to jump to named values. Press `t` to switch between Mandelbrot and Julia, `z`/`x` (or `+`/`-`) to zoom, `i`/`I` to raise or lower the iteration limit, `c` to cycle the color scheme and `r` to reset the view.
 
 ### References
 
@@ -327,6 +327,9 @@ Algorithm (Chaos Game):
     5. Repeat from step 2.
 
     The first 50 iterations are not plotted (transient warm-up).
+    The view box is fixed at start from a sample of 2000 points, padded by
+    5% and widened to the cell aspect (cells are about twice as tall as
+    wide), so the fractal keeps its proportions.
 ```
 
 IFS transform tables:
@@ -480,7 +483,7 @@ Trail is the number of recent points kept.
 
 ### What to look for
 
-The frequency ratio determines the curve's topology: the "Classic 3:2" preset traces a closed figure with a 3:2 ratio. The "Harmonograph" preset uses a near-integer ratio (2.01:3.0) with damping, so the curve slowly shifts phase while its amplitude shrinks -- this mimics a physical harmonograph. The "Lateral" preset adds secondary oscillators at frequencies very close to the primaries (2.005 and 3.003), creating intricate beating patterns and slowly evolving interference figures. Press `a`/`A` and `b`/`B` to raise or lower freq_a and freq_b, `p`/`P` for the phase and `d`/`D` for the damping, and watch the figure restructure. The intensity accumulation on the canvas reveals which regions the curve visits most frequently.
+The frequency ratio determines the curve's topology: the "Classic 3:2" preset traces a closed figure with a 3:2 ratio. The "Harmonograph" preset uses a near-integer ratio (2.01:3.0) with damping, so the curve slowly shifts phase while its amplitude shrinks -- this mimics a physical harmonograph. The "Lateral" preset adds secondary oscillators at frequencies very close to the primaries (2.005 and 3.003), creating intricate beating patterns and slowly evolving interference figures. Press `a`/`A` and `b`/`B` to raise or lower freq_a and freq_b, `p`/`P` for the phase, `d`/`D` to raise or lower the damping and `c` to clear the canvas, and watch the figure restructure. The intensity accumulation on the canvas reveals which regions the curve visits most frequently.
 
 ### References
 
