@@ -3370,6 +3370,19 @@ class App:
             self._toggle_sparkline_hud()
             return True
 
+        # ── Sonification toggle (Ctrl+S, global across all modes) ──
+        if key == 19:  # Ctrl+S
+            on = self._sonify_toggle()
+            if on:
+                if self.sonify_play_cmd is None:
+                    self.sonify_enabled = False
+                    self._flash("Sonification OFF — no audio player found")
+                else:
+                    self._flash("♫ Generative Soundscape ON (bass+melody+harmony+rhythm)")
+            else:
+                self._flash("Sonification OFF")
+            return True
+
         # ── Butterfly Effect key handling ──
         if self._butterfly_handle_key(key):
             return True
@@ -5025,17 +5038,6 @@ class App:
                     self._flash("♪ Sound ON (pentatonic synth)")
             else:
                 self._flash("Sound OFF")
-            return True
-        if key == 19:  # Ctrl+S — Simulation Sonification Layer
-            on = self._sonify_toggle()
-            if on:
-                if self.sonify_play_cmd is None:
-                    self.sonify_enabled = False
-                    self._flash("Sonification OFF — no audio player found")
-                else:
-                    self._flash("♫ Generative Soundscape ON (bass+melody+harmony+rhythm)")
-            else:
-                self._flash("Sonification OFF")
             return True
         if key == ord("N"):
             # Multiplayer: prompt for host or connect

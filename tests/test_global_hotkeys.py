@@ -118,6 +118,14 @@ def test_genome_works_inside_a_mode(monkeypatch):
     assert prompts and prompts[0].startswith("Genome")
 
 
+def test_sonification_toggles_inside_a_mode(monkeypatch):
+    calls = []
+    monkeypatch.setattr(App, "_sonify_toggle", lambda self: calls.append(1) or False)
+    app = run_app([10, -1, 19], _enter("ising_mode"))
+    assert app.ising_mode
+    assert calls == [1]
+
+
 def test_scanner_reads_every_mode_handler():
     """Every mode handler binds q or Esc; if the scan misses both, it is blind."""
     blind = [md["attr"] for md in MODE_DISPATCH
