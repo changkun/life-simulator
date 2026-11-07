@@ -190,12 +190,21 @@ Mode cycles the grid topology each time you select it.
 | `0` | Reset zoom to 1:1 |
 | `Tab` | Toggle minimap overlay |
 | `H` | Toggle heatmap (cumulative cell activity) |
-| `I` | Toggle 3D isometric view |
+| `v` | Toggle 3D isometric view |
 | `K` | Cycle colormap |
 | `W` | Save a region as a blueprint |
+| `w` | Blueprint library (stamp or delete saved blueprints) |
 | `V` | Compare two rules side-by-side |
 | `Z` | Race 2-4 rules with scoreboard |
 | `f` | Pattern search (find known shapes) |
+| `g` | Toggle ghost trail |
+| `G` | Toggle morph transitions between modes |
+| `:` | Cycle the morph easing curve (while morphing is on) |
+| `I` | Toggle computation detector (`Tab` cycles its view) |
+| `y` | Toggle spectrum overlay |
+| `Ctrl+P` | Toggle phase detector |
+| `Ctrl+T` | Phase bookmarks (needs detected transitions) |
+| `Ctrl+V` | Toggle sparkline metrics HUD |
 
 ### Mode Shortcuts
 
@@ -213,7 +222,7 @@ Mode cycles the grid topology each time you select it.
 | `A` | Ant Colony Optimization |
 | `C` | Puzzle / Challenge |
 | `D` | Diffusion-Limited Aggregation |
-| `E` | Evolution / GA |
+| `E` | Evolution / GA (Game of Life screen) |
 | `F` | Lattice Boltzmann Fluid |
 | `J` | Lotka-Volterra |
 | `L` | Maze Generation |
@@ -235,7 +244,7 @@ Mode cycles the grid topology each time you select it.
 | `{` | Chemotaxis |
 | `}` | MHD Plasma |
 | `\|` | Strange Attractors |
-| `^` | Lightning |
+| `^` | Lightning (Game of Life screen) |
 | `"` | Galaxy Formation |
 | `*` | Snowflake Growth |
 | `$` | Erosion Patterns |
@@ -246,14 +255,46 @@ Mode cycles the grid topology each time you select it.
 | `/` | L-System Fractal Garden |
 | `\` | Smoke & Fire |
 
-The remaining modes have `Ctrl+` or `Ctrl+Shift+` shortcuts, or none.
-The mode browser (`m`) lists every mode with its key.
+Some modes use `Ctrl+` keys:
 
-Some registry keys are taken by earlier bindings in Game of Life, so they do
-not enter their mode: `0` (zoom reset, not Particle Life), `K` (colormap, not
-Schelling Segregation), `E` (Evolution / GA, not SIR Epidemic), `^` (Lightning,
-not Quantum Walk), `I` (isometric view) and `G` (GIF recording). Open those
-modes from the mode browser.
+| Key | Mode |
+|-----|------|
+| `Ctrl+A` | SPH Fluid |
+| `Ctrl+B` | Butterfly Effect |
+| `Ctrl+D` | Navier-Stokes |
+| `Ctrl+F` | Fireworks (see below) |
+| `Ctrl+G` | Chaos Game / IFS Fractals |
+| `Ctrl+L` | Chladni Plate Vibrations |
+| `Ctrl+N` | Magnetic Field Lines |
+| `Ctrl+R` | Rayleigh-Benard Convection |
+| `Ctrl+U` | Scripting & Choreography |
+| `Ctrl+X` | Recording & Export |
+| `Ctrl+Y` | 3D Terrain Flythrough |
+
+`Ctrl+F` forks a branch while the timeline is scrubbed back. It also freezes
+the long-exposure composite while a capture is running or a composite exists.
+Otherwise it starts Fireworks. In the same way, `[` `]` and `{` `}` adjust the
+exposure only in those states. Otherwise `{` opens Chemotaxis and `}` opens
+MHD Plasma.
+
+Every other mode has no key and opens only from the mode browser (`m`). That
+includes Particle Life, Quantum Walk, FDTD Electromagnetic Waves, Double
+Pendulum, SIR Epidemic, Cellular Potts Model, Schelling Segregation and Fractal
+Explorer. At the Game of Life screen their old keys do other things: `0` resets
+zoom, `E` opens Evolution / GA, `K` cycles colormaps, `^` opens Lightning, `G`
+toggles morph transitions, `Ctrl+E` starts or stops a long exposure, `Ctrl+P`
+toggles the phase detector, `Ctrl+T` opens phase bookmarks, `Ctrl+K` toggles
+analytics, `Ctrl+O` loads a snapshot, `Ctrl+W` saves one and `Ctrl+V` toggles
+the sparkline HUD.
+
+Inside a mode, a key the mode binds itself goes to the mode, not to the global
+overlays (ghost trail `g`, morph `G`, computation detector `I`, time travel
+`u` `[` `]`, parameter tuner `P`, minimap `Tab`). The overlays still work in
+Game of Life and in modes that leave the key free. `z` (genome) also works in
+modes that do not bind it.
+
+Mouse clicks and drags edit the Game of Life grid only when no mode is active.
+The wheel zooms, and a right-button drag pans.
 
 ### Timeline & Replay
 
@@ -274,9 +315,10 @@ modes from the mode browser.
 | `Ctrl+W` | Save full snapshot (grid + mode + config) |
 | `Ctrl+O` | Load a full snapshot |
 | `i` | Import RLE pattern file |
-| `G` | Record / stop GIF export |
+| `a` | Record / stop GIF export |
 | `Ctrl+X` | Record / export `.cast` or `.txt` |
-| `g` | Genome: export / import simulation config |
+| `Ctrl+E` | Start / stop a long exposure (`Ctrl+]` exports the composite) |
+| `z` | Genome: export / import simulation config |
 
 ## Features
 
@@ -324,7 +366,7 @@ directly; other terminals use the 256-color palette.
 
 ### 3D Isometric View
 
-Press `I` to render the grid as an isometric 3D landscape where live cells are
+Press `v` to render the grid as an isometric 3D landscape where live cells are
 raised blocks. Cell height shows age.
 
 ### Multiplayer
@@ -340,12 +382,12 @@ Set the interval with `--screensaver-interval` and the playlist with a preset:
 
 ### GIF & Cast Recording
 
-Press `G` to record frames and export as animated GIF. Press `Ctrl+X` to record
+Press `a` to record frames and export as animated GIF. Press `Ctrl+X` to record
 terminal frames and export as asciinema `.cast` or plain-text flipbook.
 
 ### Genome Sharing
 
-Press `g` to encode the current simulation configuration (mode and parameters)
+Press `z` to encode the current simulation configuration (mode and parameters)
 as a shareable seed string. Paste a seed to reproduce
 someone else's exact configuration.
 
