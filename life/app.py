@@ -6832,7 +6832,7 @@ class App:
             "║  {         Chemotaxis (bacterial colonies)     ║",
             "║  }         MHD Plasma (magnetohydrodynamics)   ║",
             "║  |         Strange Attractors (chaotic ODEs)   ║",
-            "║  "         Galaxy Formation (spiral dynamics)  ║",
+            '║  "         Galaxy Formation (spiral dynamics)  ║',
             "║  Ctrl+D    Navier-Stokes Fluid (dye advection) ║",
             "║  Ctrl+R    Rayleigh-Bénard Convection cells    ║",
             "║  Ctrl+L    Chladni Plate vibration patterns    ║",
