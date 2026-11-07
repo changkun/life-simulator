@@ -1,12 +1,7 @@
-"""Ghost Trail / Temporal Echo rendering layer.
+"""Ghost Trail / Temporal Echo — overlays fading afterimages of earlier frames on any mode.
 
-Captures frame snapshots and overlays fading afterimages from previous frames
-onto any simulation mode.  Particles leave streaks, wavefronts show propagation
-paths, cellular automata reveal their evolution.
-
-Toggle with 'g'.  Adjust trail length with '<' / '>'.  Cycle decay curve
-(linear / exponential) with Ctrl+G.  Works with all 125+ modes via the
-truecolor pipeline without modifying any mode logic.
+Toggle with g.  Change the trail length with < and >.  Switch the decay curve
+(linear or exponential) with Ctrl+G.
 """
 
 import curses
