@@ -1,16 +1,9 @@
-"""Mode: Rule Phylogenetics — comparative genomics for CA rules.
-
-Treats B/S rule sets as genetic sequences, builds evolutionary family trees,
-identifies conserved behavioral motifs, and traces lineage from Genesis
-Protocol's Hall of Fame breeding history.
-"""
+"""Rule Phylogenetics — comparative genomics for CA rules: family trees, shared motifs and lineage from the Hall of Fame."""
 
 import curses
 import json
-import math
 import os
 import random
-import time
 
 from life.constants import SAVE_DIR
 from life.grid import Grid
@@ -18,20 +11,6 @@ from life.grid import Grid
 # ── Constants ────────────────────────────────────────────────────────
 
 _GALLERY_FILE = os.path.join(SAVE_DIR, "genesis_hall_of_fame.json")
-
-# All possible B/S positions (0-8)
-_ALL_POSITIONS = set(range(9))
-
-# Well-known rules for reference
-_KNOWN_RULES = {
-    "B3/S23": "Life",
-    "B36/S23": "HighLife",
-    "B3678/S34678": "Day & Night",
-    "B1357/S1357": "Replicator",
-    "B2/S": "Seeds",
-    "B368/S245": "Morley",
-    "B3/S012345678": "Life w/o Death",
-}
 
 # Behavioral motif library
 _MOTIFS = [
@@ -54,7 +33,6 @@ _MOTIFS = [
 ]
 
 _SPARKLINE = "▁▂▃▄▅▆▇█"
-_DENSITY = ["  ", "░░", "▒▒", "▓▓", "██"]
 
 # Classification colors
 _CLASS_COLORS = {
@@ -83,13 +61,6 @@ def _rule_to_genome(label):
     return genome
 
 
-def _genome_to_rule(genome):
-    """Convert 18-bit genome back to 'B.../S...' label."""
-    b = "".join(str(i) for i in range(9) if genome[i])
-    s = "".join(str(i) for i in range(9) if genome[9 + i])
-    return f"B{b}/S{s}"
-
-
 def _parse_bs(label):
     """Parse 'B36/S23' into (birth_set, survival_set)."""
     birth, surv = set(), set()
@@ -103,7 +74,7 @@ def _parse_bs(label):
 
 
 def _hamming_distance(g1, g2):
-    """Hamming distance between two genomes."""
+    """Count the positions where two genomes differ."""
     return sum(a != b for a, b in zip(g1, g2))
 
 
@@ -121,14 +92,12 @@ def _jaccard_distance(label1, label2):
 
 
 def _behavioral_distance(entry1, entry2):
-    """Distance based on classification and score similarity."""
+    """Return a distance from classification and score differences."""
     d = 0.0
-    # Classification match
     c1 = entry1.get("classification", "unknown")
     c2 = entry2.get("classification", "unknown")
     if c1 != c2:
         d += 0.5
-    # Score difference (normalized)
     s1 = entry1.get("score", 0)
     s2 = entry2.get("score", 0)
     max_s = max(abs(s1), abs(s2), 1)
@@ -137,7 +106,7 @@ def _behavioral_distance(entry1, entry2):
 
 
 def _combined_distance(entry1, entry2, weights=(0.4, 0.3, 0.3)):
-    """Weighted combination of Hamming, Jaccard, and behavioral distances."""
+    """Combine the Hamming, Jaccard and behavioral distances with the given weights."""
     g1 = _rule_to_genome(entry1.get("label", "B/S"))
     g2 = _rule_to_genome(entry2.get("label", "B/S"))
     ham = _hamming_distance(g1, g2) / 18.0
@@ -156,7 +125,6 @@ def _cluster_entries(entries, weights=(0.4, 0.3, 0.3)):
     if not entries:
         return None
     n = len(entries)
-    # Initialize leaf nodes
     nodes = []
     for i, e in enumerate(entries):
         nodes.append({
@@ -171,7 +139,6 @@ def _cluster_entries(entries, weights=(0.4, 0.3, 0.3)):
     if n == 1:
         return nodes[0]
 
-    # Distance matrix
     dist = {}
     for i in range(n):
         for j in range(i + 1, n):
@@ -181,7 +148,6 @@ def _cluster_entries(entries, weights=(0.4, 0.3, 0.3)):
     next_id = n
 
     while len(active) > 1:
-        # Find minimum distance pair
         min_d = float("inf")
         mi, mj = active[0], active[1]
         for ii in range(len(active)):
@@ -193,7 +159,6 @@ def _cluster_entries(entries, weights=(0.4, 0.3, 0.3)):
                     min_d = d
                     mi, mj = a, b
 
-        # Create new merged node
         new_node = {
             "label": "",
             "children": [nodes[mi], nodes[mj]],
@@ -229,14 +194,14 @@ def _cluster_entries(entries, weights=(0.4, 0.3, 0.3)):
 # ── Tree rendering ────────────────────────────────────────────────────
 
 def _render_tree(node, max_width=60):
-    """Render a phylogenetic tree as list of strings (ASCII art)."""
+    """Render the tree as a list of text lines, one per node, in preorder."""
     lines = []
     _render_subtree(node, lines, "", True, max_width)
     return lines
 
 
 def _render_subtree(node, lines, prefix, is_last, max_width):
-    """Recursive ASCII tree renderer."""
+    """Append the lines for a node and its children."""
     connector = "└── " if is_last else "├── "
     if node["children"]:
         dist_str = f"d={node['dist']:.2f}" if node["dist"] > 0 else ""
@@ -271,7 +236,7 @@ def _identify_motifs(label):
 
 
 def _find_conserved_motifs(entries):
-    """Find motifs conserved across many entries."""
+    """Count the motifs found across entries, most common first."""
     motif_counts = {}
     for entry in entries:
         found = _identify_motifs(entry.get("label", "B/S"))
@@ -282,19 +247,17 @@ def _find_conserved_motifs(entries):
             motif_counts[name]["count"] += 1
             if len(motif_counts[name]["examples"]) < 5:
                 motif_counts[name]["examples"].append(entry.get("label", "?"))
-    # Sort by frequency
     return sorted(motif_counts.values(), key=lambda x: -x["count"])
 
 
 # ── Mini-simulation for preview ──────────────────────────────────────
 
 def _create_preview_grid(label, rows, cols, density=0.35):
-    """Create a small Grid with the given rule for preview."""
+    """Create a small random Grid that runs the given rule."""
     birth, surv = _parse_bs(label)
     g = Grid(rows, cols)
     g.birth = birth
     g.survival = surv
-    # Random seed
     for r in range(rows):
         for c in range(cols):
             if random.random() < density:
@@ -303,7 +266,7 @@ def _create_preview_grid(label, rows, cols, density=0.35):
 
 
 def _step_preview(grid):
-    """Advance preview grid one generation."""
+    """Advance the preview grid by one generation on a torus."""
     rows, cols = grid.rows, grid.cols
     new = [[0] * cols for _ in range(rows)]
     for r in range(rows):
@@ -328,7 +291,7 @@ def _step_preview(grid):
 # ── Diff two rules ───────────────────────────────────────────────────
 
 def _diff_rules(label1, label2):
-    """Return detailed diff of two rules."""
+    """Return the birth/survival differences and distances between two rules."""
     b1, s1 = _parse_bs(label1)
     b2, s2 = _parse_bs(label2)
     diff = {
@@ -347,7 +310,7 @@ def _diff_rules(label1, label2):
 # ── State initialization ─────────────────────────────────────────────
 
 def _phylo_init_state(self):
-    """Initialize all phylo mode state attributes."""
+    """Reset all Rule Phylogenetics state."""
     self.phylo_mode = False
     self.phylo_menu = True
     self.phylo_running = False
@@ -391,17 +354,16 @@ def _phylo_init_state(self):
 # ── Enter / Exit ──────────────────────────────────────────────────────
 
 def _enter_phylo_mode(self):
-    """Enter Rule Phylogenetics mode."""
+    """Open the menu and load the Hall of Fame."""
     _phylo_init_state(self)
     self.phylo_menu = True
     self.phylo_menu_sel = 0
-    # Load hall of fame
     self.phylo_entries = _load_hall(self)
     self._flash("Rule Phylogenetics — comparative genomics for CA rules")
 
 
 def _exit_phylo_mode(self):
-    """Exit phylo mode."""
+    """Leave Rule Phylogenetics mode."""
     self.phylo_mode = False
     self.phylo_menu = False
     self.phylo_running = False
@@ -410,7 +372,7 @@ def _exit_phylo_mode(self):
 
 
 def _load_hall(self):
-    """Load hall of fame entries."""
+    """Return the saved Genesis Hall of Fame entries, or an empty list."""
     if not os.path.isfile(_GALLERY_FILE):
         return []
     try:
@@ -426,7 +388,7 @@ def _load_hall(self):
 # ── Analysis pipeline ─────────────────────────────────────────────────
 
 def _phylo_analyze(self):
-    """Run full analysis on loaded entries."""
+    """Build the tree, motifs, families and lineage from the loaded entries."""
     entries = self.phylo_entries
     if not entries:
         self._flash("No Hall of Fame data found — run Genesis Protocol first")
@@ -434,16 +396,14 @@ def _phylo_analyze(self):
 
     weights = (self.phylo_w_hamming, self.phylo_w_jaccard, self.phylo_w_behavioral)
 
-    # Build tree
-    # Limit to top 40 entries for performance
+    # Clustering is cubic in the entry count, so use the first 40 only.
     subset = entries[:40]
     self.phylo_tree = _cluster_entries(subset, weights)
     self.phylo_tree_lines = _render_tree(self.phylo_tree, max_width=70) if self.phylo_tree else []
 
-    # Find conserved motifs
     self.phylo_motifs = _find_conserved_motifs(entries)
 
-    # Build families (group by classification)
+    # Families group entries by classification.
     families = {}
     for e in entries:
         cls = e.get("classification", "unknown")
@@ -452,7 +412,6 @@ def _phylo_analyze(self):
         families[cls].append(e)
     self.phylo_families = sorted(families.items(), key=lambda x: -len(x[1]))
 
-    # Build lineage from round data
     self.phylo_lineage = _build_lineage(entries, weights)
 
     self.phylo_mode = True
@@ -467,9 +426,8 @@ def _phylo_analyze(self):
 
 
 def _build_lineage(entries, weights=(0.4, 0.3, 0.3)):
-    """Build lineage relationships from round ordering."""
+    """Link each rule to its closest rule in the previous round."""
     lineage = []
-    # Group by round
     by_round = {}
     for e in entries:
         r = e.get("round", 0)
@@ -482,7 +440,6 @@ def _build_lineage(entries, weights=(0.4, 0.3, 0.3)):
         prev_entries = by_round[rounds[i - 1]]
         curr_entries = by_round[rounds[i]]
         for child in curr_entries:
-            # Find closest parent from previous round
             best_parent = None
             best_dist = float("inf")
             for parent in prev_entries:
@@ -509,7 +466,7 @@ def _build_lineage(entries, weights=(0.4, 0.3, 0.3)):
 # ── Step ──────────────────────────────────────────────────────────────
 
 def _phylo_step(self):
-    """Advance preview simulation if running."""
+    """Advance the preview simulation one step if it is running."""
     if self.phylo_preview and self.phylo_preview_running:
         _step_preview(self.phylo_preview)
         self.phylo_preview_step += 1
@@ -529,7 +486,7 @@ _MENU_ITEMS = [
 
 
 def _handle_phylo_menu_key(self, key):
-    """Handle menu key input."""
+    """Handle keys in the menu."""
     n = len(_MENU_ITEMS)
     if key == curses.KEY_UP:
         self.phylo_menu_sel = (self.phylo_menu_sel - 1) % n
@@ -542,14 +499,13 @@ def _handle_phylo_menu_key(self, key):
         if item == "analyze":
             _phylo_analyze(self)
         elif item == "weights":
-            # Cycle weight presets
+            # Cycle to the next weight preset.
             presets = [
                 (0.4, 0.3, 0.3, "Balanced"),
                 (0.7, 0.2, 0.1, "Genomic focus"),
                 (0.2, 0.2, 0.6, "Behavioral focus"),
                 (0.1, 0.7, 0.2, "Set-theoretic focus"),
             ]
-            # Find current and advance
             cur = (self.phylo_w_hamming, self.phylo_w_jaccard, self.phylo_w_behavioral)
             idx = 0
             for i, p in enumerate(presets):
@@ -573,7 +529,7 @@ def _handle_phylo_menu_key(self, key):
 # ── Main key handler ──────────────────────────────────────────────────
 
 def _handle_phylo_key(self, key):
-    """Handle active mode key input."""
+    """Handle keys in the analysis views."""
     if key == ord("q") or key == 27:
         if self.phylo_preview:
             self.phylo_preview = None
@@ -726,14 +682,14 @@ def _selected_label(self):
 
 
 def _get_selected_index(self):
-    """Get index of entry at cursor."""
+    """Return the entry index under the cursor, or -1."""
     if 0 <= self.phylo_cursor < len(self.phylo_entries):
         return self.phylo_cursor
     return -1
 
 
 def _apply_sort(self):
-    """Sort entries by current sort mode."""
+    """Sort the entries by the current sort key."""
     if self.phylo_sort_by == 0:
         self.phylo_entries.sort(key=lambda e: -e.get("score", 0))
     elif self.phylo_sort_by == 1:
@@ -748,7 +704,7 @@ def _apply_sort(self):
 # ── Drawing ───────────────────────────────────────────────────────────
 
 def _draw_phylo_menu(self, max_y, max_x):
-    """Draw the settings/start menu."""
+    """Draw the start menu."""
     self.stdscr.erase()
     y = 1
     try:
@@ -762,7 +718,6 @@ def _draw_phylo_menu(self, max_y, max_x):
                            curses.color_pair(5))
         y += 2
 
-        # Show hall of fame status
         n = len(self.phylo_entries)
         if n > 0:
             self.stdscr.addstr(y, 2, f"Hall of Fame loaded: {n} rules",
@@ -772,7 +727,6 @@ def _draw_phylo_menu(self, max_y, max_x):
                                curses.color_pair(2))
         y += 2
 
-        # Weights display
         self.stdscr.addstr(y, 2, "Distance weights:", curses.color_pair(7))
         self.stdscr.addstr(y + 1, 4,
                            f"Hamming={self.phylo_w_hamming:.1f}  "
@@ -781,7 +735,6 @@ def _draw_phylo_menu(self, max_y, max_x):
                            curses.color_pair(5))
         y += 3
 
-        # Menu items
         for i, (key, label) in enumerate(_MENU_ITEMS):
             attr = curses.A_REVERSE if i == self.phylo_menu_sel else 0
             prefix = "▸ " if i == self.phylo_menu_sel else "  "
@@ -789,7 +742,7 @@ def _draw_phylo_menu(self, max_y, max_x):
             y += 1
 
         y += 2
-        self.stdscr.addstr(y, 2, "↑↓ Navigate  Enter Select  q Quit",
+        self.stdscr.addstr(y, 2, "↑/↓=navigate  Enter=select  q=quit",
                            curses.color_pair(5) | curses.A_DIM)
 
     except curses.error:
@@ -797,16 +750,14 @@ def _draw_phylo_menu(self, max_y, max_x):
 
 
 def _draw_phylo(self, max_y, max_x):
-    """Draw the active phylo analysis view."""
+    """Draw the header, the current view and the status bar."""
     self.stdscr.erase()
 
-    # Draw preview overlay if active
     if self.phylo_preview:
         _draw_preview(self, max_y, max_x)
         return
 
     try:
-        # Header
         views = ["Tree", "Motifs", "Diff", "Lineage", "Families"]
         header_parts = []
         for i, v in enumerate(views):
@@ -817,14 +768,12 @@ def _draw_phylo(self, max_y, max_x):
         header = " ".join(header_parts)
         self.stdscr.addstr(0, 1, header[:max_x - 2], curses.color_pair(4) | curses.A_BOLD)
 
-        # Status bar
         n = len(self.phylo_entries)
         sort_names = ["score", "class", "hamming"]
-        status = f"{n} rules │ sort:{sort_names[self.phylo_sort_by]} │ q:back s:sort r:rebuild"
+        status = f"{n} rules │ sort:{sort_names[self.phylo_sort_by]} │ 1-5=view  Enter=preview  s=sort  r=rebuild  q=back"
         self.stdscr.addstr(max_y - 1, 1, status[:max_x - 2],
                            curses.color_pair(5) | curses.A_DIM)
 
-        # Dispatch to view
         area_y = 2
         area_h = max_y - 3
         if self.phylo_view == 0:
@@ -843,7 +792,7 @@ def _draw_phylo(self, max_y, max_x):
 
 
 def _draw_tree_view(self, start_y, height, max_x):
-    """Draw phylogenetic tree."""
+    """Draw the phylogenetic tree."""
     lines = self.phylo_tree_lines
     if not lines:
         try:
@@ -868,7 +817,6 @@ def _draw_tree_view(self, start_y, height, max_x):
             if idx >= len(lines):
                 break
             line = lines[idx]
-            # Color based on content
             color = curses.color_pair(5)
             if "glider" in line.lower() or "replic" in line.lower():
                 color = curses.color_pair(3)
@@ -881,7 +829,6 @@ def _draw_tree_view(self, start_y, height, max_x):
             elif "┬" in line:
                 color = curses.color_pair(7) | curses.A_DIM
 
-            # Highlight cursor line
             if idx == self.phylo_tree_cursor:
                 color |= curses.A_REVERSE
 
@@ -891,7 +838,7 @@ def _draw_tree_view(self, start_y, height, max_x):
 
 
 def _draw_motifs_view(self, start_y, height, max_x):
-    """Draw conserved motifs analysis."""
+    """Draw the conserved motifs."""
     motifs = self.phylo_motifs
     if not motifs:
         try:
@@ -947,7 +894,7 @@ def _draw_motifs_view(self, start_y, height, max_x):
 
 
 def _draw_diff_view(self, start_y, height, max_x):
-    """Draw rule diff / comparison view."""
+    """Draw the rule list for choosing two rules to diff."""
     entries = self.phylo_entries
     try:
         self.stdscr.addstr(start_y, 1, "Rule Diff — Side-by-Side Comparison",
@@ -958,7 +905,7 @@ def _draw_diff_view(self, start_y, height, max_x):
             return
 
         y = start_y + 1
-        self.stdscr.addstr(y, 2, "Navigate to a rule, press 'a' for left, 'b' for right, 'd' to diff",
+        self.stdscr.addstr(y, 2, "Move to a rule: a=left  b=right  d=diff",
                            curses.color_pair(5) | curses.A_DIM)
         y += 1
 
@@ -1116,7 +1063,7 @@ def _draw_diff_result(self, start_y, height, max_x):
                                f"Same behavior class: {ca}",
                                curses.color_pair(3))
         y += 2
-        self.stdscr.addstr(y, 2, "Press 'q' to close diff",
+        self.stdscr.addstr(y, 2, "q=close diff",
                            curses.color_pair(5) | curses.A_DIM)
 
     except curses.error:
@@ -1124,7 +1071,7 @@ def _draw_diff_result(self, start_y, height, max_x):
 
 
 def _draw_lineage_view(self, start_y, height, max_x):
-    """Draw lineage trace from breeding history."""
+    """Draw the parent-to-child lineage."""
     lineage = self.phylo_lineage
     try:
         self.stdscr.addstr(start_y, 1, "Lineage Trace — Parent → Child Mutations",
@@ -1251,7 +1198,7 @@ def _draw_families_view(self, start_y, height, max_x):
 
 
 def _draw_preview(self, max_y, max_x):
-    """Draw a live preview of a selected rule."""
+    """Draw a live preview of the selected rule."""
     grid = self.phylo_preview
     if not grid:
         return
@@ -1260,7 +1207,7 @@ def _draw_preview(self, max_y, max_x):
         # Title
         label = self.phylo_preview_label
         step = self.phylo_preview_step
-        self.stdscr.addstr(0, 1, f"Preview: {label}  step={step}  (Space:pause q:close)",
+        self.stdscr.addstr(0, 1, f"Preview: {label}  step={step}  (Space=pause  q=close)",
                            curses.color_pair(4) | curses.A_BOLD)
 
         # Grid
@@ -1306,7 +1253,7 @@ def _draw_preview(self, max_y, max_x):
 # ── Register ──────────────────────────────────────────────────────────
 
 def register(App):
-    """Register Rule Phylogenetics mode methods on the App class."""
+    """Register Rule Phylogenetics methods on the App class."""
     App._enter_phylo_mode = _enter_phylo_mode
     App._exit_phylo_mode = _exit_phylo_mode
     App._phylo_step = _phylo_step
