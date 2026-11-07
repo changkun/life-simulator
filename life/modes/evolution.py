@@ -26,6 +26,7 @@ def _exit_evo_mode(self):
     self.evo_mode = False
     self.evo_menu = False
     self.evo_phase = "idle"
+    self.running = False
     self.evo_grids.clear()
     self.evo_rules.clear()
     self.evo_fitness.clear()
@@ -102,7 +103,7 @@ def _evo_init_population(self):
     # If we have previous elite, breed from them; otherwise random
     if self.evo_history and len(self.evo_history[-1].get("elite_rules", [])) >= 2:
         elite_rules = self.evo_history[-1]["elite_rules"]
-        new_rules = list(elite_rules)  # keep elites
+        new_rules = list(elite_rules)[:self.evo_pop_size]  # keep elites
         while len(new_rules) < self.evo_pop_size:
             # Crossover two random elites + mutate
             p1 = random.choice(elite_rules)

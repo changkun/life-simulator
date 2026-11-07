@@ -421,3 +421,24 @@ class TestEvolutionDrawStatus:
         text = [s for _, s in self.lines]
         assert sum("pts" in s and "long" in s for s in text) == len(self.app.evo_rules)
         assert any("a=adopt" in s for s in text)
+
+
+class TestEvolutionExitAndElites:
+    def setup_method(self):
+        random.seed(5)
+        self.app = make_mock_app()
+        register(type(self.app))
+
+    def test_exit_stops_main_simulation(self):
+        self.app._evo_init_population()
+        assert self.app.running is True
+        self.app._exit_evo_mode()
+        assert self.app.running is False
+
+    def test_population_never_exceeds_pop_size_after_shrinking(self):
+        self.app.evo_elite_count = 12
+        self.app.evo_pop_size = 24
+        self.app.evo_history.append({"elite_rules": [({3}, {2, 3})] * 12})
+        self.app.evo_pop_size = 4
+        self.app._evo_init_population()
+        assert len(self.app.evo_grids) == 4
