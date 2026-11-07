@@ -612,7 +612,7 @@ def _draw_re_menu(self, max_y, max_x):
 
     # Footer
     footer_row = max_y - 3
-    hints = "Enter=Load  n=New blank  Tab=Switch tab  q=Quit"
+    hints = "j/k=Move  Enter=Load  n=New blank  Tab=Switch tab  q=Quit"
     if self.re_menu_tab == 1:
         hints += "  x=Delete"
     try:
@@ -682,16 +682,18 @@ def _draw_re(self, max_y, max_x):
                    self.re_editing == "name", self.re_edit_buf,
                    self.re_edit_cursor)
 
-    # Hints bar
-    row = panel_top + 5
+    # Hints bar (two lines so it fits in 80 columns)
     if self.re_editing:
-        hints = "Enter=Confirm  Esc=Cancel  ←→=Move  Ctrl+K=Kill"
+        hints = ["Enter=Confirm  Esc=Cancel  ←→=Move  Ctrl+K=Kill"]
     else:
-        hints = "Enter=Edit  Tab=Next  Space=Play/Pause  .=Step  r=Rand  c=Clear  S=Save  a=Adopt  i=EP import  m=Menu  q=Quit"
-    try:
-        self.stdscr.addstr(row, 0, hints[:max_x - 1], curses.A_DIM)
-    except curses.error:
-        pass
+        hints = ["Enter=Edit  Tab=Next  Space=Play/Pause  .=Step  +/-=Speed",
+                 "r=Rand  c=Clear  S=Save  a=Adopt  i=EP import  m=Menu  q=Quit"]
+    for i, hint in enumerate(reversed(hints)):
+        try:
+            self.stdscr.addstr(panel_top + 5 - i, 0, hint[:max_x - 1],
+                               curses.A_DIM)
+        except curses.error:
+            pass
 
 
 def _draw_re_field(self, row, max_x, label, value, error, focused, editing,

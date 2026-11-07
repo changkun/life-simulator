@@ -134,3 +134,17 @@ def test_menu_keeps_selected_entry_on_screen():
     app._draw_re_menu(24, 80)
     shown = " ".join(t for texts in app.stdscr.drawn.values() for t in texts)
     assert "Anneal" in shown
+
+
+def test_hint_bar_fits_80_columns_and_lists_every_key():
+    app = _make_app()
+    app.stdscr = _RecordingScreen(24, 80)
+    app._re_init()
+    app._draw_re(24, 80)
+    lines = [t for texts in app.stdscr.drawn.values() for t in texts]
+    hint_lines = [t for t in lines if "q=Quit" in t or "Enter=Edit" in t]
+    text = " ".join(hint_lines)
+    for key in ("Enter=Edit", "Tab=Next", "Space=Play/Pause", ".=Step",
+                "+/-=Speed", "r=Rand", "c=Clear", "S=Save", "a=Adopt",
+                "i=EP import", "m=Menu", "q=Quit"):
+        assert key in text, key
