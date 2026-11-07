@@ -607,7 +607,8 @@ Superfluid fraction (two-fluid model):
   with critical exponent ν ≈ 0.6717.
 
 Temperature ramping:
-  T → T_target at rate 0.003 K/step (for lambda-point transition preset)
+  T moves toward T_target at 0.003 K/step (t/T change the target; the
+  Lambda Point Transition preset sets a 0.5 K target at start)
 
 Second sound propagation (wave equation on entropy field):
   c₂² = 0.3 * (ρ_s/ρ) / (ρ_n/ρ)    (second sound speed squared)
@@ -641,15 +642,17 @@ Energy spectrum:
 
 **What to look for.** The Quantum Turbulence preset (T=1.2 K, 25 vortex-antivortex pairs) produces a dense tangle that evolves through repeated reconnections. Watch the vortex count decrease as pairs annihilate, and switch to the energy view to see whether the spectrum follows the Kolmogorov k⁻⁵/³ scaling — a key prediction of Kolmogorov's 1941 theory that has been confirmed in superfluid turbulence experiments by Maurer and Tabeling (1998).
 
-The Vortex Reconnection preset places four opposite-sign pairs aimed at each other. Watch them approach, reconnect (annihilate), and emit entropy pulses visible in the density view. The reconnection count in the info bar tracks these events.
+The Vortex Reconnection preset places four opposite-sign pairs, 8 cells either side of the center line. Each pair moves as a dipole, perpendicular to its separation, so encounters are not guaranteed. When two vortices of opposite sign come within 1.5 cells, they annihilate and emit an entropy pulse visible in the density view. Add pairs with `p` to force more encounters.
 
-The Kelvin Wave Cascade preset (T=0.8 K) arranges 16 positive vortices in a ring with mode-3 Kelvin wave perturbation. The helical oscillations slowly damp as energy cascades to smaller scales — this is the quantum analogue of the Richardson cascade in classical turbulence.
+The Kelvin Wave Cascade preset (T=0.8 K) arranges 16 positive vortices in a ring with a mode-3 perturbation, balanced by 16 negative vortices in a small cluster at the center. Each ring vortex carries a Kelvin wave that damps by 0.5% per step.
 
-The Two-Fluid Counterflow preset (T=1.6 K) imposes a normal fluid velocity vn=0.3 rightward while the superfluid is stationary. The resulting mutual friction generates vortex pairs spontaneously — the counterflow instability first studied by Vinen (1957). Increase counterflow with `c` to see more vigorous pair production; decrease to let the tangle decay.
+The Two-Fluid Counterflow preset (T=1.6 K) imposes a normal fluid velocity vn=0.3 rightward. Mutual friction drags vortices along with it, and new vortex pairs appear at random at a rate proportional to vn times the superfluid fraction, up to 200 vortices. This stands in for the counterflow turbulence studied by Vinen (1957). Raise vn with `c` for faster pair production. Lower it with `C` to let the tangle decay.
 
-The Second Sound preset (T=1.4 K) initializes a Gaussian temperature pulse at the center. Watch the ring-shaped wave expand outward — this is second sound, a temperature wave unique to superfluids. Vortices scatter the wave, creating interference patterns. Inject additional pulses with `s`.
+The Second Sound preset (T=1.4 K) initializes a Gaussian temperature pulse at the center. Watch the ring-shaped wave expand outward. This is second sound, a temperature wave unique to superfluids. The five vortex pairs do not couple to the wave in this model. Inject additional pulses with `s`.
 
-The Lambda Point Transition preset starts above T_λ (T=2.5 K, normal fluid) and cools toward 0.5 K. As T drops below 2.17 K, the superfluid fraction grows from zero, vortex dynamics activate, and the system transitions from diffusive thermal behavior to coherent quantum vortex dynamics. Watch ρ_s/ρ in the title bar increase from 0.00 to ~0.99.
+The Lambda Point Transition preset starts above T_λ (T=2.5 K, normal fluid) and cools toward 0.5 K. As T drops below 2.17 K, the superfluid fraction grows from zero, vortex dynamics activate, and the system transitions from diffusive thermal behavior to coherent quantum vortex dynamics. Watch ρ_s/ρ in the title bar increase from 0.00 to about 1.00.
+
+**Keys.** `Space` play/pause, `n` step, `v` cycles vortex, density and energy views, `t`/`T` raise/lower the target temperature, `f`/`F` raise/lower mutual friction, `c`/`C` raise/lower normal flow, `p` adds a vortex pair, `s` injects a second-sound pulse, a mouse click adds a pair, `+`/`-` steps per frame, `r` reset, `R` or `m` menu, `q` exit.
 
 **Presets:** Quantum Turbulence (T=1.2K, 25 pairs), Vortex Reconnection (T=1.0K, 4 aimed pairs), Kelvin Wave Cascade (T=0.8K, vortex ring with mode-3 perturbation), Two-Fluid Counterflow (T=1.6K, vn=0.3), Second Sound (T=1.4K, central temperature pulse), Lambda Point Transition (T=2.5→0.5K, cooling ramp).
 
