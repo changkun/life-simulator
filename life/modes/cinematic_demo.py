@@ -236,7 +236,7 @@ def _cinematic_launch_act(self):
     self.cinem_density = dens_fn(self.cinem_sim_state)
 
     # Act timing
-    self.cinem_act_start = time.monotonic()
+    self.cinem_act_start = self._cinem_pause_start = time.monotonic()
     self.cinem_act_duration = act["duration"]
     self.cinem_act = act
     self.cinem_generation = 0
@@ -590,11 +590,12 @@ def _handle_cinematic_key(self, key):
     # Space = pause/resume
     if key == ord(" "):
         self.cinem_paused = not self.cinem_paused
-        if not self.cinem_paused:
-            # Adjust act start time to account for pause
-            self.cinem_act_start = time.monotonic() - (
-                self.cinem_act_duration - max(0, self.cinem_act_duration - (
-                    time.monotonic() - self.cinem_act_start)))
+        now = time.monotonic()
+        if self.cinem_paused:
+            self._cinem_pause_start = now
+        else:
+            # Shift the act start so paused time does not count towards the act.
+            self.cinem_act_start += now - self._cinem_pause_start
         return True
 
     # n / Right = next act

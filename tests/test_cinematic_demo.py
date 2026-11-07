@@ -89,3 +89,18 @@ def test_crossfade_decays():
     for _ in range(50):
         app._cinematic_step()
     assert app.cinem_crossfade < 1.0
+
+
+def test_pause_does_not_consume_act_time(monkeypatch):
+    import life.modes.cinematic_demo as cd
+    clock = [100.0]
+    monkeypatch.setattr(cd.time, "monotonic", lambda: clock[0])
+    app = _make_app()
+    app._cinematic_init(0)
+    clock[0] += 2.0
+    app._handle_cinematic_key(ord(" "))
+    clock[0] += 60.0
+    app._handle_cinematic_key(ord(" "))
+    app._cinematic_step()
+    assert app.cinem_act_idx == 0
+    assert clock[0] - app.cinem_act_start == 2.0
