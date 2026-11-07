@@ -1,7 +1,6 @@
-"""Procedural Music / Generative Soundscape — cross-cutting sonification layer.
+"""Sonification Layer — turns any running simulation into generative music (Ctrl+S).
 
-A horizontal feature that attaches to *any* running simulation and turns it into
-a listenable composition in real-time. Core mappings:
+Core mappings:
   - Population density → pitch register (sparse=low, dense=high)
   - Entropy            → chord complexity (uniform=simple, chaotic=rich)
   - Spatial clusters   → stereo panning (multiple clusters pan independently)
@@ -18,21 +17,23 @@ Multi-voice synthesis engine with four layers:
 Frame-to-frame state enables musical continuity: portamento between pitches,
 smooth dynamic transitions, and evolving rhythmic patterns.
 """
+import curses
 import math
-import random
+import shutil
 import struct
 import threading
 import subprocess
 import tempfile
 import wave
 
-from life.registry import MODE_REGISTRY, MODE_CATEGORIES
+from life.constants import SPEEDS
+from life.registry import MODE_REGISTRY
 
 # ── Audio profiles per category ─────────────────────────────────────────────
 
 # Maps category name → audio profile dict
 # Each profile controls: base_freq, scale, waveform mix, tempo_mult, drone level,
-# plus new: melody_mode, rhythm_feel, harmonic_character
+# melody_mode, rhythm_feel and swing
 _AUDIO_PROFILES = {
     "Classic CA": {
         "base_freq": 220.0,
@@ -948,7 +949,6 @@ def _sonify_synthesize(metrics, duration, prev_state):
 
 def _sonify_detect_player():
     """Find stereo-capable audio playback command."""
-    import shutil
     for cmd, args in [
         ("paplay", ["paplay", "--raw", "--rate=22050", "--channels=2",
                      "--format=s16le"]),
@@ -1021,7 +1021,6 @@ def _sonify_frame(self):
         return
 
     # Duration: based on simulation speed
-    from life.constants import SPEEDS
     delay = SPEEDS[self.speed_idx]
     tempo_mult = metrics["profile"]["tempo_mult"]
     duration = max(0.04, min(delay * 0.8 * tempo_mult, 1.5))
@@ -1047,7 +1046,7 @@ def _sonify_frame(self):
 # ── Toggle & status ──────────────────────────────────────────────────────────
 
 def _sonify_toggle(self):
-    """Toggle sonification on/off. Returns new state."""
+    """Toggle sonification on or off and return the new state."""
     self.sonify_enabled = not self.sonify_enabled
     if not self.sonify_enabled:
         self._sonify_stop.set()
@@ -1057,7 +1056,6 @@ def _sonify_toggle(self):
 
 def _draw_sonify_indicator(self, max_y, max_x):
     """Draw sonification status indicator with live musical info."""
-    import curses
     if not self.sonify_enabled:
         return
 
