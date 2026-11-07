@@ -691,13 +691,14 @@ Spread from neighbor n to cell (r,c):
   contribution = base × wind × slope × moisture × crown
   spread_in = Σ max(0, contribution)  over all 8 neighbors
 
-Intensity update (existing fire):
-  I(t+1) = I(t) + 0.3 × spread_in − burnout × (1 + 0.1 × I(t))
-  If already burned: additional −0.5 × burnout (fuel exhaustion)
+Intensity update (existing fire only decays; it takes no input from neighbors):
+  I(t+1) = I(t) − burnout × (1 + 0.1 × I(t))
+  Every burning cell also loses 0.5 × burnout (fuel exhaustion)
 
-New ignition (I(t) = 0):
+New ignition (I(t) = 0, cell never burned):
   threshold = 0.15 + moisture × 0.5
-  If spread_in > threshold:  I(t+1) = 0.5 × spread_in
+  If spread_in > threshold:  I(t+1) = min(5.0, spread_in)
+  A cell that has burned out cannot ignite again.
 
 Crown fire transition:
   Crown when I ≥ fuel-specific crown_thr AND I ≥ global crown_intensity
@@ -738,7 +739,7 @@ After acting, break agents wait 2 steps and water agents wait 3. Firestorm has n
 | Firestorm | 2.0 ENE | 0.05 | 15 m | Mostly timber and shrub | Crown fire, heavy spotting, three ignition points, no firefighters |
 | Canyon Wind Event | 2.5 S | 0.08 | 20 m | Canyon channel | Strong southward wind along the canyon |
 
-**Controls:** `Space`=play/pause, `n`=step, `v`=cycle views (fire/elevation/fuel/moisture), `w/W`=rotate wind direction (+/- 0.2 rad), `s/S`=wind speed down/up (0-5), `+/-`=steps per frame (1-20), `r`=reset, `R`=menu, `q`=exit.
+**Controls:** `Space`=play/pause, `n`=step, `v`=cycle views (fire/elevation/fuel/moisture), `w/W`=rotate wind direction (+/- 0.2 rad), `s/S`=wind speed down/up (0-5), `+/-`=steps per frame (1, 2, 3, 5, 10, 20), `r`=reset, `R` or `m`=menu, `q` or `Esc`=exit.
 
 **What to look for.** In Grassland Brushfire, the fire front advances rapidly but at low intensity, leaving a wide ash footprint. Mountain Wildfire shows slope-driven acceleration: fire races uphill and launches embers downwind, which start secondary fronts. The Urban-Wildland Interface shows structure-to-vegetation-to-structure fire chains, with firefighter agents attempting to defend buildings. Prescribed Burn demonstrates controlled fire management: break agents cut firebreaks and water agents suppress escaping flames. Firestorm has extreme conditions: crown fire and doubled smoke production. Canyon Wind Event pushes fire south through a shrub and grass canyon, with slower timber on the ridges. Switch views to see how elevation drives spread, how fuel layout creates corridors, and how moisture drops ahead of the front.
 
