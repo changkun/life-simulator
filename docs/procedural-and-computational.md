@@ -789,18 +789,21 @@ Instruction set (16 opcodes):
   INC(5), DEC(6): increment/decrement register
   JMP(7):    jump to template complement
   JMPZ(8):   jump if register zero
-  ALLOC(9):  allocate daughter cell (request contiguous free block)
-  SPLIT(10): divide — daughter becomes independent organism
+  ALLOC(9):  allocate daughter cell (request contiguous free block); ends the time slice
+  SPLIT(10): divide — daughter becomes independent organism; ends the time slice
   PUSH(11), POP(12): stack operations
   SWAP(13), CALL(14), RET(15): register/subroutine operations
 
-Ancestor genome (42 instructions): minimal self-copier
-  1. Start template (1111), then ALLOC for the daughter space
-  2. PUSH, FIND the end template, MOV_H to set the read head, POP
-  3. Copy loop: COPY, INC, INC, DEC counter, JMPZ exit, JMP loop
-  4. SPLIT to create an independent daughter
-  5. JMP back to start
-  Parasite World uses a 30-instruction ancestor; Symbiosis Lab seeds both.
+Ancestor genome (33 instructions): minimal self-copier
+  1. Start label (1111), then ALLOC for the daughter space
+  2. Copy loop: COPY, DEC counter, JMPZ to the exit label when it is zero,
+     else JMP back to the loop label
+  3. Exit label, then SPLIT to create an independent daughter
+  4. JMP back to the start label
+  A jump goes to the complement of the template after it, and a RET
+  separates each jump's template from the label that follows.
+  Parasite World uses a 27-instruction ancestor with the same layout;
+  Symbiosis Lab seeds both.
 
 Mutation:
   Copy mutation: during COPY, each instruction has probability P_mut of being
@@ -808,7 +811,9 @@ Mutation:
   Cosmic rays: per step, int(P_cosmic * mem_size) random memory cells are
     overwritten with random opcodes (Genesis rounds down to none)
 
-Reaper queue (population control, when max_organisms is reached):
+Reaper queue (population control, when max_organisms is reached;
+  a full soup with no free block for a daughter also reaps one organism
+  per generation):
   "oldest":       kill organism with highest age
   "large_first":  kill organism with largest genome
   "errors_first": kill organism with most execution errors
